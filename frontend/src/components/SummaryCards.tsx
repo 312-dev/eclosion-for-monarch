@@ -1,5 +1,6 @@
 import type { DashboardSummary, RecurringItem } from '../types';
 import { formatCurrency } from '../utils';
+import { TrendDownIcon } from './icons';
 
 interface SummaryCardsProps {
   summary: DashboardSummary;
@@ -57,10 +58,7 @@ export function SummaryCards({ summary, items }: SummaryCardsProps) {
         </div>
         {showAnticipatedLower && (
           <div className="text-xs flex items-center justify-end gap-1" style={{ color: 'var(--monarch-success)' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
-              <polyline points="17 18 23 18 23 12"></polyline>
-            </svg>
+            <TrendDownIcon size={12} />
             {formatCurrency(lowestMonthlyCost, { maximumFractionDigits: 0 })} beg. {lowestDate}
           </div>
         )}

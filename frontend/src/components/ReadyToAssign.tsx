@@ -8,7 +8,7 @@
  * - Proper focus management
  */
 
-import React, { useMemo, useId, useCallback } from 'react';
+import { useMemo, useId, useCallback } from 'react';
 import type { ReadyToAssign as ReadyToAssignData, RecurringItem, DashboardSummary, RollupData } from '../types';
 import { Portal } from './Portal';
 import { formatCurrency } from '../utils';
@@ -165,7 +165,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
           className="flex items-center justify-center gap-1.5 text-sm"
           style={{ color: 'var(--monarch-text-dark)' }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -177,6 +177,12 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
         {currentMonthlyCost > 0 && (
           <div className="mt-3">
             <div
+              role="progressbar"
+              aria-valuenow={Math.round((dedicatedCategories.saved + rollup.total_saved) / currentMonthlyCost * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Monthly savings progress: ${formatCurrency(dedicatedCategories.saved + rollup.total_saved, { maximumFractionDigits: 0 })} of ${formatCurrency(currentMonthlyCost, { maximumFractionDigits: 0 })} saved`}
+              aria-describedby={progressBarId}
               className="h-2 rounded-full overflow-hidden"
               style={{ backgroundColor: 'rgba(255, 105, 45, 0.2)' }}
             >
@@ -188,7 +194,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
                 }}
               />
             </div>
-            <div className="flex justify-between mt-1 text-xs" style={{ color: 'var(--monarch-text-dark)' }}>
+            <div id={progressBarId} className="flex justify-between mt-1 text-xs" style={{ color: 'var(--monarch-text-dark)' }}>
               <span>{formatCurrency(dedicatedCategories.saved + rollup.total_saved, { maximumFractionDigits: 0 })} saved</span>
               <span>{formatCurrency(Math.max(0, currentMonthlyCost - dedicatedCategories.saved - rollup.total_saved), { maximumFractionDigits: 0 })} to go</span>
             </div>
@@ -197,6 +203,11 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
         {showAnticipatedLower && (
           <button
             ref={infoDropdown.triggerRef}
+            type="button"
+            aria-label={`View details: Monthly cost decreases to ${formatCurrency(Math.round(lowestMonthlyCost), { maximumFractionDigits: 0 })} beginning ${lowestDate}`}
+            aria-expanded={infoDropdown.isOpen}
+            aria-haspopup="dialog"
+            aria-controls={infoDropdown.isOpen ? popoverId : undefined}
             className="text-xs flex items-center gap-1 mt-2 mx-auto"
             style={{
               color: 'var(--monarch-success)',
@@ -206,7 +217,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             }}
             onClick={infoDropdown.open}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline>
               <polyline points="16 17 22 17 22 11"></polyline>
             </svg>
@@ -220,9 +231,15 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             <div
               className="fixed inset-0 z-(--z-index-popover)"
               onClick={infoDropdown.close}
+              aria-hidden="true"
             />
             <div
+              id={popoverId}
               ref={infoDropdown.dropdownRef}
+              role="dialog"
+              aria-labelledby={`${popoverId}-title`}
+              aria-modal="true"
+              onKeyDown={handlePopoverKeyDown}
               className="fixed z-(--z-index-popover) rounded-xl shadow-lg p-4 text-left"
               style={{
                 backgroundColor: 'var(--monarch-bg-card)',
@@ -233,15 +250,17 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
               }}
             >
               <div className="flex justify-between items-start mb-3">
-                <div className="font-semibold text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                <h3 id={`${popoverId}-title`} className="font-semibold text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
                   Why will my costs decrease?
-                </div>
+                </h3>
                 <button
+                  type="button"
                   onClick={infoDropdown.close}
+                  aria-label="Close dialog"
                   className="-mt-1 -mr-1 p-1 transition-colors"
                   style={{ color: 'var(--monarch-text-muted)' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>

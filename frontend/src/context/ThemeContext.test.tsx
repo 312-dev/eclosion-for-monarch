@@ -4,15 +4,12 @@ import { ThemeProvider, useTheme } from './ThemeContext';
 
 describe('ThemeContext', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
-    localStorage.clear();
     // Reset document classes
     document.documentElement.classList.remove('light', 'dark');
     delete document.documentElement.dataset['theme'];
   });
 
   afterEach(() => {
-    localStorage.clear();
     document.documentElement.classList.remove('light', 'dark');
     delete document.documentElement.dataset['theme'];
   });
@@ -135,7 +132,7 @@ describe('ThemeContext', () => {
         result.current.setTheme('dark');
       });
 
-      expect(localStorage.getItem('eclosion-theme-preference')).toBe('dark');
+      expect(localStorage.setItem).toHaveBeenCalledWith('eclosion-theme-preference', 'dark');
     });
 
     it('updates document classes when theme changes', () => {
@@ -161,7 +158,11 @@ describe('ThemeContext', () => {
 
   describe('localStorage persistence', () => {
     it('restores theme from localStorage', () => {
-      localStorage.setItem('eclosion-theme-preference', 'dark');
+      // Set up the mock to return 'dark' for the theme key
+      vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
+        if (key === 'eclosion-theme-preference') return 'dark';
+        return null;
+      });
 
       const { result } = renderHook(() => useTheme(), {
         wrapper: ThemeProvider,
@@ -171,7 +172,11 @@ describe('ThemeContext', () => {
     });
 
     it('handles invalid localStorage values', () => {
-      localStorage.setItem('eclosion-theme-preference', 'invalid');
+      // Set up the mock to return invalid value
+      vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
+        if (key === 'eclosion-theme-preference') return 'invalid';
+        return null;
+      });
 
       const { result } = renderHook(() => useTheme(), {
         wrapper: ThemeProvider,

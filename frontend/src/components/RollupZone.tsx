@@ -1,4 +1,4 @@
-import { memo, useState, useRef, useEffect, useCallback, useMemo, Fragment, type KeyboardEvent } from 'react';
+import React, { memo, useState, useRef, useEffect, useCallback, useMemo, type KeyboardEvent } from 'react';
 import type { RollupData, RollupItem } from '../types';
 import { EmojiPicker } from './EmojiPicker';
 import { Tooltip } from './Tooltip';
@@ -392,18 +392,18 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
         {/* Stats in header */}
         <div className="flex items-start gap-4 shrink-0" onClick={(e) => e.stopPropagation()}>
           <div className="text-center w-20 sm:w-24">
-            <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Monthly</span>
-            <div className="h-8 font-medium flex items-center justify-center gap-1" style={{ color: 'var(--monarch-text-dark)' }}>
+            <span className="text-xs text-monarch-text-muted">Monthly</span>
+            <div className="h-8 font-medium flex items-center justify-center gap-1 text-monarch-text-dark">
               {anyCatchingUp && (
                 <Tooltip content={`Catching up: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
-                  <span className="cursor-help" style={{ color: 'var(--monarch-error)' }}>
+                  <span className="cursor-help text-monarch-error">
                     <TrendUpIcon size={12} strokeWidth={2.5} />
                   </span>
                 </Tooltip>
               )}
               {!anyCatchingUp && anyAhead && (
                 <Tooltip content={`Ahead: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
-                  <span className="cursor-help" style={{ color: 'var(--monarch-success)' }}>
+                  <span className="cursor-help text-monarch-success">
                     <TrendDownIcon size={12} strokeWidth={2.5} />
                   </span>
                 </Tooltip>
@@ -412,12 +412,9 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             </div>
           </div>
           <div className="text-center w-20 sm:w-24">
-            <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Budgeted</span>
+            <span className="text-xs text-monarch-text-muted">Budgeted</span>
             <div className="relative h-8 flex items-center">
-              <span
-                className="absolute left-2 font-medium"
-                style={{ color: 'var(--monarch-text-dark)' }}
-              >
+              <span className="absolute left-2 font-medium text-monarch-text-dark">
                 $
               </span>
               <input
@@ -429,31 +426,25 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 onKeyDown={handleBudgetKeyDown}
                 onFocus={(e) => { e.target.select(); setIsHoveringName(false); }}
                 disabled={isUpdatingBudget}
-                className="w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium"
-                style={{
-                  color: 'var(--monarch-text-dark)',
-                  border: `1px solid ${rollup.budgeted < totalMonthly ? 'var(--monarch-warning)' : 'var(--monarch-border)'}`,
-                  backgroundColor: 'var(--monarch-bg-card)',
-                  fontFamily: 'inherit',
-                }}
+                className={`w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card font-inherit border ${rollup.budgeted < totalMonthly ? 'border-monarch-warning' : 'border-monarch-border'}`}
                 min="0"
                 step="1"
               />
             </div>
             {rollup.budgeted < totalMonthly && (
-              <div className="text-[10px] mt-0.5" style={{ color: 'var(--monarch-warning)' }}>
+              <div className="text-[10px] mt-0.5 text-monarch-warning">
                 need {formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}
               </div>
             )}
           </div>
           <div className="text-center w-20 sm:w-24">
-            <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Total Cost</span>
-            <div className="h-8 font-medium flex items-center justify-center" style={{ color: 'var(--monarch-text-dark)' }}>
+            <span className="text-xs text-monarch-text-muted">Total Cost</span>
+            <div className="h-8 font-medium flex items-center justify-center text-monarch-text-dark">
               {formatCurrency(totalAmount, { maximumFractionDigits: 0 })}
             </div>
           </div>
           <div className="text-center">
-            <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Status</span>
+            <span className="text-xs text-monarch-text-muted">Status</span>
             <div className="h-8 flex items-center justify-center">
               <StatusBadge status={rollupStatus} size="sm" />
             </div>
@@ -467,17 +458,17 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
           {rollup.items.length > 0 ? (
             <table className="w-full animate-fade-in">
               <thead>
-                <tr style={{ backgroundColor: 'var(--monarch-bg-page)', borderBottom: '1px solid var(--monarch-border)' }}>
-                  <th className="py-2 px-3 text-left text-xs font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
+                <tr className="bg-monarch-bg-page border-b border-monarch-border">
+                  <th className="py-2 px-3 text-left text-xs font-medium text-monarch-text-muted">
                     Recurring
                   </th>
-                  <th className="py-2 px-3 text-left text-xs font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
+                  <th className="py-2 px-3 text-left text-xs font-medium text-monarch-text-muted">
                     Date
                   </th>
-                  <th className="py-2 px-3 text-right text-xs font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
+                  <th className="py-2 px-3 text-right text-xs font-medium text-monarch-text-muted">
                     Total Cost
                   </th>
-                  <th className="py-2 px-3 text-right text-xs font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
+                  <th className="py-2 px-3 text-right text-xs font-medium text-monarch-text-muted">
                     Monthly Set-aside
                   </th>
                   <th className="py-2 px-3 w-12"></th>
@@ -488,12 +479,11 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                   const frequencyItems = sortedGroupedItems[frequency];
                   if (!frequencyItems) return null;
                   return (
-                    <Fragment key={frequency}>
+                    <React.Fragment key={frequency}>
                       <tr>
                         <td
                           colSpan={5}
-                          className="py-1 px-3 text-[10px] font-medium uppercase tracking-wide"
-                          style={{ backgroundColor: 'var(--monarch-bg-hover)', color: 'var(--monarch-text-muted)' }}
+                          className="py-1 px-3 text-[10px] font-medium uppercase tracking-wide bg-monarch-bg-hover text-monarch-text-muted"
                         >
                           {formatFrequency(frequency)}
                         </td>
@@ -505,13 +495,13 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                           onRemove={handleRemoveItem(item.id)}
                         />
                       ))}
-                    </Fragment>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
             </table>
           ) : (
-            <div className="py-8 text-center" style={{ color: 'var(--monarch-text-muted)' }}>
+            <div className="py-8 text-center text-monarch-text-muted">
               <PlusIcon size={32} strokeWidth={1.5} className="mx-auto mb-2" />
               <p className="text-sm">Use the "Add to rollup" action on recurring items to add them here</p>
             </div>

@@ -8,6 +8,7 @@
 import { formatCurrency } from '../utils';
 import { Tooltip } from './ui/Tooltip';
 import type { ReadyToAssign } from '../types';
+import { ExternalLinkIcon } from './icons';
 
 interface LeftToBudgetBadgeProps {
   data: ReadyToAssign | null;
