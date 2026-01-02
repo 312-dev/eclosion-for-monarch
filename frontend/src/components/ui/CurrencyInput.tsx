@@ -5,7 +5,7 @@
  * Replaces inline currency inputs in RecurringRow, RollupZone, and ReadyToAssign.
  */
 
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect, type ChangeEvent } from 'react';
 
 export interface CurrencyInputProps {
   /** Current value */
@@ -57,7 +57,7 @@ export function CurrencyInput({
     }
   }, [autoFocus]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value) || 0;
     let clampedValue = newValue;
 

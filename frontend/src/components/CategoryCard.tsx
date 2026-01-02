@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { RecurringItem } from '../types';
 import { formatCurrency as formatCurrencyBase, formatDate, getStatusLabel, getStatusStylesExtended } from '../utils';
 
@@ -9,7 +10,7 @@ interface CategoryCardProps {
 const formatCurrency = (amount: number) =>
   formatCurrencyBase(amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-export function CategoryCard({ item }: CategoryCardProps) {
+export const CategoryCard = memo(function CategoryCard({ item }: CategoryCardProps) {
   const statusStyles = getStatusStylesExtended(item.status);
   const statusLabel = getStatusLabel(item.status);
   const isInactive = item.status === 'inactive';
@@ -78,4 +79,4 @@ export function CategoryCard({ item }: CategoryCardProps) {
       )}
     </div>
   );
-}
+});

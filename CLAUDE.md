@@ -1,0 +1,200 @@
+# CLAUDE.md - Project Guidelines
+
+This file contains coding standards and guidelines for AI assistants working on this codebase.
+
+## Project Overview
+
+This is a YNAB (You Need A Budget) scripts project with a React/TypeScript frontend (Eclosion) that provides budget management features including recurring item tracking, category mappings, and dashboard analytics.
+
+## Code Standards
+
+All new code must follow these standards. These are derived from our [STANDARDIZATION_PLAN.md](STANDARDIZATION_PLAN.md).
+
+### Hover States
+
+**Use CSS/Tailwind for hover effects, not JavaScript handlers.**
+
+```tsx
+// BAD - Do not use inline JS hover handlers
+onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color)'}
+onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+
+// GOOD - Use Tailwind hover variants
+className="bg-transparent hover:bg-[var(--monarch-bg-page)]"
+```
+
+Exception: Complex conditional or stateful hover logic may use JS when CSS cannot achieve the effect.
+
+### Component Size
+
+**Components must not exceed 300 lines.**
+
+- Split large components into focused, single-responsibility modules
+- Extract reusable sub-components (headers, list items, action bars)
+- Keep business logic in custom hooks when appropriate
+
+### Accessibility
+
+**All interactive elements must be accessible.**
+
+Required attributes:
+- `aria-label` on icon-only buttons
+- `aria-expanded` on dropdown triggers
+- `aria-haspopup` on menu buttons
+- `role` attributes when semantic HTML isn't used
+
+Keyboard navigation:
+- Clickable `<div>` elements must have `onKeyDown` handlers
+- Dropdowns must support arrow key navigation
+- Modals must trap focus and close on Escape
+- All interactive elements must be Tab-accessible
+
+Semantic HTML:
+- Use `<button>` for clickable elements, not `<div>`
+- Use `<nav>`, `<main>`, `<aside>` appropriately
+- Maintain proper heading hierarchy (h1 > h2 > h3)
+
+### Testing
+
+**New components and utilities must have tests.**
+
+- Use Vitest + React Testing Library
+- Utility functions require 80%+ coverage
+- All custom hooks must have tests
+- Critical user flows need integration tests
+
+### Icons
+
+**Use the centralized icon system, not inline SVGs.**
+
+```tsx
+// BAD - Inline SVG
+<svg viewBox="0 0 24 24">...</svg>
+
+// GOOD - Icon component
+import { Icons } from '../icons';
+<Icons.Settings className="h-5 w-5" />
+```
+
+### Styling
+
+**Prefer Tailwind classes over inline styles.**
+
+```tsx
+// BAD - Inline styles for static values
+style={{ display: 'flex', gap: '8px', padding: '16px' }}
+
+// GOOD - Tailwind classes
+className="flex gap-2 p-4"
+
+// OK - CSS variables for dynamic theming
+style={{ color: 'var(--monarch-text-dark)' }}
+```
+
+### Z-Index
+
+**Use the established z-index scale.**
+
+```typescript
+// Z-Index Hierarchy (from constants)
+DROPDOWN: 10
+STICKY_HEADER: 20
+MODAL_BACKDROP: 30
+MODAL: 40
+TOAST: 50
+TOOLTIP: 60
+```
+
+Use semantic Tailwind classes: `z-dropdown`, `z-modal`, `z-toast`, `z-tooltip`
+
+### Error Handling
+
+**Use standardized error utilities.**
+
+```typescript
+import { getErrorMessage, handleApiError } from '../utils/errors';
+
+// In catch blocks
+catch (error) {
+  const message = handleApiError(error, 'Failed to load data');
+  setError(message);
+}
+```
+
+### TypeScript
+
+**Strict typing is required.**
+
+- No `any` types (explicit or implicit)
+- No `!` non-null assertions without justification
+- Use `type` imports for type-only imports
+- Add return types to functions
+- Define interfaces for component props
+
+```tsx
+// GOOD - Type imports
+import type { FC } from 'react';
+import type { CategoryGroup } from '../types';
+```
+
+### Performance
+
+**Apply React optimizations judiciously.**
+
+- Wrap list item components in `React.memo`
+- Use `useMemo` for expensive filtered/sorted lists
+- Use `useCallback` for handlers passed to memoized children
+- Profile before optimizing - don't memo everything
+
+### Code Cleanliness
+
+**Keep the codebase clean.**
+
+- No `console.log` statements (use `console.error` in catch blocks only)
+- No commented-out code blocks
+- No unused imports or variables
+- Use constants for timing values, not magic numbers
+
+```tsx
+// BAD
+setTimeout(() => {}, 300);
+
+// GOOD
+import { UI } from '../constants';
+setTimeout(() => {}, UI.ANIMATION.NORMAL);
+```
+
+## File Structure
+
+```
+frontend/src/
+├── api/           # API client and endpoints
+├── components/    # React components
+│   ├── icons/     # SVG icon components
+│   ├── layout/    # Layout components (Sidebar, AppShell)
+│   ├── tabs/      # Tab panel components
+│   ├── ui/        # Reusable UI components
+│   └── wizards/   # Setup wizard components
+├── constants/     # Shared constants
+├── context/       # React contexts
+├── hooks/         # Custom hooks
+├── types/         # TypeScript type definitions
+└── utils/         # Utility functions
+```
+
+## Development Workflow
+
+1. Run linting: `npm run lint`
+2. Run type checking: `npm run type-check`
+3. Run build: `npm run build`
+4. Run tests: `npm test`
+
+All checks must pass before committing.
+
+## Branch Naming
+
+For standardization work: `refactor/stream-{letter}-{name}`
+
+Examples:
+- `refactor/stream-a-hover-handlers`
+- `refactor/stream-b-component-splitting`

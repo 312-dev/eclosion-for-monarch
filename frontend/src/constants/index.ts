@@ -73,10 +73,24 @@ export const UI = {
   INTERVAL: {
     SYNC_STATUS: 30000, // 30 seconds - for last sync time display
     TOUR_CLOSE_CHECK: 100, // Quick check for tour close state
+    COOLDOWN_TICK: 1000, // 1 second - for countdown timers
+    FLIP_ANIMATION: 10000, // 10 seconds - for alternating text display
   },
   /** Scroll behavior delays */
   SCROLL: {
     AFTER_MOUNT: 100, // Delay before scroll after component mount
+  },
+  /** Highlight/feedback durations */
+  HIGHLIGHT: {
+    ROW: 2000, // Duration for row highlight feedback
+    SHORT: 1500, // Shorter highlight for quick feedback
+  },
+  /** Modal/action delays */
+  DELAY: {
+    TOAST_BEFORE_RELOAD: 1500, // Show toast before page reload
+    TOAST_WITH_PARTIAL_SUCCESS: 2000, // Longer delay when showing partial success
+    TOOLTIP_AUTO_HIDE: 10000, // Auto-hide tooltip after this duration
+    FOCUS_AFTER_OPEN: 0, // Immediate focus on next tick after opening
   },
 } as const;
 

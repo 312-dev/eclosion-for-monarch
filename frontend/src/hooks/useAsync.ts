@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import { getErrorMessage } from '../utils/errors';
 
 export interface UseAsyncState<T> {
   /** The data returned from the async function */
@@ -86,7 +87,7 @@ export function useAsync<T, Args extends unknown[] = []>(
       } catch (err) {
         // Only update state if this is still the latest execution and component is mounted
         if (executionId === executionIdRef.current && mountedRef.current) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
+          const errorMessage = getErrorMessage(err);
           setError(errorMessage);
           setLoading(false);
           onError?.(err instanceof Error ? err : new Error(errorMessage));

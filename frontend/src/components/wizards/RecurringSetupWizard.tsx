@@ -13,6 +13,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TourProvider } from '@reactour/tour';
 import type { CategoryGroup, RecurringItem, UnmappedCategory } from '../../types';
+import { getErrorMessage } from '../../utils';
 import {
   getCategoryGroups,
   setConfig,
@@ -649,7 +650,7 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
       setGroups(data);
       setGroupsFetched(true);
     } catch (err) {
-      setGroupError(err instanceof Error ? err.message : 'Failed to load groups');
+      setGroupError(getErrorMessage(err));
     } finally {
       setLoadingGroups(false);
     }
@@ -665,7 +666,7 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
       setItems(availableItems);
       setItemsFetched(true);
     } catch (err) {
-      setItemsError(err instanceof Error ? err.message : 'Failed to load items');
+      setItemsError(getErrorMessage(err));
     } finally {
       setLoadingItems(false);
     }
@@ -798,7 +799,7 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
       setItems(availableItems);
       setItemsFetched(true);
     } catch (err) {
-      setItemsError(err instanceof Error ? err.message : 'Failed to refresh items');
+      setItemsError(getErrorMessage(err));
     } finally {
       setLoadingItems(false);
     }
@@ -880,7 +881,7 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
       // Complete the wizard
       onComplete();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save configuration');
+      setSaveError(getErrorMessage(err));
       setSaving(false);
     }
   };

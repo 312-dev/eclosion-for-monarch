@@ -2,7 +2,7 @@
  * RecurringRow - Individual row component for recurring items
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { RecurringItem, ItemStatus } from '../../types';
 import { EmojiPicker } from '../EmojiPicker';
 import { Tooltip } from '../Tooltip';
@@ -17,6 +17,7 @@ import {
 import { WarningIcon, LinkedCategoryIcon } from './RecurringListIcons';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 import { ActionsDropdown } from './ActionsDropdown';
+import { UI } from '../../constants';
 
 interface RecurringRowProps {
   readonly item: RecurringItem;
@@ -45,7 +46,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
   useEffect(() => {
     if (highlightId === item.id && rowRef.current) {
       setIsHighlighted(true);
-      const timer = setTimeout(() => setIsHighlighted(false), 1500);
+      const timer = setTimeout(() => setIsHighlighted(false), UI.HIGHLIGHT.SHORT);
       return () => clearTimeout(timer);
     }
   }, [highlightId, item.id]);
@@ -93,7 +94,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
     }
   };
 
-  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+  const handleNameKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -193,7 +194,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
     }
   };
 
-  const handleBudgetKeyDown = (e: React.KeyboardEvent) => {
+  const handleBudgetKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -209,13 +210,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
   return (
     <tr
       ref={rowRef}
-      className={`group transition-all duration-300 border-b ${isHighlighted ? 'animate-highlight' : ''}`}
-      style={{
-        backgroundColor: isHighlighted ? 'var(--monarch-orange-light)' : 'var(--monarch-bg-card)',
-        borderColor: 'var(--monarch-border)',
-      }}
-      onMouseEnter={(e) => !isHighlighted && (e.currentTarget.style.backgroundColor = 'var(--monarch-bg-hover)')}
-      onMouseLeave={(e) => !isHighlighted && (e.currentTarget.style.backgroundColor = 'var(--monarch-bg-card)')}
+      className={`group transition-all duration-300 border-b border-monarch-border ${isHighlighted ? 'animate-highlight bg-monarch-orange-light' : 'bg-monarch-bg-card hover:bg-monarch-bg-hover'}`}
     >
       <td className={`${rowPadding} pl-5 pr-2 max-w-40`}>
         <div className="flex items-center gap-3">
@@ -233,12 +228,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
               <button
                 onClick={handleToggle}
                 disabled={isToggling}
-                className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--monarch-bg-card)',
-                  border: '1px solid var(--monarch-border)',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                }}
+                className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50 bg-monarch-bg-card border border-monarch-border shadow-sm"
               >
                 {isToggling ? (
                   <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-orange)" strokeWidth="2.5">
@@ -274,14 +264,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                   onBlur={handleNameSubmit}
                   onKeyDown={handleNameKeyDown}
                   disabled={isUpdatingName}
-                  className="font-medium px-1 py-0.5 rounded text-sm"
-                  style={{
-                    color: 'var(--monarch-text-dark)',
-                    backgroundColor: 'var(--monarch-bg-card)',
-                    border: '1px solid var(--monarch-orange)',
-                    outline: 'none',
-                    minWidth: '120px',
-                  }}
+                  className="font-medium px-1 py-0.5 rounded text-sm text-monarch-text-dark bg-monarch-bg-card border border-monarch-orange outline-none min-w-30"
                 />
               ) : (
                 <>
@@ -295,8 +278,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                   <span
                     role="button"
                     tabIndex={0}
-                    className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded"
-                    style={{ color: 'var(--monarch-text-dark)' }}
+                    className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark"
                     onDoubleClick={() => item.is_enabled && !item.category_missing && setIsEditingName(true)}
                     onKeyDown={(e) => {
                       if ((e.key === 'Enter' || e.key === ' ') && item.is_enabled && !item.category_missing) {
@@ -315,8 +297,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                     href={`https://app.monarchmoney.com/categories/${item.category_id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 hover:opacity-70 transition-opacity"
-                    style={{ color: 'var(--monarch-text-light)' }}
+                    className="shrink-0 hover:opacity-70 transition-opacity text-monarch-text-light"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <LinkedCategoryIcon />
@@ -332,7 +313,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
               )}
             </div>
             {item.category_group_name && (
-              <div className="text-sm truncate" style={{ color: 'var(--monarch-text-light)' }}>
+              <div className="text-sm truncate text-monarch-text-light">
                 {item.is_enabled && !item.category_missing ? (
                   <CategoryGroupDropdown
                     currentGroupName={item.category_group_name}
@@ -347,9 +328,9 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
         </div>
       </td>
       <td className={`${rowPadding} px-4 w-28 ${contentOpacity}`}>
-        <div style={{ color: 'var(--monarch-text-dark)' }}>{date}</div>
+        <div className="text-monarch-text-dark">{date}</div>
         {relative && (
-          <div className="text-sm" style={{ color: 'var(--monarch-text-light)' }}>
+          <div className="text-sm text-monarch-text-light">
             {relative}
           </div>
         )}
@@ -384,24 +365,24 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
               </span>
             </Tooltip>
           )}
-          <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+          <span className="font-medium text-monarch-text-dark">
             {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo
           </span>
         </div>
-        <div className="text-xs mt-0.5" style={{ color: 'var(--monarch-text-light)' }}>
+        <div className="text-xs mt-0.5 text-monarch-text-light">
           {formatCurrency(item.amount, { maximumFractionDigits: 0 })} {formatFrequencyShort(item.frequency)}
         </div>
         {item.is_enabled && (
           <>
             <Tooltip content={`${formatCurrency(item.current_balance, { maximumFractionDigits: 0 })} of ${formatCurrency(item.amount, { maximumFractionDigits: 0 })} • Resets ${formatFrequencyShort(item.frequency)} after payment`}>
-              <div className="w-full rounded-full h-1.5 mt-1.5 cursor-help" style={{ backgroundColor: 'var(--monarch-border)' }}>
+              <div className="w-full rounded-full h-1.5 mt-1.5 cursor-help bg-monarch-border">
                 <div
                   className="h-1.5 rounded-full transition-all"
                   style={{ width: `${progressPercent}%`, backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color }}
                 />
               </div>
             </Tooltip>
-            <div className="text-xs mt-0.5" style={{ color: 'var(--monarch-text-light)' }}>
+            <div className="text-xs mt-0.5 text-monarch-text-light">
               {formatCurrency(Math.max(0, item.amount - item.current_balance), { maximumFractionDigits: 0 })} to go
             </div>
           </>
@@ -411,10 +392,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
         {item.is_enabled ? (
           <div className="flex justify-end">
             <div className="relative">
-              <span
-                className="absolute left-2 top-1/2 -translate-y-1/2 font-medium"
-                style={{ color: 'var(--monarch-text-dark)' }}
-              >
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 font-medium text-monarch-text-dark">
                 $
               </span>
               <input
@@ -424,21 +402,12 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                 onKeyDown={handleBudgetKeyDown}
                 onBlur={handleBudgetSubmit}
                 onFocus={(e) => e.target.select()}
-                className="w-24 pl-6 pr-2 py-1 text-right rounded font-medium"
-                style={{
-                  color: 'var(--monarch-text-dark)',
-                  backgroundColor: 'var(--monarch-bg-card)',
-                  border: '1px solid var(--monarch-border)',
-                  fontFamily: 'inherit',
-                }}
+                className="w-24 pl-6 pr-2 py-1 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card border border-monarch-border font-inherit"
               />
             </div>
           </div>
         ) : (
-          <span
-            className="font-medium"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
+          <span className="font-medium text-monarch-text-muted">
             {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}
           </span>
         )}

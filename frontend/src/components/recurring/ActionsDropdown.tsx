@@ -1,10 +1,27 @@
 /**
  * ActionsDropdown - Actions dropdown menu for recurring items
+ *
+ * Accessibility features:
+ * - aria-haspopup and aria-expanded on trigger button
+ * - role="menu" on dropdown with proper aria-labelledby
+ * - role="menuitem" on all action items
+ * - Keyboard navigation (Escape to close, Enter/Space to activate)
+ * - Focus management
  */
 
+import { useCallback, useRef, useEffect, useId } from 'react';
 import type { RecurringItem } from '../../types';
 import { useDropdown } from '../../hooks';
 import { Tooltip } from '../Tooltip';
+import {
+  SpinnerIcon,
+  MoreVerticalIcon,
+  XIcon,
+  CheckFilledIcon,
+  LinkIcon,
+  RotateIcon,
+  ArrowUpIcon,
+} from '../icons';
 
 export interface ActionsDropdownProps {
   readonly item: RecurringItem;
@@ -31,6 +48,11 @@ export function ActionsDropdown({
   isAddingToRollup,
   isRefreshing,
 }: ActionsDropdownProps) {
+  const menuId = useId();
+  const triggerId = useId();
+  const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const focusIndexRef = useRef(-1);
+
   const dropdown = useDropdown<HTMLDivElement, HTMLButtonElement>({
     alignment: 'right',
     offset: { y: 4 },
@@ -46,35 +68,101 @@ export function ActionsDropdown({
 
   const handleAction = (action: () => void) => {
     dropdown.close();
+    dropdown.triggerRef.current?.focus();
     action();
   };
+
+  // Handle keyboard navigation within menu
+  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const items = menuItemsRef.current.filter((item): item is HTMLButtonElement => item !== null);
+    const currentIndex = focusIndexRef.current;
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        dropdown.close();
+        dropdown.triggerRef.current?.focus();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        focusIndexRef.current = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        items[focusIndexRef.current]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        focusIndexRef.current = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        items[focusIndexRef.current]?.focus();
+        break;
+      case 'Home':
+        e.preventDefault();
+        focusIndexRef.current = 0;
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        focusIndexRef.current = items.length - 1;
+        items.at(-1)?.focus();
+        break;
+      case 'Tab':
+        dropdown.close();
+        break;
+    }
+  }, [dropdown]);
+
+  // Focus first menu item when dropdown opens
+  useEffect(() => {
+    if (dropdown.isOpen) {
+      focusIndexRef.current = 0;
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const firstItem = menuItemsRef.current.find((item): item is HTMLButtonElement => item !== null);
+        firstItem?.focus();
+      }, 0);
+    } else {
+      focusIndexRef.current = -1;
+      menuItemsRef.current = [];
+    }
+  }, [dropdown.isOpen]);
+
+  // Track menu item refs - reset index on each render
+  const menuItemIndexRef = useRef(0);
+  menuItemIndexRef.current = 0;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _setMenuItemRef = useCallback((el: HTMLButtonElement | null) => {
+    const index = menuItemIndexRef.current++;
+    menuItemsRef.current[index] = el;
+  }, []);
 
   return (
     <div className="relative">
       <Tooltip content="Actions">
         <button
+          id={triggerId}
           ref={dropdown.triggerRef}
           onClick={handleToggle}
           disabled={isLoading}
+          aria-label={`Actions for ${item.name}`}
+          aria-haspopup="menu"
+          aria-expanded={dropdown.isOpen}
+          aria-controls={dropdown.isOpen ? menuId : undefined}
           className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-black/10 disabled:opacity-50"
         >
           {isLoading ? (
-            <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-orange)" strokeWidth="2">
-              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-            </svg>
+            <SpinnerIcon size={16} color="var(--monarch-orange)" aria-hidden="true" />
           ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-text-muted)" strokeWidth="2">
-              <circle cx="12" cy="12" r="1" fill="currentColor" />
-              <circle cx="12" cy="5" r="1" fill="currentColor" />
-              <circle cx="12" cy="19" r="1" fill="currentColor" />
-            </svg>
+            <MoreVerticalIcon size={16} color="var(--monarch-text-muted)" aria-hidden="true" />
           )}
         </button>
       </Tooltip>
 
       {dropdown.isOpen && (
         <div
+          id={menuId}
           ref={dropdown.dropdownRef}
+          role="menu"
+          aria-labelledby={triggerId}
+          aria-label={`Actions for ${item.name}`}
+          onKeyDown={handleMenuKeyDown}
           className="fixed z-dropdown py-1 rounded-lg shadow-lg text-sm min-w-[180px] dropdown-menu"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
@@ -91,16 +179,12 @@ export function ActionsDropdown({
           >
             {item.is_enabled ? (
               <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
+                <XIcon size={14} />
                 Untrack
               </>
             ) : (
               <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--monarch-success)">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                </svg>
+                <CheckFilledIcon size={14} color="var(--monarch-success)" />
                 Track
               </>
             )}
@@ -113,10 +197,7 @@ export function ActionsDropdown({
               className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
               style={{ color: 'var(--monarch-orange)' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
+              <LinkIcon size={14} />
               Link to existing category
             </button>
           )}
@@ -128,10 +209,7 @@ export function ActionsDropdown({
               className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
               style={{ color: 'var(--monarch-warning)' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
+              <RotateIcon size={14} />
               Recreate category
             </button>
           )}
@@ -143,10 +221,7 @@ export function ActionsDropdown({
               className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
               style={{ color: 'var(--monarch-text-dark)' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-              </svg>
+              <RotateIcon size={14} />
               Recalculate target
             </button>
           )}
@@ -160,9 +235,7 @@ export function ActionsDropdown({
                 className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
                 style={{ color: 'var(--monarch-orange)' }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
+                <ArrowUpIcon size={14} />
                 Add to rollup
               </button>
             </>

@@ -5,7 +5,7 @@
  * and inline editing capabilities.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, Fragment } from 'react';
 import type { RecurringItem } from '../types';
 import { toggleItemTracking, allocateFunds, recreateCategory, changeCategoryGroup, addToRollup, updateCategoryEmoji, refreshItem, updateCategoryName } from '../api/client';
 import { LinkCategoryModal } from './LinkCategoryModal';
@@ -15,6 +15,7 @@ import { formatCurrency, formatFrequency, formatErrorMessage, FREQUENCY_ORDER } 
 import { Filter, Inbox, Eye, EyeOff } from 'lucide-react';
 import { RecurringRow, RecurringListHeader } from './recurring';
 import type { SortField, SortDirection } from './recurring';
+import { UI } from '../constants';
 
 interface RecurringListProps {
   readonly items: RecurringItem[];
@@ -39,7 +40,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
       setHighlightId(id);
       onRefresh();
       toast.success(enabled ? 'Tracking enabled' : 'Tracking disabled');
-      setTimeout(() => setHighlightId(null), 2000);
+      setTimeout(() => setHighlightId(null), UI.HIGHLIGHT.ROW);
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to toggle tracking'));
     }
@@ -176,9 +177,9 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
   // True empty state - no categories at all
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16" style={{ color: 'var(--monarch-text-muted)' }}>
+      <div className="flex flex-col items-center justify-center py-16 text-monarch-text-muted">
         <Inbox size={48} strokeWidth={1.5} className="mb-4 opacity-50" />
-        <p className="text-lg font-medium mb-1" style={{ color: 'var(--monarch-text-light)' }}>
+        <p className="text-lg font-medium mb-1 text-monarch-text-light">
           No recurring items found
         </p>
         <p className="text-sm">
@@ -191,16 +192,16 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
   // Filtered empty state - items exist but are hidden by filters
   if (filteredItems.length === 0) {
     return (
-      <div className="rounded-xl shadow-sm overflow-hidden" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
+      <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
         <SectionHeader
           enabledCount={enabledCount}
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
           onToggleHide={() => setHideDisabled(!hideDisabled)}
         />
-        <div className="flex flex-col items-center justify-center py-16" style={{ color: 'var(--monarch-text-muted)' }}>
+        <div className="flex flex-col items-center justify-center py-16 text-monarch-text-muted">
           <Filter size={40} strokeWidth={1.5} className="mb-4 opacity-50" />
-          <p className="text-base font-medium mb-1" style={{ color: 'var(--monarch-text-light)' }}>
+          <p className="text-base font-medium mb-1 text-monarch-text-light">
             All items hidden by filters
           </p>
           <p className="text-sm">
@@ -213,7 +214,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
 
   return (
     <div>
-      <div className="rounded-xl shadow-sm overflow-hidden" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
+      <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
         <SectionHeader
           enabledCount={enabledCount}
           disabledCount={disabledCount}
@@ -229,17 +230,11 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
           />
           <tbody>
             {sortedFrequencies.map((frequency, index) => (
-              <React.Fragment key={frequency}>
+              <Fragment key={frequency}>
                 <tr>
                   <td
                     colSpan={6}
-                    className="py-2 px-5 text-xs font-medium uppercase tracking-wide"
-                    style={{
-                      backgroundColor: 'var(--monarch-bg-page)',
-                      color: 'var(--monarch-text-muted)',
-                      borderBottom: '1px solid var(--monarch-border)',
-                      ...(index > 0 && { borderTop: '1px solid var(--monarch-border)' }),
-                    }}
+                    className={`py-2 px-5 text-xs font-medium uppercase tracking-wide bg-monarch-bg-page text-monarch-text-muted border-b border-monarch-border ${index > 0 ? 'border-t' : ''}`}
                   >
                     {formatFrequency(frequency)}
                   </td>
@@ -260,7 +255,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
                     highlightId={highlightId}
                   />
                 ))}
-              </React.Fragment>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -287,22 +282,19 @@ interface SectionHeaderProps {
   onToggleHide: () => void;
 }
 
-function SectionHeader({ enabledCount, disabledCount, hideDisabled, onToggleHide }: SectionHeaderProps) {
+function SectionHeader({ enabledCount, disabledCount, hideDisabled, onToggleHide }: Readonly<SectionHeaderProps>) {
   return (
-    <div
-      className="px-5 py-4 flex items-center justify-between"
-      style={{ backgroundColor: 'var(--monarch-bg-card)', borderBottom: '1px solid var(--monarch-border)' }}
-    >
+    <div className="px-5 py-4 flex items-center justify-between bg-monarch-bg-card border-b border-monarch-border">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
+          <span className="text-lg font-semibold text-monarch-text-dark">
             Dedicated Categories
           </span>
-          <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+          <span className="text-xs text-monarch-text-muted">
             ({enabledCount})
           </span>
         </div>
-        <span className="text-sm" style={{ color: 'var(--monarch-text-light)' }}>
+        <span className="text-sm text-monarch-text-light">
           Larger recurring transactions that get their own budget category for better tracking
         </span>
       </div>
@@ -311,8 +303,7 @@ function SectionHeader({ enabledCount, disabledCount, hideDisabled, onToggleHide
           <Tooltip content={hideDisabled ? `Show ${disabledCount} untracked` : `Hide ${disabledCount} untracked`}>
             <button
               onClick={onToggleHide}
-              className="p-1.5 rounded-md transition-colors hover:bg-(--monarch-bg-elevated)"
-              style={{ color: 'var(--monarch-text-muted)' }}
+              className="p-1.5 rounded-md transition-colors text-monarch-text-muted hover:bg-monarch-bg-elevated"
             >
               {hideDisabled ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>

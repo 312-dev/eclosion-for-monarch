@@ -52,15 +52,9 @@ export function WizardNavigation({
         <button
           onClick={onNext}
           disabled={!canProceed || isSaving}
-          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift"
+          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
           style={{
             backgroundColor: !canProceed || isSaving ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
-          }}
-          onMouseEnter={(e) => {
-            if (canProceed && !isSaving) e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)';
-          }}
-          onMouseLeave={(e) => {
-            if (canProceed && !isSaving) e.currentTarget.style.backgroundColor = 'var(--monarch-orange)';
           }}
         >
           {isSaving ? 'Setting up...' : isLastStep ? 'Get Started' : 'Continue'}

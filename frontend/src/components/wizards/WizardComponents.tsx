@@ -300,24 +300,12 @@ export function ItemCard({
 
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all"
+      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover-item-card-unchecked ${checked ? 'item-card-checked' : ''}`}
       style={{
         backgroundColor: checked ? 'rgba(255, 105, 45, 0.08)' : 'var(--monarch-bg-card)',
         border: checked ? '1px solid var(--monarch-orange)' : '1px solid var(--monarch-border)',
       }}
       onClick={onChange}
-      onMouseEnter={(e) => {
-        if (!checked) {
-          e.currentTarget.style.borderColor = 'var(--monarch-orange)';
-          e.currentTarget.style.backgroundColor = 'rgba(255, 105, 45, 0.04)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!checked) {
-          e.currentTarget.style.borderColor = 'var(--monarch-border)';
-          e.currentTarget.style.backgroundColor = 'var(--monarch-bg-card)';
-        }
-      }}
     >
       <div
         className="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
@@ -371,16 +359,7 @@ export function ItemCard({
               e.stopPropagation();
               onLinkClick();
             }}
-            className="p-1.5 rounded transition-colors"
-            style={{ color: 'var(--monarch-text-muted)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--monarch-orange)';
-              e.currentTarget.style.backgroundColor = 'rgba(255, 105, 45, 0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--monarch-text-muted)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            className="p-1.5 rounded transition-colors hover-link-icon"
             title="Link to existing category"
             data-tour="link-icon"
           >
@@ -549,15 +528,9 @@ export function WizardNavigation({
         <button
           onClick={onNext}
           disabled={!canProceed || isSaving}
-          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift"
+          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
           style={{
             backgroundColor: !canProceed || isSaving ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
-          }}
-          onMouseEnter={(e) => {
-            if (canProceed && !isSaving) e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)';
-          }}
-          onMouseLeave={(e) => {
-            if (canProceed && !isSaving) e.currentTarget.style.backgroundColor = 'var(--monarch-orange)';
           }}
         >
           {isSaving ? 'Setting up...' : nextLabel || (isLastStep ? 'Get Started' : 'Continue')}

@@ -36,6 +36,8 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
 
   return (
     <div
+      role="alert"
+      aria-live="polite"
       className="flex items-start gap-3 p-3 rounded-lg mb-2"
       style={{
         backgroundColor: 'var(--monarch-warning-bg)',
@@ -44,12 +46,13 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
     >
       {/* Warning icon */}
       <svg
-        className="w-5 h-5 flex-shrink-0 mt-0.5"
+        className="w-5 h-5 shrink-0 mt-0.5"
         style={{ color: 'var(--monarch-warning)' }}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
         strokeWidth={2}
+        aria-hidden="true"
       >
         <path
           strokeLinecap="round"
@@ -67,11 +70,12 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
 
       {/* Dismiss button */}
       <button
+        type="button"
         onClick={handleDismiss}
         disabled={isDismissing}
-        className="flex-shrink-0 p-1 rounded hover:bg-black/10 transition-colors disabled:opacity-50"
-        aria-label="Dismiss notice"
-        title="Dismiss"
+        className="shrink-0 p-1 rounded hover:bg-black/10 transition-colors disabled:opacity-50"
+        aria-label={isDismissing ? 'Dismissing notice' : 'Dismiss notice'}
+        aria-busy={isDismissing}
       >
         {isDismissing ? (
           <svg
@@ -79,6 +83,7 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
             style={{ color: 'var(--monarch-text-muted)' }}
             fill="none"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <circle
               className="opacity-25"
@@ -102,6 +107,7 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={2}
+            aria-hidden="true"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>

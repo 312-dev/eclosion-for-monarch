@@ -1,5 +1,6 @@
 import { useChangelogQuery, useDeploymentInfoQuery } from '../api/queries';
 import type { ChangelogEntry, ChangelogSection } from '../types';
+import { InfoIcon } from './icons';
 
 export interface ChangelogDisplayProps {
   version: string | undefined; // Show specific version, or all if undefined
@@ -55,11 +56,7 @@ function UpdateInstructions({ isRailway }: { isRailway: boolean }) {
         className="font-medium mb-2 flex items-center gap-2"
         style={{ color: 'var(--monarch-text)' }}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
+        <InfoIcon size={20} />
         How to Update
       </h4>
 

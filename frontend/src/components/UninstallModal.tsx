@@ -4,6 +4,7 @@ import { getDeletableCategories, deleteAllCategories, cancelSubscription, getDep
 import type { CancelSubscriptionResult, DeploymentInfo } from '../api/client';
 import { getErrorMessage } from '../utils';
 import { WarningIcon, XIcon, CheckSimpleIcon, SpinnerIcon, TrashIcon } from './icons';
+import { UI } from '../constants';
 
 interface UninstallModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
         setToast({ message: `${result.deleted_count} categories deleted`, type: 'success' });
         setTimeout(() => {
           window.location.reload();
-        }, 1500);
+        }, UI.DELAY.TOAST_BEFORE_RELOAD);
       } else if (result.deleted_count > 0) {
         setToast({
           message: `${result.deleted_count} deleted, ${result.failed_count} failed`,
@@ -83,7 +84,7 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
         });
         setTimeout(() => {
           window.location.reload();
-        }, 2000);
+        }, UI.DELAY.TOAST_WITH_PARTIAL_SUCCESS);
       } else {
         throw new Error(`Failed to delete categories: ${result.failed.map(f => f.error).join(', ')}`);
       }

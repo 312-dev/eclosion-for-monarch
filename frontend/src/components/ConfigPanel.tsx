@@ -68,32 +68,10 @@ export function ConfigPanel({ config, onUpdate }: ConfigPanelProps) {
       <button
         ref={dropdown.triggerRef}
         onClick={dropdown.toggle}
-        className="p-2 rounded-lg transition-colors"
-        style={{ color: 'var(--monarch-text-muted)' }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--monarch-text-dark)'; e.currentTarget.style.backgroundColor = 'var(--monarch-bg-page)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--monarch-text-muted)'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+        className="p-2 rounded-lg hover-settings-icon"
         title="Settings"
       >
-        <svg
-          className="h-5 w-5"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-        </svg>
+        <SettingsIcon size={20} />
       </button>
 
       {dropdown.isOpen && (
@@ -142,22 +120,18 @@ export function ConfigPanel({ config, onUpdate }: ConfigPanelProps) {
               <button
                 onClick={fetchGroups}
                 disabled={loading}
-                className="px-3 py-1.5 text-sm rounded disabled:opacity-50 transition-colors"
-                style={{ border: '1px solid var(--monarch-border)', color: 'var(--monarch-text-dark)', backgroundColor: 'var(--monarch-bg-card)' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--monarch-bg-page)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--monarch-bg-card)'}
+                className="px-3 py-1.5 text-sm rounded disabled:opacity-50 hover-bg-card-to-page"
+                style={{ border: '1px solid var(--monarch-border)', color: 'var(--monarch-text-dark)' }}
               >
                 Refresh
               </button>
               <button
                 onClick={handleSave}
                 disabled={isDisabled}
-                className="flex-1 px-3 py-1.5 text-sm text-white rounded transition-colors disabled:cursor-not-allowed"
+                className="flex-1 px-3 py-1.5 text-sm text-white rounded transition-colors disabled:cursor-not-allowed hover-bg-orange-enabled"
                 style={{
                   backgroundColor: isDisabled ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
                 }}
-                onMouseEnter={(e) => { if (!isDisabled) e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)'; }}
-                onMouseLeave={(e) => { if (!isDisabled) e.currentTarget.style.backgroundColor = 'var(--monarch-orange)'; }}
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>

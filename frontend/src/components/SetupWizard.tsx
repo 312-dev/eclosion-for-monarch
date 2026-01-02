@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TourProvider } from '@reactour/tour';
 import type { CategoryGroup, RecurringItem, UnmappedCategory } from '../types';
+import { getErrorMessage, handleApiError } from '../utils/errors';
 import {
   getCategoryGroups,
   setConfig,
@@ -31,6 +32,7 @@ import {
   RollupConfigStep,
   FinishStep,
 } from './wizards/steps';
+import { UI } from '../constants';
 
 interface SetupWizardProps {
   onComplete: () => void;
@@ -111,7 +113,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       setGroups(data);
       setGroupsFetched(true);
     } catch (err) {
-      setGroupError(err instanceof Error ? err.message : 'Failed to load groups');
+      setGroupError(getErrorMessage(err));
     } finally {
       setLoadingGroups(false);
     }
@@ -127,7 +129,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       setItems(availableItems);
       setItemsFetched(true);
     } catch (err) {
-      setItemsError(err instanceof Error ? err.message : 'Failed to load items');
+      setItemsError(getErrorMessage(err));
     } finally {
       setLoadingItems(false);
     }
@@ -140,7 +142,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       const categories = await getUnmappedCategories();
       setRollupCategories(categories);
     } catch (err) {
-      console.error('Failed to fetch rollup categories:', err);
+      handleApiError(err, 'Failed to fetch rollup categories');
     } finally {
       setLoadingRollupCategories(false);
     }
@@ -198,11 +200,12 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       } else {
         next.add(id);
 
+        // Show link tour after a brief delay to let the UI settle
         if (wasEmpty && !linkTourShown) {
           setTimeout(() => {
             setShowLinkTour(true);
             setLinkTourShown(true);
-          }, 300);
+          }, UI.ANIMATION.NORMAL);
         }
 
         if (item && item.amount < 60 && !rollupTipShown) {
@@ -252,7 +255,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       setItems(availableItems);
       setItemsFetched(true);
     } catch (err) {
-      setItemsError(err instanceof Error ? err.message : 'Failed to refresh items');
+      setItemsError(getErrorMessage(err));
     } finally {
       setLoadingItems(false);
     }
@@ -327,7 +330,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       await Promise.all(enablePromises);
       onComplete();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save configuration');
+      setSaveError(getErrorMessage(err));
       setSaving(false);
     }
   };
@@ -479,10 +482,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           {currentStep === 2 && selectedItemIds.size > 0 && (
             <button
               onClick={() => setShowLinkTour(true)}
-              className="p-2 rounded-full transition-colors"
-              style={{ color: 'var(--monarch-text-muted)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--monarch-text-dark)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--monarch-text-muted)'; }}
+              className="p-2 rounded-full transition-colors hover-text-muted-to-dark"
               title="Show tutorial"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -497,10 +497,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             href="https://github.com/graysonhead/eclosion"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-full transition-colors"
-            style={{ color: 'var(--monarch-text-muted)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--monarch-text-dark)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--monarch-text-muted)'; }}
+            className="p-2 rounded-full transition-colors hover-text-muted-to-dark"
             title="View source on GitHub"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -552,13 +549,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                 </p>
                 <button
                   onClick={() => setShowRollupTip(false)}
-                  className="w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+                  className="w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors hover-bg-orange-to-orange-hover"
                   style={{
-                    backgroundColor: 'var(--monarch-orange)',
                     color: 'white',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-orange)'; }}
                 >
                   Got it
                 </button>

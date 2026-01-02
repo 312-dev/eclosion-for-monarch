@@ -21,12 +21,11 @@ export function SortButton({ field, label, currentField, direction, onClick, ali
   return (
     <button
       onClick={() => onClick(field)}
-      className={`flex items-center gap-1 text-sm font-medium ${alignClass} w-full`}
-      style={{ color: isActive ? 'var(--monarch-text-dark)' : 'var(--monarch-text-light)' }}
+      className={`flex items-center gap-1 text-sm font-medium ${alignClass} w-full ${isActive ? 'text-monarch-text-dark' : 'text-monarch-text-light'}`}
     >
       {label}
       {isActive && (
-        <span className="text-xs" style={{ color: 'var(--monarch-text-light)' }}>{direction === 'asc' ? '↑' : '↓'}</span>
+        <span className="text-xs text-monarch-text-light">{direction === 'asc' ? '↑' : '↓'}</span>
       )}
     </button>
   );
@@ -41,8 +40,8 @@ interface RecurringListHeaderProps {
 export function RecurringListHeader({ sortField, sortDirection, onSort }: RecurringListHeaderProps) {
   return (
     <thead>
-      <tr style={{ backgroundColor: 'var(--monarch-bg-page)', borderBottom: '1px solid var(--monarch-border)' }}>
-        <th className="py-3 pl-5 pr-2 text-left" style={{ width: '280px', maxWidth: '280px' }}>
+      <tr className="bg-monarch-bg-page border-b border-monarch-border">
+        <th className="py-3 pl-5 pr-2 text-left w-70 max-w-70">
           <SortButton
             field="name"
             label="Recurring"
@@ -51,7 +50,7 @@ export function RecurringListHeader({ sortField, sortDirection, onSort }: Recurr
             onClick={onSort}
           />
         </th>
-        <th className="py-3 px-4 text-left" style={{ width: '100px' }}>
+        <th className="py-3 px-4 text-left w-25">
           <SortButton
             field="due_date"
             label="Date"
@@ -80,7 +79,7 @@ export function RecurringListHeader({ sortField, sortDirection, onSort }: Recurr
             align="right"
           />
         </th>
-        <th className="py-3 px-5 text-center text-sm font-medium w-24" style={{ color: 'var(--monarch-text-light)' }}>
+        <th className="py-3 px-5 text-center text-sm font-medium w-24 text-monarch-text-light">
           Status
         </th>
         <th className="py-3 px-3 w-12"></th>

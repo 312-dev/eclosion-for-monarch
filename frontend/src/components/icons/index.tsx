@@ -661,6 +661,107 @@ export function GitHubIcon(props: IconProps) {
   );
 }
 
+/** Reddit icon */
+export function RedditIcon(props: IconProps) {
+  const { size = 24, color = 'currentColor', ...rest } = props;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={color}
+      {...rest}
+    >
+      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" />
+    </svg>
+  );
+}
+
+/** Folder icon */
+export function FolderIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+/** Bookmark icon */
+export function BookmarkIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+/** Circle icon (empty) */
+export function CircleIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+    </svg>
+  );
+}
+
+/** Sad face icon */
+export function SadFaceIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+/** Hourglass/clock icon */
+export function HourglassIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+/** Rotate/recreate icon */
+export function RotateIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+    </svg>
+  );
+}
+
+/** Shield check icon */
+export function ShieldCheckIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
+/** Gift/present icon */
+export function GiftIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 12 20 22 4 22 4 12" />
+      <rect x="2" y="7" width="20" height="5" />
+      <line x1="12" y1="22" x2="12" y2="7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+    </svg>
+  );
+}
+
 /** Monarch butterfly icon (app logo) */
 export function MonarchIcon(props: IconProps) {
   const { size = 24, color = 'currentColor', ...rest } = props;
@@ -758,6 +859,15 @@ export const Icons = {
   EyeOff: EyeOffIcon,
   Download: DownloadIcon,
   GitHub: GitHubIcon,
+  Reddit: RedditIcon,
+  Folder: FolderIcon,
+  Bookmark: BookmarkIcon,
+  Circle: CircleIcon,
+  SadFace: SadFaceIcon,
+  Hourglass: HourglassIcon,
+  Rotate: RotateIcon,
+  ShieldCheck: ShieldCheckIcon,
+  Gift: GiftIcon,
   Monarch: MonarchIcon,
 } as const;
 

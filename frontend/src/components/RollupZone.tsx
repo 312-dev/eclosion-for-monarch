@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { memo, useState, useRef, useEffect, useCallback, useMemo, Fragment, type KeyboardEvent } from 'react';
 import type { RollupData, RollupItem } from '../types';
 import { EmojiPicker } from './EmojiPicker';
 import { Tooltip } from './Tooltip';
@@ -10,6 +10,7 @@ import {
 } from '../utils';
 import { MerchantIcon, StatusBadge, LoadingSpinner } from './ui';
 import { TrendUpIcon, TrendDownIcon, XIcon, ExternalLinkIcon, ChevronRightIcon, PlusIcon } from './icons';
+import { UI } from '../constants';
 
 interface RollupZoneProps {
   readonly rollup: RollupData;
@@ -102,10 +103,7 @@ const RollupItemRow = React.memo(function RollupItemRow({
         <button
           onClick={handleRemove}
           disabled={isRemoving}
-          className={`p-1 rounded transition-all disabled:opacity-50 ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-          style={{ backgroundColor: 'transparent' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-bg-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          className={`p-1 rounded transition-all disabled:opacity-50 hover-bg-transparent-to-hover ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
           title="Remove from rollup"
         >
           {isRemoving ? (
@@ -138,7 +136,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
   const inputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Flip animation: toggle between category name and "Rollover Category" every 10 seconds
+  // Flip animation: toggle between category name and "Rollover Category"
   // Pause when hovering or editing
   useEffect(() => {
     if (isHoveringName || isEditingName) {
@@ -146,7 +144,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
     }
     const interval = setInterval(() => {
       setShowAlternateName(prev => !prev);
-    }, 10000);
+    }, UI.INTERVAL.FLIP_ANIMATION);
     return () => clearInterval(interval);
   }, [isHoveringName, isEditingName]);
 
