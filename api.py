@@ -1200,10 +1200,18 @@ def _parse_semver(v: str) -> tuple:
 
 @app.route("/version", methods=["GET"])
 def get_version():
-    """Get current app version and build info."""
+    """Get current app version, channel, and build info."""
+    version = _get_app_version()
+    channel = config.RELEASE_CHANNEL
+    is_beta = "-beta" in version or "-rc" in version or "-alpha" in version or channel == "beta"
+
     return jsonify({
-        "version": _get_app_version(),
-        "build_time": os.environ.get("BUILD_TIME"),
+        "version": version,
+        "channel": channel,
+        "is_beta": is_beta,
+        "schema_version": config.SCHEMA_VERSION,
+        "build_time": config.BUILD_TIME,
+        "git_sha": config.GIT_SHA,
     })
 
 
@@ -1277,6 +1285,307 @@ def mark_changelog_read():
         "success": True,
         "marked_version": current_version,
     })
+
+
+# ---- RELEASES & UPDATES ----
+
+
+@app.route("/version/releases", methods=["GET"])
+def get_available_releases():
+    """
+    Fetch available releases from GitHub to show update options.
+
+    Returns list of recent stable and beta releases.
+    """
+    import urllib.request
+    import urllib.error
+
+    current_version = _get_app_version()
+    releases_url = f"https://api.github.com/repos/{config.GITHUB_REPO}/releases"
+
+    try:
+        req = urllib.request.Request(
+            releases_url,
+            headers={
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Eclosion"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            releases_data = json.loads(response.read().decode())
+
+        stable_releases = []
+        beta_releases = []
+
+        for release in releases_data[:20]:  # Check last 20 releases
+            tag = release.get("tag_name", "")
+            # Remove 'v' prefix if present
+            version = tag.lstrip("v")
+
+            release_info = {
+                "version": version,
+                "tag": tag,
+                "name": release.get("name", version),
+                "published_at": release.get("published_at"),
+                "is_prerelease": release.get("prerelease", False),
+                "html_url": release.get("html_url"),
+                "is_current": version == current_version or tag == current_version,
+            }
+
+            if release.get("prerelease") or "-beta" in version or "-rc" in version or "-alpha" in version:
+                beta_releases.append(release_info)
+            else:
+                stable_releases.append(release_info)
+
+        return jsonify({
+            "current_version": current_version,
+            "current_channel": config.RELEASE_CHANNEL,
+            "stable_releases": stable_releases[:5],
+            "beta_releases": beta_releases[:5],
+        })
+
+    except (urllib.error.URLError, json.JSONDecodeError) as e:
+        logger.warning(f"Failed to fetch releases: {e}")
+        return jsonify({
+            "current_version": current_version,
+            "current_channel": config.RELEASE_CHANNEL,
+            "stable_releases": [],
+            "beta_releases": [],
+            "error": "Could not fetch releases from GitHub",
+        })
+
+
+@app.route("/version/update-info", methods=["GET"])
+def get_update_info():
+    """
+    Get deployment-specific update instructions.
+
+    Detects deployment type (Railway vs Docker) and provides
+    appropriate instructions for updating.
+    """
+    is_railway = os.environ.get("RAILWAY_PROJECT_ID") is not None
+    is_container = config.is_container_environment()
+
+    deployment_type = "railway" if is_railway else ("docker" if is_container else "local")
+
+    instructions = {
+        "railway": {
+            "steps": [
+                "Open your Railway project dashboard",
+                "Click on your Eclosion service",
+                "Go to Settings > Source",
+                "Change the Docker image tag to the desired version",
+                "Railway will automatically redeploy",
+            ],
+            "project_url": f"https://railway.app/project/{os.environ.get('RAILWAY_PROJECT_ID', '')}" if is_railway else None,
+        },
+        "docker": {
+            "steps": [
+                "Edit your docker-compose.yml file",
+                "Change the image tag to the desired version (e.g., ghcr.io/graysoncadams/eclosion:1.2.3)",
+                "Run: docker compose pull && docker compose up -d",
+            ],
+            "example_compose": f"image: ghcr.io/{config.GITHUB_REPO}:VERSION",
+        },
+        "local": {
+            "steps": [
+                "Pull the latest changes from the repository",
+                "Rebuild and restart the application",
+            ],
+        },
+    }
+
+    return jsonify({
+        "deployment_type": deployment_type,
+        "current_version": _get_app_version(),
+        "current_channel": config.RELEASE_CHANNEL,
+        "instructions": instructions.get(deployment_type, instructions["docker"]),
+    })
+
+
+# ---- MIGRATION ----
+
+
+@app.route("/migration/status", methods=["GET"])
+def get_migration_status():
+    """
+    Check current state file compatibility.
+
+    Returns compatibility status, whether migration is needed,
+    and any warnings about the current state.
+    """
+    from state.migrations import check_compatibility, BackupManager
+
+    # Load raw state data
+    if not config.STATE_FILE.exists():
+        return jsonify({
+            "compatibility": "compatible",
+            "message": "No state file exists yet",
+            "needs_migration": False,
+            "can_auto_migrate": False,
+            "has_backups": False,
+        })
+
+    with open(config.STATE_FILE) as f:
+        state_data = json.load(f)
+
+    result = check_compatibility(state_data)
+    backup_manager = BackupManager()
+    backups = backup_manager.list_backups()
+
+    return jsonify({
+        "compatibility": result.level.value,
+        "current_schema_version": result.current_schema,
+        "file_schema_version": result.file_schema,
+        "current_channel": result.current_channel,
+        "file_channel": result.file_channel,
+        "message": result.message,
+        "needs_migration": result.level.value != "compatible",
+        "can_auto_migrate": result.can_auto_migrate,
+        "requires_backup_first": result.requires_backup_first,
+        "has_beta_data": result.has_beta_data,
+        "has_backups": len(backups) > 0,
+        "latest_backup": backups[0] if backups else None,
+    })
+
+
+@app.route("/migration/execute", methods=["POST"])
+@api_handler.require_auth
+def execute_migration():
+    """
+    Execute migration to target schema version.
+
+    Body: {
+        "target_version": "1.1",  # Optional, defaults to current app schema
+        "target_channel": "stable",  # Optional, defaults to current app channel
+        "confirm_backup": true  # Required
+    }
+    """
+    from state.migrations import MigrationExecutor
+
+    data = request.get_json() or {}
+
+    if not data.get("confirm_backup"):
+        return jsonify({
+            "success": False,
+            "error": "You must confirm backup creation before migration",
+        }), 400
+
+    target_version = data.get("target_version", config.SCHEMA_VERSION)
+    target_channel = data.get("target_channel", config.RELEASE_CHANNEL)
+
+    executor = MigrationExecutor()
+
+    # Check safety first
+    is_safe, warnings = executor.check_migration_safety(target_version, target_channel)
+    if not is_safe and not data.get("force"):
+        return jsonify({
+            "success": False,
+            "error": "Migration has warnings. Set 'force': true to proceed.",
+            "warnings": warnings,
+        }), 400
+
+    success, message, backup_path = executor.execute_migration(
+        target_version=target_version,
+        target_channel=target_channel,
+        create_backup=True,
+    )
+
+    return jsonify({
+        "success": success,
+        "message": message,
+        "backup_path": str(backup_path) if backup_path else None,
+        "warnings": warnings if not is_safe else [],
+    })
+
+
+@app.route("/migration/backups", methods=["GET"])
+def list_backups():
+    """List available state backups."""
+    from state.migrations import BackupManager
+
+    backup_manager = BackupManager()
+    backups = backup_manager.list_backups()
+
+    return jsonify({
+        "backups": backups,
+        "max_backups": config.MAX_BACKUPS,
+    })
+
+
+@app.route("/migration/backups", methods=["POST"])
+@api_handler.require_auth
+def create_backup():
+    """
+    Create a manual backup of the current state.
+
+    Body: {
+        "reason": "manual"  # Optional, default: "manual"
+    }
+    """
+    from state.migrations import BackupManager
+
+    data = request.get_json() or {}
+    reason = data.get("reason", "manual")
+
+    backup_manager = BackupManager()
+    backup_path = backup_manager.create_backup(reason=reason)
+
+    if backup_path:
+        return jsonify({
+            "success": True,
+            "backup_path": str(backup_path),
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "error": "No state file to backup",
+        }), 400
+
+
+@app.route("/migration/restore", methods=["POST"])
+@api_handler.require_auth
+def restore_backup():
+    """
+    Restore state from a backup.
+
+    Body: {
+        "backup_path": "/path/to/backup.json",
+        "create_backup_first": true  # Optional, default: true
+    }
+    """
+    from state.migrations import BackupManager
+
+    data = request.get_json() or {}
+    backup_path = data.get("backup_path")
+
+    if not backup_path:
+        return jsonify({
+            "success": False,
+            "error": "backup_path is required",
+        }), 400
+
+    backup_manager = BackupManager()
+
+    try:
+        backup_manager.restore_backup(
+            backup_path=Path(backup_path),
+            create_backup_first=data.get("create_backup_first", True),
+        )
+        return jsonify({
+            "success": True,
+            "message": f"Restored from {backup_path}",
+        })
+    except FileNotFoundError as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 404
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Restore failed: {str(e)}",
+        }), 500
 
 
 # ---- FRONTEND SERVING ----
