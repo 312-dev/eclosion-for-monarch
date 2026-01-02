@@ -62,10 +62,7 @@ export function ErrorPage({
         {onRetry && (
           <button
             onClick={onRetry}
-            className="px-6 py-2 text-white rounded-lg transition-colors btn-hover-lift"
-            style={{ backgroundColor: 'var(--monarch-orange)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-orange)'; }}
+            className="px-6 py-2 text-white rounded-lg btn-hover-lift hover-bg-orange-to-orange-hover"
           >
             {retryLabel}
           </button>
@@ -162,10 +159,7 @@ export function RateLimitPage({ retryAfter, onRetry }: RateLimitPageProps) {
         {onRetry && (
           <button
             onClick={onRetry}
-            className="px-6 py-2 text-white rounded-lg transition-colors btn-hover-lift"
-            style={{ backgroundColor: 'var(--monarch-orange)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-orange)'; }}
+            className="px-6 py-2 text-white rounded-lg btn-hover-lift hover-bg-orange-to-orange-hover"
           >
             Try Again
           </button>

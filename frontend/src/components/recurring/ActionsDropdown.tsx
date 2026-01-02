@@ -75,7 +75,7 @@ export function ActionsDropdown({
       {dropdown.isOpen && (
         <div
           ref={dropdown.dropdownRef}
-          className="fixed z-[100] py-1 rounded-lg shadow-lg text-sm min-w-[180px] dropdown-menu"
+          className="fixed z-dropdown py-1 rounded-lg shadow-lg text-sm min-w-[180px] dropdown-menu"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
             border: '1px solid var(--monarch-border)',

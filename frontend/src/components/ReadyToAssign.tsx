@@ -5,6 +5,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveCo
 import { formatCurrency } from '../utils';
 import { Tooltip } from './ui/Tooltip';
 import { useDropdown } from '../hooks';
+import { Z_INDEX } from '../constants';
 
 export interface BurndownPoint {
   month: string;
@@ -187,7 +188,7 @@ function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTo
         position: position ? 'fixed' : 'relative',
         top: position?.top,
         left: position?.left,
-        zIndex: 9999,
+        zIndex: Z_INDEX.TOOLTIP,
         pointerEvents: 'none',
       }}
     >
@@ -311,7 +312,7 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
               content={<CustomTooltip formatCurrency={formatCurrency} />}
               cursor={{ stroke: colors.border, strokeDasharray: '3 3' }}
               allowEscapeViewBox={{ x: true, y: true }}
-              wrapperStyle={{ zIndex: 1000, pointerEvents: 'none' }}
+              wrapperStyle={{ zIndex: Z_INDEX.TOOLTIP, pointerEvents: 'none' }}
             />
             <Area
               type="monotone"

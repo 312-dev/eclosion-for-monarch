@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useId } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { getErrorMessage } from '../utils';
 
 interface ResetFeatureModalProps {
@@ -28,7 +28,30 @@ export function ResetFeatureModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const titleId = useId();
-  const descriptionId = useId();
+
+  // Focus management and keyboard handling
+  useEffect(() => {
+    if (isOpen) {
+      previousActiveElement.current = document.activeElement as HTMLElement;
+      // Focus the modal
+      modalRef.current?.focus();
+    } else if (previousActiveElement.current) {
+      previousActiveElement.current.focus();
+      previousActiveElement.current = null;
+    }
+  }, [isOpen]);
+
+  // Handle Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !resetting) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, resetting, onClose]);
 
   const handleReset = async () => {
     if (!confirmed) return;
@@ -58,15 +81,21 @@ export function ResetFeatureModal({
   const hasAnythingToReset = hasCategoriesToDelete || hasItemsToDisable;
 
   return (
-    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
+    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center" role="presentation">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 modal-backdrop"
         onClick={handleClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className="relative w-full max-w-md mx-4 rounded-xl shadow-xl modal-content"
         style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
       >
@@ -74,20 +103,22 @@ export function ResetFeatureModal({
         <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--monarch-orange)' }}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--monarch-orange)' }} aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
+              <h2 id={titleId} className="text-lg font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
                 Reset {featureName}
               </h2>
             </div>
             {!resetting && (
               <button
+                type="button"
                 onClick={handleClose}
                 className="p-1 rounded hover:bg-gray-100 transition-colors"
                 style={{ color: 'var(--monarch-text-muted)' }}
+                aria-label="Close modal"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>

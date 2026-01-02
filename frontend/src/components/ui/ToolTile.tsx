@@ -19,18 +19,10 @@ export function ToolTile({ name, description, icon, onClick }: ToolTileProps) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left p-5 rounded-xl transition-all duration-150 group"
+      className="w-full text-left p-5 rounded-xl group hover-tool-tile"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--monarch-orange)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 105, 45, 0.1)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--monarch-border)';
-        e.currentTarget.style.boxShadow = 'none';
       }}
     >
       <div className="flex items-start gap-4">

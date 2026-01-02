@@ -52,14 +52,7 @@ export function FinishStep({ canInstall, isInstalled, isIOS, onInstall }: Finish
                 {canInstall ? (
                   <button
                     onClick={onInstall}
-                    className="px-4 py-2 text-white rounded-lg transition-colors text-sm font-medium"
-                    style={{ backgroundColor: 'var(--monarch-orange)' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--monarch-orange)';
-                    }}
+                    className="px-4 py-2 text-white rounded-lg text-sm font-medium hover-bg-orange-to-orange-hover"
                   >
                     Install App
                   </button>

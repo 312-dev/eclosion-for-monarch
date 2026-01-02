@@ -71,7 +71,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
       </Tooltip>
       {isOpen && (
         <div
-          className="absolute left-0 top-6 z-50 py-1 rounded-lg shadow-lg text-sm max-h-64 overflow-y-auto dropdown-menu"
+          className="absolute left-0 top-6 z-dropdown py-1 rounded-lg shadow-lg text-sm max-h-64 overflow-y-auto dropdown-menu"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
             border: '1px solid var(--monarch-border)',

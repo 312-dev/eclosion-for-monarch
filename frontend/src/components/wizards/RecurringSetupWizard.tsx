@@ -34,7 +34,6 @@ import {
   formatCurrency,
   wizardTourStyles,
   TourController,
-  FREQUENCY_ORDER,
 } from './WizardComponents';
 import { UI } from '../../constants';
 
@@ -221,11 +220,17 @@ function ItemSelectionStep({
 
   // Sort each group by amount descending
   Object.keys(groupedItems).forEach(freq => {
-    groupedItems[freq].sort((a, b) => b.amount - a.amount);
+    const group = groupedItems[freq];
+    if (group) {
+      group.sort((a, b) => b.amount - a.amount);
+    }
   });
 
   // Sort groups by frequency order
-  const sortedFrequencies = FREQUENCY_ORDER.filter(f => groupedItems[f]?.length > 0);
+  const sortedFrequencies = Object.keys(groupedItems).filter((f: string) => {
+    const group = groupedItems[f];
+    return group && group.length > 0;
+  });
 
   // Calculate totals
   const totalMonthly = items.reduce((sum, i) => sum + i.monthly_contribution, 0);
@@ -407,11 +412,11 @@ function ItemSelectionStep({
         className="max-h-64 overflow-y-auto pr-1"
         style={{ scrollbarWidth: 'thin' }}
       >
-        {sortedFrequencies.map(frequency => (
+        {sortedFrequencies.map((frequency: string) => (
           <FrequencyGroup
             key={frequency}
             frequency={frequency}
-            items={groupedItems[frequency]}
+            items={groupedItems[frequency] ?? []}
             selectedIds={selectedIds}
             pendingLinks={pendingLinks}
             onToggleItem={onToggleItem}

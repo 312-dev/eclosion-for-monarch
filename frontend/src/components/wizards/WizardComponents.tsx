@@ -278,13 +278,13 @@ export function MerchantLogo({ item, size = 40 }: { item: RecurringItem; size?: 
   );
 }
 
-interface ItemCardProps {
+export interface ItemCardProps {
   item: RecurringItem;
   checked: boolean;
   onChange: () => void;
-  onLinkClick?: () => void;
-  onUnlink?: () => void;
-  pendingLink?: PendingLink;
+  onLinkClick: (() => void) | undefined;
+  onUnlink: (() => void) | undefined;
+  pendingLink: PendingLink | undefined;
 }
 
 export function ItemCard({
@@ -506,7 +506,7 @@ export function FrequencyGroup({
   );
 }
 
-interface WizardNavigationProps {
+export interface WizardNavigationProps {
   onBack: () => void;
   onNext: () => void;
   onSkip?: () => void;
@@ -514,7 +514,7 @@ interface WizardNavigationProps {
   canProceed: boolean;
   isLastStep: boolean;
   isSaving: boolean;
-  nextLabel?: string;
+  nextLabel: string | undefined;
   showSkip?: boolean;
 }
 

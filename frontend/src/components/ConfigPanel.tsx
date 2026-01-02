@@ -5,6 +5,7 @@ import { Portal } from './Portal';
 import { SearchableSelect } from './SearchableSelect';
 import { useDropdown } from '../hooks';
 import { handleApiError } from '../utils';
+import { SettingsIcon } from './icons';
 
 interface ConfigPanelProps {
   config: DashboardConfig;

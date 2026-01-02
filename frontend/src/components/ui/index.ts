@@ -25,3 +25,6 @@ export { CurrencyInput, type CurrencyInputProps } from './CurrencyInput';
 
 // Display components
 export { MerchantIcon, type MerchantIconProps } from './MerchantIcon';
+
+// Re-export icons from the centralized icons module for convenience
+export * from '../icons';

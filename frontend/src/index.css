@@ -1414,3 +1414,14 @@ input[type="radio"] {
   color: var(--monarch-orange);
   background-color: rgba(255, 105, 45, 0.1);
 }
+
+/* Tool tile hover - border and shadow effects */
+.hover-tool-tile {
+  border-color: var(--monarch-border);
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.hover-tool-tile:hover {
+  border-color: var(--monarch-orange);
+  box-shadow: 0 4px 12px rgba(255, 105, 45, 0.1);
+}

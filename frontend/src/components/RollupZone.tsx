@@ -310,19 +310,11 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
               className="p-0.5 rounded hover:bg-black/5 transition-colors"
               title={isCollapsed ? 'Expand' : 'Collapse'}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--monarch-text-muted)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <ChevronRightIcon
+                size={16}
+                color="var(--monarch-text-muted)"
                 className={`collapse-arrow ${isCollapsed ? '' : 'expanded'}`}
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              />
             </button>
             <span onClick={(e) => e.stopPropagation()}>
               <EmojiPicker
@@ -404,11 +396,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                       style={{ color: 'var(--monarch-text-light)' }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                        <polyline points="15 3 21 3 21 9" />
-                        <line x1="10" y1="14" x2="21" y2="3" />
-                      </svg>
+                      <ExternalLinkIcon size={12} />
                     </a>
                   </Tooltip>
                 )}
@@ -430,20 +418,14 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
               {anyCatchingUp && (
                 <Tooltip content={`Catching up: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
                   <span className="cursor-help" style={{ color: 'var(--monarch-error)' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="2 7 10.5 15.5 15.5 10.5 22 17"></polyline>
-                      <polyline points="8 7 2 7 2 13"></polyline>
-                    </svg>
+                    <TrendUpIcon size={12} strokeWidth={2.5} />
                   </span>
                 </Tooltip>
               )}
               {!anyCatchingUp && anyAhead && (
                 <Tooltip content={`Ahead: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
                   <span className="cursor-help" style={{ color: 'var(--monarch-success)' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline>
-                      <polyline points="16 17 22 17 22 11"></polyline>
-                    </svg>
+                    <TrendDownIcon size={12} strokeWidth={2.5} />
                   </span>
                 </Tooltip>
               )}
@@ -551,9 +533,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             </table>
           ) : (
             <div className="py-8 text-center" style={{ color: 'var(--monarch-text-muted)' }}>
-              <svg className="mx-auto mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
+              <PlusIcon size={32} strokeWidth={1.5} className="mx-auto mb-2" />
               <p className="text-sm">Use the "Add to rollup" action on recurring items to add them here</p>
             </div>
           )}
