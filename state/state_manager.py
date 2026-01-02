@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from datetime import datetime, date
 from dataclasses import dataclass, field, asdict
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 import os
 import uuid
 import tempfile
@@ -119,9 +119,27 @@ class AutoSyncState:
 
 
 @dataclass
+class MigrationMetadata:
+    """Tracks migration history for debugging and rollback."""
+    last_migrated_at: Optional[str] = None
+    migration_path: List[str] = field(default_factory=list)
+    source_channel: Optional[str] = None  # Channel before last migration
+    has_beta_data: bool = False  # Flag if state contains beta-only fields
+
+
+@dataclass
 class TrackerState:
     """Full tracker state."""
+    # Schema versioning (separate from app version)
+    schema_version: str = "1.0"  # Data structure version
+    schema_channel: str = "stable"  # Channel this data was created in
+    _migration_metadata: MigrationMetadata = field(default_factory=MigrationMetadata)
+    _unknown_fields: Dict[str, Any] = field(default_factory=dict)  # Preserve unknown fields from newer versions
+
+    # Legacy app version (kept for backward compatibility)
     version: str = "1.0.0"
+
+    # Configuration
     target_group_id: Optional[str] = None
     target_group_name: Optional[str] = None
     last_sync: Optional[str] = None
@@ -176,8 +194,14 @@ class StateManager:
 
     def _serialize(self, state: TrackerState) -> dict:
         """Convert TrackerState to JSON-serializable dict."""
-        return {
+        data = {
+            # Schema versioning
+            "schema_version": state.schema_version,
+            "schema_channel": state.schema_channel,
+            "_migration_metadata": self._serialize_migration_metadata(state._migration_metadata),
+            # Legacy version
             "version": state.version,
+            # Configuration
             "target_group_id": state.target_group_id,
             "target_group_name": state.target_group_name,
             "last_sync": state.last_sync,
@@ -196,6 +220,19 @@ class StateManager:
             "last_read_changelog_version": state.last_read_changelog_version,
             "auto_sync": self._serialize_auto_sync(state.auto_sync),
             "user_first_name": state.user_first_name,
+        }
+        # Merge unknown fields back into output (preserves beta data when running stable)
+        if state._unknown_fields:
+            data.update(state._unknown_fields)
+        return data
+
+    def _serialize_migration_metadata(self, metadata: MigrationMetadata) -> dict:
+        """Convert MigrationMetadata to dict."""
+        return {
+            "last_migrated_at": metadata.last_migrated_at,
+            "migration_path": metadata.migration_path,
+            "source_channel": metadata.source_channel,
+            "has_beta_data": metadata.has_beta_data,
         }
 
     def _serialize_notice(self, notice: RemovedItemNotice) -> dict:
@@ -258,8 +295,40 @@ class StateManager:
 
     def _deserialize(self, data: dict) -> TrackerState:
         """Convert JSON dict back to TrackerState."""
+        # Define all known field names at this schema version
+        KNOWN_FIELDS = {
+            "schema_version", "schema_channel", "_migration_metadata",
+            "version", "target_group_id", "target_group_name", "last_sync",
+            "auto_sync_new", "auto_track_threshold", "auto_update_targets",
+            "enabled_items", "categories", "rollup",
+            "removed_item_notices", "last_read_changelog_version",
+            "auto_sync", "user_first_name"
+        }
+
+        # Capture unknown fields (preserves beta data when running stable)
+        unknown_fields = {
+            k: v for k, v in data.items()
+            if k not in KNOWN_FIELDS
+        }
+
+        # Deserialize migration metadata
+        migration_data = data.get("_migration_metadata", {})
+        migration_metadata = MigrationMetadata(
+            last_migrated_at=migration_data.get("last_migrated_at"),
+            migration_path=migration_data.get("migration_path", []),
+            source_channel=migration_data.get("source_channel"),
+            has_beta_data=migration_data.get("has_beta_data", False),
+        )
+
         state = TrackerState(
+            # Schema versioning
+            schema_version=data.get("schema_version", "1.0"),
+            schema_channel=data.get("schema_channel", "stable"),
+            _migration_metadata=migration_metadata,
+            _unknown_fields=unknown_fields,
+            # Legacy version
             version=data.get("version", "1.0.0"),
+            # Configuration
             target_group_id=data.get("target_group_id"),
             target_group_name=data.get("target_group_name"),
             last_sync=data.get("last_sync"),

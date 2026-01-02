@@ -432,7 +432,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Monthly</span>
             <div className="h-8 font-medium flex items-center justify-center gap-1" style={{ color: 'var(--monarch-text-dark)' }}>
               {anyCatchingUp && (
-                <Tooltip content={`Catching up: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo after payments`}>
+                <Tooltip content={`Catching up: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
                   <span className="cursor-help" style={{ color: 'var(--monarch-error)' }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="2 7 10.5 15.5 15.5 10.5 22 17"></polyline>
@@ -442,7 +442,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 </Tooltip>
               )}
               {!anyCatchingUp && anyAhead && (
-                <Tooltip content={`Ahead: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo after payments`}>
+                <Tooltip content={`Ahead: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
                   <span className="cursor-help" style={{ color: 'var(--monarch-success)' }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline>
