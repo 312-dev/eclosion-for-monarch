@@ -18,6 +18,15 @@ import { WarningIcon, LinkedCategoryIcon } from './RecurringListIcons';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
+import {
+  SpinnerIcon,
+  WarningFilledIcon,
+  CheckFilledIcon,
+  BlockedIcon,
+  TrendUpIcon,
+  TrendDownIcon,
+  ArrowUpIcon,
+} from '../icons';
 
 interface RecurringRowProps {
   readonly item: RecurringItem;
@@ -231,24 +240,15 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                 className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50 bg-monarch-bg-card border border-monarch-border shadow-sm"
               >
                 {isToggling ? (
-                  <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-orange)" strokeWidth="2.5">
-                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-                  </svg>
+                  <SpinnerIcon size={12} color="var(--monarch-orange)" strokeWidth={2.5} />
                 ) : item.is_enabled ? (
                   item.category_missing ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--monarch-warning)">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-                    </svg>
+                    <WarningFilledIcon size={12} color="var(--monarch-warning)" />
                   ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--monarch-success)">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                    </svg>
+                    <CheckFilledIcon size={12} color="var(--monarch-success)" />
                   )
                 ) : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-text-muted)" strokeWidth="2.5">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="4" y1="4" x2="20" y2="20" />
-                  </svg>
+                  <BlockedIcon size={12} color="var(--monarch-text-muted)" strokeWidth={2.5} />
                 )}
               </button>
             </Tooltip>
@@ -344,10 +344,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                 : `Higher than usual: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo needed to catch up → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`
             }>
               <span className={item.is_enabled ? 'cursor-pointer hover:opacity-70' : 'cursor-help'} style={{ color: item.is_enabled ? 'var(--monarch-error)' : 'var(--monarch-text-muted)' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="2 7 10.5 15.5 15.5 10.5 22 17"></polyline>
-                  <polyline points="8 7 2 7 2 13"></polyline>
-                </svg>
+                <TrendUpIcon size={12} strokeWidth={2.5} />
               </span>
             </Tooltip>
           )}
@@ -358,10 +355,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                 : `Lower than usual: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo needed → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`
             }>
               <span className={item.is_enabled ? 'cursor-pointer hover:opacity-70' : 'cursor-help'} style={{ color: item.is_enabled ? 'var(--monarch-success)' : 'var(--monarch-text-muted)' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline>
-                  <polyline points="16 17 22 17 22 11"></polyline>
-                </svg>
+                <TrendDownIcon size={12} strokeWidth={2.5} />
               </span>
             </Tooltip>
           )}
@@ -473,13 +467,9 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                 className="w-7 h-7 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 hover:bg-black/10 disabled:opacity-50"
               >
                 {isAddingToRollup ? (
-                  <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-orange)" strokeWidth="2">
-                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-                  </svg>
+                  <SpinnerIcon size={16} color="var(--monarch-orange)" />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-orange)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 19V5M5 12l7-7 7 7" />
-                  </svg>
+                  <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
                 )}
               </button>
             </Tooltip>

@@ -122,12 +122,7 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
 
       {isOpen && (
         <div
-          className="absolute z-(--z-index-dropdown) top-full left-0 mt-1 p-2 rounded-lg shadow-lg border dropdown-menu"
-          style={{
-            backgroundColor: 'var(--monarch-bg-card)',
-            borderColor: 'var(--monarch-border)',
-            minWidth: '200px',
-          }}
+          className="absolute z-(--z-index-dropdown) top-full left-0 mt-1 p-2 rounded-lg shadow-lg border dropdown-menu min-w-50 bg-monarch-bg-card border-monarch-border"
           role="dialog"
           aria-label="Choose an emoji"
           onKeyDown={handleGridKeyDown}
@@ -142,23 +137,14 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
               onKeyDown={handleInputKeyDown}
               placeholder="Type any emoji..."
               aria-label="Type a custom emoji"
-              className="flex-1 px-2 py-1 text-sm rounded border"
-              style={{
-                backgroundColor: 'var(--monarch-bg-page)',
-                borderColor: 'var(--monarch-border)',
-                color: 'var(--monarch-text-dark)',
-              }}
+              className="flex-1 px-2 py-1 text-sm rounded border bg-monarch-bg-page border-monarch-border text-monarch-text-dark"
               autoFocus
             />
             <button
               type="button"
               onClick={handleCustomSubmit}
               disabled={!containsEmoji(customInput)}
-              className="px-2 py-1 text-xs font-medium rounded disabled:opacity-40"
-              style={{
-                backgroundColor: 'var(--monarch-orange)',
-                color: 'white',
-              }}
+              className="px-2 py-1 text-xs font-medium rounded disabled:opacity-40 bg-monarch-orange text-white"
               aria-label="Set custom emoji"
             >
               Set

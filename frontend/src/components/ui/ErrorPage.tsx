@@ -3,6 +3,11 @@
  *
  * Shows a friendly error message when something goes wrong,
  * similar to a 404 page but for various error conditions.
+ *
+ * Accessibility features:
+ * - Semantic HTML with main landmark
+ * - Proper heading hierarchy
+ * - aria-hidden on decorative icons
  */
 
 import { SadFaceIcon, HourglassIcon } from '../icons';
@@ -21,13 +26,15 @@ export function ErrorPage({
   retryLabel = "Try Again"
 }: ErrorPageProps) {
   return (
-    <div
+    <main
       className="min-h-screen flex items-center justify-center p-4"
       style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+      role="main"
+      aria-labelledby="error-title"
     >
       <div className="max-w-md w-full text-center">
         {/* Error illustration */}
-        <div className="mb-6">
+        <div className="mb-6" aria-hidden="true">
           <SadFaceIcon
             size={96}
             color="var(--monarch-text-muted)"
@@ -38,6 +45,7 @@ export function ErrorPage({
 
         {/* Error title */}
         <h1
+          id="error-title"
           className="text-2xl font-bold mb-3"
           style={{ color: 'var(--monarch-text-dark)' }}
         >
@@ -48,6 +56,7 @@ export function ErrorPage({
         <p
           className="mb-6"
           style={{ color: 'var(--monarch-text-muted)' }}
+          role="alert"
         >
           {message}
         </p>
@@ -55,6 +64,7 @@ export function ErrorPage({
         {/* Retry button */}
         {onRetry && (
           <button
+            type="button"
             onClick={onRetry}
             className="px-6 py-2 text-white rounded-lg btn-hover-lift hover-bg-orange-to-orange-hover"
           >
@@ -63,19 +73,20 @@ export function ErrorPage({
         )}
 
         {/* Help text */}
-        <div
+        <aside
           className="mt-8 p-4 rounded-lg text-left"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
             border: '1px solid var(--monarch-border)'
           }}
+          aria-label="Troubleshooting tips"
         >
-          <p
+          <h2
             className="text-sm font-medium mb-2"
             style={{ color: 'var(--monarch-text-dark)' }}
           >
             Things to try:
-          </p>
+          </h2>
           <ul
             className="text-sm space-y-1"
             style={{ color: 'var(--monarch-text-muted)' }}
@@ -85,9 +96,9 @@ export function ErrorPage({
             <li>Wait a moment and try again</li>
             <li>Check your internet connection</li>
           </ul>
-        </div>
+        </aside>
       </div>
-    </div>
+    </main>
   );
 }
 

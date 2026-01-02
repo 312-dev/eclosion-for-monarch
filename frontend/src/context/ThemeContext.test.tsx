@@ -191,9 +191,11 @@ describe('ThemeContext', () => {
       function ThemeToggle() {
         const { theme, setTheme } = useTheme();
         return (
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-            Current: {theme}
-          </button>
+          <>
+            <span data-testid="current-theme">{theme}</span>
+            <button onClick={() => setTheme('dark')}>Set Dark</button>
+            <button onClick={() => setTheme('light')}>Set Light</button>
+          </>
         );
       }
 
@@ -203,14 +205,13 @@ describe('ThemeContext', () => {
         </ThemeProvider>
       );
 
-      const button = screen.getByRole('button');
-      expect(button).toHaveTextContent('Current: system');
+      expect(screen.getByTestId('current-theme')).toHaveTextContent('system');
 
-      fireEvent.click(button);
-      expect(button).toHaveTextContent('Current: light');
+      fireEvent.click(screen.getByRole('button', { name: 'Set Dark' }));
+      expect(screen.getByTestId('current-theme')).toHaveTextContent('dark');
 
-      fireEvent.click(button);
-      expect(button).toHaveTextContent('Current: dark');
+      fireEvent.click(screen.getByRole('button', { name: 'Set Light' }));
+      expect(screen.getByTestId('current-theme')).toHaveTextContent('light');
     });
   });
 });

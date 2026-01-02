@@ -93,29 +93,19 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
   // Mobile horizontal layout
   if (variant === 'mobile') {
     return (
-      <div
-        className="px-4 py-3 flex items-center justify-between gap-3"
-        style={{ backgroundColor: 'var(--monarch-bg-card)', borderBottom: '1px solid var(--monarch-border)' }}
-      >
+      <div className="px-4 py-3 flex items-center justify-between gap-3 bg-monarch-bg-card border-b border-monarch-border">
         {/* Left to Budget */}
         <a
           href="https://app.monarch.com/plan"
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`${formatCurrency(data.ready_to_assign, { maximumFractionDigits: 0 })} left to budget. Opens Monarch budget in new tab`}
-          className="rounded-lg px-3 py-2 flex flex-col items-center shrink-0 hover:opacity-80 transition-opacity"
-          style={{ backgroundColor: isPositive ? 'var(--monarch-success-bg)' : 'var(--monarch-error-bg)' }}
+          className={`rounded-lg px-3 py-2 flex flex-col items-center shrink-0 hover:opacity-80 transition-opacity ${isPositive ? 'bg-monarch-success-bg' : 'bg-monarch-error-bg'}`}
         >
-          <div
-            className="text-lg font-bold"
-            style={{ color: isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)' }}
-          >
+          <div className={`text-lg font-bold ${isPositive ? 'text-monarch-success' : 'text-monarch-error'}`}>
             {formatCurrency(data.ready_to_assign, { maximumFractionDigits: 0 })}
           </div>
-          <div
-            className="text-xs flex items-center gap-0.5"
-            style={{ color: isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)' }}
-          >
+          <div className={`text-xs flex items-center gap-0.5 ${isPositive ? 'text-monarch-success' : 'text-monarch-error'}`}>
             Left to budget
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -127,8 +117,8 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
 
         {/* Current Monthly */}
         <div className="text-center shrink-0">
-          <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Monthly</div>
-          <div className="text-base font-semibold" style={{ color: 'var(--monarch-orange)' }}>
+          <div className="text-xs text-monarch-text-muted">Monthly</div>
+          <div className="text-base font-semibold text-monarch-orange">
             {formatCurrency(currentMonthlyCost, { maximumFractionDigits: 0 })}
           </div>
         </div>
@@ -140,19 +130,13 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
   return (
     <div className="stats-sidebar-content">
       {/* Current Monthly */}
-      <div
-        className="rounded-xl px-4 pt-4 pb-6 text-center"
-        style={{ backgroundColor: 'var(--monarch-orange-light)' }}
-      >
-        <div
-          className="flex items-center justify-center gap-1.5 text-2xl font-bold mb-1"
-          style={{ color: 'var(--monarch-orange)' }}
-        >
+      <div className="rounded-xl px-4 pt-4 pb-6 text-center bg-monarch-orange-light">
+        <div className="flex items-center justify-center gap-1.5 text-2xl font-bold mb-1 text-monarch-orange">
           <span>{formatCurrency(currentMonthlyCost, { maximumFractionDigits: 0 })}</span>
           {untrackedCategories.total > 0 && (
             <Tooltip content={`Excluding ${formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} untracked`}>
-              <span className="cursor-help">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--monarch-warning)' }} aria-hidden="true">
+              <span className="cursor-help text-monarch-warning">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                   <line x1="12" y1="9" x2="12" y2="13"></line>
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -161,10 +145,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             </Tooltip>
           )}
         </div>
-        <div
-          className="flex items-center justify-center gap-1.5 text-sm"
-          style={{ color: 'var(--monarch-text-dark)' }}
-        >
+        <div className="flex items-center justify-center gap-1.5 text-sm text-monarch-text-dark">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -183,18 +164,16 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
               aria-valuemax={100}
               aria-label={`Monthly savings progress: ${formatCurrency(dedicatedCategories.saved + rollup.total_saved, { maximumFractionDigits: 0 })} of ${formatCurrency(currentMonthlyCost, { maximumFractionDigits: 0 })} saved`}
               aria-describedby={progressBarId}
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'rgba(255, 105, 45, 0.2)' }}
+              className="h-2 rounded-full overflow-hidden bg-monarch-orange/20"
             >
               <div
-                className="h-full rounded-full transition-all"
+                className="h-full rounded-full transition-all bg-monarch-orange"
                 style={{
                   width: `${Math.min(100, ((dedicatedCategories.saved + rollup.total_saved) / currentMonthlyCost) * 100)}%`,
-                  backgroundColor: 'var(--monarch-orange)',
                 }}
               />
             </div>
-            <div id={progressBarId} className="flex justify-between mt-1 text-xs" style={{ color: 'var(--monarch-text-dark)' }}>
+            <div id={progressBarId} className="flex justify-between mt-1 text-xs text-monarch-text-dark">
               <span>{formatCurrency(dedicatedCategories.saved + rollup.total_saved, { maximumFractionDigits: 0 })} saved</span>
               <span>{formatCurrency(Math.max(0, currentMonthlyCost - dedicatedCategories.saved - rollup.total_saved), { maximumFractionDigits: 0 })} to go</span>
             </div>
@@ -208,13 +187,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             aria-expanded={infoDropdown.isOpen}
             aria-haspopup="dialog"
             aria-controls={infoDropdown.isOpen ? popoverId : undefined}
-            className="text-xs flex items-center gap-1 mt-2 mx-auto"
-            style={{
-              color: 'var(--monarch-success)',
-              textDecoration: 'underline',
-              textDecorationStyle: 'dotted',
-              textUnderlineOffset: '2px',
-            }}
+            className="text-xs flex items-center gap-1 mt-2 mx-auto text-monarch-success underline decoration-dotted underline-offset-2"
             onClick={infoDropdown.open}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -240,25 +213,21 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
               aria-labelledby={`${popoverId}-title`}
               aria-modal="true"
               onKeyDown={handlePopoverKeyDown}
-              className="fixed z-(--z-index-popover) rounded-xl shadow-lg p-4 text-left"
+              className="fixed z-(--z-index-popover) rounded-xl shadow-lg p-4 text-left w-70 bg-monarch-bg-card border border-monarch-border"
               style={{
-                backgroundColor: 'var(--monarch-bg-card)',
-                border: '1px solid var(--monarch-border)',
-                width: '280px',
                 top: infoDropdown.position.top,
                 right: infoDropdown.position.right,
               }}
             >
               <div className="flex justify-between items-start mb-3">
-                <h3 id={`${popoverId}-title`} className="font-semibold text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                <h3 id={`${popoverId}-title`} className="font-semibold text-sm text-monarch-text-dark">
                   Why will my costs decrease?
                 </h3>
                 <button
                   type="button"
                   onClick={infoDropdown.close}
                   aria-label="Close dialog"
-                  className="-mt-1 -mr-1 p-1 transition-colors"
-                  style={{ color: 'var(--monarch-text-muted)' }}
+                  className="-mt-1 -mr-1 p-1 transition-colors text-monarch-text-muted"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -267,29 +236,29 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
                 </button>
               </div>
 
-              <div className="text-xs space-y-2" style={{ color: 'var(--monarch-text-muted)' }}>
+              <div className="text-xs space-y-2 text-monarch-text-muted">
                 <p>
-                  You're contributing <strong style={{ color: 'var(--monarch-orange)' }}>{formatCurrency(catchUpAmount, { maximumFractionDigits: 0 })}/mo extra</strong> to
+                  You're contributing <strong className="text-monarch-orange">{formatCurrency(catchUpAmount, { maximumFractionDigits: 0 })}/mo extra</strong> to
                   catch up on {itemsBehind.length} recurring item{itemsBehind.length === 1 ? '' : 's'}.
                 </p>
 
-                <div className="rounded-lg p-2 space-y-1" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+                <div className="rounded-lg p-2 space-y-1 bg-monarch-bg-page">
                   <div className="flex justify-between">
                     <span>Base rate</span>
                     <span className="font-medium">{formatCurrency(Math.round(lowestMonthlyCost), { maximumFractionDigits: 0 })}</span>
                   </div>
-                  <div className="flex justify-between" style={{ color: 'var(--monarch-orange)' }}>
+                  <div className="flex justify-between text-monarch-orange">
                     <span>+ Catch-up</span>
                     <span className="font-medium">{formatCurrency(catchUpAmount, { maximumFractionDigits: 0 })}</span>
                   </div>
-                  <div className="flex justify-between pt-1 font-semibold" style={{ color: 'var(--monarch-text-dark)', borderTop: '1px solid var(--monarch-border)' }}>
+                  <div className="flex justify-between pt-1 font-semibold text-monarch-text-dark border-t border-monarch-border">
                     <span>Current</span>
                     <span>{formatCurrency(currentMonthlyCost, { maximumFractionDigits: 0 })}</span>
                   </div>
                 </div>
 
                 <p>
-                  After <strong>{lowestDate}</strong>, you'll only need <strong style={{ color: 'var(--monarch-success)' }}>{formatCurrency(Math.round(lowestMonthlyCost), { maximumFractionDigits: 0 })}/mo</strong>.
+                  After <strong>{lowestDate}</strong>, you'll only need <strong className="text-monarch-success">{formatCurrency(Math.round(lowestMonthlyCost), { maximumFractionDigits: 0 })}/mo</strong>.
                 </p>
               </div>
             </div>

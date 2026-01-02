@@ -97,15 +97,17 @@ const RollupItemRow = memo(function RollupItemRow({
       {/* Remove button */}
       <td className="py-2 px-3 text-center">
         <button
+          type="button"
           onClick={handleRemove}
           disabled={isRemoving}
-          className={`p-1 rounded transition-all disabled:opacity-50 hover-bg-transparent-to-hover ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-          title="Remove from rollup"
+          aria-label={`Remove ${item.name} from rollup`}
+          aria-busy={isRemoving}
+          className={`p-1 rounded transition-all disabled:opacity-50 hover-bg-transparent-to-hover ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
         >
           {isRemoving ? (
             <LoadingSpinner size="sm" color="var(--monarch-text-muted)" />
           ) : (
-            <XIcon size={16} color="var(--monarch-text-muted)" />
+            <XIcon size={16} color="var(--monarch-text-muted)" aria-hidden="true" />
           )}
         </button>
       </td>
@@ -287,20 +289,33 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
     <div className="mb-6 rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
       {/* Header with stats */}
       <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={!isCollapsed}
+        aria-label={`Rollup category section. ${isCollapsed ? 'Click to expand' : 'Click to collapse'}`}
         className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none bg-monarch-orange-light ${isCollapsed ? '' : 'border-b border-monarch-border'}`}
         onClick={toggleCollapsed}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleCollapsed();
+          }
+        }}
       >
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); toggleCollapsed(); }}
               className="p-0.5 rounded hover:bg-black/5 transition-colors"
-              title={isCollapsed ? 'Expand' : 'Collapse'}
+              aria-label={isCollapsed ? 'Expand rollup items' : 'Collapse rollup items'}
+              aria-expanded={!isCollapsed}
             >
               <ChevronRightIcon
                 size={16}
                 color="var(--monarch-text-muted)"
                 className={`collapse-arrow ${isCollapsed ? '' : 'expanded'}`}
+                aria-hidden="true"
               />
             </button>
             <span onClick={(e) => e.stopPropagation()}>
@@ -319,6 +334,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 onKeyDown={handleNameKeyDown}
                 disabled={isUpdatingName}
                 onClick={(e) => e.stopPropagation()}
+                aria-label="Rollup category name"
                 className="font-medium px-1 py-0.5 rounded text-sm text-monarch-text-dark bg-monarch-bg-card border border-monarch-orange outline-none min-w-30"
               />
             ) : (
@@ -326,6 +342,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 <div
                   role="button"
                   tabIndex={0}
+                  aria-label={`Rollup category name: ${rollup.category_name || DEFAULT_ROLLUP_NAME}. Press Enter to edit`}
                   className="font-medium cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded -mx-1 grid text-monarch-text-dark"
                   style={{ perspective: '400px' }}
                   onClick={(e) => e.stopPropagation()}
@@ -342,7 +359,6 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                   onMouseEnter={() => setIsHoveringName(true)}
                   onMouseLeave={() => setIsHoveringName(false)}
                   onTouchEnd={() => setIsHoveringName(false)}
-                  title="Double-click to rename"
                 >
                   <span
                     className="col-start-1 row-start-1 transition-all duration-500"
@@ -372,10 +388,11 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                       href={`https://app.monarchmoney.com/categories/${rollup.category_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label="View linked category in Monarch (opens in new tab)"
                       className="shrink-0 hover:opacity-70 transition-opacity text-monarch-text-light"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <ExternalLinkIcon size={12} />
+                      <ExternalLinkIcon size={12} aria-hidden="true" />
                     </a>
                   </Tooltip>
                 )}
@@ -426,13 +443,15 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 onKeyDown={handleBudgetKeyDown}
                 onFocus={(e) => { e.target.select(); setIsHoveringName(false); }}
                 disabled={isUpdatingBudget}
+                aria-label="Monthly budget amount for rollup category"
+                aria-describedby={rollup.budgeted < totalMonthly ? 'rollup-budget-warning' : undefined}
                 className={`w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card font-inherit border ${rollup.budgeted < totalMonthly ? 'border-monarch-warning' : 'border-monarch-border'}`}
                 min="0"
                 step="1"
               />
             </div>
             {rollup.budgeted < totalMonthly && (
-              <div className="text-[10px] mt-0.5 text-monarch-warning">
+              <div id="rollup-budget-warning" className="text-[10px] mt-0.5 text-monarch-warning" role="alert">
                 need {formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}
               </div>
             )}
