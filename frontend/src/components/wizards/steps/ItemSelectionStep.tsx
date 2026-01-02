@@ -8,8 +8,6 @@ import type { PendingLink } from '../../LinkCategoryModal';
 import { formatDueDate, formatCurrency, formatFrequency } from '../../../utils';
 import { EmptyInboxIcon, LinkIcon, FrequencyIcon } from '../SetupWizardIcons';
 
-// Frequency group order for display
-const FREQUENCY_ORDER = ['weekly', 'every_two_weeks', 'twice_a_month', 'monthly', 'quarterly', 'semiyearly', 'yearly'];
 
 // Merchant Logo Component with fallback
 function MerchantLogo({ item, size = 40 }: { readonly item: RecurringItem; readonly size?: number }) {
@@ -50,9 +48,9 @@ interface ItemCardProps {
   readonly item: RecurringItem;
   readonly checked: boolean;
   readonly onChange: () => void;
-  readonly onLinkClick?: () => void;
-  readonly onUnlink?: () => void;
-  readonly pendingLink?: PendingLink;
+  readonly onLinkClick: (() => void) | undefined;
+  readonly onUnlink: (() => void) | undefined;
+  readonly pendingLink: PendingLink | undefined;
 }
 
 function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendingLink }: ItemCardProps) {
@@ -61,24 +59,12 @@ function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendingLink 
 
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all"
+      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all hover-item-card-unchecked ${checked ? 'item-card-checked' : ''}`}
       style={{
         backgroundColor: checked ? 'rgba(255, 105, 45, 0.08)' : 'var(--monarch-bg-card)',
         border: checked ? '1px solid var(--monarch-orange)' : '1px solid var(--monarch-border)',
       }}
       onClick={onChange}
-      onMouseEnter={(e) => {
-        if (!checked) {
-          e.currentTarget.style.borderColor = 'var(--monarch-orange)';
-          e.currentTarget.style.backgroundColor = 'rgba(255, 105, 45, 0.04)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!checked) {
-          e.currentTarget.style.borderColor = 'var(--monarch-border)';
-          e.currentTarget.style.backgroundColor = 'var(--monarch-bg-card)';
-        }
-      }}
     >
       <div
         className="shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors"
@@ -301,11 +287,17 @@ export function ItemSelectionStep({
 
   // Sort each group by amount descending
   Object.keys(groupedItems).forEach(freq => {
-    groupedItems[freq].sort((a, b) => b.amount - a.amount);
+    const group = groupedItems[freq];
+    if (group) {
+      group.sort((a, b) => b.amount - a.amount);
+    }
   });
 
   // Sort groups by frequency order
-  const sortedFrequencies = FREQUENCY_ORDER.filter(f => groupedItems[f]?.length > 0);
+  const sortedFrequencies = Object.keys(groupedItems).filter((f: string) => {
+    const group = groupedItems[f];
+    return group && group.length > 0;
+  });
 
   // Calculate totals
   const totalMonthly = items.reduce((sum, i) => sum + i.monthly_contribution, 0);
@@ -487,11 +479,11 @@ export function ItemSelectionStep({
         className="max-h-64 overflow-y-auto pr-1"
         style={{ scrollbarWidth: 'thin' }}
       >
-        {sortedFrequencies.map(frequency => (
+        {sortedFrequencies.map((frequency: string) => (
           <FrequencyGroup
             key={frequency}
             frequency={frequency}
-            items={groupedItems[frequency]}
+            items={groupedItems[frequency] ?? []}
             selectedIds={selectedIds}
             pendingLinks={pendingLinks}
             onToggleItem={onToggleItem}

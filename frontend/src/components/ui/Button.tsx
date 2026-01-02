@@ -10,10 +10,10 @@
  * - Focus indicators
  */
 
-import React from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { SpinnerIcon } from '../icons';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Button style variant */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   /** Button size */
@@ -23,7 +23,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   /** Whether button takes full width */
   fullWidth?: boolean;
   /** Button content */
-  children: React.ReactNode;
+  children: ReactNode;
   /** Loading text for screen readers (defaults to "Loading") */
   loadingText?: string;
 }

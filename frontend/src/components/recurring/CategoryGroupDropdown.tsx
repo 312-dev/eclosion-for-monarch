@@ -7,6 +7,7 @@ import type { CategoryGroup } from '../../types';
 import { getCategoryGroups } from '../../api/client';
 import { useClickOutside } from '../../hooks';
 import { Tooltip } from '../Tooltip';
+import { SpinnerIcon, ChevronDownIcon } from '../icons';
 
 interface CategoryGroupDropdownProps {
   readonly currentGroupName: string | null;
@@ -59,13 +60,9 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
           className="hover:opacity-70 transition-opacity disabled:opacity-50"
         >
           {isChanging ? (
-            <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-            </svg>
+            <SpinnerIcon size={12} />
           ) : (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <ChevronDownIcon size={12} />
           )}
         </button>
       </Tooltip>

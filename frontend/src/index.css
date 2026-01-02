@@ -48,7 +48,14 @@
      - modal (50): Modal/dialog content
      - toast (60): Toast notifications
      - tooltip (70): Tooltips (highest, always visible)
+
+     Usage:
+     - Tailwind utility classes: z-dropdown, z-sticky, z-popover, z-modal-backdrop, z-modal, z-toast, z-tooltip
+     - CSS variable syntax: z-(--z-index-modal)
+     - Inline styles: zIndex: Z_INDEX.MODAL (import from constants)
      ============================================================================ */
+
+  /* CSS custom properties for inline styles and CSS classes */
   --z-index-dropdown: 10;
   --z-index-sticky: 20;
   --z-index-popover: 30;
@@ -56,6 +63,15 @@
   --z-index-modal: 50;
   --z-index-toast: 60;
   --z-index-tooltip: 70;
+
+  /* Tailwind z-index utilities (creates z-dropdown, z-sticky, etc. classes) */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-popover: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
 }
 
 /* Unbounded Font for Logo */
@@ -210,7 +226,7 @@ input[type="radio"] {
   background: var(--monarch-orange);
   color: white;
   padding: 8px 16px;
-  z-index: 10000;
+  z-index: calc(var(--z-index-tooltip) + 100);
   text-decoration: none;
   font-weight: 600;
   border-radius: 0 0 4px 0;
@@ -1424,4 +1440,50 @@ input[type="radio"] {
 .hover-tool-tile:hover {
   border-color: var(--monarch-orange);
   box-shadow: 0 4px 12px rgba(255, 105, 45, 0.1);
+}
+
+/* Settings icon hover - color and background change */
+.hover-settings-icon {
+  color: var(--monarch-text-muted);
+  background-color: transparent;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.hover-settings-icon:hover {
+  color: var(--monarch-text-dark);
+  background-color: var(--monarch-bg-page);
+}
+
+/* Refresh button hover - bg card to page */
+.hover-bg-card-to-page {
+  background-color: var(--monarch-bg-card);
+  transition: background-color 0.15s ease;
+}
+.hover-bg-card-to-page:hover {
+  background-color: var(--monarch-bg-page);
+}
+
+/* Orange button hover - respects disabled state via CSS */
+.hover-bg-orange-enabled:not(:disabled) {
+  transition: background-color 0.15s ease;
+}
+.hover-bg-orange-enabled:not(:disabled):hover {
+  background-color: var(--monarch-orange-hover);
+}
+
+/* Table row hover - card to hover background */
+.hover-bg-card-to-hover-row {
+  background-color: var(--monarch-bg-card);
+  transition: background-color 0.15s ease;
+}
+.hover-bg-card-to-hover-row:not(.row-highlighted):hover {
+  background-color: var(--monarch-bg-hover);
+}
+
+/* Item card hover - only when not checked/selected */
+.hover-item-card-unchecked:not(.item-card-checked) {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.hover-item-card-unchecked:not(.item-card-checked):hover {
+  border-color: var(--monarch-orange);
+  background-color: rgba(255, 105, 45, 0.04);
 }

@@ -23,7 +23,7 @@ import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
 import { useDashboardQuery, useSyncMutation } from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { RateLimitError } from '../../api/client';
+import { getErrorMessage, isRateLimitError } from '../../utils/errors';
 import { AppIcon, TourController } from '../wizards/WizardComponents';
 
 // Tour steps for the main app
@@ -120,10 +120,10 @@ export function AppShell() {
     try {
       await syncMutation.mutateAsync();
     } catch (err) {
-      if (err instanceof RateLimitError) {
+      if (isRateLimitError(err)) {
         toast.error(err.message);
       } else {
-        toast.error(err instanceof Error ? err.message : 'Sync failed');
+        toast.error(getErrorMessage(err));
       }
     }
   };
@@ -142,7 +142,7 @@ export function AppShell() {
 
   // Error state (no cached data)
   if (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+    const errorMessage = getErrorMessage(error);
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--monarch-bg-page)' }} role="alert">
         <div className="rounded-lg shadow-lg max-w-md w-full p-6 text-center" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../utils';
+import { UI } from '../constants';
 
 interface PassphrasePromptProps {
   mode: 'create' | 'unlock';
@@ -71,7 +72,7 @@ export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, on
     };
 
     updateRemaining();
-    const interval = setInterval(updateRemaining, 1000);
+    const interval = setInterval(updateRemaining, UI.INTERVAL.COOLDOWN_TICK);
     return () => clearInterval(interval);
   }, [cooldownUntil]);
 

@@ -3,6 +3,7 @@ import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { useChangelogStatusQuery, useMarkChangelogReadMutation } from '../api/queries';
 import { Modal } from './ui/Modal';
 import { ChangelogDisplay } from './ChangelogDisplay';
+import { UI } from '../constants';
 
 export function VersionIndicator() {
   const {
@@ -19,7 +20,7 @@ export function VersionIndicator() {
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasShownTooltipRef = useRef(false);
 
-  // Show "See what's new" tooltip for 10 seconds on initial load if there are unread notes
+  // Show "See what's new" tooltip on initial load if there are unread notes
   useEffect(() => {
     if (changelogStatus?.has_unread && !hasShownTooltipRef.current) {
       hasShownTooltipRef.current = true;
@@ -27,7 +28,7 @@ export function VersionIndicator() {
 
       tooltipTimerRef.current = setTimeout(() => {
         setShowTooltip(false);
-      }, 10000);
+      }, UI.DELAY.TOOLTIP_AUTO_HIDE);
     }
 
     return () => {

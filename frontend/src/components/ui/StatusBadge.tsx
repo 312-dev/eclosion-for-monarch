@@ -5,6 +5,7 @@
  * Replaces inline status rendering in RecurringRow and RollupItemRow.
  */
 
+import { memo } from 'react';
 import type { ItemStatus } from '../../types';
 import { getStatusLabel, getStatusStyles } from '../../utils';
 
@@ -26,7 +27,7 @@ export interface StatusBadgeProps {
 /**
  * A styled badge component for displaying item status.
  */
-export function StatusBadge({
+export const StatusBadge = memo(function StatusBadge({
   status,
   isEnabled = true,
   onClick,
@@ -52,4 +53,4 @@ export function StatusBadge({
       {label}
     </span>
   );
-}
+});
