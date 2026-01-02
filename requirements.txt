@@ -1,7 +1,7 @@
 git+https://github.com/GraysonCAdams/monarchmoney.git@flex-budget
 pyotp>=2.9.0
 Flask==3.1.1
-flask-cors==4.0.0
+flask-cors==6.0.0
 flask-limiter==3.8.0
 python-dotenv==1.1.1
 cachetools==6.1.0
