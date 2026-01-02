@@ -20,7 +20,7 @@ interface RollupZoneProps {
   readonly onNameChange: (name: string) => Promise<void>;
 }
 
-const RollupItemRow = React.memo(function RollupItemRow({
+const RollupItemRow = memo(function RollupItemRow({
   item,
   onRemove,
 }: {
@@ -42,10 +42,7 @@ const RollupItemRow = React.memo(function RollupItemRow({
   }, [onRemove]);
 
   return (
-    <tr
-      className="group border-t transition-colors"
-      style={{ borderColor: 'var(--monarch-border)' }}
-    >
+    <tr className="group border-t border-monarch-border transition-colors">
       {/* Subscription name with logo */}
       <td className="py-2 px-3">
         <div className="flex items-center gap-2">
@@ -54,8 +51,7 @@ const RollupItemRow = React.memo(function RollupItemRow({
             href={`https://app.monarchmoney.com/merchants/${item.merchant_id}?date=${new Date().toISOString().slice(0, 8)}01`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm truncate no-underline"
-            style={{ color: 'var(--monarch-text-dark)' }}
+            className="text-sm truncate no-underline text-monarch-text-dark"
           >
             {item.name}
           </a>
@@ -63,16 +59,16 @@ const RollupItemRow = React.memo(function RollupItemRow({
       </td>
       {/* Date column */}
       <td className="py-2 px-3 text-sm">
-        <div style={{ color: 'var(--monarch-text-dark)' }}>{date}</div>
+        <div className="text-monarch-text-dark">{date}</div>
         {relative && (
-          <div className="text-xs" style={{ color: 'var(--monarch-text-light)' }}>
+          <div className="text-xs text-monarch-text-light">
             {relative}
           </div>
         )}
       </td>
       {/* Amount */}
       <td className="py-2 px-3 text-right text-sm">
-        <span style={{ color: 'var(--monarch-text-dark)' }}>{formatCurrency(item.amount, { maximumFractionDigits: 0 })}</span>
+        <span className="text-monarch-text-dark">{formatCurrency(item.amount, { maximumFractionDigits: 0 })}</span>
       </td>
       {/* Monthly target with catch-up/ahead indicator */}
       <td className="py-2 px-3 text-right text-sm">
@@ -80,7 +76,7 @@ const RollupItemRow = React.memo(function RollupItemRow({
           {/* Catch-up indicator: red up arrow if frozen target > ideal rate */}
           {isCatchingUp && (
             <Tooltip content={`Catching up: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`}>
-              <span className="cursor-help" style={{ color: 'var(--monarch-error)' }}>
+              <span className="cursor-help text-monarch-error">
                 <TrendUpIcon size={10} strokeWidth={2.5} />
               </span>
             </Tooltip>
@@ -88,12 +84,12 @@ const RollupItemRow = React.memo(function RollupItemRow({
           {/* Ahead indicator: green down arrow if frozen target < ideal rate */}
           {isAhead && (
             <Tooltip content={`Ahead: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`}>
-              <span className="cursor-help" style={{ color: 'var(--monarch-success)' }}>
+              <span className="cursor-help text-monarch-success">
                 <TrendDownIcon size={10} strokeWidth={2.5} />
               </span>
             </Tooltip>
           )}
-          <span style={{ color: 'var(--monarch-text-dark)' }}>
+          <span className="text-monarch-text-dark">
             {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo
           </span>
         </div>
@@ -184,7 +180,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
     }
   }, [nameValue, rollup.category_name, onNameChange]);
 
-  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleNameKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -208,7 +204,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
     }
   }, [budgetValue, rollup.budgeted, onBudgetChange]);
 
-  const handleBudgetKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleBudgetKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -288,17 +284,10 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
   }, [onRemoveItem]);
 
   return (
-    <div
-      className="mb-6 rounded-xl shadow-sm overflow-hidden"
-      style={{
-        backgroundColor: 'var(--monarch-bg-card)',
-        border: '1px solid var(--monarch-border)',
-      }}
-    >
+    <div className="mb-6 rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
       {/* Header with stats */}
       <div
-        className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none"
-        style={{ backgroundColor: 'var(--monarch-orange-light)', borderBottom: isCollapsed ? 'none' : '1px solid var(--monarch-border)' }}
+        className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none bg-monarch-orange-light ${isCollapsed ? '' : 'border-b border-monarch-border'}`}
         onClick={toggleCollapsed}
       >
         <div className="flex flex-col gap-1 min-w-0">
@@ -330,22 +319,15 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 onKeyDown={handleNameKeyDown}
                 disabled={isUpdatingName}
                 onClick={(e) => e.stopPropagation()}
-                className="font-medium px-1 py-0.5 rounded text-sm"
-                style={{
-                  color: 'var(--monarch-text-dark)',
-                  backgroundColor: 'var(--monarch-bg-card)',
-                  border: '1px solid var(--monarch-orange)',
-                  outline: 'none',
-                  minWidth: '120px',
-                }}
+                className="font-medium px-1 py-0.5 rounded text-sm text-monarch-text-dark bg-monarch-bg-card border border-monarch-orange outline-none min-w-30"
               />
             ) : (
               <>
                 <div
                   role="button"
                   tabIndex={0}
-                  className="font-medium cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded -mx-1 grid"
-                  style={{ color: 'var(--monarch-text-dark)', perspective: '400px' }}
+                  className="font-medium cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded -mx-1 grid text-monarch-text-dark"
+                  style={{ perspective: '400px' }}
                   onClick={(e) => e.stopPropagation()}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
@@ -381,7 +363,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                     Rollup Category
                   </span>
                 </div>
-                <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+                <span className="text-xs text-monarch-text-muted">
                   ({rollup.items.length})
                 </span>
                 {rollup.category_id && (
@@ -390,8 +372,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                       href={`https://app.monarchmoney.com/categories/${rollup.category_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="shrink-0 hover:opacity-70 transition-opacity"
-                      style={{ color: 'var(--monarch-text-light)' }}
+                      className="shrink-0 hover:opacity-70 transition-opacity text-monarch-text-light"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLinkIcon size={12} />
@@ -402,7 +383,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             )}
           </div>
           {!isCollapsed && (
-            <span className="text-xs ml-7" style={{ color: 'var(--monarch-text-muted)' }}>
+            <span className="text-xs ml-7 text-monarch-text-muted">
               A shared bucket for smaller recurring expenses not worth a dedicated category
             </span>
           )}
@@ -507,7 +488,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                   const frequencyItems = sortedGroupedItems[frequency];
                   if (!frequencyItems) return null;
                   return (
-                    <React.Fragment key={frequency}>
+                    <Fragment key={frequency}>
                       <tr>
                         <td
                           colSpan={5}
@@ -524,7 +505,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                           onRemove={handleRemoveItem(item.id)}
                         />
                       ))}
-                    </React.Fragment>
+                    </Fragment>
                   );
                 })}
               </tbody>

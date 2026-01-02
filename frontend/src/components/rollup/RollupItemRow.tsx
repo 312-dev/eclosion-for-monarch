@@ -2,7 +2,7 @@
  * RollupItemRow - Individual item row in the rollup table
  */
 
-import React, { useState, useCallback } from 'react';
+import { memo, useState, useCallback } from 'react';
 import type { RollupItem } from '../../types';
 import { Tooltip } from '../Tooltip';
 import { formatCurrency, formatDateRelative } from '../../utils';
@@ -14,7 +14,7 @@ interface RollupItemRowProps {
   readonly onRemove: () => Promise<void>;
 }
 
-export const RollupItemRow = React.memo(function RollupItemRow({
+export const RollupItemRow = memo(function RollupItemRow({
   item,
   onRemove,
 }: RollupItemRowProps) {
@@ -94,10 +94,7 @@ export const RollupItemRow = React.memo(function RollupItemRow({
         <button
           onClick={handleRemove}
           disabled={isRemoving}
-          className={`p-1 rounded transition-all disabled:opacity-50 ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-          style={{ backgroundColor: 'transparent' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--monarch-bg-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          className={`p-1 rounded transition-all disabled:opacity-50 hover-bg-transparent-to-hover ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
           title="Remove from rollup"
         >
           {isRemoving ? (

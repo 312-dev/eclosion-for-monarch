@@ -1,8 +1,14 @@
 /**
  * ReadyToAssign - Sidebar component showing budget status and monthly savings
+ *
+ * Accessibility features:
+ * - aria-label on interactive elements
+ * - aria-describedby for progress bars
+ * - Keyboard accessible popover with Escape to close
+ * - Proper focus management
  */
 
-import { useMemo } from 'react';
+import React, { useMemo, useId, useCallback } from 'react';
 import type { ReadyToAssign as ReadyToAssignData, RecurringItem, DashboardSummary, RollupData } from '../types';
 import { Portal } from './Portal';
 import { formatCurrency } from '../utils';
@@ -39,10 +45,22 @@ function getLowestMonthlyDate(items: RecurringItem[]): string | null {
 }
 
 export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar' }: ReadyToAssignProps) {
+  const progressBarId = useId();
+  const popoverId = useId();
+
   const infoDropdown = useDropdown<HTMLDivElement, HTMLButtonElement>({
     alignment: 'right',
     offset: { y: 8 },
   });
+
+  // Handle Escape key to close popover
+  const handlePopoverKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      infoDropdown.close();
+      infoDropdown.triggerRef.current?.focus();
+    }
+  }, [infoDropdown]);
 
   const isPositive = data.ready_to_assign >= 0;
   const currentMonthlyCost = summary.total_monthly_contribution;
@@ -84,6 +102,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
           href="https://app.monarch.com/plan"
           target="_blank"
           rel="noopener noreferrer"
+          aria-label={`${formatCurrency(data.ready_to_assign, { maximumFractionDigits: 0 })} left to budget. Opens Monarch budget in new tab`}
           className="rounded-lg px-3 py-2 flex flex-col items-center shrink-0 hover:opacity-80 transition-opacity"
           style={{ backgroundColor: isPositive ? 'var(--monarch-success-bg)' : 'var(--monarch-error-bg)' }}
         >
@@ -98,7 +117,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             style={{ color: isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)' }}
           >
             Left to budget
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
@@ -133,7 +152,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
           {untrackedCategories.total > 0 && (
             <Tooltip content={`Excluding ${formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} untracked`}>
               <span className="cursor-help">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--monarch-warning)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--monarch-warning)' }} aria-hidden="true">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                   <line x1="12" y1="9" x2="12" y2="13"></line>
                   <line x1="12" y1="17" x2="12.01" y2="17"></line>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { ChevronDown, Search, Check } from 'lucide-react';
 import { Portal } from './Portal';
 import { useDropdown } from '../hooks/useDropdown';
+import { UI } from '../constants';
 
 export interface SelectOption {
   value: string;
@@ -89,7 +90,8 @@ export function SearchableSelect({
       onOpen?.();
       setSearchQuery('');
       setActiveIndex(-1);
-      setTimeout(() => searchInputRef.current?.focus(), 0);
+      // Focus search input on next tick after dropdown opens
+      setTimeout(() => searchInputRef.current?.focus(), UI.DELAY.FOCUS_AFTER_OPEN);
     }
   }, [dropdown.isOpen, onOpen]);
 

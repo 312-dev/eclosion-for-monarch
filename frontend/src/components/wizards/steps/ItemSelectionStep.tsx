@@ -7,6 +7,7 @@ import type { RecurringItem } from '../../../types';
 import type { PendingLink } from '../../LinkCategoryModal';
 import { formatDueDate, formatCurrency, formatFrequency } from '../../../utils';
 import { EmptyInboxIcon, LinkIcon, FrequencyIcon } from '../SetupWizardIcons';
+import { CheckIcon, ChevronDownIcon, LinkIcon as LinkIconComponent, FolderIcon } from '../../icons';
 
 
 // Merchant Logo Component with fallback
@@ -74,9 +75,7 @@ function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendingLink 
         }}
       >
         {checked && (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon size={12} color="white" strokeWidth={3} />
         )}
       </div>
 
@@ -97,10 +96,7 @@ function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendingLink 
               style={{ color: 'var(--monarch-success)' }}
               title="Click to unlink"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
+              <LinkIconComponent size={12} />
               {pendingLink.categoryIcon && <span>{pendingLink.categoryIcon}</span>}
               {pendingLink.categoryName}
               <span style={{ color: 'var(--monarch-text-muted)' }}>x</span>
@@ -180,19 +176,11 @@ function FrequencyGroup({
             setCollapsed(!collapsed);
           }}
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--monarch-text-muted)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <ChevronDownIcon
+            size={16}
+            color="var(--monarch-text-muted)"
             style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          />
         </button>
 
         <FrequencyIcon frequency={frequency} />
@@ -461,9 +449,7 @@ export function ItemSelectionStep({
         className="flex items-center gap-2 mb-4 text-sm"
         style={{ color: 'var(--monarch-text-muted)' }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--monarch-orange)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-        </svg>
+        <FolderIcon size={16} color="var(--monarch-orange)" />
         <span>Creating in:</span>
         <button
           onClick={onChangeGroup}

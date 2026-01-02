@@ -154,12 +154,10 @@ export function CredentialUpdateForm({ passphrase, onSuccess, onCancel }: Creden
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift"
+              className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
               style={{
                 backgroundColor: loading ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
               }}
-              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)'; }}
-              onMouseLeave={(e) => { if (!loading) e.currentTarget.style.backgroundColor = 'var(--monarch-orange)'; }}
             >
               {loading ? 'Saving...' : 'Save Credentials'}
             </button>

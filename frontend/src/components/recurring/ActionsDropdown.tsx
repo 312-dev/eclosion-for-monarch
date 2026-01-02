@@ -124,14 +124,6 @@ export function ActionsDropdown({
     }
   }, [dropdown.isOpen]);
 
-  // Track menu item refs - reset index on each render
-  const menuItemIndexRef = useRef(0);
-  menuItemIndexRef.current = 0;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _setMenuItemRef = useCallback((el: HTMLButtonElement | null) => {
-    const index = menuItemIndexRef.current++;
-    menuItemsRef.current[index] = el;
-  }, []);
 
   return (
     <div className="relative">

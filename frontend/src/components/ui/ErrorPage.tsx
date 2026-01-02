@@ -5,6 +5,8 @@
  * similar to a 404 page but for various error conditions.
  */
 
+import { SadFaceIcon, HourglassIcon } from '../icons';
+
 interface ErrorPageProps {
   title?: string;
   message: string;
@@ -26,20 +28,12 @@ export function ErrorPage({
       <div className="max-w-md w-full text-center">
         {/* Error illustration */}
         <div className="mb-6">
-          <svg
-            className="w-24 h-24 mx-auto"
-            style={{ color: 'var(--monarch-text-muted)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <SadFaceIcon
+            size={96}
+            color="var(--monarch-text-muted)"
+            strokeWidth={1.5}
+            className="mx-auto"
+          />
         </div>
 
         {/* Error title */}
@@ -114,20 +108,12 @@ export function RateLimitPage({ retryAfter, onRetry }: RateLimitPageProps) {
       <div className="max-w-md w-full text-center">
         {/* Hourglass illustration */}
         <div className="mb-6">
-          <svg
-            className="w-24 h-24 mx-auto"
-            style={{ color: 'var(--monarch-orange)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <HourglassIcon
+            size={96}
+            color="var(--monarch-orange)"
+            strokeWidth={1.5}
+            className="mx-auto"
+          />
         </div>
 
         {/* Title */}

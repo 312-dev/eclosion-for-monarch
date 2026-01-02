@@ -2,7 +2,7 @@
  * RecurringRow - Individual row component for recurring items
  */
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { RecurringItem, ItemStatus } from '../../types';
 import { EmojiPicker } from '../EmojiPicker';
 import { Tooltip } from '../Tooltip';
@@ -94,7 +94,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
     }
   };
 
-  const handleNameKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -194,7 +194,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
     }
   };
 
-  const handleBudgetKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleBudgetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -417,8 +417,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
           <Tooltip content="Click to allocate funds">
             <button
               onClick={() => setShowAllocateConfirm(true)}
-              className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer"
-              style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}
+              className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer bg-monarch-error-bg text-monarch-error"
             >
               Off Track
             </button>
@@ -428,15 +427,13 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
             <button
               onClick={handleAllocate}
               disabled={isAllocating}
-              className="px-2 py-1 text-xs font-medium rounded text-white disabled:opacity-50 transition-colors"
-              style={{ backgroundColor: 'var(--monarch-success)' }}
+              className="px-2 py-1 text-xs font-medium rounded text-white disabled:opacity-50 transition-colors bg-monarch-success"
             >
               {isAllocating ? '...' : 'Allocate'}
             </button>
             <button
               onClick={() => setShowAllocateConfirm(false)}
-              className="px-2 py-1 text-xs font-medium rounded transition-colors"
-              style={{ backgroundColor: 'var(--monarch-bg-page)', color: 'var(--monarch-text-dark)' }}
+              className="px-2 py-1 text-xs font-medium rounded transition-colors bg-monarch-bg-page text-monarch-text-dark"
             >
               ✕
             </button>

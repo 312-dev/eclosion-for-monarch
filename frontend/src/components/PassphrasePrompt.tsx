@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../utils';
 import { UI } from '../constants';
+import { LockIcon, EyeIcon, EyeOffIcon, CheckIcon, CircleIcon, ShieldCheckIcon } from './icons';
 
 interface PassphrasePromptProps {
   mode: 'create' | 'unlock';
@@ -132,9 +133,7 @@ export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, on
       <div className="rounded-xl shadow-lg max-w-md w-full p-6" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--monarch-orange-bg)' }}>
-            <svg className="w-5 h-5" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+            <LockIcon size={20} color="var(--monarch-orange)" />
           </div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--monarch-text-dark)' }}>
             {mode === 'create' ? 'Create Encryption Passphrase' : 'Log back in'}
@@ -253,12 +252,10 @@ export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, on
           <button
             type="submit"
             disabled={loading || !isValid || isInCooldown}
-            className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift"
+            className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
             style={{
               backgroundColor: loading || !isValid || isInCooldown ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
             }}
-            onMouseEnter={(e) => { if (!loading && isValid && !isInCooldown) e.currentTarget.style.backgroundColor = 'var(--monarch-orange-hover)'; }}
-            onMouseLeave={(e) => { if (!loading && isValid && !isInCooldown) e.currentTarget.style.backgroundColor = 'var(--monarch-orange)'; }}
           >
             {isInCooldown
               ? `Wait ${cooldownRemaining}s`

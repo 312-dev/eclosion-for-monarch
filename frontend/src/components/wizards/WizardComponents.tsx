@@ -15,6 +15,11 @@ import {
   formatFrequency,
   formatDueDate,
 } from '../../utils';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  LinkIcon as LinkIconComponent,
+} from '../icons';
 
 // Re-export utilities from centralized location for backward compatibility
 export {
@@ -315,9 +320,7 @@ export function ItemCard({
         }}
       >
         {checked && (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <CheckIcon size={12} color="white" strokeWidth={3} />
         )}
       </div>
 
@@ -338,10 +341,7 @@ export function ItemCard({
               style={{ color: 'var(--monarch-success)' }}
               title="Click to unlink"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-              </svg>
+              <LinkIconComponent size={12} />
               {pendingLink.categoryIcon && <span>{pendingLink.categoryIcon}</span>}
               {pendingLink.categoryName}
               <span style={{ color: 'var(--monarch-text-muted)' }}>×</span>
@@ -421,19 +421,11 @@ export function FrequencyGroup({
             setCollapsed(!collapsed);
           }}
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--monarch-text-muted)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <ChevronDownIcon
+            size={16}
+            color="var(--monarch-text-muted)"
             style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
+          />
         </button>
 
         <FrequencyIcon frequency={frequency} />
