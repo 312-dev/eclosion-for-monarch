@@ -24,6 +24,13 @@ import type {
 import { createInitialDemoState, type DemoState } from './demoData';
 
 // ============================================================================
+// Version (injected at build time from package.json)
+// ============================================================================
+
+declare const __APP_VERSION__: string;
+const DEMO_VERSION = __APP_VERSION__ ?? '0.0.0';
+
+// ============================================================================
 // Storage Key
 // ============================================================================
 
@@ -677,7 +684,7 @@ export async function getSecurityStatus(): Promise<SecurityStatus> {
 export async function getVersion(): Promise<VersionInfo> {
   await simulateDelay(50);
   return {
-    version: '1.0.0-demo',
+    version: `${DEMO_VERSION}-demo`,
     build_time: new Date().toISOString(),
     channel: 'demo',
     is_beta: false,
@@ -691,7 +698,7 @@ export async function getChangelog(_limit?: number): Promise<ChangelogResponse> 
   return {
     entries: [
       {
-        version: '1.0.0',
+        version: DEMO_VERSION,
         date: '2024-01-15',
         summary: 'First release! Try out Eclosion with a full demo experience right in your browser.',
         sections: {
@@ -699,7 +706,7 @@ export async function getChangelog(_limit?: number): Promise<ChangelogResponse> 
         },
       },
     ],
-    current_version: '1.0.0-demo',
+    current_version: `${DEMO_VERSION}-demo`,
     total_entries: 1,
   };
 }
@@ -710,7 +717,7 @@ export async function checkVersion(
   await simulateDelay(50);
   return {
     client_version: clientVersion,
-    server_version: '1.0.0',
+    server_version: DEMO_VERSION,
     update_available: false,
     update_type: null,
   };
@@ -719,15 +726,15 @@ export async function checkVersion(
 export async function getChangelogStatus(): Promise<ChangelogStatusResult> {
   await simulateDelay(50);
   return {
-    current_version: '1.0.0-demo',
-    last_read_version: '1.0.0',
+    current_version: `${DEMO_VERSION}-demo`,
+    last_read_version: DEMO_VERSION,
     has_unread: false,
   };
 }
 
 export async function markChangelogRead(): Promise<MarkChangelogReadResult> {
   await simulateDelay(50);
-  return { success: true, marked_version: '1.0.0-demo' };
+  return { success: true, marked_version: `${DEMO_VERSION}-demo` };
 }
 
 // ============================================================================

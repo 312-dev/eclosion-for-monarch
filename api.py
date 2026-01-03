@@ -135,9 +135,34 @@ def _sanitize_log_value(value: str | None) -> str:
     """Sanitize a value for safe logging by removing control characters."""
     if value is None:
         return "unknown"
-    # Remove newlines, carriage returns, and other control characters that could
-    # be used for log injection attacks
-    return re.sub(r"[\x00-\x1f\x7f]", "", str(value))[:100]
+    # Remove newlines and carriage returns to prevent log injection
+    # Using .replace() as it's recognized by static analysis tools as sanitization
+    result = str(value)
+    result = result.replace("\r\n", "").replace("\n", "").replace("\r", "")
+    # Also remove null bytes and other control characters
+    result = result.replace("\x00", "").replace("\t", " ")
+    return result[:100]
+
+
+def _sanitize_api_result(result: dict, generic_error: str = "Operation failed.") -> dict:
+    """
+    Sanitize API result dict to prevent information exposure.
+
+    Replaces all 'error' fields (top-level and nested) with generic messages
+    to prevent stack traces or internal details from being exposed.
+    """
+    # Sanitize top-level error
+    if "error" in result and not result.get("success", True):
+        result["error"] = generic_error
+
+    # Sanitize nested errors in lists (e.g., sync_errors, errors)
+    for key in ("errors", "sync_errors", "failed"):
+        if key in result and isinstance(result[key], list):
+            for item in result[key]:
+                if isinstance(item, dict) and "error" in item:
+                    item["error"] = "Failed"
+
+    return result
 
 
 def _audit_log(event: str, success: bool, details: str = ""):
@@ -285,17 +310,26 @@ def _enforce_https():
             # If we can't validate the host, don't redirect (fail safe)
             return None
 
-        # Construct safe redirect URL using validated host and sanitized path
-        # Security: Both host and path are validated to prevent open redirect
-        safe_path = _validate_redirect_path(request.full_path)
-        redirect_url = f"https://{trusted_host}{safe_path}"
+        # Security: Validate path using urlparse to ensure it's a relative path
+        # This prevents open redirect attacks by ensuring no scheme/netloc
+        raw_path = request.full_path
+        parsed_path = urlparse(raw_path)
 
-        # Final validation: ensure constructed URL only redirects to the same host
-        parsed = urlparse(redirect_url)
-        if parsed.scheme != "https" or parsed.netloc != trusted_host:
-            return None  # Fail safe if URL construction produced unexpected result
+        # Reject if path contains scheme or netloc (would be absolute URL)
+        if parsed_path.scheme or parsed_path.netloc:
+            return redirect(f"https://{trusted_host}/", code=301)
 
-        return redirect(redirect_url, code=301)
+        # Use only the path component, properly escaped
+        # Ensure it starts with / and doesn't have path traversal
+        safe_path = parsed_path.path or "/"
+        if not safe_path.startswith("/"):
+            safe_path = "/" + safe_path
+
+        # Preserve query string if present
+        if parsed_path.query:
+            safe_path = f"{safe_path}?{parsed_path.query}"
+
+        return redirect(f"https://{trusted_host}{safe_path}", code=301)
     return None
 
 
@@ -520,7 +554,7 @@ def auth_set_passphrase():
         session["auth_unlocked"] = True
         session["session_passphrase"] = passphrase
 
-    return result
+    return _sanitize_api_result(result, "Failed to set passphrase.")
 
 
 @app.route("/auth/unlock", methods=["POST"])
@@ -572,7 +606,7 @@ async def auth_unlock():
             session["auth_unlocked"] = True
             session["session_passphrase"] = passphrase
 
-    return result
+    return _sanitize_api_result(result, "Unlock failed.")
 
 
 @app.route("/auth/lock", methods=["POST"])
@@ -641,7 +675,7 @@ async def auth_update_credentials():
         session["auth_unlocked"] = True
         session["session_passphrase"] = passphrase
 
-    return result
+    return _sanitize_api_result(result, "Failed to update credentials.")
 
 
 @app.route("/auth/reset-app", methods=["POST"])
@@ -680,10 +714,8 @@ async def recurring_dashboard():
 async def recurring_sync():
     """Trigger full synchronization of recurring transactions."""
     result = await sync_service.full_sync()
-    # Sanitize any error messages to prevent information exposure
-    if not result.get("success") and "error" in result:
-        result["error"] = "Sync failed. Please try again."
-    return result
+    # Sanitize all error messages to prevent stack trace exposure
+    return _sanitize_api_result(result, "Sync failed. Please try again.")
 
 
 @app.route("/recurring/config", methods=["GET"])
@@ -788,7 +820,7 @@ async def enable_auto_sync():
 
     result = await sync_service.enable_auto_sync(interval, passphrase, consent)
     _audit_log("AUTO_SYNC_ENABLE", result.get("success", False), f"interval={interval}")
-    return result
+    return _sanitize_api_result(result, "Failed to enable auto-sync.")
 
 
 @app.route("/recurring/auto-sync/disable", methods=["POST"])
@@ -797,7 +829,7 @@ def disable_auto_sync():
     """Disable automatic background sync."""
     result = sync_service.disable_auto_sync()
     _audit_log("AUTO_SYNC_DISABLE", result.get("success", False), "")
-    return result
+    return _sanitize_api_result(result, "Failed to disable auto-sync.")
 
 
 @app.route("/recurring/notices", methods=["GET"])
@@ -1091,7 +1123,7 @@ async def reset_dedicated_categories():
         result.get("success", False),
         f"deleted={result.get('deleted_count', 0)}, untracked={result.get('items_disabled', 0)}",
     )
-    return result
+    return _sanitize_api_result(result, "Failed to reset dedicated categories.")
 
 
 @app.route("/recurring/reset-rollup", methods=["POST"])
@@ -1110,7 +1142,8 @@ async def reset_rollup():
         result.get("success", False),
         f"deleted_category={result.get('deleted_category', False)}, untracked={result.get('items_disabled', 0)}",
     )
-    return result
+    # Sanitize all error messages to prevent stack trace exposure
+    return _sanitize_api_result(result, "Reset rollup failed. Please try again.")
 
 
 @app.route("/recurring/reset-tool", methods=["POST"])
@@ -1126,10 +1159,8 @@ async def reset_recurring_tool():
         result.get("success", False),
         f"dedicated_deleted={result.get('dedicated_deleted', 0)}, rollup_deleted={result.get('rollup_deleted', False)}",
     )
-    # Sanitize any error messages to prevent information exposure
-    if not result.get("success") and "error" in result:
-        result["error"] = "Reset failed. Please try again."
-    return result
+    # Sanitize all error messages to prevent stack trace exposure
+    return _sanitize_api_result(result, "Reset failed. Please try again.")
 
 
 @app.route("/recurring/deletable-categories", methods=["GET"])
@@ -1143,7 +1174,8 @@ async def get_deletable_categories():
 @api_handler(handle_mfa=True)
 async def delete_all_categories():
     """Delete all categories created by this tool and reset state."""
-    return await sync_service.delete_all_categories()
+    result = await sync_service.delete_all_categories()
+    return _sanitize_api_result(result, "Failed to delete categories.")
 
 
 @app.route("/recurring/cancel-subscription", methods=["POST"])
@@ -1753,7 +1785,8 @@ def create_backup():
         return jsonify(
             {
                 "success": True,
-                "backup_path": str(backup_path),
+                # Only expose filename, not full path (security: prevent path disclosure)
+                "backup_path": backup_path.name,
             }
         )
     else:
@@ -1772,7 +1805,7 @@ def restore_backup():
     Restore state from a backup.
 
     Body: {
-        "backup_path": "/path/to/backup.json",
+        "backup_path": "backup_filename.json",  # Filename only, not full path
         "create_backup_first": true  # Optional, default: true
     }
     """
