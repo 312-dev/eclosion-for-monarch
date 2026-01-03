@@ -191,15 +191,60 @@ jobs:
 
       - name: Start application
         run: |
+          echo "Starting container..."
           docker run -d --name eclosion -p 5001:5001 \
             -e INSTANCE_SECRET=zap-test-secret \
             eclosion:test
+          echo "Container started with ID: $(docker ps -q -f name=eclosion)"
 
       - name: Wait for application to be healthy
         run: |
-          echo "Waiting for application to start..."
-          timeout 60 bash -c 'until curl -sf http://localhost:5001/health; do sleep 2; done'
-          echo "Application is healthy!"
+          echo "=== Container status ==="
+          docker ps -a
+
+          echo ""
+          echo "=== Waiting for application to start ==="
+          for i in {1..30}; do
+            echo "Attempt $i/30..."
+
+            # Check if container is still running
+            if ! docker ps -q -f name=eclosion | grep -q .; then
+              echo "ERROR: Container is not running!"
+              echo ""
+              echo "=== Container logs ==="
+              docker logs eclosion 2>&1 || echo "No logs available"
+              echo ""
+              echo "=== Container inspect ==="
+              docker inspect eclosion --format='{{.State.Status}} - {{.State.Error}}' || true
+              exit 1
+            fi
+
+            # Try the health check
+            if curl -sf http://localhost:5001/health; then
+              echo ""
+              echo "Application is healthy!"
+              exit 0
+            fi
+
+            echo "  Health check failed, waiting 2s..."
+            sleep 2
+          done
+
+          echo ""
+          echo "=== TIMEOUT: Application failed to become healthy ==="
+          echo ""
+          echo "=== Container logs ==="
+          docker logs eclosion 2>&1
+          echo ""
+          echo "=== Container inspect ==="
+          docker inspect eclosion
+          echo ""
+          echo "=== Listening ports ==="
+          docker exec eclosion ss -tlnp 2>/dev/null || docker exec eclosion netstat -tlnp 2>/dev/null || echo "Unable to check ports"
+          echo ""
+          echo "=== Process list ==="
+          docker exec eclosion ps aux 2>/dev/null || echo "ps not available in container"
+          exit 1
 
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
