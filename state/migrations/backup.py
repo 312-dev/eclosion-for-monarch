@@ -132,6 +132,14 @@ class BackupManager:
         Raises:
             ValueError: If path is outside backup directory (path traversal attempt)
         """
+        # Early validation: reject obvious path traversal attempts before resolving
+        path_str = str(backup_path)
+        if ".." in path_str or (
+            path_str.startswith("/") and not path_str.startswith(str(self.backup_dir))
+        ):
+            # Don't reveal internal paths in error messages
+            raise ValueError("Invalid backup path provided.") from None
+
         resolved_path = backup_path.resolve()
         resolved_backup_dir = self.backup_dir.resolve()
 
@@ -139,7 +147,8 @@ class BackupManager:
         try:
             resolved_path.relative_to(resolved_backup_dir)
         except ValueError:
-            raise ValueError(f"Invalid backup path: must be within {resolved_backup_dir}") from None
+            # Don't expose internal directory structure in error message
+            raise ValueError("Invalid backup path provided.") from None
 
         return resolved_path
 

@@ -46,26 +46,51 @@ SESSION_SECRET_FILE = os.path.join(os.path.dirname(__file__), ".session_secret")
 
 
 def _get_or_create_session_secret():
-    """Get existing session secret or create a new one."""
-    # First check environment variable
+    """
+    Get existing session secret or create a new one.
+
+    Security notes:
+    - In production, set SESSION_SECRET environment variable (preferred)
+    - File-based storage is for development only and uses restrictive permissions
+    - This stores an auto-generated secret for Flask session signing, not user credentials
+    """
+    # Preferred: Use environment variable (recommended for production)
     if env_secret := os.environ.get("SESSION_SECRET"):
         return env_secret
-    # Then check/create file-based secret
+
+    # Check if we're in a container/production environment
+    is_production = config.is_container_environment() or not app.debug
+
+    # Fallback: File-based secret for development
     if os.path.exists(SESSION_SECRET_FILE):
         with open(SESSION_SECRET_FILE) as f:
-            return f.read().strip()
+            stored_secret = f.read().strip()
+            if is_production:
+                # Log warning about using file-based secret in production
+                logger.warning(
+                    "Using file-based session secret. "
+                    "Set SESSION_SECRET environment variable for production."
+                )
+            return stored_secret
+
     # Generate new secret
     new_secret = secrets.token_hex(32)
-    try:
-        # Security note: This stores an auto-generated session secret, not user credentials.
-        # The secret is used for Flask session signing and is protected by file permissions.
-        # nosec B506 - intentional storage of non-sensitive auto-generated secret
-        with open(SESSION_SECRET_FILE, "w") as f:
-            f.write(new_secret)
-        # Set restrictive file permissions (owner read/write only)
-        os.chmod(SESSION_SECRET_FILE, 0o600)
-    except OSError:
-        pass  # If we can't write, just use the generated secret for this session
+
+    # Only persist to file in development (not containers/production)
+    if not is_production:
+        try:
+            with open(SESSION_SECRET_FILE, "w") as f:
+                f.write(new_secret)
+            # Set restrictive file permissions (owner read/write only)
+            os.chmod(SESSION_SECRET_FILE, 0o600)
+        except OSError:
+            pass  # If we can't write, use the generated secret for this session only
+    else:
+        logger.warning(
+            "Generated ephemeral session secret. "
+            "Set SESSION_SECRET environment variable for persistent sessions."
+        )
+
     return new_secret
 
 
@@ -148,9 +173,11 @@ def _audit_log(event: str, success: bool, details: str = ""):
     # Security: _sanitize_log_value removes control characters to prevent log injection
     client_ip = _sanitize_log_value(raw_ip)
     sanitized_details = _sanitize_log_value(details)
+    # Sanitize event name to prevent log injection (defense in depth)
+    sanitized_event = _sanitize_log_value(event)
     status = "SUCCESS" if success else "FAILED"
     # All values are sanitized above to prevent log injection attacks
-    logger.info(f"[AUDIT] {event} | {status} | IP: {client_ip} | {sanitized_details}")
+    logger.info(f"[AUDIT] {sanitized_event} | {status} | IP: {client_ip} | {sanitized_details}")
 
 
 def _update_activity():
@@ -243,6 +270,33 @@ def _get_trusted_host() -> str | None:
     return None
 
 
+def _validate_redirect_path(path: str) -> str:
+    """
+    Validate and sanitize a path for safe redirection.
+
+    Prevents open redirect attacks by ensuring the path:
+    - Starts with a single forward slash
+    - Does not contain protocol indicators
+    - Does not use double slashes that could be interpreted as protocol-relative URLs
+    """
+    if not path or path == "/?":
+        return "/"
+
+    # Remove any leading double slashes that could cause open redirect
+    while path.startswith("//"):
+        path = "/" + path.lstrip("/")
+
+    # Ensure path starts with /
+    if not path.startswith("/"):
+        path = "/" + path
+
+    # Block any protocol indicators in the path
+    if "://" in path or path.startswith("/\\"):
+        return "/"
+
+    return path
+
+
 def _enforce_https():
     """Redirect HTTP to HTTPS in production. Returns redirect response or None."""
     if request.is_secure or app.debug:
@@ -255,10 +309,10 @@ def _enforce_https():
             # If we can't validate the host, don't redirect (fail safe)
             return None
 
-        # Construct safe redirect URL using validated host and path
-        # Security: Host is validated above, path is from same request (not user-controlled destination)
-        safe_path = request.full_path if request.full_path != "/?" else "/"
-        return redirect(f"https://{trusted_host}{safe_path}", code=301)  # nosec B601
+        # Construct safe redirect URL using validated host and sanitized path
+        # Security: Both host and path are validated to prevent open redirect
+        safe_path = _validate_redirect_path(request.full_path)
+        return redirect(f"https://{trusted_host}{safe_path}", code=301)
     return None
 
 
@@ -632,7 +686,11 @@ async def recurring_dashboard():
 @api_handler(handle_mfa=True)
 async def recurring_sync():
     """Trigger full synchronization of recurring transactions."""
-    return await sync_service.full_sync()
+    result = await sync_service.full_sync()
+    # Sanitize any error messages to prevent information exposure
+    if not result.get("success") and "error" in result:
+        result["error"] = "Sync failed. Please try again."
+    return result
 
 
 @app.route("/recurring/config", methods=["GET"])
@@ -1075,6 +1133,9 @@ async def reset_recurring_tool():
         result.get("success", False),
         f"dedicated_deleted={result.get('dedicated_deleted', 0)}, rollup_deleted={result.get('rollup_deleted', False)}",
     )
+    # Sanitize any error messages to prevent information exposure
+    if not result.get("success") and "error" in result:
+        result["error"] = "Reset failed. Please try again."
     return result
 
 
@@ -1637,15 +1698,26 @@ def execute_migration():
         create_backup=True,
     )
 
-    # Sanitize message to prevent information exposure
+    # Sanitize all output to prevent information exposure
     safe_message = message if success else "Migration failed. Please try again."
+
+    # Only expose backup filename, not full path (prevents directory structure disclosure)
+    safe_backup_name = backup_path.name if backup_path else None
+
+    # Sanitize warnings to remove any paths or sensitive details
+    safe_warnings = []
+    if not is_safe:
+        for warning in warnings:
+            # Remove file paths from warnings
+            sanitized = re.sub(r"[/\\][\w./\\-]+", "[path]", str(warning))
+            safe_warnings.append(sanitized[:200])  # Limit length
 
     return jsonify(
         {
             "success": success,
             "message": safe_message,
-            "backup_path": str(backup_path) if backup_path else None,
-            "warnings": warnings if not is_safe else [],
+            "backup_name": safe_backup_name,
+            "warnings": safe_warnings,
         }
     )
 

@@ -93,8 +93,8 @@ def sanitize_name(value: str | None, max_length: int = 200) -> str:
 
     value = str(value)
 
-    # Remove any HTML tags
-    value = re.sub(r"<[^>]*>", "", value)
+    # Remove any HTML tags - limit tag length to prevent ReDoS
+    value = re.sub(r"<[^<>]{0,500}>", "", value)
 
     # Remove control characters
     value = re.sub(r"[\x00-\x1f\x7f]", "", value)
@@ -123,8 +123,8 @@ def sanitize_emoji(value: str | None) -> str:
 
     value = str(value)
 
-    # Remove any HTML/script content
-    value = re.sub(r"<[^>]*>", "", value)
+    # Remove any HTML/script content - limit tag length to prevent ReDoS
+    value = re.sub(r"<[^<>]{0,100}>", "", value)
 
     # Only keep first grapheme cluster (emoji can be multi-codepoint)
     # Simple approach: take first 4 characters max

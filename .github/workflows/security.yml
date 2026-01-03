@@ -192,6 +192,8 @@ jobs:
       - name: Start application
         run: |
           echo "Starting container..."
+          # Note: We don't set FLASK_DEBUG=1 because that changes app behavior
+          # Instead, ZAP will set X-Forwarded-Proto: https to bypass HTTPS redirect
           docker run -d --name eclosion -p 5001:5001 \
             -e INSTANCE_SECRET=zap-test-secret \
             eclosion:test
@@ -219,8 +221,8 @@ jobs:
               exit 1
             fi
 
-            # Try the health check
-            if curl -sf http://localhost:5001/health; then
+            # Try the health check (with X-Forwarded-Proto to bypass HTTPS redirect)
+            if curl -sf -H "X-Forwarded-Proto: https" http://localhost:5001/health; then
               echo ""
               echo "Application is healthy!"
               exit 0
@@ -248,6 +250,11 @@ jobs:
 
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
+        env:
+          # Set X-Forwarded-Proto to bypass HTTPS redirect in the app
+          # The app redirects HTTP to HTTPS in production unless this header is set
+          ZAP_AUTH_HEADER: "X-Forwarded-Proto"
+          ZAP_AUTH_HEADER_VALUE: "https"
         with:
           target: "http://localhost:5001"
           rules_file_name: ".zap/rules.tsv"

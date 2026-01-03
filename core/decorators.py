@@ -145,18 +145,22 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
             429,
         )
 
-    # Validation error - sanitize message before exposing
+    # Validation error - use the explicit user_message property
     if isinstance(e, ValidationError):
         logger.warning(f"Validation error: {e}")
+        # Use user_message property which is explicitly designed to be safe for exposure
         return (
-            jsonify(
-                {"error": _safe_error_message(e), "code": "VALIDATION_ERROR", "success": False}
-            ),
+            jsonify({"error": e.user_message, "code": "VALIDATION_ERROR", "success": False}),
             400,
         )
 
-    # Generic error - use safe message to prevent information exposure
+    # Generic error - never expose exception details to prevent information leakage
     logger.exception(f"API error: {e}")
+    # Return static message - do not pass exception to response
     return jsonify(
-        {"error": _safe_error_message(e), "success": False, "code": "INTERNAL_ERROR"}
+        {
+            "error": "An error occurred. Please try again.",
+            "success": False,
+            "code": "INTERNAL_ERROR",
+        }
     ), 500

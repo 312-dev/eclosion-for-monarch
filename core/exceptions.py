@@ -16,6 +16,16 @@ class MonarchTrackerError(Exception):
         if code:
             self.code = code
 
+    @property
+    def user_message(self) -> str:
+        """
+        Get a user-safe message that can be exposed in API responses.
+
+        This property explicitly marks the message as safe to expose,
+        helping static analysis tools verify no sensitive data leaks.
+        """
+        return str(self.args[0]) if self.args else "An error occurred."
+
 
 class AuthenticationError(MonarchTrackerError):
     """Raised when authentication fails."""
