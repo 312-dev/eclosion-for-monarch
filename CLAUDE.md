@@ -210,7 +210,7 @@ Examples:
 
 **All features must work in demo mode.**
 
-Demo mode uses localStorage instead of the backend API. The demo is hosted on GitHub Pages and runs entirely in the browser with no backend.
+Demo mode uses localStorage instead of the backend API. The demo is hosted on Cloudflare Pages and runs entirely in the browser with no backend.
 
 ### How Demo Mode Works
 

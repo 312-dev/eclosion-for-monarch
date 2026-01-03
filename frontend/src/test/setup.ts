@@ -2,6 +2,9 @@ import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
+// Mock __APP_VERSION__ which is injected by Vite at build time
+(globalThis as Record<string, unknown>).__APP_VERSION__ = '1.0.0-test';
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

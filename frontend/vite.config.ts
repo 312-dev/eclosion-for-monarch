@@ -166,14 +166,13 @@ const changelog = loadChangelog();
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  // Base path for deployment
-  // For ghpages mode with custom domain (docs.eclosion.app), use root path
-  // The /eclosion/ prefix was for username.github.io/eclosion/ but custom domains serve from root
+  // Base path for deployment (root for Cloudflare Pages with custom domain)
   base: '/',
 
   plugins: [react(), tailwindcss()],
   define: {
-    __APP_VERSION__: JSON.stringify(pkg.version),
+    // Use VITE_APP_VERSION from CI for beta builds, otherwise use package.json version
+    __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || pkg.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __DEMO_MODE__: JSON.stringify(process.env.VITE_DEMO_MODE === 'true'),
     __CHANGELOG__: JSON.stringify(changelog),

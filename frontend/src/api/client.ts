@@ -1,4 +1,4 @@
-import type { DashboardData, CategoryGroup, SyncResult, AuthStatus, LoginResult, AllocateResult, RollupData, UnmappedCategory, LinkCategoryResult, DeletableCategoriesResult, DeleteCategoriesResult, SetPassphraseResult, UnlockResult, UpdateCredentialsResult, ResetAppResult, SecurityStatus, VersionInfo, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult, ResetDedicatedResult, ResetRollupResult, AutoSyncStatus, EnableAutoSyncResult, DisableAutoSyncResult } from '../types';
+import type { DashboardData, CategoryGroup, SyncResult, AuthStatus, LoginResult, AllocateResult, RollupData, UnmappedCategory, LinkCategoryResult, DeletableCategoriesResult, DeleteCategoriesResult, SetPassphraseResult, UnlockResult, UpdateCredentialsResult, ResetAppResult, SecurityStatus, VersionInfo, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult, ResetDedicatedResult, ResetRollupResult, AutoSyncStatus, EnableAutoSyncResult, DisableAutoSyncResult, EclosionExport, ImportOptions, ImportResult, ImportPreviewResponse } from '../types';
 
 const API_BASE = '';
 
@@ -220,6 +220,31 @@ export async function updateSettings(settings: { auto_sync_new?: boolean; auto_t
   await fetchApi('/recurring/settings', {
     method: 'POST',
     body: JSON.stringify(settings),
+  });
+}
+
+// Settings export/import functions
+
+export async function exportSettings(): Promise<EclosionExport> {
+  return fetchApi<EclosionExport>('/settings/export');
+}
+
+export async function importSettings(
+  data: EclosionExport,
+  options?: ImportOptions
+): Promise<ImportResult> {
+  return fetchApi<ImportResult>('/settings/import', {
+    method: 'POST',
+    body: JSON.stringify({ data, options }),
+  });
+}
+
+export async function previewImport(
+  data: EclosionExport
+): Promise<ImportPreviewResponse> {
+  return fetchApi<ImportPreviewResponse>('/settings/import/preview', {
+    method: 'POST',
+    body: JSON.stringify({ data }),
   });
 }
 

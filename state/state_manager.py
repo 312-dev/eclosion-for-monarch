@@ -259,6 +259,7 @@ class StateManager:
             "created_at": rollup.created_at,
             "last_updated_at": rollup.last_updated_at,
             "emoji": rollup.emoji,
+            "is_linked": rollup.is_linked,
         }
 
     def _serialize_auto_sync(self, auto_sync: AutoSyncState) -> dict:

@@ -240,6 +240,49 @@ export function useUpdateSettingsMutation() {
   });
 }
 
+// ============================================================================
+// Settings Export/Import Mutations
+// ============================================================================
+
+/**
+ * Export settings to a portable format
+ */
+export function useExportSettingsMutation() {
+  const isDemo = useDemo();
+  return useMutation({
+    mutationFn: () => (isDemo ? demoApi.exportSettings() : api.exportSettings()),
+  });
+}
+
+/**
+ * Import settings from a backup file
+ */
+export function useImportSettingsMutation() {
+  const isDemo = useDemo();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ data, options }: { data: Parameters<typeof api.importSettings>[0]; options?: Parameters<typeof api.importSettings>[1] }) =>
+      isDemo
+        ? demoApi.importSettings(data, options)
+        : api.importSettings(data, options),
+    onSuccess: () => {
+      // Invalidate all relevant caches after import
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.dashboard, isDemo) });
+    },
+  });
+}
+
+/**
+ * Preview what an import file contains
+ */
+export function usePreviewImportMutation() {
+  const isDemo = useDemo();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof api.previewImport>[0]) =>
+      isDemo ? demoApi.previewImport(data) : api.previewImport(data),
+  });
+}
+
 /**
  * Set initial config (target group)
  */
