@@ -1,0 +1,90 @@
+/**
+ * Eclosion Docusaurus Theme
+ * Matches the Eclosion for Monarch branding
+ */
+
+:root {
+  /* Eclosion brand colors */
+  --ifm-color-primary: #f97316; /* Monarch orange */
+  --ifm-color-primary-dark: #ea580c;
+  --ifm-color-primary-darker: #dc4a06;
+  --ifm-color-primary-darkest: #b43d05;
+  --ifm-color-primary-light: #fb8c3c;
+  --ifm-color-primary-lighter: #fba159;
+  --ifm-color-primary-lightest: #fcc08a;
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #fb923c; /* Lighter orange for dark mode */
+  --ifm-color-primary-dark: #f97316;
+  --ifm-color-primary-darker: #ea580c;
+  --ifm-color-primary-darkest: #c2410c;
+  --ifm-color-primary-light: #fdba74;
+  --ifm-color-primary-lighter: #fed7aa;
+  --ifm-color-primary-lightest: #ffedd5;
+
+  --ifm-background-color: #1a1a2e;
+  --ifm-background-surface-color: #16213e;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Navbar styling */
+.navbar {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.navbar__title {
+  font-weight: 700;
+}
+
+/* Footer styling */
+.footer {
+  background-color: var(--ifm-background-surface-color);
+}
+
+/* Sidebar styling */
+.menu__link--active:not(.menu__link--sublist) {
+  background-color: rgba(249, 115, 22, 0.1);
+}
+
+/* Code blocks */
+.prism-code {
+  border-radius: 8px;
+}
+
+/* Tables */
+table {
+  display: table;
+  width: 100%;
+}
+
+th {
+  background-color: var(--ifm-background-surface-color);
+}
+
+/* Admonitions */
+.admonition {
+  border-radius: 8px;
+}
+
+/* Version dropdown */
+.dropdown__menu {
+  min-width: 120px;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+}

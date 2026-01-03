@@ -11,6 +11,7 @@ on:
       - main
     paths:
       - 'frontend/**'
+      - 'docusaurus/**'
       - '.github/workflows/deploy-demo.yml'
   workflow_dispatch:
 
@@ -43,11 +44,24 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Build for GitHub Pages
+      - name: Build marketing site
         working-directory: frontend
         env:
           VITE_DEMO_MODE: 'true'
         run: npm run build -- --mode ghpages
+
+      - name: Install Docusaurus dependencies
+        working-directory: docusaurus
+        run: npm ci
+
+      - name: Build Docusaurus
+        working-directory: docusaurus
+        run: npm run build
+
+      - name: Merge builds
+        run: |
+          # Copy Docusaurus build into frontend/dist/developers
+          cp -r docusaurus/build frontend/dist/developers
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

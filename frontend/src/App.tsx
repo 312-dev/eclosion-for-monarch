@@ -21,7 +21,6 @@ import { UnlockPage } from './pages/UnlockPage';
 import { LandingPage } from './pages/LandingPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { FeatureDetailPage } from './pages/FeatureDetailPage';
-import { DocsPage } from './pages/DocsPage';
 import { DashboardTab } from './components/tabs/DashboardTab';
 import { RecurringTab } from './components/tabs/RecurringTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
@@ -170,11 +169,9 @@ function AppRouter() {
 
   const isDemo = location.pathname.startsWith('/demo');
   const isLanding = location.pathname === '/';
-  const isPublicDocs =
+  const isFeatures =
     location.pathname === '/features' ||
-    location.pathname.startsWith('/features/') ||
-    location.pathname === '/docs' ||
-    location.pathname.startsWith('/docs/');
+    location.pathname.startsWith('/features/');
 
   // Marketing site (GitHub Pages): Show landing page, docs, and demo at /demo/*
   if (isMarketingSite) {
@@ -183,14 +180,12 @@ function AppRouter() {
       return <LandingPage />;
     }
 
-    // Public documentation pages
-    if (isPublicDocs) {
+    // Features pages (docs are now at /developers via Docusaurus)
+    if (isFeatures) {
       return (
         <Routes>
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/features/:featureId" element={<FeatureDetailPage />} />
-          <Route path="/docs" element={<DocsPage />} />
-          <Route path="/docs/*" element={<DocsPage />} />
         </Routes>
       );
     }

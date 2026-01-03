@@ -18,11 +18,17 @@ on:
       - 'state/**'
       - 'requirements*.txt'
       - '.github/workflows/docker-publish.yml'
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Git tag to build and publish (e.g., v1.1.0)'
+        required: true
+        type: string
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: graysoncadams/eclosion
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # Detect if relevant files changed (for main branch pushes)
@@ -36,8 +42,8 @@ jobs:
       - name: Check if build needed
         id: check
         run: |
-          # Always build for tags and PRs (PRs already filtered by paths)
-          if [[ "${{ github.ref }}" == refs/tags/* ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # Always build for workflow_call, tags, and PRs (PRs already filtered by paths)
+          if [[ -n "${{ inputs.tag }}" ]] || [[ "${{ github.ref }}" == refs/tags/* ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -63,6 +69,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -81,50 +89,71 @@ jobs:
       - name: Determine release channel
         id: channel
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          # Use input tag if provided (workflow_call), otherwise use github.ref
+          if [[ -n "${{ inputs.tag }}" ]]; then
+            TAG="${{ inputs.tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             TAG="${{ github.ref_name }}"
+          else
+            TAG=""
+          fi
+
+          if [[ -n "$TAG" ]]; then
             if [[ "$TAG" == *-beta* ]] || [[ "$TAG" == *-rc* ]] || [[ "$TAG" == *-alpha* ]]; then
               echo "channel=beta" >> $GITHUB_OUTPUT
             else
               echo "channel=stable" >> $GITHUB_OUTPUT
             fi
+            echo "is_release=true" >> $GITHUB_OUTPUT
+            echo "version=$TAG" >> $GITHUB_OUTPUT
           else
             echo "channel=dev" >> $GITHUB_OUTPUT
+            echo "is_release=false" >> $GITHUB_OUTPUT
+            echo "version=dev" >> $GITHUB_OUTPUT
           fi
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            # Version tags only - no floating :latest or :beta
-            # v1.2.3 -> 1.2.3, 1.2
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            # Pre-release tags (v1.2.3-beta.1) -> 1.2.3-beta.1
-            type=match,pattern=v(.*),group=1
+      - name: Generate Docker tags
+        id: tags
+        run: |
+          # GHCR requires lowercase image names
+          IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          VERSION="${{ steps.channel.outputs.version }}"
+
+          if [[ "${{ steps.channel.outputs.is_release }}" == "true" ]]; then
+            # Strip 'v' prefix if present
+            VERSION="${VERSION#v}"
+            # Extract major.minor
+            MAJOR_MINOR=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+')
+
+            TAGS="$IMAGE:$VERSION"
+            # Add major.minor tag only for stable releases (not pre-releases)
+            if [[ "$VERSION" != *-* ]] && [[ -n "$MAJOR_MINOR" ]]; then
+              TAGS="$TAGS,$IMAGE:$MAJOR_MINOR"
+            fi
+            echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          else
+            echo "tags=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build and push Docker image
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: steps.channel.outputs.is_release == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.tags.outputs.tags }}
           build-args: |
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
             GIT_SHA=${{ github.sha }}
-            VERSION=${{ github.ref_name }}
+            VERSION=${{ steps.channel.outputs.version }}
             RELEASE_CHANNEL=${{ steps.channel.outputs.channel }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       # Build-only for PRs and main branch pushes (no publish)
       - name: Build Docker image (CI only)
-        if: "!startsWith(github.ref, 'refs/tags/v')"
+        if: steps.channel.outputs.is_release != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .

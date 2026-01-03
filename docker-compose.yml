@@ -15,7 +15,7 @@
 
 services:
   eclosion:
-    image: ghcr.io/graysoncadams/eclosion:1.0.0
+    image: ghcr.io/graysoncadams/eclosion-for-monarch:1.1.0
     # Or build from source:
     # build: .
     container_name: eclosion

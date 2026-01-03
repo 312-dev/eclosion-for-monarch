@@ -86,7 +86,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             {!minimal && (
               <nav className="hidden md:flex items-center gap-8">
                 <NavLink to="/features">Features</NavLink>
-                <NavLink to="/docs">Docs</NavLink>
+                <NavLink to="/developers">Developers</NavLink>
                 <NavLink to="/demo">Demo</NavLink>
                 <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
                   GitHub
@@ -96,13 +96,13 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              {/* Docs Link (shown on landing page) */}
+              {/* Developers Link (shown on landing page) */}
               {minimal && (
                 <Link
-                  to="/docs"
+                  to="/developers"
                   className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
                 >
-                  Docs
+                  Developers
                 </Link>
               )}
 

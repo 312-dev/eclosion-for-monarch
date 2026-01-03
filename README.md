@@ -1,10 +1,12 @@
-# Eclosion for Monarch
+<p align="center">
+  <img src="docusaurus/static/img/social-card.png" alt="Eclosion for Monarch" width="100%">
+</p>
 
 > **Your budgeting, evolved.**
 
 A self-hosted toolkit that expands what's possible with Monarch Money. Each tool works independently with your account—enable only what you need.
 
-*Eclosion (n.): The emergence of an insect from its cocoon or a larva from an egg — symbolizing the transformation and growth of your budget.*
+*Eclosion (n.): The moment a butterfly emerges.*
 
 **[Try the Demo](https://docs.eclosion.app/demo)** · **[Documentation](https://docs.eclosion.app)**
 

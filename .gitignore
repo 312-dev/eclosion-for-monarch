@@ -24,5 +24,11 @@ state/credentials.json
 frontend/node_modules
 frontend/dist
 
+# Docusaurus
+docusaurus/node_modules
+docusaurus/build
+docusaurus/.docusaurus
+docusaurus/.cache-loader
+
 # Static build output (copied from frontend/dist in Docker)
 static/
