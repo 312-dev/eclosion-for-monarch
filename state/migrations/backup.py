@@ -116,7 +116,7 @@ class BackupManager:
                 continue
 
         # Sort by creation time, newest first
-        backups.sort(key=lambda x: x["created_at"], reverse=True)
+        backups.sort(key=lambda x: str(x["created_at"]), reverse=True)
         return backups
 
     def _validate_backup_path(self, backup_path: Path) -> Path:

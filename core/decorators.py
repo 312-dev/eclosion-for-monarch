@@ -149,7 +149,9 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
     if isinstance(e, ValidationError):
         logger.warning(f"Validation error: {e}")
         return (
-            jsonify({"error": _safe_error_message(e), "code": "VALIDATION_ERROR", "success": False}),
+            jsonify(
+                {"error": _safe_error_message(e), "code": "VALIDATION_ERROR", "success": False}
+            ),
             400,
         )
 

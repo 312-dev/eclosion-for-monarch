@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 from datetime import datetime, timedelta
+from typing import Any
 
 from cachetools import TTLCache
 from dotenv import load_dotenv
@@ -47,13 +48,16 @@ _category_groups_cache: TTLCache = TTLCache(maxsize=10, ttl=_CACHE_TTL)
 
 def get_cache(cache_name: str) -> TTLCache:
     """Get a cache by name for external access."""
-    caches = {
+    caches: dict[str, TTLCache] = {
         "recurring": _recurring_cache,
         "budget": _budget_cache,
         "category": _category_cache,
         "category_groups": _category_groups_cache,
     }
-    return caches.get(cache_name)
+    cache = caches.get(cache_name)
+    if cache is None:
+        raise KeyError(f"Unknown cache: {cache_name}")
+    return cache
 
 
 def clear_all_caches():
@@ -78,8 +82,6 @@ def clear_cache(cache_name: str):
 
 class RateLimitError(Exception):
     """Raised when API returns 429 Too Many Requests."""
-
-    pass
 
 
 async def retry_with_backoff(
@@ -136,7 +138,9 @@ async def retry_with_backoff(
                     raise RateLimitError(f"Rate limited after {max_retries} retries: {e}")
                 raise
 
-    raise last_exception
+    if last_exception is not None:
+        raise last_exception
+    raise RuntimeError("retry_with_backoff: No attempts made")
 
 
 def _get_credentials():
@@ -160,14 +164,14 @@ def _get_credentials():
     )
 
 
-def get_month_range():
+def get_month_range() -> tuple[str, str]:
     now = datetime.now()
     start = now.replace(day=1).strftime("%Y-%m-%d")
     if now.month == 12:
-        end = now.replace(year=now.year + 1, month=1, day=1)
+        end_date = now.replace(year=now.year + 1, month=1, day=1)
     else:
-        end = now.replace(month=now.month + 1, day=1)
-    end = (end - timedelta(days=1)).strftime("%Y-%m-%d")
+        end_date = now.replace(month=now.month + 1, day=1)
+    end = (end_date - timedelta(days=1)).strftime("%Y-%m-%d")
     return start, end
 
 
@@ -239,7 +243,7 @@ async def get_mm(email=None, password=None, mfa_secret_key=None):
 _savings_goals_cache: TTLCache = TTLCache(maxsize=10, ttl=_CACHE_TTL)
 
 
-async def get_savings_goals(mm, start_month: str, end_month: str) -> list:
+async def get_savings_goals(mm, start_month: str, end_month: str) -> list[Any]:
     """
     Fetch savings goals monthly budget amounts from Monarch.
 
@@ -256,7 +260,8 @@ async def get_savings_goals(mm, start_month: str, end_month: str) -> list:
     """
     cache_key = f"savings_goals_{start_month}_{end_month}"
     if cache_key in _savings_goals_cache:
-        return _savings_goals_cache[cache_key]
+        cached: list[Any] = _savings_goals_cache[cache_key]
+        return cached
 
     query = gql("""
         query GetSavingsGoals($startDate: Date!, $endDate: Date!) {
@@ -286,7 +291,7 @@ async def get_savings_goals(mm, start_month: str, end_month: str) -> list:
         variables={"startDate": start_month, "endDate": end_month},
     )
 
-    goals = result.get("savingsGoalMonthlyBudgetAmounts", [])
+    goals: list[Any] = result.get("savingsGoalMonthlyBudgetAmounts", [])
     _savings_goals_cache[cache_key] = goals
     return goals
 
@@ -295,7 +300,7 @@ async def get_savings_goals(mm, start_month: str, end_month: str) -> list:
 _user_profile_cache: TTLCache = TTLCache(maxsize=1, ttl=_CACHE_TTL)
 
 
-async def get_user_profile(mm) -> dict:
+async def get_user_profile(mm) -> dict[str, Any]:
     """
     Fetch user profile from Monarch.
 
@@ -304,7 +309,8 @@ async def get_user_profile(mm) -> dict:
     """
     cache_key = "user_profile"
     if cache_key in _user_profile_cache:
-        return _user_profile_cache[cache_key]
+        cached: dict[str, Any] = _user_profile_cache[cache_key]
+        return cached
 
     query = gql("""
         query Common_GetMe {
@@ -321,17 +327,17 @@ async def get_user_profile(mm) -> dict:
         graphql_query=query,
     )
 
-    profile = result.get("me", {})
+    profile: dict[str, Any] = result.get("me", {})
     _user_profile_cache[cache_key] = profile
     return profile
 
 
-def get_user_first_name(profile: dict) -> str:
+def get_user_first_name(profile: dict[str, Any]) -> str:
     """Extract first name from user profile."""
     name = profile.get("name", "")
     if name:
         # Split on spaces and take the first part
-        return name.split()[0]
+        return str(name).split()[0]
     return ""
 
 
