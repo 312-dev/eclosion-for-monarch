@@ -6,7 +6,7 @@
 # Production: eclosion.app (triggered by release)
 # Beta: beta.eclosion.app (triggered by push to develop)
 #
-# Beta versions are auto-generated as {base-version}-beta.{run_number}
+# Beta versions are auto-generated as {base-version}-beta.{short_sha}
 
 name: Deploy to Cloudflare
 
@@ -66,16 +66,18 @@ jobs:
             VERSION="${{ inputs.version }}"
           elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
             ENV="beta"
-            # Generate beta version: {package.json version}-beta.{run_number}
+            # Generate beta version: {package.json version}-beta.{short_sha}
             BASE_VERSION=$(node -p "require('./frontend/package.json').version")
-            VERSION="${BASE_VERSION}-beta.${{ github.run_number }}"
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            VERSION="${BASE_VERSION}-beta.${SHORT_SHA}"
           elif [[ "${{ github.event_name }}" == "release" ]]; then
             ENV="beta"
             VERSION="${{ github.event.release.tag_name }}"
           else
             ENV="${{ inputs.environment || 'beta' }}"
             BASE_VERSION=$(node -p "require('./frontend/package.json').version")
-            VERSION="${BASE_VERSION}-beta.${{ github.run_number }}"
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            VERSION="${BASE_VERSION}-beta.${SHORT_SHA}"
           fi
 
           echo "environment=$ENV" >> $GITHUB_OUTPUT
@@ -123,3 +125,44 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy frontend/dist --project-name=eclosion --branch=${{ steps.config.outputs.branch }}
+
+      - name: Cleanup old beta deployments
+        if: steps.config.outputs.environment == 'beta'
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Keep only the 5 most recent beta deployments
+          KEEP_COUNT=5
+          PROJECT="eclosion"
+
+          echo "Fetching beta deployments..."
+          DEPLOYMENTS=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          # Get beta deployment IDs (non-production), sorted by created_on desc, skip first KEEP_COUNT
+          BETA_IDS=$(echo "$DEPLOYMENTS" | jq -r --arg keep "$KEEP_COUNT" '
+            .result
+            | map(select(.environment == "preview"))
+            | sort_by(.created_on) | reverse
+            | .[$keep | tonumber:]
+            | .[].id
+          ')
+
+          if [ -z "$BETA_IDS" ]; then
+            echo "No old beta deployments to clean up"
+            exit 0
+          fi
+
+          # Delete old deployments
+          for ID in $BETA_IDS; do
+            echo "Deleting deployment: $ID"
+            curl -s -X DELETE \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments/${ID}" \
+              -H "Authorization: Bearer ${CF_API_TOKEN}" \
+              -H "Content-Type: application/json" | jq -r '.success'
+          done
+
+          echo "Cleanup complete"
