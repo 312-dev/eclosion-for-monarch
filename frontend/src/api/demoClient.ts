@@ -15,7 +15,6 @@ import type {
   LinkCategoryResult,
   SecurityStatus,
   VersionInfo,
-  ChangelogResponse,
   VersionCheckResult,
   ChangelogStatusResult,
   MarkChangelogReadResult,
@@ -690,24 +689,6 @@ export async function getVersion(): Promise<VersionInfo> {
     is_beta: false,
     schema_version: '1.0',
     git_sha: 'demo',
-  };
-}
-
-export async function getChangelog(_limit?: number): Promise<ChangelogResponse> {
-  await simulateDelay(50);
-  return {
-    entries: [
-      {
-        version: DEMO_VERSION,
-        date: '2024-01-15',
-        summary: 'First release! Try out Eclosion with a full demo experience right in your browser.',
-        sections: {
-          added: ['Demo mode for GitHub Pages', 'Landing page with deployment options'],
-        },
-      },
-    ],
-    current_version: `${DEMO_VERSION}-demo`,
-    total_entries: 1,
   };
 }
 

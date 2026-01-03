@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDemo } from '../context/DemoContext';
 import * as api from './client';
 import * as demoApi from './demoClient';
+import { getChangelogResponse } from '../data/changelog';
 
 // ============================================================================
 // Query Keys
@@ -480,13 +481,14 @@ export function useVersionQuery() {
 
 /**
  * Get changelog entries
+ *
+ * Changelog is baked into the build from CHANGELOG.md, so no API call needed.
  */
 export function useChangelogQuery(limit?: number) {
-  const isDemo = useDemo();
   return useQuery({
-    queryKey: [...getQueryKey(queryKeys.changelog, isDemo), limit],
-    queryFn: () => (isDemo ? demoApi.getChangelog(limit) : api.getChangelog(limit)),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    queryKey: [...queryKeys.changelog, limit],
+    queryFn: () => getChangelogResponse(limit),
+    staleTime: Infinity, // Baked-in data never goes stale
   });
 }
 

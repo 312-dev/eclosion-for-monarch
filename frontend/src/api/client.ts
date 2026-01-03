@@ -1,4 +1,4 @@
-import type { DashboardData, CategoryGroup, SyncResult, AuthStatus, LoginResult, AllocateResult, RollupData, UnmappedCategory, LinkCategoryResult, DeletableCategoriesResult, DeleteCategoriesResult, SetPassphraseResult, UnlockResult, UpdateCredentialsResult, ResetAppResult, SecurityStatus, VersionInfo, ChangelogResponse, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult, ResetDedicatedResult, ResetRollupResult, AutoSyncStatus, EnableAutoSyncResult, DisableAutoSyncResult } from '../types';
+import type { DashboardData, CategoryGroup, SyncResult, AuthStatus, LoginResult, AllocateResult, RollupData, UnmappedCategory, LinkCategoryResult, DeletableCategoriesResult, DeleteCategoriesResult, SetPassphraseResult, UnlockResult, UpdateCredentialsResult, ResetAppResult, SecurityStatus, VersionInfo, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult, ResetDedicatedResult, ResetRollupResult, AutoSyncStatus, EnableAutoSyncResult, DisableAutoSyncResult } from '../types';
 
 const API_BASE = '';
 
@@ -478,11 +478,6 @@ export async function cancelSubscription(): Promise<CancelSubscriptionResult> {
 
 export async function getVersion(): Promise<VersionInfo> {
   return fetchApi<VersionInfo>('/version');
-}
-
-export async function getChangelog(limit?: number): Promise<ChangelogResponse> {
-  const params = limit ? `?limit=${limit}` : '';
-  return fetchApi<ChangelogResponse>(`/version/changelog${params}`);
 }
 
 export async function checkVersion(clientVersion: string): Promise<VersionCheckResult> {

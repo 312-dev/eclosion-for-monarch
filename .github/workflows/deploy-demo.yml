@@ -2,17 +2,16 @@
 #
 # Builds the frontend in demo mode and deploys to GitHub Pages.
 # The demo runs entirely in the browser with localStorage persistence.
+#
+# This workflow only runs after a release is created to ensure the demo
+# reflects the official released version with updated changelog.
 
 name: Deploy Demo
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'frontend/**'
-      - 'docusaurus/**'
-      - '.github/workflows/deploy-demo.yml'
+  # Called from release.yml after release is created
+  workflow_call:
+  # Manual trigger for emergency deployments
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
