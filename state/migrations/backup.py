@@ -139,9 +139,7 @@ class BackupManager:
         try:
             resolved_path.relative_to(resolved_backup_dir)
         except ValueError:
-            raise ValueError(
-                f"Invalid backup path: must be within {resolved_backup_dir}"
-            ) from None
+            raise ValueError(f"Invalid backup path: must be within {resolved_backup_dir}") from None
 
         return resolved_path
 

@@ -50,7 +50,9 @@ def _get_or_create_session_secret():
     new_secret = secrets.token_hex(32)
     try:
         # Write session secret with restricted permissions (not sensitive user data)
-        with open(SESSION_SECRET_FILE, "w") as f:  # CodeQL: session secret is auto-generated, not user data
+        with open(
+            SESSION_SECRET_FILE, "w"
+        ) as f:  # CodeQL: session secret is auto-generated, not user data
             f.write(new_secret)
         # Set restrictive file permissions (owner read/write only)
         os.chmod(SESSION_SECRET_FILE, 0o600)
