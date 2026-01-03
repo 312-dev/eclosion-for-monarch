@@ -111,7 +111,7 @@ class AutomationCredentialsManager:
         try:
             with open(self.creds_file) as f:
                 data = json.load(f)
-            return data.get("automation_enabled", False)
+            return bool(data.get("automation_enabled", False))
         except Exception:
             return False
 

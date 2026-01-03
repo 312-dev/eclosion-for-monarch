@@ -951,7 +951,11 @@ class CredentialsManager:
             if not data.get("encrypted"):
                 # Legacy unencrypted format - should not happen in production
                 if data.get("email") and data.get("password"):
-                    return data
+                    return {
+                        "email": str(data["email"]),
+                        "password": str(data["password"]),
+                        "mfa_secret": str(data.get("mfa_secret", "")),
+                    }
                 return None
 
             # Decrypt credentials

@@ -106,6 +106,8 @@ def calculate_frozen_target(
         balance_at_start = current_balance
         was_recalculated = True
     else:
+        # stored_target is guaranteed non-None here since needs_recalc is False
+        assert stored_target is not None
         frozen_target = stored_target["frozen_monthly_target"]
         balance_at_start = stored_target.get("balance_at_month_start") or 0
         was_recalculated = False

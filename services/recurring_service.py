@@ -119,7 +119,8 @@ class RecurringService:
 
         # Check cache first (unless force refresh)
         if not force_refresh and cache_key in cache:
-            return cache[cache_key]
+            cached: list[RecurringItem] = cache[cache_key]
+            return cached
 
         mm = await get_mm()
 
@@ -194,7 +195,7 @@ class RecurringService:
     def _extract_name(self, stream: dict) -> str:
         """Extract display name from recurring stream."""
         # Use stream name directly (it already has the merchant name or description)
-        return stream.get("name", "Unknown")
+        return str(stream.get("name", "Unknown"))
 
     async def get_recurring_by_id(self, recurring_id: str) -> RecurringItem | None:
         """Get a specific recurring item by ID."""

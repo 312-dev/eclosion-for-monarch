@@ -158,15 +158,17 @@ class SyncService:
         """
         state = self.state_manager.load()
 
-        if enabled and state.is_configured():
+        if enabled and state.is_configured() and state.target_group_id:
             # Get item data - use provided data or fetch from cache
             if item_data:
                 # Use provided data directly
-                item_name = item_data.get("category_name") or item_data.get("name")
-                item_amount = item_data.get("amount", 0)
-                months_until_due = item_data.get("months_until_due", 0)
-                next_due_date = item_data.get("next_due_date")
-                frequency_months = item_data.get("frequency_months", 1)
+                item_name = str(
+                    item_data.get("category_name") or item_data.get("name") or "Unknown"
+                )
+                item_amount = float(item_data.get("amount", 0))
+                months_until_due = float(item_data.get("months_until_due", 0))
+                next_due_date = str(item_data.get("next_due_date") or "")
+                frequency_months = int(item_data.get("frequency_months", 1))
             else:
                 # Fetch from cache (won't make API call if recently fetched)
                 recurring_items = await self.recurring_service.get_all_recurring()
@@ -177,7 +179,7 @@ class SyncService:
                 item_amount = item.amount
                 months_until_due = item.months_until_due
                 next_due_date = item.next_due_date.isoformat()
-                frequency_months = item.frequency_months
+                frequency_months = int(item.frequency_months)
 
             # Get or create category
             cat_state = state.categories.get(recurring_id)
@@ -209,7 +211,7 @@ class SyncService:
             calc = self.savings_calculator.calculate(
                 target_amount=item_amount,
                 current_balance=0,  # New category starts at 0
-                months_until_due=months_until_due,
+                months_until_due=int(months_until_due),
                 tracked_over_contribution=0,
                 frequency_months=frequency_months,
             )
@@ -303,7 +305,7 @@ class SyncService:
         if not cat_state:
             return {"success": False, "error": "No category state found for this item"}
 
-        if not state.is_configured():
+        if not state.is_configured() or not state.target_group_id:
             return {"success": False, "error": "Tracker not configured"}
 
         # Fetch the recurring item to get current details
@@ -329,7 +331,7 @@ class SyncService:
             current_balance=0,  # New category starts at 0
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=item.frequency_months,
+            frequency_months=int(item.frequency_months),
         )
 
         # Set budget in Monarch
@@ -434,7 +436,7 @@ class SyncService:
             current_balance=current_balance,
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=item.frequency_months,
+            frequency_months=int(item.frequency_months),
         )
 
         # Set budget in Monarch
@@ -446,7 +448,7 @@ class SyncService:
         self.state_manager.update_category(
             recurring_id=recurring_id,
             monarch_category_id=category_id,
-            name=display_name,
+            name=str(display_name),
             target_amount=item.amount,
             due_date=item.next_due_date.isoformat(),
         )
@@ -661,14 +663,12 @@ class SyncService:
         all_planned_budgets = await self.category_manager.get_all_planned_budgets()
         all_category_info = await self.category_manager.get_all_category_info()
 
-        results = {
-            "success": True,
-            "created": [],
-            "updated": [],
-            "deactivated": [],
-            "errors": [],
-            "total_monthly": 0,
-        }
+        created: list[str] = []
+        updated: list[dict[str, Any]] = []
+        deactivated: list[str] = []
+        errors: list[dict[str, str]] = []
+        removed_notices: list[dict[str, Any]] = []
+        total_monthly = 0.0
 
         # Step 2: Process each enabled recurring item
         for item in enabled_items:
@@ -677,16 +677,16 @@ class SyncService:
                     item, state, all_balances, all_planned_budgets, all_category_info
                 )
                 if result.get("created"):
-                    results["created"].append(result["name"])
-                results["updated"].append(
+                    created.append(str(result["name"]))
+                updated.append(
                     {
                         "name": result["name"],
                         "monthly_contribution": result["monthly_contribution"],
                     }
                 )
-                results["total_monthly"] += result["monthly_contribution"]
+                total_monthly += result["monthly_contribution"]
             except Exception as e:
-                results["errors"].append(
+                errors.append(
                     {
                         "name": item.name,
                         "error": str(e),
@@ -701,7 +701,6 @@ class SyncService:
             if recurring_id not in active_ids and cat_state.is_active
         ]
 
-        results["removed_notices"] = []
         for recurring_id, cat_state in removed_ids:
             try:
                 # Set budget to 0 if it's not already 0
@@ -718,8 +717,8 @@ class SyncService:
                 notice = self.state_manager.remove_category_and_notify(recurring_id, was_in_rollup)
 
                 if notice:
-                    results["deactivated"].append(cat_state.name)
-                    results["removed_notices"].append(
+                    deactivated.append(cat_state.name)
+                    removed_notices.append(
                         {
                             "id": notice.id,
                             "recurring_id": notice.recurring_id,
@@ -730,7 +729,7 @@ class SyncService:
                         }
                     )
             except Exception as e:
-                results["errors"].append(
+                errors.append(
                     {
                         "name": cat_state.name,
                         "error": f"Failed to remove: {e}",
@@ -750,8 +749,17 @@ class SyncService:
         # Step 5: Mark sync complete
         self.state_manager.mark_sync_complete()
 
-        results["recurring_count"] = len(recurring_items)
-        results["sync_time"] = datetime.now().isoformat()
+        results: dict[str, Any] = {
+            "success": True,
+            "created": created,
+            "updated": updated,
+            "deactivated": deactivated,
+            "errors": errors,
+            "total_monthly": total_monthly,
+            "removed_notices": removed_notices,
+            "recurring_count": len(recurring_items),
+            "sync_time": datetime.now().isoformat(),
+        }
 
         return results
 
@@ -771,6 +779,7 @@ class SyncService:
         if cat_state is None:
             # Create new category with emoji as icon
             emoji = "🔄"  # Default emoji for new categories
+            assert state.target_group_id is not None
             category_id = await self.category_manager.create_category(
                 group_id=state.target_group_id,
                 name=item.category_name,
@@ -788,6 +797,7 @@ class SyncService:
             cat_info = all_category_info.get(category_id)
             if cat_info is None:
                 # Category was deleted - recreate it with emoji as icon
+                assert state.target_group_id is not None
                 category_id = await self.category_manager.create_category(
                     group_id=state.target_group_id,
                     name=item.category_name,
@@ -807,7 +817,7 @@ class SyncService:
                 new_cycle = self.savings_calculator.detect_new_cycle(
                     cat_state.previous_due_date,
                     item.next_due_date.isoformat(),
-                    item.frequency_months,
+                    int(item.frequency_months),
                 )
                 if new_cycle:
                     # Reset over-contribution for new cycle
@@ -829,7 +839,7 @@ class SyncService:
             current_balance=current_balance,
             months_until_due=item.months_until_due,
             tracked_over_contribution=tracked_over_contribution,
-            frequency_months=item.frequency_months,
+            frequency_months=int(item.frequency_months),
         )
 
         # Only update budget if it changed (avoid unnecessary API calls)
@@ -873,7 +883,7 @@ class SyncService:
         state = self.state_manager.load()
         all_category_info = await self.category_manager.get_all_category_info()
 
-        deletable = []
+        deletable: list[dict[str, Any]] = []
 
         # Check each category in state
         for recurring_id, cat_state in state.categories.items():
@@ -919,33 +929,36 @@ class SyncService:
         Returns results with success/failure for each category.
         """
         deletable_result = await self.get_deletable_categories()
-        categories = deletable_result.get("categories", [])
+        categories: list[dict[str, Any]] = deletable_result.get("categories", [])
 
-        results = {
-            "deleted": [],
-            "failed": [],
-            "total_attempted": len(categories),
-        }
+        deleted: list[dict[str, Any]] = []
+        failed: list[dict[str, Any]] = []
 
         for cat in categories:
-            category_id = cat.get("category_id")
+            category_id = str(cat.get("category_id", ""))
             result = await self.category_manager.delete_category(category_id)
 
             if result.get("success"):
-                results["deleted"].append(
+                deleted.append(
                     {
                         "category_id": category_id,
                         "name": cat.get("name"),
                     }
                 )
             else:
-                results["failed"].append(
+                failed.append(
                     {
                         "category_id": category_id,
                         "name": cat.get("name"),
                         "error": result.get("error"),
                     }
                 )
+
+        results: dict[str, Any] = {
+            "deleted": deleted,
+            "failed": failed,
+            "total_attempted": len(categories),
+        }
 
         # Reset state if all deletions succeeded
         if len(results["failed"]) == 0:
@@ -999,31 +1012,26 @@ class SyncService:
         # Get dedicated categories to delete (not rollup, not linked)
         deletable = self.state_manager.get_deletable_dedicated_categories()
 
-        results = {
-            "deleted": [],
-            "failed": [],
-            "total_attempted": 0,
-            "items_disabled": 0,
-        }
+        deleted: list[dict[str, Any]] = []
+        failed: list[dict[str, Any]] = []
 
         # Filter to only categories that are not linked
         categories_to_delete = [c for c in deletable if not c.get("is_linked")]
-        results["total_attempted"] = len(categories_to_delete)
 
         # Delete each category from Monarch
         for cat in categories_to_delete:
-            category_id = cat.get("category_id")
+            category_id = str(cat.get("category_id", ""))
             result = await self.category_manager.delete_category(category_id)
 
             if result.get("success"):
-                results["deleted"].append(
+                deleted.append(
                     {
                         "category_id": category_id,
                         "name": cat.get("name"),
                     }
                 )
             else:
-                results["failed"].append(
+                failed.append(
                     {
                         "category_id": category_id,
                         "name": cat.get("name"),
@@ -1033,11 +1041,16 @@ class SyncService:
 
         # Reset state (clears categories, disables non-rollup items)
         state_result = self.state_manager.reset_dedicated_categories()
-        results["items_disabled"] = state_result.get("items_disabled", 0)
 
-        results["success"] = len(results["failed"]) == 0
-        results["deleted_count"] = len(results["deleted"])
-        results["failed_count"] = len(results["failed"])
+        results: dict[str, Any] = {
+            "deleted": deleted,
+            "failed": failed,
+            "total_attempted": len(categories_to_delete),
+            "items_disabled": state_result.get("items_disabled", 0),
+            "success": len(failed) == 0,
+            "deleted_count": len(deleted),
+            "failed_count": len(failed),
+        }
 
         return results
 
@@ -1091,46 +1104,48 @@ class SyncService:
 
         This is equivalent to uninstall for the Recurring feature specifically.
         """
-        results = {
-            "success": True,
-            "dedicated_deleted": 0,
-            "dedicated_failed": 0,
-            "rollup_deleted": False,
-            "items_disabled": 0,
-            "errors": [],
-        }
+        errors: list[str] = []
+        dedicated_deleted = 0
+        dedicated_failed = 0
+        rollup_deleted = False
+        items_disabled = 0
 
         # Step 1: Reset dedicated categories
         try:
             dedicated_result = await self.reset_dedicated_categories()
-            results["dedicated_deleted"] = dedicated_result.get("deleted_count", 0)
-            results["dedicated_failed"] = dedicated_result.get("failed_count", 0)
-            results["items_disabled"] += dedicated_result.get("items_disabled", 0)
+            dedicated_deleted = dedicated_result.get("deleted_count", 0)
+            dedicated_failed = dedicated_result.get("failed_count", 0)
+            items_disabled += dedicated_result.get("items_disabled", 0)
             if not dedicated_result.get("success"):
                 for fail in dedicated_result.get("failed", []):
-                    results["errors"].append(
-                        f"Failed to delete {fail.get('name')}: {fail.get('error')}"
-                    )
+                    errors.append(f"Failed to delete {fail.get('name')}: {fail.get('error')}")
         except Exception as e:
-            results["errors"].append(f"Dedicated reset error: {e!s}")
+            errors.append(f"Dedicated reset error: {e!s}")
 
         # Step 2: Reset rollup
         try:
             rollup_result = await self.reset_rollup()
-            results["rollup_deleted"] = rollup_result.get("deleted_category", False)
-            results["items_disabled"] += rollup_result.get("items_disabled", 0)
+            rollup_deleted = rollup_result.get("deleted_category", False)
+            items_disabled += rollup_result.get("items_disabled", 0)
             if rollup_result.get("error"):
-                results["errors"].append(f"Rollup reset error: {rollup_result.get('error')}")
+                errors.append(f"Rollup reset error: {rollup_result.get('error')}")
         except Exception as e:
-            results["errors"].append(f"Rollup reset error: {e!s}")
+            errors.append(f"Rollup reset error: {e!s}")
 
         # Step 3: Reset the setup wizard (clear target_group_id)
         try:
             self.state_manager.reset_config()
         except Exception as e:
-            results["errors"].append(f"Config reset error: {e!s}")
+            errors.append(f"Config reset error: {e!s}")
 
-        results["success"] = len(results["errors"]) == 0
+        results: dict[str, Any] = {
+            "success": len(errors) == 0,
+            "dedicated_deleted": dedicated_deleted,
+            "dedicated_failed": dedicated_failed,
+            "rollup_deleted": rollup_deleted,
+            "items_disabled": items_disabled,
+            "errors": errors,
+        }
 
         return results
 
@@ -1142,7 +1157,7 @@ class SyncService:
             # Still fetch recurring items from Monarch for setup wizard
             try:
                 recurring_items = await self.recurring_service.get_all_recurring()
-                items_data = []
+                unconfigured_items_data: list[dict[str, Any]] = []
                 for item in recurring_items:
                     # Calculate contribution for display
                     calc = self.savings_calculator.calculate(
@@ -1150,9 +1165,9 @@ class SyncService:
                         current_balance=0,
                         months_until_due=item.months_until_due,
                         tracked_over_contribution=0,
-                        frequency_months=item.frequency_months,
+                        frequency_months=int(item.frequency_months),
                     )
-                    items_data.append(
+                    unconfigured_items_data.append(
                         {
                             "id": item.id,
                             "name": item.category_name,
@@ -1173,14 +1188,14 @@ class SyncService:
                     )
             except Exception as e:
                 logger.warning(f"Failed to fetch recurring items during setup: {e}")
-                items_data = []
+                unconfigured_items_data = []
 
             # Get any active notices (even when not configured)
             active_notices = self.state_manager.get_active_notices()
 
             return {
                 "is_configured": False,
-                "items": items_data,
+                "items": unconfigured_items_data,
                 "summary": {},
                 "config": {
                     "target_group_id": None,
@@ -1223,10 +1238,10 @@ class SyncService:
         # Debug logging for balance retrieval
         logger.info(f"[Dashboard] Fetched {len(all_balances)} category balances")
 
-        items_data = []
-        total_monthly = 0
-        total_saved = 0
-        total_target = 0
+        items_data: list[dict[str, Any]] = []
+        total_monthly = 0.0
+        total_saved = 0.0
+        total_target = 0.0
         active_count = 0
         inactive_count = 0
 
@@ -1261,7 +1276,7 @@ class SyncService:
                 current_balance=current_balance,
                 months_until_due=item.months_until_due,
                 tracked_over_contribution=tracked_over,
-                frequency_months=item.frequency_months,
+                frequency_months=int(item.frequency_months),
             )
 
             # Frozen monthly target logic - only recalculate at month boundaries OR if inputs changed
@@ -1298,11 +1313,12 @@ class SyncService:
                         target_month=current_month,
                         balance_at_start=current_balance,
                         amount=item.amount,
-                        frequency_months=item.frequency_months,
+                        frequency_months=int(item.frequency_months),
                     )
                     balance_at_start = current_balance
                 else:
                     # Same month and inputs unchanged - use frozen target
+                    assert stored_target is not None
                     frozen_target = stored_target["frozen_monthly_target"]
                     balance_at_start = stored_target["balance_at_month_start"] or 0
 
@@ -1455,7 +1471,7 @@ class SyncService:
 
         # Load credentials with user's passphrase
         try:
-            creds = self.credentials_manager.load(passphrase)
+            creds = self.credentials_service.credentials_manager.load(passphrase)
             if not creds:
                 return {"success": False, "error": "Failed to load credentials"}
         except Exception as e:

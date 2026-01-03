@@ -81,7 +81,7 @@ CORS(app, supports_credentials=True)  # Enable CORS with credentials for session
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    default_limits=config.DEFAULT_RATE_LIMITS,
+    default_limits=list(config.DEFAULT_RATE_LIMITS),
     storage_uri="memory://",
 )
 
@@ -775,9 +775,9 @@ def dismiss_notice(notice_id):
     """Dismiss a notice by its ID."""
     result = sync_service.state_manager.dismiss_notice(notice_id)
     if not result:
-        from core.exceptions import NotFoundError
+        from core.exceptions import MonarchTrackerError
 
-        raise NotFoundError("Notice not found")
+        raise MonarchTrackerError("Notice not found", code="NOT_FOUND")
     return {"success": True}
 
 
@@ -1103,18 +1103,16 @@ async def cancel_subscription():
 
     This is the "nuclear option" - completely removes all traces of the app.
     """
-    result = {
-        "success": True,
-        "steps_completed": [],
-        "railway_deletion_url": None,
-        "instructions": [],
-    }
+    from typing import Any
+
+    steps_completed: list[str] = []
+    instructions: list[str] = []
 
     # Step 1: Delete Monarch categories
     try:
         delete_result = await sync_service.delete_all_categories()
         if delete_result.get("success"):
-            result["steps_completed"].append("monarch_categories_deleted")
+            steps_completed.append("monarch_categories_deleted")
     except Exception as e:
         logger.warning(f"[CANCEL] Failed to delete Monarch categories: {e}")
         # Continue anyway - user may have already deleted them
@@ -1122,14 +1120,20 @@ async def cancel_subscription():
     # Step 2: Clear credentials and logout
     try:
         sync_service.logout()
-        result["steps_completed"].append("credentials_cleared")
+        steps_completed.append("credentials_cleared")
     except Exception as e:
         logger.warning(f"[CANCEL] Failed to clear credentials: {e}")
 
     # Step 3: Get Railway deletion URL
     railway_url = _get_railway_project_url()
+    result: dict[str, Any] = {
+        "success": True,
+        "steps_completed": steps_completed,
+        "railway_deletion_url": railway_url,
+        "instructions": instructions,
+    }
+
     if railway_url:
-        result["railway_deletion_url"] = railway_url
         result["instructions"] = [
             "All app data has been deleted.",
             "To stop billing, click the link below to delete your Railway project.",
@@ -1143,7 +1147,7 @@ async def cancel_subscription():
         ]
         result["is_railway"] = False
 
-    _audit_log("CANCEL_SUBSCRIPTION", True, f"Steps: {result['steps_completed']}")
+    _audit_log("CANCEL_SUBSCRIPTION", True, f"Steps: {steps_completed}")
 
     return result
 
@@ -1223,7 +1227,7 @@ def _get_app_version() -> str:
     pkg_path = Path(__file__).parent / "frontend" / "package.json"
     if pkg_path.exists():
         with open(pkg_path) as f:
-            return json.load(f).get("version", "0.0.0")
+            return str(json.load(f).get("version", "0.0.0"))
     return "0.0.0"
 
 
@@ -1234,7 +1238,7 @@ def _parse_changelog() -> list[dict]:
         return []
 
     content = changelog_path.read_text()
-    versions = []
+    versions: list[dict] = []
 
     # Parse changelog format: ## [X.Y.Z] - YYYY-MM-DD
     version_pattern = r"^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})$"
