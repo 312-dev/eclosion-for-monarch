@@ -42,7 +42,7 @@ function DeploymentOption({
     <div
       className={`relative flex flex-col p-6 rounded-xl border-2 ${
         isPrimary
-          ? 'border-[var(--monarch-orange)] bg-[var(--monarch-orange)] bg-opacity-5'
+          ? 'border-[var(--monarch-orange)] bg-(--monarch-orange)/5'
           : 'border-[var(--monarch-border)] bg-[var(--monarch-bg-light)]'
       }`}
     >
@@ -273,47 +273,47 @@ function DeploymentContent() {
         {/* Easy Mode */}
         <div className="flex flex-col">
           <DeploymentOption
-            title="Easy Mode"
-            subtitle="Powered by Railway"
-            price="$5-7/mo"
+            title="Quick Setup"
+            subtitle="Recommended for most people"
+            price="~$5/mo"
             features={[
-              'One-click deployment',
-              'Automatic updates',
-              'Managed SSL certificates',
-              'No technical setup required',
-              'Persistent data storage',
+              'Set up in one click',
+              'Updates happen automatically',
+              'Secure connection included',
+              'No technical skills needed',
+              'Your data is always saved',
             ]}
-            buttonText="Deploy to Railway"
+            buttonText="Get Started"
             buttonHref="https://railway.app/template/eclosion"
             isPrimary
             badge="Recommended"
           />
           <p className="text-xs text-[var(--monarch-text-muted)] text-center mt-3 px-2">
-            Affiliate link — you get $20 in credits, and Eclosion earns a commission
+            Hosted on Railway — you get $20 in free credits to start
           </p>
         </div>
 
         {/* Expert Mode */}
         <DeploymentOption
-          title="Expert Mode"
-          subtitle="Self-hosted"
+          title="Self-Hosted"
+          subtitle="For technical users"
           price="Free"
           features={[
-            'Run on your own server',
-            'Full control over your data',
-            'Docker or local setup',
-            'No recurring costs',
-            'Requires technical knowledge',
+            'Run on your own computer or server',
+            'Complete control over everything',
+            'No monthly costs',
+            'Requires some technical knowledge',
+            'Docker installation required',
           ]}
-          buttonText="View Documentation"
-          buttonHref="https://github.com/graysoncadams/eclosion#self-hosted"
+          buttonText="View Setup Guide"
+          buttonHref="https://github.com/graysoncadams/eclosion-for-monarch#self-hosted"
         />
       </div>
 
       <p className="mt-6 text-xs text-center text-[var(--monarch-text-muted)]">
-        Both options give you the same features. Railway is recommended for ease of use.
+        Both options give you the exact same features.
         <br />
-        Your Monarch credentials are encrypted and never shared.
+        Your Monarch login is encrypted and stored only on your server — no one else can access it.
       </p>
     </>
   );

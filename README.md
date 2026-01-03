@@ -25,11 +25,11 @@ Then access your instance at: `https://your-app.railway.app?secret=YOUR_SECRET`
 
 ### Option 2: Self-Host with Docker
 
-Run your own instance on any server with Docker:
+Run your own instance on any server with Docker. For comprehensive guides including platform-specific instructions (AWS, DigitalOcean, Kubernetes, NAS, Raspberry Pi, etc.) and reverse proxy setup, see the **[Self-Hosting Guide](docs/SELF_HOSTING.md)**.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/GraysonCAdams/eclosion.git
+git clone https://github.com/graysoncadams/eclosion-for-monarch.git
 cd eclosion
 
 # 2. Generate a secret access code

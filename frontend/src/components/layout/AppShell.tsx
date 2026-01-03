@@ -113,7 +113,7 @@ export function AppShell() {
     if (hasTour) {
       setShowTour(true);
     } else {
-      window.open('https://github.com/graysonhead/eclosion/discussions', '_blank');
+      window.open('https://github.com/graysoncadams/eclosion-for-monarch/discussions', '_blank');
     }
   };
 
@@ -264,7 +264,7 @@ export function AppShell() {
         {/* Footer */}
         <footer className="app-footer" role="contentinfo">
           <a
-            href="https://github.com/graysonhead/eclosion"
+            href="https://github.com/graysoncadams/eclosion-for-monarch"
             target="_blank"
             rel="noopener noreferrer"
             className="app-footer-link"

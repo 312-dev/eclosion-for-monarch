@@ -112,7 +112,7 @@ export function DashboardTab() {
               Reddit Community
             </a>
             <a
-              href="https://github.com/graysonhead/eclosion"
+              href="https://github.com/graysoncadams/eclosion-for-monarch"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg hover-border-to-orange"

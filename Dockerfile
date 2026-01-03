@@ -67,6 +67,10 @@ COPY --chown=eclosion:eclosion core/ ./core/
 # Copy built frontend from builder stage
 COPY --from=frontend-builder --chown=eclosion:eclosion /app/frontend/dist ./static
 
+# Note: /app/state should be mounted as a volume for persistent data
+# Docker: docker run -v eclosion-data:/app/state ...
+# Railway: Configure via dashboard Settings → Volumes
+
 # Switch to non-root user
 USER eclosion
 

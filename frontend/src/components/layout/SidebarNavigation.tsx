@@ -126,7 +126,7 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
                     tabIndex={-1}
                   >
                     <a
-                      href="https://github.com/chrislee973/ynab-scripts/discussions"
+                      href="https://github.com/graysoncadams/eclosion-for-monarch/discussions"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="sidebar-idea-option"

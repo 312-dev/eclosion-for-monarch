@@ -29,7 +29,7 @@ Please be respectful and constructive in all interactions. We welcome contributo
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/GraysonCAdams/eclosion.git
+   git clone https://github.com/graysoncadams/eclosion-for-monarch.git
    cd eclosion
    ```
 

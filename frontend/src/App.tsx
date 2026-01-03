@@ -44,11 +44,11 @@ function DefaultRedirect() {
 }
 
 function DemoDefaultRedirect() {
-  return <Navigate to="/demo/recurring" replace />;
+  return <Navigate to="/demo/dashboard" replace />;
 }
 
 function GlobalDemoDefaultRedirect() {
-  return <Navigate to="/recurring" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 const queryClient = new QueryClient({
@@ -132,7 +132,7 @@ function DemoRoutes() {
           <Route path="/demo/settings" element={<SettingsTab />} />
         </Route>
         {/* Catch-all redirect within demo */}
-        <Route path="*" element={<Navigate to="/demo/recurring" replace />} />
+        <Route path="*" element={<Navigate to="/demo/dashboard" replace />} />
       </Routes>
     </DemoAuthProvider>
   );
@@ -154,7 +154,7 @@ function GlobalDemoRoutes() {
           <Route path="/settings" element={<SettingsTab />} />
         </Route>
         {/* Catch-all redirect */}
-        <Route path="*" element={<Navigate to="/recurring" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </DemoAuthProvider>
   );

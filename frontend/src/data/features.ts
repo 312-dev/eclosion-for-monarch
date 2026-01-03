@@ -101,19 +101,42 @@ export const FEATURES: FeatureDefinition[] = [
     demoPath: '/demo/recurring',
     appPath: '/recurring',
   },
-  // Future features will be added here with status: 'coming-soon'
-  // Example:
-  // {
-  //   id: 'goals',
-  //   name: 'Savings Goals',
-  //   tagline: 'Track progress toward your goals',
-  //   description: '...',
-  //   icon: 'Target',
-  //   status: 'coming-soon',
-  //   releaseDate: 'Q2 2025',
-  //   benefits: [...],
-  //   appPath: '/goals',
-  // },
+  {
+    id: 'our-goals',
+    name: 'Our Goals',
+    tagline: 'Shared goals for couples',
+    description:
+      'Unify shared financial goals between two different Monarch accounts. Track joint progress, visualize combined trajectories, and celebrate milestones together.',
+    icon: 'Users',
+    status: 'coming-soon',
+    benefits: [
+      {
+        icon: 'Users',
+        title: 'Dual Account Linking',
+        description:
+          'Connect two separate Monarch accounts to track shared financial goals together.',
+      },
+      {
+        icon: 'TrendUp',
+        title: 'Combined Progress',
+        description:
+          'See unified progress across both accounts toward your shared savings targets.',
+      },
+      {
+        icon: 'Calendar',
+        title: 'Trajectory Mapping',
+        description:
+          'Visualize when you\'ll reach your goals based on combined contribution rates.',
+      },
+      {
+        icon: 'Gift',
+        title: 'Milestone Celebrations',
+        description:
+          'Get notified when you hit key milestones together on your financial journey.',
+      },
+    ],
+    appPath: '/our-goals',
+  },
 ];
 
 // =============================================================================

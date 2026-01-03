@@ -76,7 +76,7 @@ export function FeatureDetailPage() {
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             {/* Icon */}
-            <div className="flex-shrink-0 flex items-center justify-center w-20 h-20 rounded-2xl bg-[var(--monarch-orange)] bg-opacity-10">
+            <div className="flex-shrink-0 flex items-center justify-center w-20 h-20 rounded-2xl bg-(--monarch-orange)/10">
               <IconComponent size={40} color="var(--monarch-orange)" />
             </div>
 

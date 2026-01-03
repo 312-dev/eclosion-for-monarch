@@ -494,7 +494,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           )}
 
           <a
-            href="https://github.com/graysonhead/eclosion"
+            href="https://github.com/graysoncadams/eclosion-for-monarch"
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 rounded-full transition-colors hover-text-muted-to-dark"

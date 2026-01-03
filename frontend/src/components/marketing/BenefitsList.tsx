@@ -31,7 +31,7 @@ export function BenefitsList({ benefits, layout = 'grid' }: BenefitsListProps) {
             className="flex items-start gap-4 p-4 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)]"
           >
             {/* Icon */}
-            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--monarch-orange)] bg-opacity-10">
+            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-(--monarch-orange)/10">
               <IconComponent size={20} color="var(--monarch-orange)" />
             </div>
 

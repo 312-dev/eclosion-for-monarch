@@ -46,7 +46,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
       <div className="flex flex-col p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] hover:shadow-lg transition-all duration-200">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--monarch-orange)] bg-opacity-10">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
             <IconComponent size={24} color="var(--monarch-orange)" />
           </div>
           <StatusBadge status={feature.status} />
@@ -89,7 +89,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
       className="group flex flex-col items-center p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] hover:shadow-md transition-all duration-200"
     >
       {/* Icon */}
-      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--monarch-orange)] bg-opacity-10 text-[var(--monarch-orange)] mb-4 group-hover:scale-110 transition-transform">
+      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-(--monarch-orange)/10 text-[var(--monarch-orange)] mb-4 group-hover:scale-110 transition-transform">
         <IconComponent size={28} />
       </div>
 

@@ -51,7 +51,7 @@ function ValueProp({
 }) {
   return (
     <div className="flex flex-col items-center text-center p-6">
-      <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--monarch-orange)] bg-opacity-10 mb-4">
+      <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10 mb-4">
         <Icon size={24} color="var(--monarch-orange)" />
       </div>
       <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-2">
@@ -105,18 +105,18 @@ export function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <ValueProp
               icon={ShieldCheckIcon}
-              title="Your Data, Your Server"
-              description="Self-host on Railway or your own infrastructure. Credentials are encrypted and never leave your instance."
+              title="Fully Yours"
+              description="You own your copy of Eclosion completely. Your credentials stay encrypted on your server — no one else can access them."
             />
             <ValueProp
               icon={SyncIcon}
-              title="Seamless Sync"
-              description="Connects directly to Monarch Money's API. Changes sync automatically to your budget."
+              title="Always In Sync"
+              description="Changes you make in Eclosion show up in Monarch automatically. No manual updates needed."
             />
             <ValueProp
               icon={CheckCircleIcon}
               title="Set It & Forget It"
-              description="Configure once, then let Eclosion handle the calculations. Your budget updates automatically."
+              description="Turn on the features you want, and Eclosion handles the rest in the background."
             />
           </div>
         </div>
@@ -135,18 +135,18 @@ export function LandingPage() {
           <div className="space-y-4">
             <HowItWorksStep
               number={1}
-              title="Deploy Your Instance"
-              description="One-click deploy to Railway, or self-host with Docker. Takes less than 5 minutes."
+              title="Create Your Eclosion"
+              description="Click one button to set up your own private copy. It takes about 5 minutes and costs around $5/month."
             />
             <HowItWorksStep
               number={2}
-              title="Connect Your Monarch Account"
-              description="Securely link your Monarch Money credentials. Everything is encrypted on your server."
+              title="Sign In with Monarch"
+              description="Connect your Monarch Money account. Your password is encrypted and only you can access it."
             />
             <HowItWorksStep
               number={3}
-              title="Enable Your Tools"
-              description="Choose which features to use. Configure categories, enable tracking, and let Eclosion do the rest."
+              title="Pick Your Features"
+              description="Turn on the tools you want to use. Eclosion syncs with Monarch and keeps everything updated for you."
             />
           </div>
         </div>

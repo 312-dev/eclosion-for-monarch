@@ -8,15 +8,12 @@
 import { Link } from 'react-router-dom';
 import { ChevronRightIcon } from '../icons';
 import { AppIcon } from '../wizards/SetupWizardIcons';
-import { getFeatureCounts } from '../../data/features';
 
 interface HeroProps {
   onGetStarted?: () => void;
 }
 
 export function Hero({ onGetStarted }: HeroProps) {
-  const counts = getFeatureCounts();
-
   return (
     <section className="flex flex-col items-center justify-center px-6 py-16 md:py-24 text-center">
       <div className="max-w-3xl mx-auto">
@@ -40,34 +37,14 @@ export function Hero({ onGetStarted }: HeroProps) {
 
         {/* Toolkit positioning tagline */}
         <p className="text-xl sm:text-2xl text-[var(--monarch-orange)] font-medium mb-3">
-          A growing toolkit for Monarch Money
+          Extra features for Monarch Money
         </p>
 
-        {/* Subtitle */}
+        {/* Subtitle - accessible explanation */}
         <p className="text-lg sm:text-xl text-[var(--monarch-text)] mb-6 max-w-xl mx-auto">
-          Powerful budgeting tools that work with your Monarch account to automate
-          savings, track progress, and keep you on target.
+          A free, open-source toolkit that adds budgeting features Monarch doesn't have yet.
+          You own it completely — set it up once, and it runs automatically.
         </p>
-
-        {/* Feature count badge */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] text-sm">
-            <span className="font-semibold text-[var(--monarch-orange)]">
-              {counts.available}
-            </span>
-            <span className="text-[var(--monarch-text)]">
-              {counts.available === 1 ? 'tool' : 'tools'} available
-            </span>
-            {counts.comingSoon > 0 && (
-              <>
-                <span className="text-[var(--monarch-border)]">•</span>
-                <span className="text-[var(--monarch-text-muted)]">
-                  {counts.comingSoon} more coming
-                </span>
-              </>
-            )}
-          </div>
-        </div>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

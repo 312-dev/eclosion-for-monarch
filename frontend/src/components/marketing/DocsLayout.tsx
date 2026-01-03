@@ -88,7 +88,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                 <NavLink to="/features">Features</NavLink>
                 <NavLink to="/docs">Docs</NavLink>
                 <NavLink to="/demo">Demo</NavLink>
-                <NavLink to="https://github.com/graysoncadams/eclosion" external>
+                <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
                   GitHub
                 </NavLink>
               </nav>
@@ -108,7 +108,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
               {/* GitHub Link (mobile) */}
               <a
-                href="https://github.com/graysoncadams/eclosion"
+                href="https://github.com/graysoncadams/eclosion-for-monarch"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center w-10 h-10 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-text-dark)] hover:bg-[var(--monarch-bg-hover)] transition-colors md:hidden"
@@ -139,7 +139,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             {/* Links */}
             <div className="flex items-center gap-6 text-sm text-[var(--monarch-text-muted)]">
               <a
-                href="https://github.com/graysoncadams/eclosion"
+                href="https://github.com/graysoncadams/eclosion-for-monarch"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 hover:text-[var(--monarch-text-dark)] transition-colors"

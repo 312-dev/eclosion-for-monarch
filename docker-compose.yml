@@ -15,9 +15,9 @@
 
 services:
   eclosion:
-    build: .
-    # Or use a pre-built image (uncomment when published):
-    # image: ghcr.io/graysonadams/eclosion:latest
+    image: ghcr.io/graysoncadams/eclosion:1.0.0
+    # Or build from source:
+    # build: .
     container_name: eclosion
     restart: unless-stopped
     ports:
@@ -38,7 +38,7 @@ services:
       # MONARCH_MONEY_PASSWORD: ""
       # MFA_SECRET_KEY: ""
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
       interval: 30s
       timeout: 10s
       retries: 3

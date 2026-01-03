@@ -5,7 +5,7 @@
  * Replaces duplicated MerchantIconWithFallback in RecurringList and RollupZone.
  */
 
-import { useState, type ReactElement } from 'react';
+import { useState, type ComponentType } from 'react';
 import {
   TvIcon,
   MusicIcon,
@@ -24,7 +24,7 @@ import {
   RepeatIcon,
   ShieldIcon,
 } from '../icons';
-import type { IconProps } from '../icons';
+import type { LucideProps } from '../icons';
 
 export interface MerchantIconProps {
   /** URL of the merchant logo */
@@ -55,7 +55,7 @@ const ICON_SIZES = {
  * Keyword patterns mapped to category icons.
  * Order matters - first match wins.
  */
-type CategoryIconComponent = (props: IconProps) => ReactElement;
+type CategoryIconComponent = ComponentType<LucideProps>;
 
 const CATEGORY_PATTERNS: Array<{ keywords: string[]; icon: CategoryIconComponent }> = [
   // Streaming/Entertainment

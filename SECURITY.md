@@ -67,7 +67,7 @@ For maximum security and control, you can run Eclosion on your own infrastructur
 2. You control all aspects of the deployment
 3. You can audit the open-source code
 
-See the README for self-hosting instructions.
+See [the documentation](https://docs.eclosion.app) for self-hosting instructions.
 
 ## Why Not OAuth?
 
