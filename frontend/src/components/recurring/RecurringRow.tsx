@@ -115,18 +115,22 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
   const progressPercent = Math.min(item.progress_percent, 100);
 
   // Override status based on what user has budgeted vs what's needed
-  // Use rounded target since budget inputs round up to nearest dollar
+  // Use Math.ceil for both to match what the UI displays
   let displayStatus: ItemStatus = item.status;
   const targetRounded = Math.ceil(item.frozen_monthly_target);
+  const budgetRounded = Math.ceil(item.planned_budget);
+  // Round balance and amount consistently for funded check (matches display formatting)
+  const balanceRounded = Math.round(item.current_balance);
+  const amountRounded = Math.round(item.amount);
   if (item.is_enabled && item.frozen_monthly_target > 0) {
-    if (item.planned_budget > targetRounded) {
+    if (budgetRounded > targetRounded) {
       displayStatus = 'ahead';
-    } else if (item.planned_budget >= targetRounded) {
-      displayStatus = item.current_balance >= item.amount ? 'funded' : 'on_track';
+    } else if (budgetRounded >= targetRounded) {
+      displayStatus = balanceRounded >= amountRounded ? 'funded' : 'on_track';
     } else {
       displayStatus = 'behind';
     }
-  } else if (item.is_enabled && item.current_balance >= item.amount) {
+  } else if (item.is_enabled && balanceRounded >= amountRounded) {
     displayStatus = 'funded';
   }
 

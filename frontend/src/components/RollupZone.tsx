@@ -473,13 +473,13 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 onFocus={(e) => { e.target.select(); setIsHoveringName(false); }}
                 disabled={isUpdatingBudget}
                 aria-label="Monthly budget amount for rollup category"
-                aria-describedby={rollup.budgeted < Math.ceil(totalMonthly) ? 'rollup-budget-warning' : undefined}
-                className={`w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card font-inherit border ${rollup.budgeted < Math.ceil(totalMonthly) ? 'border-monarch-warning' : 'border-monarch-border'}`}
+                aria-describedby={Math.ceil(rollup.budgeted) < Math.ceil(totalMonthly) ? 'rollup-budget-warning' : undefined}
+                className={`w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card font-inherit border ${Math.ceil(rollup.budgeted) < Math.ceil(totalMonthly) ? 'border-monarch-warning' : 'border-monarch-border'}`}
                 min="0"
                 step="1"
               />
             </div>
-            {rollup.budgeted < Math.ceil(totalMonthly) && (
+            {Math.ceil(rollup.budgeted) < Math.ceil(totalMonthly) && (
               <div id="rollup-budget-warning" className="text-[10px] mt-0.5 text-monarch-warning" role="alert">
                 need {formatCurrency(Math.ceil(totalMonthly), { maximumFractionDigits: 0 })}
               </div>

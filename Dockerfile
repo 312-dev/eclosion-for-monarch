@@ -59,16 +59,16 @@ ENV RELEASE_CHANNEL=${RELEASE_CHANNEL}
 
 WORKDIR /app
 
-# Copy virtual environment from builder
-COPY --from=python-builder /app/venv /app/venv
+# Copy virtual environment from builder (owned by nonroot user)
+COPY --from=python-builder --chown=65532:65532 /app/venv /app/venv
 
 # Set PATH to use the virtual environment
 ENV PATH="/app/venv/bin:$PATH"
 
-# Copy Python source
-COPY *.py ./
-COPY services/ ./services/
-COPY core/ ./core/
+# Copy Python source (owned by nonroot user)
+COPY --chown=65532:65532 *.py ./
+COPY --chown=65532:65532 services/ ./services/
+COPY --chown=65532:65532 core/ ./core/
 
 # Copy state module with nonroot ownership (UID 65532) so app can write data files
 # Note: /app/state should be mounted as a volume for persistent data
@@ -76,8 +76,8 @@ COPY core/ ./core/
 # Railway: Configure via dashboard Settings → Volumes
 COPY --chown=65532:65532 state/ ./state/
 
-# Copy built frontend from builder stage
-COPY --from=frontend-builder /app/frontend/dist ./static
+# Copy built frontend from builder stage (owned by nonroot user)
+COPY --from=frontend-builder --chown=65532:65532 /app/frontend/dist ./static
 
 # Expose port
 EXPOSE 5001
