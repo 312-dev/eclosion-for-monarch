@@ -730,8 +730,8 @@ export async function importSettings(
   const toolsToImport = options?.tools ?? ['recurring'];
 
   // Import recurring tool if requested
-  if (toolsToImport.includes('recurring') && data.tools.recurring) {
-    const recurring = data.tools.recurring;
+  if (toolsToImport.includes('recurring') && data.tools['recurring']) {
+    const recurring = data.tools['recurring'];
 
     updateDemoState((state) => {
       // Apply config
@@ -777,7 +777,7 @@ export async function importSettings(
       };
     });
 
-    imported.recurring = true;
+    imported['recurring'] = true;
   }
 
   return {
@@ -814,13 +814,14 @@ export async function previewImport(
     }>,
   };
 
-  if (data.tools.recurring) {
-    preview.tools.recurring = {
-      has_config: !!data.tools.recurring.config,
-      enabled_items_count: data.tools.recurring.enabled_items.length,
-      categories_count: Object.keys(data.tools.recurring.categories).length,
-      has_rollup: data.tools.recurring.rollup.enabled,
-      rollup_items_count: data.tools.recurring.rollup.item_ids.length,
+  const recurringData = data.tools['recurring'];
+  if (recurringData) {
+    preview.tools['recurring'] = {
+      has_config: !!recurringData.config,
+      enabled_items_count: recurringData.enabled_items.length,
+      categories_count: Object.keys(recurringData.categories).length,
+      has_rollup: recurringData.rollup.enabled,
+      rollup_items_count: recurringData.rollup.item_ids.length,
     };
   }
 
