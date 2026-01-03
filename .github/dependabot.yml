@@ -6,17 +6,18 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
       - "python"
     commit-message:
       prefix: "chore(deps):"
     groups:
-      python-minor:
+      python-all:
         patterns:
           - "*"
         update-types:
+          - "major"
           - "minor"
           - "patch"
 
@@ -26,31 +27,44 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     labels:
       - "dependencies"
-      - "javascript"
     commit-message:
       prefix: "chore(deps):"
     groups:
-      npm-minor:
+      npm-production:
+        dependency-type: "production"
         patterns:
           - "*"
         update-types:
+          - "major"
           - "minor"
           - "patch"
       npm-development:
         dependency-type: "development"
         patterns:
           - "*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 1
     labels:
       - "dependencies"
-      - "github-actions"
     commit-message:
       prefix: "chore(deps):"
+    groups:
+      github-actions-all:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
