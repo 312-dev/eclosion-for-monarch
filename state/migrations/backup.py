@@ -3,12 +3,42 @@ Backup management for state files.
 """
 
 import json
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from core import config
+
+
+def _secure_filename(filename: str) -> str:
+    """
+    Sanitize a filename to prevent path traversal attacks.
+
+    Based on werkzeug.utils.secure_filename but simplified for our use case.
+    Ensures the filename contains only safe characters and no path separators.
+
+    Args:
+        filename: The filename to sanitize
+
+    Returns:
+        A sanitized filename safe for use in file paths
+    """
+    # Remove any path components (only keep the filename)
+    filename = Path(filename).name
+
+    # Remove any characters that aren't alphanumerics, dots, dashes, or underscores
+    filename = re.sub(r"[^\w.\-]", "_", filename)
+
+    # Remove leading/trailing dots and underscores
+    filename = filename.strip("._")
+
+    # Ensure the filename isn't empty
+    if not filename:
+        raise ValueError("Invalid filename")
+
+    return filename
 
 
 class BackupManager:
@@ -124,33 +154,31 @@ class BackupManager:
         Validate that a backup path is within the allowed backup directory.
 
         Args:
-            backup_path: Path to validate
+            backup_path: Path to validate (can be full path or just filename)
 
         Returns:
-            Resolved, validated path
+            Resolved, validated path within backup directory
 
         Raises:
             ValueError: If path is outside backup directory (path traversal attempt)
         """
-        # Early validation: reject obvious path traversal attempts before resolving
-        path_str = str(backup_path)
-        if ".." in path_str or (
-            path_str.startswith("/") and not path_str.startswith(str(self.backup_dir))
-        ):
-            # Don't reveal internal paths in error messages
-            raise ValueError("Invalid backup path provided.") from None
-
-        resolved_path = backup_path.resolve()
-        resolved_backup_dir = self.backup_dir.resolve()
-
-        # Check that the path is within the backup directory
+        # Security: Extract and sanitize just the filename to prevent path traversal
+        # This ensures we only work with the filename, not any directory components
         try:
-            resolved_path.relative_to(resolved_backup_dir)
+            safe_filename = _secure_filename(str(backup_path))
         except ValueError:
-            # Don't expose internal directory structure in error message
             raise ValueError("Invalid backup path provided.") from None
 
-        return resolved_path
+        # Construct the path using only the sanitized filename within backup directory
+        # This prevents any path traversal because we never use the original path
+        resolved_backup_dir = self.backup_dir.resolve()
+        safe_path = resolved_backup_dir / safe_filename
+
+        # Final validation: ensure the file exists in the backup directory
+        if not safe_path.exists():
+            raise ValueError("Invalid backup path provided.") from None
+
+        return safe_path
 
     def restore_backup(
         self,
