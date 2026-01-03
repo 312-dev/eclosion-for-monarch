@@ -13,7 +13,7 @@ import React, { useState, useRef, useCallback, useEffect, useId } from 'react';
 import type { CategoryGroup } from '../../types';
 import { getCategoryGroups } from '../../api/client';
 import { useClickOutside } from '../../hooks';
-import { Tooltip } from '../Tooltip';
+import { Tooltip } from '../ui/Tooltip';
 import { SpinnerIcon, ChevronDownIcon } from '../icons';
 
 interface CategoryGroupDropdownProps {

@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { DocsLayout, FeatureGrid } from '../components/marketing';
 import { GetStartedModal } from '../components/ui/GetStartedModal';
 import { useIsMarketingSite } from '../hooks/useIsMarketingSite';
-import { getAvailableFeatures, getComingSoonFeatures } from '../data/features';
+import { FEATURES } from '../data/features';
 import {
   ChevronRightIcon,
   ExternalLinkIcon,
@@ -27,8 +27,6 @@ import {
 
 function MarketingDocsContent() {
   const [showGetStartedModal, setShowGetStartedModal] = useState(false);
-  const availableFeatures = getAvailableFeatures();
-  const comingSoonFeatures = getComingSoonFeatures();
 
   return (
     <>
@@ -138,9 +136,9 @@ function MarketingDocsContent() {
             className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-8 text-center"
             style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
-            Available Features
+            Features
           </h2>
-          <FeatureGrid features={availableFeatures} variant="compact" />
+          <FeatureGrid features={FEATURES} showComingSoon unified variant="compact" />
           <div className="text-center mt-8">
             <Link
               to="/features"
@@ -151,24 +149,6 @@ function MarketingDocsContent() {
           </div>
         </div>
       </section>
-
-      {/* Upcoming Tools */}
-      {comingSoonFeatures.length > 0 && (
-        <section className="px-4 sm:px-6 py-12">
-          <div className="max-w-4xl mx-auto">
-            <h2
-              className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-8 text-center"
-              style={{ fontFamily: "'Unbounded', sans-serif" }}
-            >
-              Our Goals
-            </h2>
-            <p className="text-center text-[var(--monarch-text)] mb-8">
-              Features we're working on to make Eclosion even better.
-            </p>
-            <FeatureGrid features={comingSoonFeatures} variant="compact" />
-          </div>
-        </section>
-      )}
 
       {/* FAQ */}
       <section className="px-4 sm:px-6 py-12 bg-[var(--monarch-bg-card)]">

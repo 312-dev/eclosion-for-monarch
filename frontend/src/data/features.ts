@@ -102,40 +102,40 @@ export const FEATURES: FeatureDefinition[] = [
     appPath: '/recurring',
   },
   {
-    id: 'our-goals',
-    name: 'Our Goals',
-    tagline: 'Shared goals for couples',
+    id: 'linked-goals',
+    name: 'Linked Goals',
+    tagline: 'Privacy-first shared goals',
     description:
-      'Unify shared financial goals between two different Monarch accounts. Track joint progress, visualize combined trajectories, and celebrate milestones together.',
-    icon: 'Users',
+      'Collaborate on financial goals without merging accounts or sacrificing privacy. Each partner keeps their own Monarch account—share only what you want to share.',
+    icon: 'Link',
     status: 'coming-soon',
     benefits: [
       {
-        icon: 'Users',
-        title: 'Dual Account Linking',
+        icon: 'Shield',
+        title: 'Keep Your Privacy',
         description:
-          'Connect two separate Monarch accounts to track shared financial goals together.',
+          'Share goal progress without exposing transactions, balances, or spending habits.',
+      },
+      {
+        icon: 'Users',
+        title: 'No Account Merging',
+        description:
+          'Both partners keep separate Monarch accounts. No need to delete or abandon existing setups.',
       },
       {
         icon: 'TrendUp',
-        title: 'Combined Progress',
+        title: 'Combined Trajectory',
         description:
-          'See unified progress across both accounts toward your shared savings targets.',
-      },
-      {
-        icon: 'Calendar',
-        title: 'Trajectory Mapping',
-        description:
-          'Visualize when you\'ll reach your goals based on combined contribution rates.',
+          'See when you\'ll reach goals together based on both contributions, without seeing each other\'s details.',
       },
       {
         icon: 'Gift',
-        title: 'Milestone Celebrations',
+        title: 'Celebrate Together',
         description:
-          'Get notified when you hit key milestones together on your financial journey.',
+          'Get notified when you hit milestones—without the all-or-nothing transparency.',
       },
     ],
-    appPath: '/our-goals',
+    appPath: '/linked-goals',
   },
 ];
 

@@ -12,7 +12,7 @@
 import { useCallback, useRef, useEffect, useId } from 'react';
 import type { RecurringItem } from '../../types';
 import { useDropdown } from '../../hooks';
-import { Tooltip } from '../Tooltip';
+import { Tooltip } from '../ui/Tooltip';
 import {
   SpinnerIcon,
   MoreVerticalIcon,

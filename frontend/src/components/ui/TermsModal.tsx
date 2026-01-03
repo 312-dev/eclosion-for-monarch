@@ -180,9 +180,9 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           </p>
           <table className="w-full text-sm">
             <tbody>
-              <TableRow label="Storage" value="Credentials stored on YOUR server, not ours" />
+              <TableRow label="Storage" value="Credentials stored only on YOUR server" />
               <TableRow label="Encryption" value="AES-256 encryption with your passphrase" />
-              <TableRow label="Recovery" value="We cannot recover lost passphrases" isWarning />
+              <TableRow label="Recovery" value="Lost passphrases cannot be recovered" isWarning />
               <TableRow label="Responsibility" value="You accept full responsibility for security" />
             </tbody>
           </table>

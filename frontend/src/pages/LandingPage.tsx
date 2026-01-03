@@ -86,7 +86,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          <FeatureGrid features={FEATURES} showComingSoon variant="detailed" />
+          <FeatureGrid features={FEATURES} showComingSoon unified variant="detailed" />
 
           <div className="text-center mt-8">
             <Link

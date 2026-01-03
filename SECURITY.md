@@ -76,7 +76,7 @@ Monarch Money does not currently provide:
 - Personal access tokens
 - API keys
 
-Direct credential authentication is the only available method. We've implemented strong encryption to mitigate the risks of credential storage.
+Direct credential authentication is the only available method. Eclosion uses strong encryption to mitigate the risks of credential storage.
 
 ## Reporting Security Issues
 

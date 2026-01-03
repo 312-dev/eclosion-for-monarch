@@ -5,7 +5,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { RecurringItem, ItemStatus } from '../../types';
 import { EmojiPicker } from '../EmojiPicker';
-import { Tooltip } from '../Tooltip';
+import { Tooltip } from '../ui/Tooltip';
 import { MerchantIcon } from '../ui';
 import {
   formatCurrency,

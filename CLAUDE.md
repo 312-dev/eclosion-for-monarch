@@ -8,7 +8,7 @@ This is a YNAB (You Need A Budget) scripts project with a React/TypeScript front
 
 ## Code Standards
 
-All new code must follow these standards. These are derived from our [STANDARDIZATION_PLAN.md](STANDARDIZATION_PLAN.md).
+All new code must follow these standards.
 
 ### Hover States
 

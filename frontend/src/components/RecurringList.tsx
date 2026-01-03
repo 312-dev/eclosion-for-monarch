@@ -10,7 +10,7 @@ import type { RecurringItem } from '../types';
 import * as api from '../api/client';
 import * as demoApi from '../api/demoClient';
 import { LinkCategoryModal } from './LinkCategoryModal';
-import { Tooltip } from './Tooltip';
+import { Tooltip } from './ui/Tooltip';
 import { useToast } from '../context/ToastContext';
 import { useDemo } from '../context/DemoContext';
 import { formatCurrency, formatFrequency, formatErrorMessage, FREQUENCY_ORDER } from '../utils';

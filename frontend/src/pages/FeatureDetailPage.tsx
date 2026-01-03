@@ -142,7 +142,7 @@ export function FeatureDetailPage() {
           <h2 className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-4">
             {isAvailable
               ? 'Ready to get started?'
-              : "We're working on it!"}
+              : 'Coming soon!'}
           </h2>
           <p className="text-[var(--monarch-text)] mb-6">
             {isAvailable

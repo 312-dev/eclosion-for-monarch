@@ -1,7 +1,7 @@
 import React, { memo, useState, useRef, useEffect, useCallback, useMemo, type KeyboardEvent } from 'react';
 import type { RollupData, RollupItem } from '../types';
 import { EmojiPicker } from './EmojiPicker';
-import { Tooltip } from './Tooltip';
+import { Tooltip } from './ui/Tooltip';
 import {
   formatCurrency,
   formatFrequency,

@@ -15,7 +15,7 @@ Thank you for your interest in contributing to Eclosion! This guide will help yo
 
 ## Code of Conduct
 
-Please be respectful and constructive in all interactions. We welcome contributors of all experience levels.
+Please be respectful and constructive in all interactions. Contributors of all experience levels are welcome.
 
 ## Getting Started
 

@@ -2,7 +2,7 @@
  * Feature Grid Component
  *
  * Responsive grid of feature cards.
- * Optionally shows coming-soon features in a separate section.
+ * Optionally shows coming-soon features (unified in same grid or separate section).
  */
 
 import { FeatureCard } from './FeatureCard';
@@ -12,8 +12,10 @@ import type { FeatureDefinition } from '../../data/features';
 interface FeatureGridProps {
   /** Features to display. If not provided, uses all features. */
   features?: FeatureDefinition[];
-  /** Show coming-soon features in a separate section */
+  /** Show coming-soon features */
   showComingSoon?: boolean;
+  /** Put coming-soon features in the same grid (true) or separate section (false) */
+  unified?: boolean;
   /** Card variant */
   variant?: 'compact' | 'detailed';
 }
@@ -21,6 +23,7 @@ interface FeatureGridProps {
 export function FeatureGrid({
   features,
   showComingSoon = false,
+  unified = false,
   variant = 'compact',
 }: FeatureGridProps) {
   const availableFeatures = features
@@ -33,18 +36,30 @@ export function FeatureGrid({
       : getComingSoonFeatures()
     : [];
 
+  const gridClasses = `grid gap-6 ${
+    variant === 'detailed'
+      ? 'grid-cols-1 lg:grid-cols-2'
+      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+  }`;
+
+  // Unified: all features in one grid
+  if (unified && showComingSoon) {
+    const allFeatures = [...availableFeatures, ...comingSoonFeatures];
+    return (
+      <div className={gridClasses}>
+        {allFeatures.map((feature) => (
+          <FeatureCard key={feature.id} feature={feature} variant={variant} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12">
       {/* Available Features */}
       {availableFeatures.length > 0 && (
         <div>
-          <div
-            className={`grid gap-6 ${
-              variant === 'detailed'
-                ? 'grid-cols-1 lg:grid-cols-2'
-                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-            }`}
-          >
+          <div className={gridClasses}>
             {availableFeatures.map((feature) => (
               <FeatureCard key={feature.id} feature={feature} variant={variant} />
             ))}
@@ -52,7 +67,7 @@ export function FeatureGrid({
         </div>
       )}
 
-      {/* Coming Soon Features */}
+      {/* Coming Soon Features (separate section) */}
       {comingSoonFeatures.length > 0 && (
         <div>
           <div className="flex items-center gap-3 mb-6">
@@ -61,13 +76,7 @@ export function FeatureGrid({
             </h3>
             <div className="flex-1 h-px bg-[var(--monarch-border)]" />
           </div>
-          <div
-            className={`grid gap-6 ${
-              variant === 'detailed'
-                ? 'grid-cols-1 lg:grid-cols-2'
-                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-            }`}
-          >
+          <div className={gridClasses}>
             {comingSoonFeatures.map((feature) => (
               <FeatureCard key={feature.id} feature={feature} variant={variant} />
             ))}

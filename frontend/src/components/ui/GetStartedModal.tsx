@@ -19,80 +19,28 @@ interface GetStartedModalProps {
   onClose: () => void;
 }
 
-function DeploymentOption({
-  title,
-  subtitle,
-  price,
-  features,
-  buttonText,
-  buttonHref,
-  isPrimary = false,
-  badge,
-}: {
-  title: string;
-  subtitle: string;
-  price: string;
-  features: string[];
-  buttonText: string;
-  buttonHref: string;
-  isPrimary?: boolean;
-  badge?: string;
-}) {
+/** Feature row for deployment comparison */
+function FeatureRow({
+  label,
+  quickSetup,
+  selfHosted
+}: Readonly<{
+  label: string;
+  quickSetup: string;
+  selfHosted: string;
+}>) {
   return (
-    <div
-      className={`relative flex flex-col p-6 rounded-xl border-2 ${
-        isPrimary
-          ? 'border-[var(--monarch-orange)] bg-(--monarch-orange)/5'
-          : 'border-[var(--monarch-border)] bg-[var(--monarch-bg-light)]'
-      }`}
-    >
-      {/* Badge */}
-      {badge && (
-        <div className="absolute -top-3 left-4 px-3 py-1 text-xs font-semibold rounded-full bg-[var(--monarch-orange)] text-white">
-          {badge}
-        </div>
-      )}
-
-      {/* Title & Subtitle */}
-      <h3 className="text-lg font-semibold text-[var(--monarch-text-dark)] mb-1">
-        {title}
-      </h3>
-      <p className="text-sm text-[var(--monarch-text)] mb-2">{subtitle}</p>
-
-      {/* Price */}
-      <p className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-4">
-        {price}
-      </p>
-
-      {/* Features */}
-      <ul className="flex-1 space-y-2 mb-6">
-        {features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2 text-sm text-[var(--monarch-text)]">
-            <CheckIcon
-              size={16}
-              className="flex-shrink-0 mt-0.5"
-              color="var(--monarch-green)"
-            />
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
-
-      {/* Button */}
-      <a
-        href={buttonHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
-          isPrimary
-            ? 'bg-[var(--monarch-orange)] text-white hover:opacity-90'
-            : 'border-2 border-[var(--monarch-border)] text-[var(--monarch-text-dark)] hover:bg-[var(--monarch-bg-page)]'
-        }`}
-      >
-        {buttonText}
-        <ExternalLinkIcon size={16} />
-      </a>
-    </div>
+    <tr className="border-b border-(--monarch-border)">
+      <td className="py-3 pr-4 text-sm font-medium text-(--monarch-text-dark)">
+        {label}
+      </td>
+      <td className="py-3 px-4 text-sm text-(--monarch-text) text-center">
+        {quickSetup}
+      </td>
+      <td className="py-3 pl-4 text-sm text-(--monarch-text) text-center">
+        {selfHosted}
+      </td>
+    </tr>
   );
 }
 
@@ -176,9 +124,9 @@ function TermsContent({ acknowledged, onAcknowledgeChange }: Readonly<{ acknowle
           </p>
           <table className="w-full text-sm">
             <tbody>
-              <TermsTableRow label="Storage" value="Credentials stored on YOUR server, not ours" />
+              <TermsTableRow label="Storage" value="Credentials stored only on YOUR server" />
               <TermsTableRow label="Encryption" value="AES-256 encryption with your passphrase" />
-              <TermsTableRow label="Recovery" value="We cannot recover lost passphrases" isWarning />
+              <TermsTableRow label="Recovery" value="Lost passphrases cannot be recovered" isWarning />
               <TermsTableRow label="Responsibility" value="You accept full responsibility for security" />
             </tbody>
           </table>
@@ -268,54 +216,73 @@ function TermsContent({ acknowledged, onAcknowledgeChange }: Readonly<{ acknowle
 /** Deployment options content */
 function DeploymentContent() {
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Easy Mode */}
-        <div className="flex flex-col">
-          <DeploymentOption
-            title="Quick Setup"
-            subtitle="Recommended for most people"
-            price="~$5/mo"
-            features={[
-              'Set up in one click',
-              'Updates happen automatically',
-              'Secure connection included',
-              'No technical skills needed',
-              'Your data is always saved',
-            ]}
-            buttonText="Get Started"
-            buttonHref="https://railway.app/template/eclosion"
-            isPrimary
-            badge="Recommended"
-          />
-          <p className="text-xs text-[var(--monarch-text-muted)] text-center mt-3 px-2">
-            Hosted on Railway — you get $20 in free credits to start
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Comparison Table */}
+      <table className="w-full">
+        <thead>
+          <tr className="border-b-2 border-(--monarch-border)">
+            <th className="py-3 pr-4 text-left text-xs font-medium uppercase tracking-wide text-(--monarch-text-muted)">
+              &nbsp;
+            </th>
+            <th className="py-3 px-4 text-center">
+              <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-(--monarch-orange)/10 text-(--monarch-orange) text-xs font-semibold">
+                Recommended
+              </div>
+              <div className="mt-1 text-base font-semibold text-(--monarch-text-dark)">Quick Setup</div>
+              <div className="text-lg font-bold text-(--monarch-text-dark)">~$5/mo</div>
+            </th>
+            <th className="py-3 pl-4 text-center">
+              <div className="h-6" /> {/* Spacer to align with badge */}
+              <div className="mt-1 text-base font-semibold text-(--monarch-text-dark)">Advanced</div>
+              <div className="text-lg font-bold text-(--monarch-text-dark)">Free</div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <FeatureRow label="Getting started" quickSetup="One click" selfHosted="Multiple steps" />
+          <FeatureRow label="Updates" quickSetup="One click" selfHosted="Manual" />
+          <FeatureRow label="Secure connection" quickSetup="Included" selfHosted="You set it up" />
+          <FeatureRow label="Technical knowledge" quickSetup="None" selfHosted="Required" />
+          <FeatureRow label="Your data" quickSetup="Always saved" selfHosted="You manage it" />
+          <FeatureRow label="Customization" quickSetup="Standard" selfHosted="Full control" />
+        </tbody>
+      </table>
 
-        {/* Expert Mode */}
-        <DeploymentOption
-          title="Self-Hosted"
-          subtitle="For technical users"
-          price="Free"
-          features={[
-            'Run on your own computer or server',
-            'Complete control over everything',
-            'No monthly costs',
-            'Requires some technical knowledge',
-            'Docker installation required',
-          ]}
-          buttonText="View Setup Guide"
-          buttonHref="https://github.com/graysoncadams/eclosion-for-monarch#self-hosted"
-        />
+      {/* Action Buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <a
+          href="https://railway.app/template/eclosion"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-lg bg-(--monarch-orange) text-white hover:opacity-90 transition-colors"
+        >
+          <span className="flex items-center gap-2 font-semibold">
+            Set Up Eclosion
+            <ExternalLinkIcon size={16} />
+          </span>
+          <span className="text-xs opacity-80">Hosted on Railway</span>
+        </a>
+        <a
+          href="https://docs.eclosion.app/self-hosting"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-lg border-2 border-(--monarch-border) text-(--monarch-text-dark) hover:bg-(--monarch-bg-page) transition-colors"
+        >
+          <span className="flex items-center gap-2 font-semibold">
+            I&apos;ll Set It Up Myself
+            <ExternalLinkIcon size={16} />
+          </span>
+          <span className="text-xs text-(--monarch-text-muted)">For technical users</span>
+        </a>
       </div>
 
-      <p className="mt-6 text-xs text-center text-[var(--monarch-text-muted)]">
-        Both options give you the exact same features.
+      {/* Footer note */}
+      <p className="text-xs text-center text-(--monarch-text-muted)">
+        Both options have the same features. Railway offers $5 in free credits to get started.
         <br />
-        Your Monarch login is encrypted and stored only on your server — no one else can access it.
+        Your login is encrypted and stored only on your server — we never see it.
       </p>
-    </>
+    </div>
   );
 }
 
