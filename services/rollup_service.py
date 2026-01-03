@@ -6,10 +6,11 @@ to be bundled into a single shared category in Monarch Money.
 """
 import math
 from datetime import datetime
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from state.state_manager import StateManager
+
     from .category_manager import CategoryManager
     from .recurring_service import RecurringService
     from .savings_calculator import SavingsCalculator
@@ -36,7 +37,7 @@ class RollupService:
         self.recurring_service = recurring_service
         self.savings_calculator = savings_calculator
 
-    async def toggle_rollup(self, enabled: bool) -> Dict[str, Any]:
+    async def toggle_rollup(self, enabled: bool) -> dict[str, Any]:
         """
         Enable or disable the rollup feature.
         When enabling, creates the rollup category in Monarch if needed.
@@ -68,7 +69,7 @@ class RollupService:
         self,
         category_id: str,
         sync_name: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Link the rollup to an existing Monarch category instead of creating new.
 
@@ -114,7 +115,7 @@ class RollupService:
             "is_linked": True,
         }
 
-    async def create_rollup_category(self, budget: int = 0) -> Dict[str, Any]:
+    async def create_rollup_category(self, budget: int = 0) -> dict[str, Any]:
         """
         Explicitly create the rollup category in Monarch.
 
@@ -166,7 +167,7 @@ class RollupService:
             "budget": budget,
         }
 
-    async def add_to_rollup(self, recurring_id: str) -> Dict[str, Any]:
+    async def add_to_rollup(self, recurring_id: str) -> dict[str, Any]:
         """
         Add a subscription to the rollup.
         Sets the individual category budget to $0 and adds to rollup total.
@@ -230,7 +231,7 @@ class RollupService:
             "total_budgeted": rollup.total_budgeted,
         }
 
-    async def remove_from_rollup(self, recurring_id: str) -> Dict[str, Any]:
+    async def remove_from_rollup(self, recurring_id: str) -> dict[str, Any]:
         """
         Remove a subscription from the rollup.
         Restores the individual category budget.
@@ -277,7 +278,7 @@ class RollupService:
             "total_budgeted": rollup.total_budgeted,
         }
 
-    async def set_rollup_budget(self, amount: float) -> Dict[str, Any]:
+    async def set_rollup_budget(self, amount: float) -> dict[str, Any]:
         """Set the user-defined rollup budget amount."""
         state = self.state_manager.load()
 
@@ -299,7 +300,7 @@ class RollupService:
             "total_budgeted": rollup.total_budgeted,
         }
 
-    async def update_rollup_emoji(self, emoji: str) -> Dict[str, Any]:
+    async def update_rollup_emoji(self, emoji: str) -> dict[str, Any]:
         """
         Update the emoji/icon for the rollup category in Monarch.
         Sets the emoji via the icon field, not as part of the name.
@@ -320,7 +321,7 @@ class RollupService:
             "emoji": emoji,
         }
 
-    async def update_rollup_category_name(self, name: str) -> Dict[str, Any]:
+    async def update_rollup_category_name(self, name: str) -> dict[str, Any]:
         """
         Update the name for the rollup category and rename it in Monarch.
         Does NOT include emoji in the name - emoji is set separately via the icon field.
@@ -341,7 +342,7 @@ class RollupService:
             "category_name": name,
         }
 
-    async def get_rollup_data(self) -> Dict[str, Any]:
+    async def get_rollup_data(self) -> dict[str, Any]:
         """Get rollup state with computed data, including per-item catch-up calculations."""
         state = self.state_manager.load()
         rollup = state.rollup

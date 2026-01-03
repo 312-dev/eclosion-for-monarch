@@ -10,7 +10,7 @@ class MonarchTrackerError(Exception):
     """Base exception for all tracker errors."""
     code: str = "UNKNOWN_ERROR"
 
-    def __init__(self, message: str, code: str = None):
+    def __init__(self, message: str, code: str | None = None):
         super().__init__(message)
         if code:
             self.code = code

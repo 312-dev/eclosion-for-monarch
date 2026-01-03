@@ -7,11 +7,11 @@ Jobs are recreated on startup from persisted state in tracker_state.json.
 
 import asyncio
 import logging
-from typing import Callable, Optional, Any
-from datetime import datetime
+from collections.abc import Callable
+from typing import Optional
 
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class SyncScheduler:
     """
 
     _instance: Optional['SyncScheduler'] = None
-    _scheduler: Optional[BackgroundScheduler] = None
+    _scheduler: BackgroundScheduler | None = None
 
     SYNC_JOB_ID = "automated_sync"
     MIN_INTERVAL_MINUTES = 60      # Maximum hourly per tool requirement
@@ -49,7 +49,7 @@ class SyncScheduler:
             jobstores={'default': MemoryJobStore()},
             timezone='UTC'
         )
-        self._sync_callback: Optional[Callable] = None
+        self._sync_callback: Callable | None = None
         self._is_started = False
 
     def start(self) -> None:

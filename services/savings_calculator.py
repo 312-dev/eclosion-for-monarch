@@ -6,9 +6,8 @@ Handles over-contributions and edge cases.
 """
 
 import math
-from datetime import date
-from typing import Dict, Optional
 from dataclasses import dataclass
+from datetime import date
 from enum import Enum
 
 
@@ -219,7 +218,7 @@ class SavingsCalculator:
 
     def detect_new_cycle(
         self,
-        previous_due_date: Optional[str],
+        previous_due_date: str | None,
         current_due_date: str,
         frequency_months: int,
     ) -> bool:

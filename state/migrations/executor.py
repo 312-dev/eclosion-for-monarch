@@ -3,14 +3,14 @@ Migration execution engine.
 """
 
 import json
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Tuple
+from pathlib import Path
 
 from core import config
-from .base import Migration, MigrationDirection
-from .registry import MigrationRegistry
+
 from .backup import BackupManager
+from .base import MigrationDirection
+from .registry import MigrationRegistry
 
 
 class MigrationError(Exception):
@@ -28,8 +28,8 @@ class MigrationExecutor:
 
     def __init__(
         self,
-        state_file: Optional[Path] = None,
-        backup_manager: Optional[BackupManager] = None,
+        state_file: Path | None = None,
+        backup_manager: BackupManager | None = None,
     ):
         self.state_file = state_file or config.STATE_FILE
         self.backup_manager = backup_manager or BackupManager()
@@ -39,7 +39,7 @@ class MigrationExecutor:
         target_version: str,
         target_channel: str,
         create_backup: bool = True,
-    ) -> Tuple[bool, str, Optional[Path]]:
+    ) -> tuple[bool, str, Path | None]:
         """
         Execute migration to target version and channel.
 
@@ -135,7 +135,7 @@ class MigrationExecutor:
             # Migration failed - backup is available for restore
             return (
                 False,
-                f"Migration failed: {str(e)}. Backup available at {backup_path}",
+                f"Migration failed: {e!s}. Backup available at {backup_path}",
                 backup_path
             )
 
@@ -143,7 +143,7 @@ class MigrationExecutor:
         self,
         target_version: str,
         target_channel: str,
-    ) -> Tuple[bool, List[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         Check if migration to target is safe.
 
@@ -201,7 +201,7 @@ class MigrationExecutor:
             while len(parts2) < len(parts1):
                 parts2.append(0)
 
-            for p1, p2 in zip(parts1, parts2):
+            for p1, p2 in zip(parts1, parts2, strict=False):
                 if p1 < p2:
                     return -1
                 if p1 > p2:

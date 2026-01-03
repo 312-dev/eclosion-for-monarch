@@ -8,11 +8,9 @@ Tests cover:
 - Edge cases (funded, due now, over-contribution)
 """
 
-import pytest
 
 from services.savings_calculator import (
     SavingsCalculator,
-    SavingsCalculation,
     SavingsStatus,
 )
 

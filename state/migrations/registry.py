@@ -2,7 +2,9 @@
 Migration registry for discovering and managing migrations.
 """
 
-from typing import Dict, List, Optional, Type
+
+from typing import ClassVar
+
 from .base import Migration
 
 
@@ -14,10 +16,10 @@ class MigrationRegistry:
     The registry provides methods for finding migration paths between versions.
     """
 
-    _migrations: Dict[str, Type[Migration]] = {}
+    _migrations: ClassVar[dict[str, type[Migration]]] = {}
 
     @classmethod
-    def register(cls, migration_class: Type[Migration]) -> Type[Migration]:
+    def register(cls, migration_class: type[Migration]) -> type[Migration]:
         """
         Decorator to register a migration.
 
@@ -33,13 +35,13 @@ class MigrationRegistry:
         return migration_class
 
     @classmethod
-    def get_migration(cls, from_version: str, to_version: str) -> Optional[Type[Migration]]:
+    def get_migration(cls, from_version: str, to_version: str) -> type[Migration] | None:
         """Get a specific migration by version pair."""
         key = f"{from_version}->{to_version}"
         return cls._migrations.get(key)
 
     @classmethod
-    def get_all_migrations(cls) -> Dict[str, Type[Migration]]:
+    def get_all_migrations(cls) -> dict[str, type[Migration]]:
         """Get all registered migrations."""
         return cls._migrations.copy()
 
@@ -48,7 +50,7 @@ class MigrationRegistry:
         cls,
         from_version: str,
         to_version: str,
-    ) -> List[Type[Migration]]:
+    ) -> list[type[Migration]]:
         """
         Find sequence of migrations to upgrade from one version to another.
 
@@ -66,7 +68,7 @@ class MigrationRegistry:
             return []
 
         # Build adjacency list for forward migrations
-        graph: Dict[str, List[Type[Migration]]] = {}
+        graph: dict[str, list[type[Migration]]] = {}
         for migration_class in cls._migrations.values():
             if migration_class.from_version not in graph:
                 graph[migration_class.from_version] = []
@@ -81,7 +83,7 @@ class MigrationRegistry:
             current, path = queue.popleft()
 
             for migration_class in graph.get(current, []):
-                new_path = path + [migration_class]
+                new_path = [*path, migration_class]
                 if migration_class.to_version == to_version:
                     return new_path
                 if migration_class.to_version not in visited:
@@ -95,7 +97,7 @@ class MigrationRegistry:
         cls,
         from_version: str,
         to_version: str,
-    ) -> List[Type[Migration]]:
+    ) -> list[type[Migration]]:
         """
         Find sequence of migrations to downgrade from one version to another.
 
@@ -112,7 +114,7 @@ class MigrationRegistry:
             return []
 
         # Build adjacency list for backward migrations (reverse direction)
-        graph: Dict[str, List[Type[Migration]]] = {}
+        graph: dict[str, list[type[Migration]]] = {}
         for migration_class in cls._migrations.values():
             # For backward, we go from to_version back to from_version
             if migration_class.to_version not in graph:
@@ -128,7 +130,7 @@ class MigrationRegistry:
             current, path = queue.popleft()
 
             for migration_class in graph.get(current, []):
-                new_path = path + [migration_class]
+                new_path = [*path, migration_class]
                 if migration_class.from_version == to_version:
                     return new_path
                 if migration_class.from_version not in visited:

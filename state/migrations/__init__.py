@@ -5,23 +5,23 @@ Provides forward and backward migrations between schema versions,
 enabling safe transitions between stable and beta channels.
 """
 
-from .base import Migration, MigrationDirection
-from .registry import MigrationRegistry
-from .executor import MigrationExecutor
 from .backup import BackupManager
+from .base import Migration, MigrationDirection
 from .compatibility import (
     CompatibilityLevel,
     CompatibilityResult,
     check_compatibility,
 )
+from .executor import MigrationExecutor
+from .registry import MigrationRegistry
 
 __all__ = [
-    "Migration",
-    "MigrationDirection",
-    "MigrationRegistry",
-    "MigrationExecutor",
     "BackupManager",
     "CompatibilityLevel",
     "CompatibilityResult",
+    "Migration",
+    "MigrationDirection",
+    "MigrationExecutor",
+    "MigrationRegistry",
     "check_compatibility",
 ]

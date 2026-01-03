@@ -9,14 +9,14 @@ Persists tracker state to JSON file including:
 """
 
 import json
-from pathlib import Path
-from datetime import datetime, date
-from dataclasses import dataclass, field, asdict
-from typing import Dict, Optional, List, Any
 import os
-import uuid
-import tempfile
 import shutil
+import tempfile
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 from core import config
 
@@ -73,18 +73,18 @@ class CategoryState:
     name: str
     target_amount: float
     over_contribution: float = 0.0
-    previous_due_date: Optional[str] = None
+    previous_due_date: str | None = None
     is_active: bool = True
-    created_at: Optional[str] = None
-    last_synced_at: Optional[str] = None
+    created_at: str | None = None
+    last_synced_at: str | None = None
     emoji: str = "🔄"  # Default emoji for category name prefix
     # Frozen monthly target (doesn't change mid-month)
-    frozen_monthly_target: Optional[float] = None
-    target_month: Optional[str] = None  # e.g., "2025-01"
-    balance_at_month_start: Optional[float] = None
+    frozen_monthly_target: float | None = None
+    target_month: str | None = None  # e.g., "2025-01"
+    balance_at_month_start: float | None = None
     # Track inputs used for calculation - recalculate if these change
-    frozen_amount: Optional[float] = None  # subscription amount when calculated
-    frozen_frequency_months: Optional[float] = None  # frequency when calculated
+    frozen_amount: float | None = None  # subscription amount when calculated
+    frozen_frequency_months: float | None = None  # frequency when calculated
     # Whether to sync name/emoji from transaction to category (True) or keep category as-is (False)
     sync_name: bool = True
     # Whether this category was linked to an existing category (vs. created new)
@@ -95,12 +95,12 @@ class CategoryState:
 class RollupState:
     """State for the rollup category feature."""
     enabled: bool = False
-    monarch_category_id: Optional[str] = None
+    monarch_category_id: str | None = None
     category_name: str = "Recurring Rollup"
     item_ids: set = field(default_factory=set)  # IDs of items in rollup
     total_budgeted: float = 0.0  # User-editable budgeted amount
-    created_at: Optional[str] = None
-    last_updated_at: Optional[str] = None
+    created_at: str | None = None
+    last_updated_at: str | None = None
     emoji: str = "🔄"  # Default emoji for category name prefix
     # Whether this rollup was linked to an existing category (vs. created new)
     is_linked: bool = False
@@ -111,19 +111,19 @@ class AutoSyncState:
     """State for automatic background sync."""
     enabled: bool = False
     interval_minutes: int = 360  # 6 hours default
-    last_auto_sync: Optional[str] = None
-    last_auto_sync_success: Optional[bool] = None
-    last_auto_sync_error: Optional[str] = None
+    last_auto_sync: str | None = None
+    last_auto_sync_success: bool | None = None
+    last_auto_sync_error: str | None = None
     consent_acknowledged: bool = False  # User explicitly acknowledged security disclosure
-    consent_timestamp: Optional[str] = None
+    consent_timestamp: str | None = None
 
 
 @dataclass
 class MigrationMetadata:
     """Tracks migration history for debugging and rollback."""
-    last_migrated_at: Optional[str] = None
-    migration_path: List[str] = field(default_factory=list)
-    source_channel: Optional[str] = None  # Channel before last migration
+    last_migrated_at: str | None = None
+    migration_path: list[str] = field(default_factory=list)
+    source_channel: str | None = None  # Channel before last migration
     has_beta_data: bool = False  # Flag if state contains beta-only fields
 
 
@@ -134,25 +134,25 @@ class TrackerState:
     schema_version: str = "1.0"  # Data structure version
     schema_channel: str = "stable"  # Channel this data was created in
     _migration_metadata: MigrationMetadata = field(default_factory=MigrationMetadata)
-    _unknown_fields: Dict[str, Any] = field(default_factory=dict)  # Preserve unknown fields from newer versions
+    _unknown_fields: dict[str, Any] = field(default_factory=dict)  # Preserve unknown fields from newer versions
 
     # Legacy app version (kept for backward compatibility)
     version: str = "1.0.0"
 
     # Configuration
-    target_group_id: Optional[str] = None
-    target_group_name: Optional[str] = None
-    last_sync: Optional[str] = None
+    target_group_id: str | None = None
+    target_group_name: str | None = None
+    last_sync: str | None = None
     auto_sync_new: bool = False  # Auto-enable tracking for new recurring items
-    auto_track_threshold: Optional[float] = None  # Max monthly amount to auto-track (null = any)
+    auto_track_threshold: float | None = None  # Max monthly amount to auto-track (null = any)
     auto_update_targets: bool = False  # Auto-update category targets when recurring amount changes
     enabled_items: set = field(default_factory=set)  # IDs of items enabled for tracking
-    categories: Dict[str, CategoryState] = field(default_factory=dict)
+    categories: dict[str, CategoryState] = field(default_factory=dict)
     rollup: RollupState = field(default_factory=RollupState)
-    removed_item_notices: List[RemovedItemNotice] = field(default_factory=list)  # Notices for removed items
-    last_read_changelog_version: Optional[str] = None  # Last changelog version user has read
+    removed_item_notices: list[RemovedItemNotice] = field(default_factory=list)  # Notices for removed items
+    last_read_changelog_version: str | None = None  # Last changelog version user has read
     auto_sync: AutoSyncState = field(default_factory=AutoSyncState)  # Background sync settings
-    user_first_name: Optional[str] = None  # User's first name from Monarch profile
+    user_first_name: str | None = None  # User's first name from Monarch profile
 
     def is_configured(self) -> bool:
         """Check if the tracker has been configured with a target group."""
@@ -166,7 +166,7 @@ class TrackerState:
 class StateManager:
     """Manages persistence of tracker state to JSON file."""
 
-    def __init__(self, state_file: Optional[Path] = None):
+    def __init__(self, state_file: Path | None = None):
         if state_file is None:
             state_file = config.STATE_FILE
         self.state_file = state_file
@@ -177,7 +177,7 @@ class StateManager:
             return TrackerState()
 
         try:
-            with open(self.state_file, "r") as f:
+            with open(self.state_file) as f:
                 data = json.load(f)
             return self._deserialize(data)
         except (json.JSONDecodeError, KeyError) as e:
@@ -410,7 +410,7 @@ class StateManager:
         self.save(state)
         return state
 
-    def get_category(self, recurring_id: str) -> Optional[CategoryState]:
+    def get_category(self, recurring_id: str) -> CategoryState | None:
         """Get category state by recurring item ID."""
         state = self.load()
         return state.categories.get(recurring_id)
@@ -461,7 +461,7 @@ class StateManager:
             state.categories[recurring_id].last_synced_at = datetime.now().isoformat()
             self.save(state)
 
-    def update_category_emoji(self, recurring_id: str, emoji: str) -> Optional[CategoryState]:
+    def update_category_emoji(self, recurring_id: str, emoji: str) -> CategoryState | None:
         """Update the emoji for a category."""
         state = self.load()
         if recurring_id in state.categories:
@@ -487,7 +487,7 @@ class StateManager:
         self.save(state)
         return state.rollup
 
-    def update_category_name(self, recurring_id: str, name: str) -> Optional[CategoryState]:
+    def update_category_name(self, recurring_id: str, name: str) -> CategoryState | None:
         """Update the name for a category."""
         state = self.load()
         if recurring_id in state.categories:
@@ -509,7 +509,7 @@ class StateManager:
         state.user_first_name = first_name
         self.save(state)
 
-    def get_user_first_name(self) -> Optional[str]:
+    def get_user_first_name(self) -> str | None:
         """Get user's first name."""
         state = self.load()
         return state.user_first_name
@@ -531,7 +531,7 @@ class StateManager:
         self.save(state)
         return auto_sync
 
-    def set_auto_track_threshold(self, threshold: Optional[float]) -> Optional[float]:
+    def set_auto_track_threshold(self, threshold: float | None) -> float | None:
         """Set the maximum monthly amount for auto-tracking (null = any amount)."""
         state = self.load()
         state.auto_track_threshold = threshold
@@ -613,7 +613,7 @@ class StateManager:
 
     # Frozen monthly target methods
 
-    def get_frozen_target(self, recurring_id: str) -> Optional[Dict]:
+    def get_frozen_target(self, recurring_id: str) -> dict | None:
         """Get frozen monthly target for an item."""
         state = self.load()
         cat = state.categories.get(recurring_id)
@@ -693,7 +693,7 @@ class StateManager:
                 return True
         return False
 
-    def get_active_notices(self) -> List[RemovedItemNotice]:
+    def get_active_notices(self) -> list[RemovedItemNotice]:
         """Get all undismissed notices."""
         state = self.load()
         return [n for n in state.removed_item_notices if not n.dismissed]
@@ -702,7 +702,7 @@ class StateManager:
         self,
         recurring_id: str,
         was_in_rollup: bool,
-    ) -> Optional[RemovedItemNotice]:
+    ) -> RemovedItemNotice | None:
         """
         Remove a category from state and create a notice.
         Returns the created notice, or None if category wasn't tracked.
@@ -741,7 +741,7 @@ class StateManager:
 
     # Feature reset methods
 
-    def get_deletable_dedicated_categories(self) -> List[Dict]:
+    def get_deletable_dedicated_categories(self) -> list[dict]:
         """
         Get list of dedicated categories that can be deleted (not linked, not rollup).
         Returns list of dicts with recurring_id, category_id, name, is_linked.
@@ -760,7 +760,7 @@ class StateManager:
             })
         return deletable
 
-    def reset_dedicated_categories(self) -> Dict:
+    def reset_dedicated_categories(self) -> dict:
         """
         Reset dedicated categories feature.
         Clears categories dict and removes non-rollup items from enabled_items.
@@ -782,7 +782,7 @@ class StateManager:
         self.save(state)
         return {"items_disabled": disabled_count}
 
-    def reset_rollup(self) -> Dict:
+    def reset_rollup(self) -> dict:
         """
         Reset rollup feature.
         Disables all items in rollup and resets rollup state.
@@ -812,7 +812,7 @@ class StateManager:
             "was_linked": was_linked,
         }
 
-    def reset_config(self) -> Dict:
+    def reset_config(self) -> dict:
         """
         Reset the configuration to take user back to setup wizard.
         Clears target_group_id and target_group_name.
@@ -829,7 +829,7 @@ class StateManager:
 
     # Changelog tracking methods
 
-    def get_last_read_changelog_version(self) -> Optional[str]:
+    def get_last_read_changelog_version(self) -> str | None:
         """Get the last changelog version the user has read."""
         state = self.load()
         return state.last_read_changelog_version
@@ -849,9 +849,9 @@ class StateManager:
 
     def update_auto_sync_state(
         self,
-        enabled: Optional[bool] = None,
-        interval_minutes: Optional[int] = None,
-        consent_acknowledged: Optional[bool] = None,
+        enabled: bool | None = None,
+        interval_minutes: int | None = None,
+        consent_acknowledged: bool | None = None,
     ) -> AutoSyncState:
         """Update auto-sync configuration."""
         state = self.load()
@@ -868,7 +868,7 @@ class StateManager:
         self.save(state)
         return state.auto_sync
 
-    def record_auto_sync_result(self, success: bool, error: Optional[str] = None) -> None:
+    def record_auto_sync_result(self, success: bool, error: str | None = None) -> None:
         """Record the result of an automatic sync."""
         state = self.load()
         state.auto_sync.last_auto_sync = datetime.now().isoformat()
@@ -894,7 +894,7 @@ class CredentialsManager:
     - Salt is stored with encrypted data (not secret, just ensures unique keys)
     """
 
-    def __init__(self, creds_file: Optional[Path] = None):
+    def __init__(self, creds_file: Path | None = None):
         if creds_file is None:
             creds_file = config.CREDENTIALS_FILE
         self.creds_file = creds_file
@@ -904,13 +904,13 @@ class CredentialsManager:
         if not self.creds_file.exists():
             return False
         try:
-            with open(self.creds_file, "r") as f:
+            with open(self.creds_file) as f:
                 data = json.load(f)
             return data.get("encrypted", False) and data.get("salt") is not None
         except (json.JSONDecodeError, KeyError):
             return False
 
-    def load(self, passphrase: str) -> Optional[Dict[str, str]]:
+    def load(self, passphrase: str) -> dict[str, str] | None:
         """
         Load and decrypt credentials from file.
 
@@ -923,14 +923,15 @@ class CredentialsManager:
         Raises:
             DecryptionError: If passphrase is wrong or data is corrupted
         """
-        from core.encryption import CredentialEncryption, DecryptionError
         from cryptography.fernet import InvalidToken
+
+        from core.encryption import CredentialEncryption, DecryptionError
 
         if not self.creds_file.exists():
             return None
 
         try:
-            with open(self.creds_file, "r") as f:
+            with open(self.creds_file) as f:
                 data = json.load(f)
 
             # Check if encrypted format

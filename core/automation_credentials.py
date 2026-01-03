@@ -13,14 +13,13 @@ Security Model:
 """
 
 import json
-import os
 import logging
-from pathlib import Path
+import os
 from datetime import datetime
-from typing import Optional, Dict
+from pathlib import Path
 
-from .encryption import CredentialEncryption, DecryptionError
 from . import config
+from .encryption import CredentialEncryption
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ class AutomationCredentialsManager:
     interaction, enabling background sync operations.
     """
 
-    def __init__(self, creds_file: Optional[Path] = None):
+    def __init__(self, creds_file: Path | None = None):
         """
         Initialize the automation credentials manager.
 
@@ -110,7 +109,7 @@ class AutomationCredentialsManager:
         if not self.exists():
             return False
         try:
-            with open(self.creds_file, 'r') as f:
+            with open(self.creds_file) as f:
                 data = json.load(f)
             return data.get('automation_enabled', False)
         except Exception:
@@ -149,7 +148,7 @@ class AutomationCredentialsManager:
         os.chmod(self.creds_file, 0o600)
         logger.info("Automation credentials saved")
 
-    def load(self) -> Optional[Dict[str, str]]:
+    def load(self) -> dict[str, str] | None:
         """
         Load and decrypt automation credentials.
 
@@ -164,7 +163,7 @@ class AutomationCredentialsManager:
             return None
 
         try:
-            with open(self.creds_file, 'r') as f:
+            with open(self.creds_file) as f:
                 data = json.load(f)
 
             if not data.get('automation_enabled'):
@@ -192,7 +191,7 @@ class AutomationCredentialsManager:
         """
         if self.exists():
             try:
-                with open(self.creds_file, 'r') as f:
+                with open(self.creds_file) as f:
                     data = json.load(f)
                 data['automation_enabled'] = False
                 data['disabled_at'] = datetime.now().isoformat()

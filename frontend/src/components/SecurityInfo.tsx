@@ -14,6 +14,7 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading state for async fetch
       setLoading(true);
       Promise.all([
         getSecurityStatus(),

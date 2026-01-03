@@ -10,14 +10,14 @@ Manages authentication and credential lifecycle:
 Extracted from SyncService to improve separation of concerns.
 """
 
-from typing import Dict, Optional, Any
-import os
-
-from state.state_manager import CredentialsManager
-from monarch_utils import get_mm
-from core.error_detection import is_rate_limit_error, format_auth_response
-
 import logging
+import os
+from typing import Any
+
+from core.error_detection import format_auth_response, is_rate_limit_error
+from monarch_utils import get_mm
+from state.state_manager import CredentialsManager
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,8 +26,8 @@ class CredentialsService:
 
     # In-memory session storage for decrypted credentials
     # In a multi-user deployment, this should be replaced with proper session management
-    _session_credentials: Optional[Dict[str, str]] = None
-    _pending_credentials: Optional[Dict[str, str]] = None  # Temp storage before passphrase is set
+    _session_credentials: dict[str, str] | None = None
+    _pending_credentials: dict[str, str] | None = None  # Temp storage before passphrase is set
 
     def __init__(self):
         self.credentials_manager = CredentialsManager()
@@ -83,11 +83,11 @@ class CredentialsService:
             os.environ.get("MFA_SECRET_KEY", ""),
         )
 
-    def get_session_credentials(self) -> Optional[Dict[str, str]]:
+    def get_session_credentials(self) -> dict[str, str] | None:
         """Get the current session credentials if unlocked."""
         return CredentialsService._session_credentials
 
-    async def login(self, email: str, password: str, mfa_secret: str = "") -> Dict[str, Any]:
+    async def login(self, email: str, password: str, mfa_secret: str = "") -> dict[str, Any]:
         """
         Validate credentials by attempting to login to Monarch.
         Does NOT save credentials - returns needs_passphrase=True on success.
@@ -109,7 +109,7 @@ class CredentialsService:
         except Exception as e:
             return format_auth_response(e, has_mfa_secret=bool(mfa_secret))
 
-    def set_passphrase(self, passphrase: str) -> Dict[str, Any]:
+    def set_passphrase(self, passphrase: str) -> dict[str, Any]:
         """
         Set the encryption passphrase and save credentials.
         Must be called after successful login().
@@ -142,7 +142,7 @@ class CredentialsService:
 
         return {"success": True, "message": "Credentials encrypted and saved."}
 
-    def unlock(self, passphrase: str) -> Dict[str, Any]:
+    def unlock(self, passphrase: str) -> dict[str, Any]:
         """
         Unlock stored credentials with the passphrase.
         Used when returning to the app with existing encrypted credentials.
@@ -171,7 +171,7 @@ class CredentialsService:
         """Lock the session without clearing stored credentials."""
         CredentialsService._session_credentials = None
 
-    async def unlock_and_validate(self, passphrase: str) -> Dict[str, Any]:
+    async def unlock_and_validate(self, passphrase: str) -> dict[str, Any]:
         """
         Unlock stored credentials AND validate them against Monarch API.
 
@@ -243,7 +243,7 @@ class CredentialsService:
 
     async def update_credentials(
         self, email: str, password: str, mfa_secret: str, passphrase: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate new Monarch credentials and save them encrypted with the provided passphrase.
 

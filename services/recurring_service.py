@@ -4,16 +4,15 @@ Recurring Service
 Fetches and parses recurring transactions from Monarch Money API.
 """
 
+import os
+import sys
 from dataclasses import dataclass
 from datetime import date
-from typing import List, Optional, Dict, Any
 from enum import Enum
-import sys
-import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from monarch_utils import get_mm, get_cache, retry_with_backoff
+from monarch_utils import get_cache, get_mm, retry_with_backoff
 
 
 class Frequency(Enum):
@@ -59,8 +58,8 @@ class RecurringItem:
     """Represents a recurring transaction from Monarch."""
     id: str
     name: str
-    merchant_id: Optional[str]
-    logo_url: Optional[str]
+    merchant_id: str | None
+    logo_url: str | None
     amount: float  # Positive value
     frequency: Frequency
     next_due_date: date
@@ -104,7 +103,7 @@ class RecurringItem:
 class RecurringService:
     """Service for fetching and processing recurring transactions."""
 
-    async def get_all_recurring(self, force_refresh: bool = False) -> List[RecurringItem]:
+    async def get_all_recurring(self, force_refresh: bool = False) -> list[RecurringItem]:
         """
         Fetch all recurring transactions from Monarch.
         Returns list of RecurringItem objects.
@@ -133,7 +132,7 @@ class RecurringService:
         cache[cache_key] = items
         return items
 
-    def _parse_recurring_items(self, raw_data: dict) -> List[RecurringItem]:
+    def _parse_recurring_items(self, raw_data: dict) -> list[RecurringItem]:
         """Parse Monarch API response into RecurringItem objects."""
         items = []
         for item in raw_data.get("recurringTransactionStreams", []):
@@ -193,7 +192,7 @@ class RecurringService:
         # Use stream name directly (it already has the merchant name or description)
         return stream.get("name", "Unknown")
 
-    async def get_recurring_by_id(self, recurring_id: str) -> Optional[RecurringItem]:
+    async def get_recurring_by_id(self, recurring_id: str) -> RecurringItem | None:
         """Get a specific recurring item by ID."""
         items = await self.get_all_recurring()
         for item in items:

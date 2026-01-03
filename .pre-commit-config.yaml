@@ -49,3 +49,19 @@ repos:
         args: [--config-file=pyproject.toml]
         pass_filenames: true
         require_serial: true
+
+      # Frontend linting
+      - id: frontend-lint
+        name: frontend-lint
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # Frontend type checking
+      - id: frontend-typecheck
+        name: frontend-typecheck
+        entry: bash -c 'cd frontend && npm run type-check'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false

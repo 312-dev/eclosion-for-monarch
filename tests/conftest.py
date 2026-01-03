@@ -8,20 +8,17 @@ Provides reusable fixtures including:
 - SavingsCalculator instances
 """
 
-import json
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 
 from services.savings_calculator import SavingsCalculator
 from state.state_manager import (
     CategoryState,
-    RollupState,
     StateManager,
     TrackerState,
 )
-
 
 # ============================================================================
 # Temporary File Fixtures

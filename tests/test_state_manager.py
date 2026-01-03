@@ -10,8 +10,6 @@ Tests cover:
 import json
 from pathlib import Path
 
-import pytest
-
 from state.state_manager import (
     CategoryState,
     RollupState,

@@ -4,9 +4,9 @@ Backup management for state files.
 
 import json
 import shutil
-from pathlib import Path
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from pathlib import Path
+from typing import Any
 
 from core import config
 
@@ -21,8 +21,8 @@ class BackupManager:
 
     def __init__(
         self,
-        state_dir: Optional[Path] = None,
-        backup_dir: Optional[Path] = None,
+        state_dir: Path | None = None,
+        backup_dir: Path | None = None,
         max_backups: int = 10,
     ):
         self.state_dir = state_dir or config.STATE_DIR
@@ -31,9 +31,9 @@ class BackupManager:
 
     def create_backup(
         self,
-        state_file: Optional[Path] = None,
+        state_file: Path | None = None,
         reason: str = "manual",
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """
         Create a timestamped backup of the state file.
 
@@ -67,7 +67,7 @@ class BackupManager:
 
         return backup_path
 
-    def list_backups(self) -> List[Dict[str, Any]]:
+    def list_backups(self) -> list[dict[str, Any]]:
         """
         List available backups with metadata.
 
@@ -114,7 +114,7 @@ class BackupManager:
     def restore_backup(
         self,
         backup_path: Path,
-        state_file: Optional[Path] = None,
+        state_file: Path | None = None,
         create_backup_first: bool = True,
     ) -> bool:
         """
@@ -141,7 +141,7 @@ class BackupManager:
         shutil.copy2(backup_path, state_file)
         return True
 
-    def get_latest_backup(self, channel: Optional[str] = None) -> Optional[Path]:
+    def get_latest_backup(self, channel: str | None = None) -> Path | None:
         """
         Get most recent backup, optionally filtered by channel.
 
@@ -160,7 +160,7 @@ class BackupManager:
             return Path(backups[0]["path"])
         return None
 
-    def get_backup_metadata(self, backup_path: Path) -> Optional[Dict[str, Any]]:
+    def get_backup_metadata(self, backup_path: Path) -> dict[str, Any] | None:
         """
         Read metadata from a backup file.
 
@@ -192,8 +192,7 @@ class BackupManager:
 
         if len(backups) > self.max_backups:
             # Remove oldest backups
+            import contextlib
             for backup in backups[self.max_backups:]:
-                try:
+                with contextlib.suppress(OSError):
                     Path(backup["path"]).unlink()
-                except OSError:
-                    pass  # Ignore errors during cleanup

@@ -23,7 +23,7 @@ jobs:
       # Auto-merge the release PR immediately
       - name: Auto-merge release PR
         if: ${{ steps.release.outputs.pr }}
-        run: gh pr merge ${{ steps.release.outputs.pr }} --squash --auto
+        run: gh pr merge ${{ fromJSON(steps.release.outputs.pr).number }} --squash --auto
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

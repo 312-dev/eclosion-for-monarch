@@ -4,21 +4,19 @@ Category Manager
 Creates and manages Monarch Money categories for recurring transactions.
 """
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import sys
 import os
+import sys
+from typing import Any
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from monarch_utils import (
-    get_mm,
-    build_category_maps,
-    get_month_range,
-    get_cache,
     clear_cache,
-    retry_with_backoff,
+    get_cache,
+    get_mm,
+    get_month_range,
     get_savings_goals,
+    retry_with_backoff,
 )
 
 
@@ -47,7 +45,7 @@ class CategoryManager:
         cache[cache_key] = budgets
         return budgets
 
-    async def get_category_groups(self, force_refresh: bool = False) -> List[Dict[str, str]]:
+    async def get_category_groups(self, force_refresh: bool = False) -> list[dict[str, str]]:
         """
         Get all category groups from Monarch.
 
@@ -120,7 +118,7 @@ class CategoryManager:
         self,
         category_id: str,
         new_group_id: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Move a category to a different category group.
 
@@ -178,8 +176,8 @@ class CategoryManager:
         self,
         category_id: str,
         new_name: str,
-        icon: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        icon: str | None = None,
+    ) -> dict[str, Any]:
         """
         Rename a category in Monarch, optionally updating its icon.
 
@@ -210,7 +208,7 @@ class CategoryManager:
             }
         """)
 
-        variables: Dict[str, Any] = {
+        variables: dict[str, Any] = {
             "input": {
                 "id": category_id,
                 "name": new_name,
@@ -237,7 +235,7 @@ class CategoryManager:
         self,
         category_id: str,
         icon: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Update just the icon for a category in Monarch.
 
@@ -359,7 +357,7 @@ class CategoryManager:
         cache[cache_key] = categories
         return categories
 
-    async def find_category_by_id(self, category_id: str) -> Optional[Dict[str, Any]]:
+    async def find_category_by_id(self, category_id: str) -> dict[str, Any] | None:
         """
         Check if a category exists by ID.
 
@@ -380,7 +378,7 @@ class CategoryManager:
 
         return None
 
-    async def get_all_category_balances(self) -> Dict[str, float]:
+    async def get_all_category_balances(self) -> dict[str, float]:
         """
         Get remaining balances for all categories.
 
@@ -401,7 +399,7 @@ class CategoryManager:
 
         return balances
 
-    async def get_all_planned_budgets(self) -> Dict[str, int]:
+    async def get_all_planned_budgets(self) -> dict[str, int]:
         """
         Get planned budget amounts for all categories.
 
@@ -422,7 +420,7 @@ class CategoryManager:
 
         return planned
 
-    async def get_all_category_info(self) -> Dict[str, Dict[str, str]]:
+    async def get_all_category_info(self) -> dict[str, dict[str, str]]:
         """
         Get info for all categories including their group names.
 
@@ -445,7 +443,7 @@ class CategoryManager:
 
         return info
 
-    async def get_ready_to_assign(self) -> Dict[str, Any]:
+    async def get_ready_to_assign(self) -> dict[str, Any]:
         """
         Get the "Ready to Assign" amount - unbudgeted funds available.
 
@@ -512,8 +510,8 @@ class CategoryManager:
 
     async def get_unmapped_categories(
         self,
-        mapped_category_ids: List[str],
-    ) -> List[Dict[str, Any]]:
+        mapped_category_ids: list[str],
+    ) -> list[dict[str, Any]]:
         """
         Get all categories that are NOT mapped to a recurring item.
 
@@ -534,7 +532,7 @@ class CategoryManager:
 
         unmapped = []
         # Track group order as they appear (preserves budget sheet order)
-        group_order: Dict[str, int] = {}
+        group_order: dict[str, int] = {}
         group_index = 0
 
         for cat_index, cat in enumerate(categories.get("categories", [])):
@@ -565,7 +563,7 @@ class CategoryManager:
         unmapped.sort(key=lambda x: (x.get("group_order", 999), x.get("category_order", 999)))
         return unmapped
 
-    async def delete_category(self, category_id: str) -> Dict[str, Any]:
+    async def delete_category(self, category_id: str) -> dict[str, Any]:
         """
         Delete a category from Monarch.
 
@@ -594,7 +592,7 @@ class CategoryManager:
         self,
         category_id: str,
         amount: float,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Allocate additional funds to a category by increasing its budget.
 

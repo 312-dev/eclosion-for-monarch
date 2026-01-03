@@ -39,6 +39,7 @@ export function SyncButton({ onSync, isSyncing, lastSync, compact = false }: Syn
   const [formattedTime, setFormattedTime] = useState(() => formatLastSync(lastSync));
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync derived state with prop
     setFormattedTime(formatLastSync(lastSync));
 
     if (!lastSync) return;
