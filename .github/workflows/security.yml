@@ -194,8 +194,8 @@ jobs:
           echo "Starting container..."
           # Note: We don't set FLASK_DEBUG=1 because that changes app behavior
           # Instead, ZAP will set X-Forwarded-Proto: https to bypass HTTPS redirect
+          # Note: We don't set INSTANCE_SECRET so ZAP can access all endpoints
           docker run -d --name eclosion -p 5001:5001 \
-            -e INSTANCE_SECRET=zap-test-secret \
             eclosion:test
           echo "Container started with ID: $(docker ps -q -f name=eclosion)"
 
