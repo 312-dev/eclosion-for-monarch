@@ -34,6 +34,7 @@ jobs:
               - 'tests/**'
               - 'requirements*.txt'
               - 'pyproject.toml'
+              - 'Dockerfile'
 
   # Frontend checks
   frontend:
