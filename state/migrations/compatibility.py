@@ -11,15 +11,17 @@ from core import config
 
 class CompatibilityLevel(Enum):
     """Compatibility level between app and state file."""
-    COMPATIBLE = "compatible"           # Can load directly
-    NEEDS_MIGRATION = "needs_migration" # Requires migration first
-    INCOMPATIBLE = "incompatible"       # Cannot load (future version)
+
+    COMPATIBLE = "compatible"  # Can load directly
+    NEEDS_MIGRATION = "needs_migration"  # Requires migration first
+    INCOMPATIBLE = "incompatible"  # Cannot load (future version)
     CHANNEL_MISMATCH = "channel_mismatch"  # Different channel
 
 
 @dataclass
 class CompatibilityResult:
     """Result of compatibility check."""
+
     level: CompatibilityLevel
     current_schema: str
     current_channel: str
@@ -106,7 +108,7 @@ def check_compatibility(
             file_schema=file_schema,
             file_channel=file_channel,
             message=f"State file is from a newer version ({file_schema}). "
-                    f"Please update the app or restore from backup.",
+            f"Please update the app or restore from backup.",
             can_auto_migrate=False,
             requires_backup_first=False,
             has_beta_data=has_beta_data,
@@ -120,8 +122,7 @@ def check_compatibility(
             current_channel=app_channel,
             file_schema=file_schema,
             file_channel=file_channel,
-            message="State file is from beta channel. "
-                    "Migration to stable channel is available.",
+            message="State file is from beta channel. Migration to stable channel is available.",
             can_auto_migrate=False,  # Requires explicit user action
             requires_backup_first=True,
             has_beta_data=True,
@@ -135,8 +136,7 @@ def check_compatibility(
             current_channel=app_channel,
             file_schema=file_schema,
             file_channel=file_channel,
-            message="State file is from stable channel. "
-                    "Migration to beta channel is available.",
+            message="State file is from stable channel. Migration to beta channel is available.",
             can_auto_migrate=True,
             requires_backup_first=True,
             has_beta_data=has_beta_data,
@@ -150,8 +150,7 @@ def check_compatibility(
             current_channel=app_channel,
             file_schema=file_schema,
             file_channel=file_channel,
-            message=f"State file is from {file_channel} channel, "
-                    f"current app is {app_channel}.",
+            message=f"State file is from {file_channel} channel, current app is {app_channel}.",
             can_auto_migrate=True,
             requires_backup_first=True,
             has_beta_data=has_beta_data or file_channel == "beta",
@@ -165,7 +164,7 @@ def check_compatibility(
         file_schema=file_schema,
         file_channel=file_channel,
         message=f"State needs migration from {file_channel}/{file_schema} "
-                f"to {app_channel}/{app_schema_version}",
+        f"to {app_channel}/{app_schema_version}",
         can_auto_migrate=False,
         requires_backup_first=True,
         has_beta_data=has_beta_data or file_channel == "beta",

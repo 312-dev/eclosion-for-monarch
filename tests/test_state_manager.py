@@ -21,9 +21,7 @@ from state.state_manager import (
 class TestStateManagerBasics:
     """Basic StateManager operations."""
 
-    def test_load_empty_state(
-        self, state_manager: StateManager, temp_state_file: Path
-    ) -> None:
+    def test_load_empty_state(self, state_manager: StateManager, temp_state_file: Path) -> None:
         """Loading non-existent file should return default state."""
         state = state_manager.load()
 
@@ -110,9 +108,7 @@ class TestRollupState:
 class TestStateManagerEdgeCases:
     """Edge cases and error handling."""
 
-    def test_load_corrupted_file(
-        self, state_manager: StateManager, temp_state_file: Path
-    ) -> None:
+    def test_load_corrupted_file(self, state_manager: StateManager, temp_state_file: Path) -> None:
         """Loading corrupted file should return default state."""
         # Write invalid JSON
         temp_state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -127,9 +123,7 @@ class TestStateManagerEdgeCases:
         backup = temp_state_file.with_suffix(".json.bak")
         assert backup.exists()
 
-    def test_categories_dict_operations(
-        self, configured_state: TrackerState
-    ) -> None:
+    def test_categories_dict_operations(self, configured_state: TrackerState) -> None:
         """Categories dict should support standard operations."""
         # Get existing
         cat = configured_state.categories.get("recurring-001")
@@ -147,9 +141,7 @@ class TestStateManagerEdgeCases:
         )
         assert len(configured_state.categories) == 2
 
-    def test_enabled_items_set_operations(
-        self, configured_state: TrackerState
-    ) -> None:
+    def test_enabled_items_set_operations(self, configured_state: TrackerState) -> None:
         """Enabled items set should support standard operations."""
         # Check membership
         assert "recurring-001" in configured_state.enabled_items

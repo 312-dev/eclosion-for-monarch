@@ -216,7 +216,9 @@ class SyncService:
 
             # Set budget in Monarch
             # Use initial_budget if provided (e.g., $0 for wizard setup), else calculated amount
-            budget_amount = initial_budget if initial_budget is not None else calc.monthly_contribution
+            budget_amount = (
+                initial_budget if initial_budget is not None else calc.monthly_contribution
+            )
             await self.category_manager.set_category_budget(
                 category_id, budget_amount, apply_to_future=True
             )
@@ -267,7 +269,10 @@ class SyncService:
         cat_state = state.categories.get(recurring_id)
 
         if not cat_state:
-            return {"success": False, "error": "No category found for this recurring item"}
+            return {
+                "success": False,
+                "error": "No category found for this recurring item",
+            }
 
         if not state.is_item_enabled(recurring_id):
             return {"success": False, "error": "Recurring item is not enabled"}
@@ -356,10 +361,7 @@ class SyncService:
         state = self.state_manager.load()
 
         # Get all category IDs that are currently mapped
-        mapped_ids = [
-            cat_state.monarch_category_id
-            for cat_state in state.categories.values()
-        ]
+        mapped_ids = [cat_state.monarch_category_id for cat_state in state.categories.values()]
 
         # Also exclude rollup category if it exists
         if state.rollup.monarch_category_id:
@@ -411,14 +413,15 @@ class SyncService:
             existing_name = cat_info.get("name", "")
             # Try to extract emoji from existing name
             import re
+
             emoji_match = re.match(
                 r"^([\U0001F300-\U0001FAFF\U00002700-\U000027BF\U0001F900-\U0001F9FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\u2600-\u26FF\u2700-\u27BF])",
-                existing_name
+                existing_name,
             )
             emoji = emoji_match.group(1) if emoji_match else "🔄"
             # Import the category's existing name (strip emoji prefix if present)
             if emoji_match:
-                display_name = existing_name[len(emoji):].strip()
+                display_name = existing_name[len(emoji) :].strip()
             else:
                 display_name = existing_name
 
@@ -514,7 +517,10 @@ class SyncService:
         cat_state = state.categories.get(recurring_id)
 
         if not cat_state:
-            return {"success": False, "error": "Category not found for this recurring item"}
+            return {
+                "success": False,
+                "error": "Category not found for this recurring item",
+            }
 
         result = await self.category_manager.allocate_to_category(
             cat_state.monarch_category_id,
@@ -550,7 +556,10 @@ class SyncService:
         cat_state = state.categories.get(recurring_id)
 
         if not cat_state:
-            return {"success": False, "error": "Category not found for this recurring item"}
+            return {
+                "success": False,
+                "error": "Category not found for this recurring item",
+            }
 
         # Update state
         updated_cat = self.state_manager.update_category_emoji(recurring_id, emoji)
@@ -619,6 +628,7 @@ class SyncService:
         # Rate limit: prevent syncing more than once every 30 minutes
         if state.last_sync:
             from datetime import datetime
+
             last_sync_time = datetime.fromisoformat(state.last_sync)
             now = datetime.now()
             diff_seconds = (now - last_sync_time).total_seconds()
@@ -627,9 +637,10 @@ class SyncService:
                 remaining = int(min_interval - diff_seconds)
                 remaining_mins = remaining // 60
                 from core.exceptions import RateLimitError
+
                 raise RateLimitError(
                     f"Eclosion limits syncs to once every 30 minutes. Please wait {remaining_mins} more minute(s).",
-                    retry_after=remaining
+                    retry_after=remaining,
                 )
 
         if not state.is_configured():
@@ -667,16 +678,20 @@ class SyncService:
                 )
                 if result.get("created"):
                     results["created"].append(result["name"])
-                results["updated"].append({
-                    "name": result["name"],
-                    "monthly_contribution": result["monthly_contribution"],
-                })
+                results["updated"].append(
+                    {
+                        "name": result["name"],
+                        "monthly_contribution": result["monthly_contribution"],
+                    }
+                )
                 results["total_monthly"] += result["monthly_contribution"]
             except Exception as e:
-                results["errors"].append({
-                    "name": item.name,
-                    "error": str(e),
-                })
+                results["errors"].append(
+                    {
+                        "name": item.name,
+                        "error": str(e),
+                    }
+                )
 
         # Step 3: Handle removed items - create notices and fully decouple
         # Collect IDs first to avoid modifying dict during iteration
@@ -700,25 +715,27 @@ class SyncService:
                 was_in_rollup = recurring_id in state.rollup.item_ids
 
                 # Remove from state and create notice
-                notice = self.state_manager.remove_category_and_notify(
-                    recurring_id, was_in_rollup
-                )
+                notice = self.state_manager.remove_category_and_notify(recurring_id, was_in_rollup)
 
                 if notice:
                     results["deactivated"].append(cat_state.name)
-                    results["removed_notices"].append({
-                        "id": notice.id,
-                        "recurring_id": notice.recurring_id,
-                        "name": notice.name,
-                        "category_name": notice.category_name,
-                        "was_rollup": notice.was_rollup,
-                        "removed_at": notice.removed_at,
-                    })
+                    results["removed_notices"].append(
+                        {
+                            "id": notice.id,
+                            "recurring_id": notice.recurring_id,
+                            "name": notice.name,
+                            "category_name": notice.category_name,
+                            "was_rollup": notice.was_rollup,
+                            "removed_at": notice.removed_at,
+                        }
+                    )
             except Exception as e:
-                results["errors"].append({
-                    "name": cat_state.name,
-                    "error": f"Failed to remove: {e}",
-                })
+                results["errors"].append(
+                    {
+                        "name": cat_state.name,
+                        "error": f"Failed to remove: {e}",
+                    }
+                )
 
         # Step 4: Fetch and update user profile
         try:
@@ -781,7 +798,9 @@ class SyncService:
             else:
                 # Check if merchant/category name changed - auto-rename if so
                 if cat_state.name != item.category_name:
-                    await self.category_manager.rename_category(category_id, item.category_name, icon=emoji)
+                    await self.category_manager.rename_category(
+                        category_id, item.category_name, icon=emoji
+                    )
 
             # Check for new cycle
             if cat_state.previous_due_date:
@@ -865,24 +884,28 @@ class SyncService:
             # Check if category still exists in Monarch
             cat_info = all_category_info.get(cat_state.monarch_category_id)
             if cat_info:
-                deletable.append({
-                    "recurring_id": recurring_id,
-                    "category_id": cat_state.monarch_category_id,
-                    "name": cat_info.get("name", cat_state.name),
-                    "group_name": cat_info.get("group_name"),
-                })
+                deletable.append(
+                    {
+                        "recurring_id": recurring_id,
+                        "category_id": cat_state.monarch_category_id,
+                        "name": cat_info.get("name", cat_state.name),
+                        "group_name": cat_info.get("group_name"),
+                    }
+                )
 
         # Include rollup category if it exists and was created (not linked)
         if state.rollup.monarch_category_id and not state.rollup.is_linked:
             rollup_info = all_category_info.get(state.rollup.monarch_category_id)
             if rollup_info:
-                deletable.append({
-                    "recurring_id": "__rollup__",
-                    "category_id": state.rollup.monarch_category_id,
-                    "name": rollup_info.get("name", state.rollup.category_name),
-                    "group_name": rollup_info.get("group_name"),
-                    "is_rollup": True,
-                })
+                deletable.append(
+                    {
+                        "recurring_id": "__rollup__",
+                        "category_id": state.rollup.monarch_category_id,
+                        "name": rollup_info.get("name", state.rollup.category_name),
+                        "group_name": rollup_info.get("group_name"),
+                        "is_rollup": True,
+                    }
+                )
 
         return {
             "categories": deletable,
@@ -909,16 +932,20 @@ class SyncService:
             result = await self.category_manager.delete_category(category_id)
 
             if result.get("success"):
-                results["deleted"].append({
-                    "category_id": category_id,
-                    "name": cat.get("name"),
-                })
+                results["deleted"].append(
+                    {
+                        "category_id": category_id,
+                        "name": cat.get("name"),
+                    }
+                )
             else:
-                results["failed"].append({
-                    "category_id": category_id,
-                    "name": cat.get("name"),
-                    "error": result.get("error"),
-                })
+                results["failed"].append(
+                    {
+                        "category_id": category_id,
+                        "name": cat.get("name"),
+                        "error": result.get("error"),
+                    }
+                )
 
         # Reset state if all deletions succeeded
         if len(results["failed"]) == 0:
@@ -989,16 +1016,20 @@ class SyncService:
             result = await self.category_manager.delete_category(category_id)
 
             if result.get("success"):
-                results["deleted"].append({
-                    "category_id": category_id,
-                    "name": cat.get("name"),
-                })
+                results["deleted"].append(
+                    {
+                        "category_id": category_id,
+                        "name": cat.get("name"),
+                    }
+                )
             else:
-                results["failed"].append({
-                    "category_id": category_id,
-                    "name": cat.get("name"),
-                    "error": result.get("error"),
-                })
+                results["failed"].append(
+                    {
+                        "category_id": category_id,
+                        "name": cat.get("name"),
+                        "error": result.get("error"),
+                    }
+                )
 
         # Reset state (clears categories, disables non-rollup items)
         state_result = self.state_manager.reset_dedicated_categories()
@@ -1077,7 +1108,9 @@ class SyncService:
             results["items_disabled"] += dedicated_result.get("items_disabled", 0)
             if not dedicated_result.get("success"):
                 for fail in dedicated_result.get("failed", []):
-                    results["errors"].append(f"Failed to delete {fail.get('name')}: {fail.get('error')}")
+                    results["errors"].append(
+                        f"Failed to delete {fail.get('name')}: {fail.get('error')}"
+                    )
         except Exception as e:
             results["errors"].append(f"Dedicated reset error: {e!s}")
 
@@ -1119,21 +1152,25 @@ class SyncService:
                         tracked_over_contribution=0,
                         frequency_months=item.frequency_months,
                     )
-                    items_data.append({
-                        "id": item.id,
-                        "name": item.category_name,
-                        "merchant_name": item.name,  # Just the merchant name without date/frequency
-                        "logo_url": item.logo_url,
-                        "amount": item.amount,
-                        "frequency": item.frequency.value if item.frequency else "monthly",
-                        "frequency_label": item.frequency_label,
-                        "frequency_months": item.frequency_months,
-                        "next_due_date": item.next_due_date.isoformat() if item.next_due_date else None,
-                        "months_until_due": item.months_until_due,
-                        "monthly_contribution": calc.monthly_contribution,
-                        "is_enabled": False,
-                        "is_in_rollup": False,
-                    })
+                    items_data.append(
+                        {
+                            "id": item.id,
+                            "name": item.category_name,
+                            "merchant_name": item.name,  # Just the merchant name without date/frequency
+                            "logo_url": item.logo_url,
+                            "amount": item.amount,
+                            "frequency": (item.frequency.value if item.frequency else "monthly"),
+                            "frequency_label": item.frequency_label,
+                            "frequency_months": item.frequency_months,
+                            "next_due_date": (
+                                item.next_due_date.isoformat() if item.next_due_date else None
+                            ),
+                            "months_until_due": item.months_until_due,
+                            "monthly_contribution": calc.monthly_contribution,
+                            "is_enabled": False,
+                            "is_in_rollup": False,
+                        }
+                    )
             except Exception as e:
                 logger.warning(f"Failed to fetch recurring items during setup: {e}")
                 items_data = []
@@ -1205,7 +1242,9 @@ class SyncService:
                 if current_balance == 0 and cat_state.monarch_category_id in all_balances:
                     logger.warning(f"[Dashboard] {item.name}: balance is 0 but key exists")
                 elif cat_state.monarch_category_id not in all_balances:
-                    logger.warning(f"[Dashboard] {item.name}: monarch_category_id {cat_state.monarch_category_id} NOT in all_balances")
+                    logger.warning(
+                        f"[Dashboard] {item.name}: monarch_category_id {cat_state.monarch_category_id} NOT in all_balances"
+                    )
                 # Use cached info - no individual lookups to avoid extra API calls
                 category_group_name = cat_info.get("group_name") if cat_info else None
                 # Check if category still exists in Monarch
@@ -1249,7 +1288,9 @@ class SyncService:
                         # Infrequent subscriptions - calculate catch-up rate
                         shortfall = max(0, item.amount - current_balance)
                         months_remaining = max(1, item.months_until_due)
-                        frozen_target = math.ceil(shortfall / months_remaining) if shortfall > 0 else 0
+                        frozen_target = (
+                            math.ceil(shortfall / months_remaining) if shortfall > 0 else 0
+                        )
 
                     self.state_manager.set_frozen_target(
                         recurring_id=item.id,
@@ -1268,9 +1309,7 @@ class SyncService:
                 # Calculate progress this month
                 contributed_this_month = max(0, current_balance - balance_at_start)
                 monthly_progress_percent = (
-                    (contributed_this_month / frozen_target * 100)
-                    if frozen_target > 0
-                    else 100
+                    (contributed_this_month / frozen_target * 100) if frozen_target > 0 else 100
                 )
             else:
                 # For disabled items, still calculate what the frozen target would be
@@ -1291,37 +1330,43 @@ class SyncService:
 
             is_in_rollup = item.id in state.rollup.item_ids
 
-            items_data.append({
-                "id": item.id,
-                "merchant_id": item.merchant_id,
-                "logo_url": item.logo_url,
-                "name": item.name,
-                "category_name": item.category_name,
-                "category_id": cat_state.monarch_category_id if cat_state else None,
-                "category_group_name": category_group_name,
-                "category_missing": category_missing,
-                "amount": item.amount,
-                "frequency": item.frequency.value,
-                "frequency_months": item.frequency_months,
-                "next_due_date": item.next_due_date.isoformat(),
-                "months_until_due": item.months_until_due,
-                "current_balance": current_balance,
-                "planned_budget": all_planned_budgets.get(cat_state.monarch_category_id, 0) if cat_state else 0,
-                "monthly_contribution": calc.monthly_contribution if is_enabled else 0,
-                "over_contribution": calc.over_contribution,
-                "progress_percent": calc.progress_percent if is_enabled else 0,
-                "status": calc.status.value if is_enabled else "disabled",
-                "is_active": is_active,
-                "is_enabled": is_enabled,
-                "is_stale": item.is_stale,
-                "ideal_monthly_rate": calc.ideal_monthly_rate,
-                "amount_needed_now": calc.amount_needed_now if is_enabled else 0,
-                "is_in_rollup": is_in_rollup,
-                "emoji": cat_state.emoji if cat_state else "🔄",
-                "frozen_monthly_target": frozen_target,
-                "contributed_this_month": contributed_this_month if is_enabled else 0,
-                "monthly_progress_percent": monthly_progress_percent if is_enabled else 0,
-            })
+            items_data.append(
+                {
+                    "id": item.id,
+                    "merchant_id": item.merchant_id,
+                    "logo_url": item.logo_url,
+                    "name": item.name,
+                    "category_name": item.category_name,
+                    "category_id": cat_state.monarch_category_id if cat_state else None,
+                    "category_group_name": category_group_name,
+                    "category_missing": category_missing,
+                    "amount": item.amount,
+                    "frequency": item.frequency.value,
+                    "frequency_months": item.frequency_months,
+                    "next_due_date": item.next_due_date.isoformat(),
+                    "months_until_due": item.months_until_due,
+                    "current_balance": current_balance,
+                    "planned_budget": (
+                        all_planned_budgets.get(cat_state.monarch_category_id, 0)
+                        if cat_state
+                        else 0
+                    ),
+                    "monthly_contribution": (calc.monthly_contribution if is_enabled else 0),
+                    "over_contribution": calc.over_contribution,
+                    "progress_percent": calc.progress_percent if is_enabled else 0,
+                    "status": calc.status.value if is_enabled else "disabled",
+                    "is_active": is_active,
+                    "is_enabled": is_enabled,
+                    "is_stale": item.is_stale,
+                    "ideal_monthly_rate": calc.ideal_monthly_rate,
+                    "amount_needed_now": calc.amount_needed_now if is_enabled else 0,
+                    "is_in_rollup": is_in_rollup,
+                    "emoji": cat_state.emoji if cat_state else "🔄",
+                    "frozen_monthly_target": frozen_target,
+                    "contributed_this_month": (contributed_this_month if is_enabled else 0),
+                    "monthly_progress_percent": (monthly_progress_percent if is_enabled else 0),
+                }
+            )
 
             if is_enabled and is_active:
                 total_monthly += frozen_target
@@ -1424,7 +1469,10 @@ class SyncService:
                 mfa_secret=creds.get("mfa_secret", ""),
             )
         except Exception as e:
-            return {"success": False, "error": f"Failed to save automation credentials: {e}"}
+            return {
+                "success": False,
+                "error": f"Failed to save automation credentials: {e}",
+            }
 
         # Update state
         self.state_manager.update_auto_sync_state(
@@ -1509,8 +1557,7 @@ class SyncService:
         if not creds:
             logger.error("Automated sync failed: no automation credentials available")
             self.state_manager.record_auto_sync_result(
-                success=False,
-                error="No automation credentials available"
+                success=False, error="No automation credentials available"
             )
             return
 
@@ -1528,10 +1575,7 @@ class SyncService:
             success = result.get("success", False)
             error = None if success else str(result.get("errors", []))
 
-            self.state_manager.record_auto_sync_result(
-                success=success,
-                error=error
-            )
+            self.state_manager.record_auto_sync_result(success=success, error=error)
 
             if success:
                 logger.info("Automated sync completed successfully")
@@ -1540,10 +1584,7 @@ class SyncService:
 
         except Exception as e:
             logger.error(f"Automated sync failed: {e}")
-            self.state_manager.record_auto_sync_result(
-                success=False,
-                error=str(e)
-            )
+            self.state_manager.record_auto_sync_result(success=False, error=str(e))
         finally:
             # Restore original session credentials
             CredentialsService._session_credentials = original_creds

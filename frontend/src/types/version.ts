@@ -16,6 +16,7 @@ export interface ChangelogSection {
 export interface ChangelogEntry {
   version: string;
   date: string;
+  summary?: string;
   sections: ChangelogSection;
 }
 

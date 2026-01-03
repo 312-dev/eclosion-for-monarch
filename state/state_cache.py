@@ -40,7 +40,7 @@ class RequestScopedStateCache:
 
     @property
     def _cache(self) -> TrackerState | None:
-        return getattr(self._local, 'cache', None)
+        return getattr(self._local, "cache", None)
 
     @_cache.setter
     def _cache(self, value: TrackerState | None):
@@ -48,7 +48,7 @@ class RequestScopedStateCache:
 
     @property
     def _dirty(self) -> bool:
-        return getattr(self._local, 'dirty', False)
+        return getattr(self._local, "dirty", False)
 
     @_dirty.setter
     def _dirty(self, value: bool):
@@ -56,7 +56,7 @@ class RequestScopedStateCache:
 
     @property
     def _in_scope(self) -> bool:
-        return getattr(self._local, 'in_scope', False)
+        return getattr(self._local, "in_scope", False)
 
     @_in_scope.setter
     def _in_scope(self, value: bool):

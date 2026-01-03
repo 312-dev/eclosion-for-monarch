@@ -126,7 +126,10 @@ class CredentialsService:
             }
 
         if not CredentialsService._pending_credentials:
-            return {"success": False, "error": "No pending credentials. Please login first."}
+            return {
+                "success": False,
+                "error": "No pending credentials. Please login first.",
+            }
 
         # Save encrypted credentials
         self.credentials_manager.save(

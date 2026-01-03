@@ -38,9 +38,7 @@ class CategoryManager:
             return cache[cache_key]
 
         mm = await get_mm()
-        budgets = await retry_with_backoff(
-            lambda: mm.get_budgets(start, start)
-        )
+        budgets = await retry_with_backoff(lambda: mm.get_budgets(start, start))
 
         cache[cache_key] = budgets
         return budgets
@@ -58,14 +56,9 @@ class CategoryManager:
             return cache[cache_key]
 
         mm = await get_mm()
-        groups = await retry_with_backoff(
-            lambda: mm.get_transaction_category_groups()
-        )
+        groups = await retry_with_backoff(lambda: mm.get_transaction_category_groups())
 
-        result = [
-            {"id": g["id"], "name": g["name"]}
-            for g in groups.get("categoryGroups", [])
-        ]
+        result = [{"id": g["id"], "name": g["name"]} for g in groups.get("categoryGroups", [])]
 
         cache[cache_key] = result
         return result
@@ -133,7 +126,8 @@ class CategoryManager:
 
         mm = await get_mm()
 
-        mutation = gql("""
+        mutation = gql(
+            """
             mutation UpdateCategory($input: UpdateCategoryInput!) {
                 updateCategory(input: $input) {
                     category {
@@ -149,7 +143,8 @@ class CategoryManager:
                     }
                 }
             }
-        """)
+        """
+        )
 
         variables = {
             "input": {
@@ -193,7 +188,8 @@ class CategoryManager:
 
         mm = await get_mm()
 
-        mutation = gql("""
+        mutation = gql(
+            """
             mutation UpdateCategory($input: UpdateCategoryInput!) {
                 updateCategory(input: $input) {
                     category {
@@ -206,7 +202,8 @@ class CategoryManager:
                     }
                 }
             }
-        """)
+        """
+        )
 
         variables: dict[str, Any] = {
             "input": {
@@ -250,7 +247,8 @@ class CategoryManager:
 
         mm = await get_mm()
 
-        mutation = gql("""
+        mutation = gql(
+            """
             mutation UpdateCategory($input: UpdateCategoryInput!) {
                 updateCategory(input: $input) {
                     category {
@@ -263,7 +261,8 @@ class CategoryManager:
                     }
                 }
             }
-        """)
+        """
+        )
 
         variables = {
             "input": {
@@ -350,9 +349,7 @@ class CategoryManager:
             return cache[cache_key]
 
         mm = await get_mm()
-        categories = await retry_with_backoff(
-            lambda: mm.get_transaction_categories()
-        )
+        categories = await retry_with_backoff(lambda: mm.get_transaction_categories())
 
         cache[cache_key] = categories
         return categories
@@ -546,18 +543,20 @@ class CategoryManager:
                     group_order[group_id] = group_index
                     group_index += 1
 
-                unmapped.append({
-                    "id": cat_id,
-                    "name": cat.get("name"),
-                    "group_id": group_id,
-                    "group_name": group.get("name"),
-                    "icon": cat.get("icon"),
-                    # Preserve original order from budget sheet
-                    "group_order": group_order.get(group_id, 999),
-                    "category_order": cat_index,
-                    # Include planned budget amount
-                    "planned_budget": planned_budgets.get(cat_id, 0),
-                })
+                unmapped.append(
+                    {
+                        "id": cat_id,
+                        "name": cat.get("name"),
+                        "group_id": group_id,
+                        "group_name": group.get("name"),
+                        "icon": cat.get("icon"),
+                        # Preserve original order from budget sheet
+                        "group_order": group_order.get(group_id, 999),
+                        "category_order": cat_index,
+                        # Include planned budget amount
+                        "planned_budget": planned_budgets.get(cat_id, 0),
+                    }
+                )
 
         # Sort by group order then category order (preserves budget sheet order)
         unmapped.sort(key=lambda x: (x.get("group_order", 999), x.get("category_order", 999)))

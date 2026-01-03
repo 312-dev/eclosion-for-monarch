@@ -16,6 +16,7 @@ from typing import Protocol
 
 class StateManagerProtocol(Protocol):
     """Protocol for state manager dependency injection."""
+
     def get_frozen_target(self, recurring_id: str) -> dict | None: ...
     def set_frozen_target(
         self,
@@ -31,6 +32,7 @@ class StateManagerProtocol(Protocol):
 @dataclass
 class FrozenTargetResult:
     """Result of frozen target calculation."""
+
     frozen_target: float
     balance_at_start: float
     contributed_this_month: float
@@ -111,9 +113,7 @@ def calculate_frozen_target(
     # Calculate monthly progress
     contributed_this_month = max(0, current_balance - balance_at_start)
     monthly_progress_percent = (
-        (contributed_this_month / frozen_target * 100)
-        if frozen_target > 0
-        else 100
+        (contributed_this_month / frozen_target * 100) if frozen_target > 0 else 100
     )
 
     return FrozenTargetResult(

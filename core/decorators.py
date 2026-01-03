@@ -27,11 +27,13 @@ def async_flask(f: Callable) -> Callable:
 
     Wraps an async function to run in asyncio event loop.
     """
+
     @wraps(f)
     def wrapper(*args, **kwargs):
         if inspect.iscoroutinefunction(f):
             return asyncio.run(f(*args, **kwargs))
         return f(*args, **kwargs)
+
     return wrapper
 
 
@@ -63,6 +65,7 @@ def api_handler(
         async def recurring_dashboard():
             return await sync_service.get_dashboard_data()
     """
+
     def decorator(f: Callable) -> Callable:
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -82,6 +85,7 @@ def api_handler(
                 return _handle_exception(e, handle_mfa)
 
         return wrapper
+
     return decorator
 
 
@@ -99,39 +103,39 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
         # Import here to avoid circular dependency
         try:
             from services.credentials_service import CredentialsService
+
             CredentialsService().logout()
         except Exception:
             pass  # Best effort logout
 
-        return jsonify({
-            "error": "Multi-Factor Auth Required",
-            "auth_required": True,
-            "code": "MFA_REQUIRED"
-        }), 401
+        return (
+            jsonify(
+                {
+                    "error": "Multi-Factor Auth Required",
+                    "auth_required": True,
+                    "code": "MFA_REQUIRED",
+                }
+            ),
+            401,
+        )
 
     # Rate limit error
     if is_rate_limit_error(e):
         logger.warning(f"Rate limited: {e}")
-        retry_after = getattr(e, 'retry_after', 60)
-        return jsonify({
-            "error": str(e),
-            "code": "RATE_LIMITED",
-            "retry_after": retry_after
-        }), 429
+        retry_after = getattr(e, "retry_after", 60)
+        return (
+            jsonify({"error": str(e), "code": "RATE_LIMITED", "retry_after": retry_after}),
+            429,
+        )
 
     # Validation error
     if isinstance(e, ValidationError):
         logger.warning(f"Validation error: {e}")
-        return jsonify({
-            "error": str(e),
-            "code": "VALIDATION_ERROR",
-            "success": False
-        }), 400
+        return (
+            jsonify({"error": str(e), "code": "VALIDATION_ERROR", "success": False}),
+            400,
+        )
 
     # Generic error
     logger.exception(f"API error: {e}")
-    return jsonify({
-        "error": str(e),
-        "success": False,
-        "code": "INTERNAL_ERROR"
-    }), 500
+    return jsonify({"error": str(e), "success": False, "code": "INTERNAL_ERROR"}), 500

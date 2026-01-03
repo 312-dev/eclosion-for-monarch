@@ -9,7 +9,8 @@ from typing import Any
 
 class MigrationDirection(Enum):
     """Direction of migration."""
-    FORWARD = "forward"    # stable -> beta or version upgrade
+
+    FORWARD = "forward"  # stable -> beta or version upgrade
     BACKWARD = "backward"  # beta -> stable or version downgrade
 
 

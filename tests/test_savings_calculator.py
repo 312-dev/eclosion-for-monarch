@@ -8,7 +8,6 @@ Tests cover:
 - Edge cases (funded, due now, over-contribution)
 """
 
-
 from services.savings_calculator import (
     SavingsCalculator,
     SavingsStatus,
@@ -18,9 +17,7 @@ from services.savings_calculator import (
 class TestSavingsCalculatorBasics:
     """Basic calculation tests."""
 
-    def test_calculate_monthly_subscription(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_monthly_subscription(self, savings_calculator: SavingsCalculator) -> None:
         """Monthly subscription should have monthly contribution equal to amount."""
         result = savings_calculator.calculate(
             target_amount=15.99,
@@ -32,9 +29,7 @@ class TestSavingsCalculatorBasics:
         assert result.monthly_contribution == 16  # Rounded up
         assert result.status == SavingsStatus.ON_TRACK
 
-    def test_calculate_yearly_subscription_new(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_yearly_subscription_new(self, savings_calculator: SavingsCalculator) -> None:
         """New yearly subscription should spread amount over 12 months."""
         result = savings_calculator.calculate(
             target_amount=120.00,
@@ -47,9 +42,7 @@ class TestSavingsCalculatorBasics:
         assert result.ideal_monthly_rate == 10
         assert result.status == SavingsStatus.ON_TRACK
 
-    def test_calculate_quarterly_subscription(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_quarterly_subscription(self, savings_calculator: SavingsCalculator) -> None:
         """Quarterly subscription should calculate correctly."""
         result = savings_calculator.calculate(
             target_amount=30.00,
@@ -65,9 +58,7 @@ class TestSavingsCalculatorBasics:
 class TestFundedStatus:
     """Tests for funded status calculations."""
 
-    def test_calculate_funded(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_funded(self, savings_calculator: SavingsCalculator) -> None:
         """Fully funded category should have zero contribution."""
         result = savings_calculator.calculate(
             target_amount=100.00,
@@ -80,9 +71,7 @@ class TestFundedStatus:
         assert result.status == SavingsStatus.FUNDED
         assert result.progress_percent == 100
 
-    def test_calculate_over_funded(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_over_funded(self, savings_calculator: SavingsCalculator) -> None:
         """Over-funded category should track over-contribution."""
         result = savings_calculator.calculate(
             target_amount=100.00,
@@ -99,9 +88,7 @@ class TestFundedStatus:
 class TestDueNowStatus:
     """Tests for due now status calculations."""
 
-    def test_calculate_due_now(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_due_now(self, savings_calculator: SavingsCalculator) -> None:
         """Due now should require full shortfall immediately."""
         result = savings_calculator.calculate(
             target_amount=50.00,
@@ -118,9 +105,7 @@ class TestDueNowStatus:
 class TestProgressStatus:
     """Tests for ahead/behind status calculations."""
 
-    def test_calculate_behind_schedule(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_behind_schedule(self, savings_calculator: SavingsCalculator) -> None:
         """Behind schedule should show BEHIND status."""
         # Need $100 in 2 months but have $0 - requires $50/month
         # Ideal rate is $100/12 = ~$9/month
@@ -136,9 +121,7 @@ class TestProgressStatus:
         assert result.status == SavingsStatus.BEHIND
         assert result.ideal_monthly_rate == 9  # ceil(100/12)
 
-    def test_calculate_ahead_schedule(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_calculate_ahead_schedule(self, savings_calculator: SavingsCalculator) -> None:
         """Ahead of schedule should show AHEAD status."""
         # Need $100 in 12 months, already have $90
         # Only need $10 / 12 = ~$1/month
@@ -174,9 +157,7 @@ class TestOverContribution:
         # Monthly is 25 / 5 = 5
         assert result.monthly_contribution == 5
 
-    def test_detect_over_contribution(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_detect_over_contribution(self, savings_calculator: SavingsCalculator) -> None:
         """Should detect over-contribution amount."""
         over = savings_calculator.detect_over_contribution(
             current_balance=150,
@@ -190,9 +171,7 @@ class TestOverContribution:
 class TestProgressPercent:
     """Tests for progress percentage calculation."""
 
-    def test_progress_percent_calculation(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_progress_percent_calculation(self, savings_calculator: SavingsCalculator) -> None:
         """Progress percentage should be calculated correctly."""
         result = savings_calculator.calculate(
             target_amount=100.00,
@@ -203,9 +182,7 @@ class TestProgressPercent:
 
         assert result.progress_percent == 75.0
 
-    def test_progress_percent_capped_at_100(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_progress_percent_capped_at_100(self, savings_calculator: SavingsCalculator) -> None:
         """Progress percentage should be capped at 100."""
         result = savings_calculator.calculate(
             target_amount=100.00,
@@ -220,9 +197,7 @@ class TestProgressPercent:
 class TestNewCycleDetection:
     """Tests for billing cycle detection."""
 
-    def test_detect_new_cycle_yearly(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_detect_new_cycle_yearly(self, savings_calculator: SavingsCalculator) -> None:
         """Should detect yearly cycle rollover."""
         result = savings_calculator.detect_new_cycle(
             previous_due_date="2024-01-15",
@@ -232,9 +207,7 @@ class TestNewCycleDetection:
 
         assert result is True
 
-    def test_detect_no_new_cycle(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_detect_no_new_cycle(self, savings_calculator: SavingsCalculator) -> None:
         """Should not detect cycle when dates are close."""
         result = savings_calculator.detect_new_cycle(
             previous_due_date="2025-01-15",
@@ -244,9 +217,7 @@ class TestNewCycleDetection:
 
         assert result is False
 
-    def test_detect_new_cycle_monthly(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_detect_new_cycle_monthly(self, savings_calculator: SavingsCalculator) -> None:
         """Should detect monthly cycle rollover."""
         result = savings_calculator.detect_new_cycle(
             previous_due_date="2025-01-15",
@@ -256,9 +227,7 @@ class TestNewCycleDetection:
 
         assert result is True
 
-    def test_detect_cycle_none_previous(
-        self, savings_calculator: SavingsCalculator
-    ) -> None:
+    def test_detect_cycle_none_previous(self, savings_calculator: SavingsCalculator) -> None:
         """Should return False when no previous date."""
         result = savings_calculator.detect_new_cycle(
             previous_due_date=None,
