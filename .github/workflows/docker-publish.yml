@@ -5,23 +5,23 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     paths:
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.dockerignore'
-      - 'frontend/**'
-      - '*.py'
-      - 'core/**'
-      - 'services/**'
-      - 'state/**'
-      - 'requirements*.txt'
-      - '.github/workflows/docker-publish.yml'
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - ".dockerignore"
+      - "frontend/**"
+      - "*.py"
+      - "core/**"
+      - "services/**"
+      - "state/**"
+      - "requirements*.txt"
+      - ".github/workflows/docker-publish.yml"
   workflow_call:
     inputs:
       tag:
-        description: 'Git tag to build and publish (e.g., v1.1.0)'
+        description: "Git tag to build and publish (e.g., v1.1.0)"
         required: true
         type: string
   workflow_dispatch:
