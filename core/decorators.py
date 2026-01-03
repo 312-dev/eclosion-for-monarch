@@ -153,7 +153,13 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
         logger.warning(f"Rate limited: {e}")
         retry_after = getattr(e, "retry_after", 60)
         return (
-            jsonify({"error": "Rate limit exceeded. Please try again later.", "code": "RATE_LIMITED", "retry_after": retry_after}),
+            jsonify(
+                {
+                    "error": "Rate limit exceeded. Please try again later.",
+                    "code": "RATE_LIMITED",
+                    "retry_after": retry_after,
+                }
+            ),
             429,
         )
 
@@ -167,4 +173,6 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
 
     # Generic error - use safe message to prevent information exposure
     logger.exception(f"API error: {e}")
-    return jsonify({"error": _safe_error_message(e), "success": False, "code": "INTERNAL_ERROR"}), 500
+    return jsonify(
+        {"error": _safe_error_message(e), "success": False, "code": "INTERNAL_ERROR"}
+    ), 500
