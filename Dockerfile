@@ -74,10 +74,13 @@ COPY core/ ./core/
 # Copy built frontend from builder stage
 COPY --from=frontend-builder /app/frontend/dist ./static
 
-# Create state directory (Chainguard user is nonroot with UID 65532)
+# Create state directory with proper permissions for nonroot user (UID 65532)
 # Note: /app/state should be mounted as a volume for persistent data
 # Docker: docker run -v eclosion-data:/app/state ...
 # Railway: Configure via dashboard Settings → Volumes
+USER root
+RUN mkdir -p /app/state && chown 65532:65532 /app/state
+USER nonroot
 
 # Expose port
 EXPOSE 5001
