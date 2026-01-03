@@ -4,7 +4,7 @@ This file contains coding standards and guidelines for AI assistants working on 
 
 ## Project Overview
 
-This is a YNAB (You Need A Budget) scripts project with a React/TypeScript frontend (Eclosion) that provides budget management features including recurring item tracking, category mappings, and dashboard analytics.
+Eclosion for Monarch is a self-hosted toolkit that expands what's possible with Monarch Money. It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, smart savings calculations, and direct Monarch sync. The demo mode runs entirely in the browser with localStorage.
 
 ## Code Standards
 
@@ -96,16 +96,17 @@ style={{ color: 'var(--monarch-text-dark)' }}
 **Use the established z-index scale.**
 
 ```typescript
-// Z-Index Hierarchy (from constants)
-DROPDOWN: 10
-STICKY_HEADER: 20
-MODAL_BACKDROP: 30
-MODAL: 40
-TOAST: 50
-TOOLTIP: 60
+// Z-Index Hierarchy (from constants/index.ts)
+DROPDOWN: 10       // Dropdown menus, select menus
+STICKY: 20         // Sticky headers, navigation
+POPOVER: 30        // Popovers, config panels
+MODAL_BACKDROP: 40 // Semi-transparent backdrop
+MODAL: 50          // Modal/dialog content
+TOAST: 60          // Toast notifications
+TOOLTIP: 70        // Tooltips (highest layer)
 ```
 
-Use semantic Tailwind classes: `z-dropdown`, `z-modal`, `z-toast`, `z-tooltip`
+Import from constants: `import { Z_INDEX } from '../constants';`
 
 ### Error Handling
 
@@ -170,14 +171,20 @@ setTimeout(() => {}, UI.ANIMATION.NORMAL);
 frontend/src/
 ├── api/           # API client and endpoints
 ├── components/    # React components
+│   ├── charts/    # Chart components (burndown, etc.)
 │   ├── icons/     # SVG icon components
 │   ├── layout/    # Layout components (Sidebar, AppShell)
+│   ├── marketing/ # Marketing/landing page components
+│   ├── recurring/ # Recurring expense components
 │   ├── tabs/      # Tab panel components
 │   ├── ui/        # Reusable UI components
 │   └── wizards/   # Setup wizard components
 ├── constants/     # Shared constants
 ├── context/       # React contexts
+├── data/          # Static data files
 ├── hooks/         # Custom hooks
+├── pages/         # Page-level components (Login, Unlock, etc.)
+├── test/          # Test utilities and setup
 ├── types/         # TypeScript type definitions
 └── utils/         # Utility functions
 ```
