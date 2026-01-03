@@ -1182,9 +1182,11 @@ def _parse_changelog() -> list[dict]:
     # Parse changelog format: ## [X.Y.Z] - YYYY-MM-DD
     version_pattern = r"^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})$"
     section_pattern = r"^### (Added|Changed|Deprecated|Removed|Fixed|Security)$"
+    summary_pattern = r"^> (.+)$"
 
     current_version = None
     current_section = None
+    expecting_summary = False
 
     for line in content.split("\n"):
         version_match = re.match(version_pattern, line)
@@ -1194,15 +1196,32 @@ def _parse_changelog() -> list[dict]:
             current_version = {
                 "version": version_match.group(1),
                 "date": version_match.group(2),
+                "summary": None,
                 "sections": {},
             }
             current_section = None
+            expecting_summary = True
             continue
+
+        # Capture blockquote summary after version header
+        if expecting_summary and current_version:
+            summary_match = re.match(summary_pattern, line)
+            if summary_match:
+                if current_version["summary"]:
+                    current_version["summary"] += " " + summary_match.group(1)
+                else:
+                    current_version["summary"] = summary_match.group(1)
+                continue
+            elif line.strip() == "":
+                continue  # Skip blank lines while looking for summary
+            else:
+                expecting_summary = False  # Stop looking if we hit other content
 
         section_match = re.match(section_pattern, line)
         if section_match and current_version:
             current_section = section_match.group(1).lower()
             current_version["sections"][current_section] = []
+            expecting_summary = False
             continue
 
         if line.startswith("- ") and current_version and current_section:
