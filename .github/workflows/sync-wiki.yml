@@ -16,10 +16,10 @@ jobs:
     name: Sync to Wiki
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Sync docs to wiki
-        uses: Andrew-Chen-Wang/github-wiki-action@v4
+        uses: Andrew-Chen-Wang/github-wiki-action@v5
         with:
           path: docusaurus/docs/
           token: ${{ secrets.GITHUB_TOKEN }}
