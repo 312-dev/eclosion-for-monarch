@@ -12,11 +12,11 @@ on:
       - "**.ts"
       - "**.tsx"
       - "**.js"
-      - "package*.json"
-      - "requirements*.txt"
+      - "**/package*.json"
+      - "**/requirements*.txt"
       - "Dockerfile"
       - "docker-compose.yml"
-      - ".github/workflows/**"
+      - ".github/**"
   push:
     branches: [main]
   schedule:
