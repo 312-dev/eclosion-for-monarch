@@ -89,6 +89,17 @@ def api_handler(
     return decorator
 
 
+def _safe_error_message(e: Exception) -> str:
+    """
+    Get a safe error message that doesn't expose internal details.
+
+    Uses the centralized safe_error_message from sanitization module.
+    """
+    from .sanitization import safe_error_message
+
+    return safe_error_message(e)
+
+
 def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
     """
     Centralized exception handling.
@@ -124,18 +135,32 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
         logger.warning(f"Rate limited: {e}")
         retry_after = getattr(e, "retry_after", 60)
         return (
-            jsonify({"error": str(e), "code": "RATE_LIMITED", "retry_after": retry_after}),
+            jsonify(
+                {
+                    "error": "Rate limit exceeded. Please try again later.",
+                    "code": "RATE_LIMITED",
+                    "retry_after": retry_after,
+                }
+            ),
             429,
         )
 
-    # Validation error
+    # Validation error - use the explicit user_message property
     if isinstance(e, ValidationError):
         logger.warning(f"Validation error: {e}")
+        # Use user_message property which is explicitly designed to be safe for exposure
         return (
-            jsonify({"error": str(e), "code": "VALIDATION_ERROR", "success": False}),
+            jsonify({"error": e.user_message, "code": "VALIDATION_ERROR", "success": False}),
             400,
         )
 
-    # Generic error
+    # Generic error - never expose exception details to prevent information leakage
     logger.exception(f"API error: {e}")
-    return jsonify({"error": str(e), "success": False, "code": "INTERNAL_ERROR"}), 500
+    # Return static message - do not pass exception to response
+    return jsonify(
+        {
+            "error": "An error occurred. Please try again.",
+            "success": False,
+            "code": "INTERNAL_ERROR",
+        }
+    ), 500

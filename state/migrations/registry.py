@@ -76,7 +76,7 @@ class MigrationRegistry:
         # BFS to find shortest path
         from collections import deque
 
-        queue = deque([(from_version, [])])
+        queue: deque[tuple[str, list[type[Migration]]]] = deque([(from_version, [])])
         visited = {from_version}
 
         while queue:
@@ -124,7 +124,7 @@ class MigrationRegistry:
         # BFS to find path
         from collections import deque
 
-        queue = deque([(from_version, [])])
+        queue: deque[tuple[str, list[type[Migration]]]] = deque([(from_version, [])])
         visited = {from_version}
 
         while queue:

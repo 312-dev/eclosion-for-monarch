@@ -2,7 +2,7 @@
 # Runs SAST, dependency scanning, container scanning, and DAST on PRs
 # All tools are FREE for public repositories
 
-name: Security Scans
+name: Security
 
 on:
   pull_request:
@@ -16,6 +16,7 @@ on:
       - "requirements*.txt"
       - "Dockerfile"
       - "docker-compose.yml"
+      - ".github/workflows/**"
   push:
     branches: [main]
   schedule:
@@ -49,17 +50,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # Use extended query suite for more comprehensive analysis
           queries: security-extended
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -109,6 +110,9 @@ jobs:
     name: Container Scan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -145,7 +149,7 @@ jobs:
           severity: "HIGH,CRITICAL"
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
@@ -188,18 +192,70 @@ jobs:
 
       - name: Start application
         run: |
+          echo "Starting container..."
+          # Note: We don't set FLASK_DEBUG=1 because that changes app behavior
+          # Instead, ZAP will set X-Forwarded-Proto: https to bypass HTTPS redirect
+          # Note: We don't set INSTANCE_SECRET so ZAP can access all endpoints
           docker run -d --name eclosion -p 5001:5001 \
-            -e INSTANCE_SECRET=zap-test-secret \
             eclosion:test
+          echo "Container started with ID: $(docker ps -q -f name=eclosion)"
 
       - name: Wait for application to be healthy
         run: |
-          echo "Waiting for application to start..."
-          timeout 60 bash -c 'until curl -sf http://localhost:5001/health; do sleep 2; done'
-          echo "Application is healthy!"
+          echo "=== Container status ==="
+          docker ps -a
+
+          echo ""
+          echo "=== Waiting for application to start ==="
+          for i in {1..30}; do
+            echo "Attempt $i/30..."
+
+            # Check if container is still running
+            if ! docker ps -q -f name=eclosion | grep -q .; then
+              echo "ERROR: Container is not running!"
+              echo ""
+              echo "=== Container logs ==="
+              docker logs eclosion 2>&1 || echo "No logs available"
+              echo ""
+              echo "=== Container inspect ==="
+              docker inspect eclosion --format='{{.State.Status}} - {{.State.Error}}' || true
+              exit 1
+            fi
+
+            # Try the health check (with X-Forwarded-Proto to bypass HTTPS redirect)
+            if curl -sf -H "X-Forwarded-Proto: https" http://localhost:5001/health; then
+              echo ""
+              echo "Application is healthy!"
+              exit 0
+            fi
+
+            echo "  Health check failed, waiting 2s..."
+            sleep 2
+          done
+
+          echo ""
+          echo "=== TIMEOUT: Application failed to become healthy ==="
+          echo ""
+          echo "=== Container logs ==="
+          docker logs eclosion 2>&1
+          echo ""
+          echo "=== Container inspect ==="
+          docker inspect eclosion
+          echo ""
+          echo "=== Listening ports ==="
+          docker exec eclosion ss -tlnp 2>/dev/null || docker exec eclosion netstat -tlnp 2>/dev/null || echo "Unable to check ports"
+          echo ""
+          echo "=== Process list ==="
+          docker exec eclosion ps aux 2>/dev/null || echo "ps not available in container"
+          exit 1
 
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
+        env:
+          # Set X-Forwarded-Proto to bypass HTTPS redirect in the app
+          # The app redirects HTTP to HTTPS in production unless this header is set
+          ZAP_AUTH_HEADER: "X-Forwarded-Proto"
+          ZAP_AUTH_HEADER_VALUE: "https"
         with:
           target: "http://localhost:5001"
           rules_file_name: ".zap/rules.tsv"

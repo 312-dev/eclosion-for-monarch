@@ -7,10 +7,11 @@ import { readFileSync } from 'fs'
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => ({
-  // Set base path for GitHub Pages deployment
-  // When building for ghpages mode, use /eclosion/ as the base path
-  base: mode === 'ghpages' ? '/eclosion/' : '/',
+export default defineConfig(() => ({
+  // Base path for deployment
+  // For ghpages mode with custom domain (docs.eclosion.app), use root path
+  // The /eclosion/ prefix was for username.github.io/eclosion/ but custom domains serve from root
+  base: '/',
 
   plugins: [react(), tailwindcss()],
   define: {

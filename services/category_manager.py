@@ -23,7 +23,7 @@ from monarch_utils import (
 class CategoryManager:
     """Manages category creation and lifecycle in Monarch."""
 
-    async def _get_budgets_cached(self, force_refresh: bool = False) -> dict:
+    async def _get_budgets_cached(self, force_refresh: bool = False) -> dict[str, Any]:
         """
         Get budget data with caching.
 
@@ -35,10 +35,11 @@ class CategoryManager:
         cache_key = f"budgets_{start}"
 
         if not force_refresh and cache_key in cache:
-            return cache[cache_key]
+            cached: dict[str, Any] = cache[cache_key]
+            return cached
 
         mm = await get_mm()
-        budgets = await retry_with_backoff(lambda: mm.get_budgets(start, start))
+        budgets: dict[str, Any] = await retry_with_backoff(lambda: mm.get_budgets(start, start))
 
         cache[cache_key] = budgets
         return budgets
@@ -53,7 +54,8 @@ class CategoryManager:
         cache_key = "groups"
 
         if not force_refresh and cache_key in cache:
-            return cache[cache_key]
+            cached: list[dict[str, str]] = cache[cache_key]
+            return cached
 
         mm = await get_mm()
         groups = await retry_with_backoff(lambda: mm.get_transaction_category_groups())
@@ -99,11 +101,11 @@ class CategoryManager:
         # Response structure may vary - handle common patterns
         if isinstance(result, dict):
             if "createCategory" in result:
-                return result["createCategory"]["category"]["id"]
+                return str(result["createCategory"]["category"]["id"])
             elif "id" in result:
-                return result["id"]
+                return str(result["id"])
             elif "category" in result:
-                return result["category"]["id"]
+                return str(result["category"]["id"])
 
         raise ValueError(f"Unexpected response from create_transaction_category: {result}")
 
@@ -165,7 +167,8 @@ class CategoryManager:
         clear_cache("category")
         clear_cache("budget")
 
-        return result
+        result_dict: dict[str, Any] = result if isinstance(result, dict) else {}
+        return result_dict
 
     async def rename_category(
         self,
@@ -226,7 +229,8 @@ class CategoryManager:
         # Clear caches after mutation
         clear_cache("category")
 
-        return result
+        result_dict: dict[str, Any] = result if isinstance(result, dict) else {}
+        return result_dict
 
     async def update_category_icon(
         self,
@@ -282,7 +286,8 @@ class CategoryManager:
         # Clear caches after mutation
         clear_cache("category")
 
-        return result
+        result_dict: dict[str, Any] = result if isinstance(result, dict) else {}
+        return result_dict
 
     async def get_category_balance(self, category_id: str) -> float:
         """
@@ -301,7 +306,7 @@ class CategoryManager:
             if entry.get("category", {}).get("id") == category_id:
                 for month in entry.get("monthlyAmounts", []):
                     if month.get("month") == start:
-                        return month.get("remainingAmount", 0)
+                        return float(month.get("remainingAmount", 0))
 
         return 0.0
 
@@ -336,7 +341,7 @@ class CategoryManager:
         # Clear budget cache after mutation
         clear_cache("budget")
 
-    async def _get_categories_cached(self, force_refresh: bool = False) -> dict:
+    async def _get_categories_cached(self, force_refresh: bool = False) -> dict[str, Any]:
         """
         Get all categories with caching.
 
@@ -346,10 +351,13 @@ class CategoryManager:
         cache_key = "all_categories"
 
         if not force_refresh and cache_key in cache:
-            return cache[cache_key]
+            cached: dict[str, Any] = cache[cache_key]
+            return cached
 
         mm = await get_mm()
-        categories = await retry_with_backoff(lambda: mm.get_transaction_categories())
+        categories: dict[str, Any] = await retry_with_backoff(
+            lambda: mm.get_transaction_categories()
+        )
 
         cache[cache_key] = categories
         return categories

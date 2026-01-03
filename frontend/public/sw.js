@@ -41,6 +41,17 @@ self.addEventListener('activate', (event) => {
 
 // Listen for skip waiting message from client
 self.addEventListener('message', (event) => {
+  // Verify the message origin matches our own origin to prevent cross-origin attacks
+  // Service workers can only be registered by same-origin pages, but we validate anyway
+  if (!event.origin || (event.origin !== self.location.origin && event.origin !== '')) {
+    // In service workers, event.origin may be empty string for same-origin messages
+    // Only allow messages from same origin or empty origin (same-origin case)
+    if (event.origin !== '') {
+      console.warn('Rejected message from unexpected origin:', event.origin);
+      return;
+    }
+  }
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

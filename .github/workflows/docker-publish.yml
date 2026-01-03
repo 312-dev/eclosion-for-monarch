@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Docker Publish
 
 on:
   push:
@@ -18,6 +18,7 @@ on:
       - 'state/**'
       - 'requirements*.txt'
       - '.github/workflows/docker-publish.yml'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -106,7 +107,7 @@ jobs:
 
       - name: Build and push Docker image
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -124,7 +125,7 @@ jobs:
       # Build-only for PRs and main branch pushes (no publish)
       - name: Build Docker image (CI only)
         if: "!startsWith(github.ref, 'refs/tags/v')"
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64

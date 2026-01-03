@@ -96,6 +96,16 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+              {/* Docs Link (shown on landing page) */}
+              {minimal && (
+                <Link
+                  to="/docs"
+                  className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
+                >
+                  Docs
+                </Link>
+              )}
+
               {/* Theme Toggle */}
               <button
                 type="button"

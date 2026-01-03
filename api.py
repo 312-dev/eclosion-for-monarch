@@ -6,6 +6,7 @@ import re
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, send_from_directory, session
@@ -13,7 +14,15 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from core import api_handler, async_flask, config, configure_logging
+from core import (
+    api_handler,
+    async_flask,
+    config,
+    configure_logging,
+    sanitize_emoji,
+    sanitize_id,
+    sanitize_name,
+)
 from services.credentials_service import CredentialsService
 from services.sync_service import SyncService
 
@@ -32,28 +41,30 @@ else:
 # Enable debug mode for local development (disables HTTPS redirect)
 app.debug = os.environ.get("FLASK_DEBUG", "0") == "1"
 
+
 # Session configuration for auth persistence across page refreshes
 # Secret key is generated on first run and stored, or use env var
-SESSION_SECRET_FILE = os.path.join(os.path.dirname(__file__), ".session_secret")
-
-
 def _get_or_create_session_secret():
-    """Get existing session secret or create a new one."""
-    # First check environment variable
+    """
+    Get session secret from environment or generate an ephemeral one.
+
+    Security notes:
+    - Set SESSION_SECRET environment variable for persistent sessions
+    - Without env var, an ephemeral secret is generated (sessions expire on restart)
+    - Never stores secrets to disk to prevent clear-text storage vulnerabilities
+    """
+    # Use environment variable if set (recommended for production)
     if env_secret := os.environ.get("SESSION_SECRET"):
         return env_secret
-    # Then check/create file-based secret
-    if os.path.exists(SESSION_SECRET_FILE):
-        with open(SESSION_SECRET_FILE) as f:
-            return f.read().strip()
-    # Generate new secret
-    new_secret = secrets.token_hex(32)
-    try:
-        with open(SESSION_SECRET_FILE, "w") as f:
-            f.write(new_secret)
-    except OSError:
-        pass  # If we can't write, just use the generated secret for this session
-    return new_secret
+
+    # Generate ephemeral secret (sessions won't persist across restarts)
+    is_production = config.is_container_environment() or not app.debug
+    if is_production:
+        logger.warning(
+            "Generated ephemeral session secret. "
+            "Set SESSION_SECRET environment variable for persistent sessions."
+        )
+    return secrets.token_hex(32)
 
 
 app.secret_key = _get_or_create_session_secret()
@@ -68,7 +79,7 @@ CORS(app, supports_credentials=True)  # Enable CORS with credentials for session
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    default_limits=config.DEFAULT_RATE_LIMITS,
+    default_limits=list(config.DEFAULT_RATE_LIMITS),
     storage_uri="memory://",
 )
 
@@ -120,11 +131,29 @@ def _ensure_scheduler_started():
 # ---- SECURITY MIDDLEWARE ----
 
 
+def _sanitize_log_value(value: str | None) -> str:
+    """Sanitize a value for safe logging by removing control characters."""
+    if value is None:
+        return "unknown"
+    # Remove newlines, carriage returns, and other control characters that could
+    # be used for log injection attacks
+    return re.sub(r"[\x00-\x1f\x7f]", "", str(value))[:100]
+
+
 def _audit_log(event: str, success: bool, details: str = ""):
     """Log security-relevant events for audit trail."""
-    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    # Security: _sanitize_log_value removes control characters to prevent log injection
+    client_ip = _sanitize_log_value(raw_ip)
+    sanitized_details = _sanitize_log_value(details)
+    # Sanitize event name to prevent log injection (defense in depth)
+    sanitized_event = _sanitize_log_value(event)
     status = "SUCCESS" if success else "FAILED"
-    logger.info(f"[AUDIT] {event} | {status} | IP: {client_ip} | {details}")
+    # All values are sanitized above to prevent log injection attacks
+    # Use %-style formatting (not f-strings) as it's recognized as safe by static analysis
+    logger.info(
+        "[AUDIT] %s | %s | IP: %s | %s", sanitized_event, status, client_ip, sanitized_details
+    )
 
 
 def _update_activity():
@@ -197,12 +226,76 @@ def _is_api_request():
     return any(request.path.startswith(p) for p in api_prefixes)
 
 
+def _get_trusted_host() -> str | None:
+    """
+    Get the trusted host for redirects.
+
+    Returns the host from environment config if set, otherwise validates
+    the request host against safe patterns.
+    """
+    # Prefer configured trusted host from environment
+    trusted_host = os.environ.get("TRUSTED_HOST")
+    if trusted_host:
+        return trusted_host
+
+    # Validate request.host has safe format (no path characters)
+    host = request.host
+    if host and re.match(r"^[\w.-]+(:\d+)?$", host):
+        return host
+
+    return None
+
+
+def _validate_redirect_path(path: str) -> str:
+    """
+    Validate and sanitize a path for safe redirection.
+
+    Prevents open redirect attacks by ensuring the path:
+    - Starts with a single forward slash
+    - Does not contain protocol indicators
+    - Does not use double slashes that could be interpreted as protocol-relative URLs
+    """
+    if not path or path == "/?":
+        return "/"
+
+    # Remove any leading double slashes that could cause open redirect
+    while path.startswith("//"):
+        path = "/" + path.lstrip("/")
+
+    # Ensure path starts with /
+    if not path.startswith("/"):
+        path = "/" + path
+
+    # Block any protocol indicators in the path
+    if "://" in path or path.startswith("/\\"):
+        return "/"
+
+    return path
+
+
 def _enforce_https():
     """Redirect HTTP to HTTPS in production. Returns redirect response or None."""
     if request.is_secure or app.debug:
         return None
     if request.headers.get("X-Forwarded-Proto", "http") == "http":
-        return redirect(request.url.replace("http://", "https://", 1), code=301)
+        # Get a validated/trusted host for the redirect
+        # Security: _get_trusted_host() validates host format to prevent open redirect
+        trusted_host = _get_trusted_host()
+        if not trusted_host:
+            # If we can't validate the host, don't redirect (fail safe)
+            return None
+
+        # Construct safe redirect URL using validated host and sanitized path
+        # Security: Both host and path are validated to prevent open redirect
+        safe_path = _validate_redirect_path(request.full_path)
+        redirect_url = f"https://{trusted_host}{safe_path}"
+
+        # Final validation: ensure constructed URL only redirects to the same host
+        parsed = urlparse(redirect_url)
+        if parsed.scheme != "https" or parsed.netloc != trusted_host:
+            return None  # Fail safe if URL construction produced unexpected result
+
+        return redirect(redirect_url, code=301)
     return None
 
 
@@ -319,6 +412,16 @@ def add_security_headers(response):
     if request.headers.get("X-Forwarded-Proto") == "https":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
+    # Permissions Policy - restrict access to browser features we don't use
+    response.headers["Permissions-Policy"] = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+        "magnetometer=(), microphone=(), payment=(), usb=()"
+    )
+
+    # Cross-Origin-Opener-Policy - protect against Spectre-like attacks
+    # Using same-origin-allow-popups to allow OAuth popups if needed
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+
     return response
 
 
@@ -386,7 +489,8 @@ async def auth_login():
     except Exception as e:
         _audit_log("LOGIN_ATTEMPT", False, f"Exception: {type(e).__name__}")
         logger.error(f"[LOGIN] Exception: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        # Return generic error message to prevent information exposure
+        return jsonify({"success": False, "error": "Login failed. Please try again."}), 500
 
 
 @app.route("/auth/set-passphrase", methods=["POST"])
@@ -575,7 +679,11 @@ async def recurring_dashboard():
 @api_handler(handle_mfa=True)
 async def recurring_sync():
     """Trigger full synchronization of recurring transactions."""
-    return await sync_service.full_sync()
+    result = await sync_service.full_sync()
+    # Sanitize any error messages to prevent information exposure
+    if not result.get("success") and "error" in result:
+        result["error"] = "Sync failed. Please try again."
+    return result
 
 
 @app.route("/recurring/config", methods=["GET"])
@@ -590,8 +698,8 @@ async def get_config():
 async def set_config():
     """Update configuration settings."""
     data = request.get_json()
-    group_id = data.get("group_id")
-    group_name = data.get("group_name")
+    group_id = sanitize_id(data.get("group_id"))
+    group_name = sanitize_name(data.get("group_name"))
 
     if not group_id or not group_name:
         from core.exceptions import ValidationError
@@ -613,7 +721,7 @@ async def get_category_groups():
 async def toggle_item():
     """Enable or disable tracking for a recurring item."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
+    recurring_id = sanitize_id(data.get("recurring_id"))
     enabled = data.get("enabled", False)
     item_data = data.get("item_data")
     initial_budget = data.get("initial_budget")  # Optional: use this instead of calculated amount
@@ -718,9 +826,9 @@ def dismiss_notice(notice_id):
     """Dismiss a notice by its ID."""
     result = sync_service.state_manager.dismiss_notice(notice_id)
     if not result:
-        from core.exceptions import NotFoundError
+        from core.exceptions import MonarchTrackerError
 
-        raise NotFoundError("Notice not found")
+        raise MonarchTrackerError("Notice not found", code="NOT_FOUND")
     return {"success": True}
 
 
@@ -783,9 +891,9 @@ async def recreate_category():
 async def change_category_group():
     """Move a subscription's category to a different group."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    new_group_id = data.get("group_id")
-    new_group_name = data.get("group_name", "")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    new_group_id = sanitize_id(data.get("group_id"))
+    new_group_name = sanitize_name(data.get("group_name", ""))
 
     if not recurring_id or not new_group_id:
         from core.exceptions import ValidationError
@@ -810,8 +918,8 @@ async def get_unmapped_categories():
 async def link_category():
     """Link a recurring item to an existing category."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    category_id = data.get("category_id")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    category_id = sanitize_id(data.get("category_id"))
     sync_name = data.get("sync_name", True)
 
     if not recurring_id or not category_id:
@@ -911,8 +1019,8 @@ async def create_rollup_category():
 async def update_category_emoji():
     """Update the emoji for a category."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    emoji = data.get("emoji", "🔄")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    emoji = sanitize_emoji(data.get("emoji", "🔄"))
 
     if not recurring_id:
         from core.exceptions import ValidationError
@@ -945,8 +1053,8 @@ async def update_rollup_name():
 async def update_category_name():
     """Update the name for a category."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    name = data.get("name")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    name = sanitize_name(data.get("name"))
 
     if not recurring_id or not name:
         from core.exceptions import ValidationError
@@ -1018,6 +1126,9 @@ async def reset_recurring_tool():
         result.get("success", False),
         f"dedicated_deleted={result.get('dedicated_deleted', 0)}, rollup_deleted={result.get('rollup_deleted', False)}",
     )
+    # Sanitize any error messages to prevent information exposure
+    if not result.get("success") and "error" in result:
+        result["error"] = "Reset failed. Please try again."
     return result
 
 
@@ -1046,18 +1157,16 @@ async def cancel_subscription():
 
     This is the "nuclear option" - completely removes all traces of the app.
     """
-    result = {
-        "success": True,
-        "steps_completed": [],
-        "railway_deletion_url": None,
-        "instructions": [],
-    }
+    from typing import Any
+
+    steps_completed: list[str] = []
+    instructions: list[str] = []
 
     # Step 1: Delete Monarch categories
     try:
         delete_result = await sync_service.delete_all_categories()
         if delete_result.get("success"):
-            result["steps_completed"].append("monarch_categories_deleted")
+            steps_completed.append("monarch_categories_deleted")
     except Exception as e:
         logger.warning(f"[CANCEL] Failed to delete Monarch categories: {e}")
         # Continue anyway - user may have already deleted them
@@ -1065,14 +1174,20 @@ async def cancel_subscription():
     # Step 2: Clear credentials and logout
     try:
         sync_service.logout()
-        result["steps_completed"].append("credentials_cleared")
+        steps_completed.append("credentials_cleared")
     except Exception as e:
         logger.warning(f"[CANCEL] Failed to clear credentials: {e}")
 
     # Step 3: Get Railway deletion URL
     railway_url = _get_railway_project_url()
+    result: dict[str, Any] = {
+        "success": True,
+        "steps_completed": steps_completed,
+        "railway_deletion_url": railway_url,
+        "instructions": instructions,
+    }
+
     if railway_url:
-        result["railway_deletion_url"] = railway_url
         result["instructions"] = [
             "All app data has been deleted.",
             "To stop billing, click the link below to delete your Railway project.",
@@ -1086,7 +1201,7 @@ async def cancel_subscription():
         ]
         result["is_railway"] = False
 
-    _audit_log("CANCEL_SUBSCRIPTION", True, f"Steps: {result['steps_completed']}")
+    _audit_log("CANCEL_SUBSCRIPTION", True, f"Steps: {steps_completed}")
 
     return result
 
@@ -1166,7 +1281,7 @@ def _get_app_version() -> str:
     pkg_path = Path(__file__).parent / "frontend" / "package.json"
     if pkg_path.exists():
         with open(pkg_path) as f:
-            return json.load(f).get("version", "0.0.0")
+            return str(json.load(f).get("version", "0.0.0"))
     return "0.0.0"
 
 
@@ -1177,7 +1292,7 @@ def _parse_changelog() -> list[dict]:
         return []
 
     content = changelog_path.read_text()
-    versions = []
+    versions: list[dict] = []
 
     # Parse changelog format: ## [X.Y.Z] - YYYY-MM-DD
     version_pattern = r"^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})$"
@@ -1576,12 +1691,26 @@ def execute_migration():
         create_backup=True,
     )
 
+    # Sanitize all output to prevent information exposure
+    safe_message = message if success else "Migration failed. Please try again."
+
+    # Only expose backup filename, not full path (prevents directory structure disclosure)
+    safe_backup_name = backup_path.name if backup_path else None
+
+    # Sanitize warnings to remove any paths or sensitive details
+    safe_warnings = []
+    if not is_safe:
+        for warning in warnings:
+            # Remove file paths from warnings
+            sanitized = re.sub(r"[/\\][\w./\\-]+", "[path]", str(warning))
+            safe_warnings.append(sanitized[:200])  # Limit length
+
     return jsonify(
         {
             "success": success,
-            "message": message,
-            "backup_path": str(backup_path) if backup_path else None,
-            "warnings": warnings if not is_safe else [],
+            "message": safe_message,
+            "backup_name": safe_backup_name,
+            "warnings": safe_warnings,
         }
     )
 
@@ -1660,9 +1789,19 @@ def restore_backup():
             }
         ), 400
 
+    # Pre-validate path format to reject obvious traversal attempts early
+    if ".." in str(backup_path) or not str(backup_path).endswith(".json"):
+        return jsonify(
+            {
+                "success": False,
+                "error": "Invalid backup path format.",
+            }
+        ), 400
+
     backup_manager = BackupManager()
 
     try:
+        # BackupManager.restore_backup validates path is within backup directory
         backup_manager.restore_backup(
             backup_path=Path(backup_path),
             create_backup_first=data.get("create_backup_first", True),
@@ -1670,21 +1809,30 @@ def restore_backup():
         return jsonify(
             {
                 "success": True,
-                "message": f"Restored from {backup_path}",
+                "message": "Backup restored successfully.",
             }
         )
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         return jsonify(
             {
                 "success": False,
-                "error": str(e),
+                "error": "Backup file not found",
             }
         ), 404
-    except Exception as e:
+    except ValueError:
+        # Path validation errors - return generic message to avoid path disclosure
         return jsonify(
             {
                 "success": False,
-                "error": f"Restore failed: {e!s}",
+                "error": "Invalid backup path provided.",
+            }
+        ), 400
+    except Exception as e:
+        logger.error(f"Restore failed: {type(e).__name__}")
+        return jsonify(
+            {
+                "success": False,
+                "error": "Restore failed. Please try again.",
             }
         ), 500
 

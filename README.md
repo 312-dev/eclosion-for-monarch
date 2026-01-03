@@ -18,7 +18,7 @@ Never miss a bill again. Automatically track and manage recurring expenses with 
 - **Progress Tracking** — See at a glance if you're on track for each expense
 - **Monarch Sync** — Changes sync directly to your Monarch budget
 
-### Linked Goals *(Coming Soon)*
+### Joint Goals *(Coming Soon)*
 Privacy-first shared goals. Collaborate on financial goals without merging accounts—each partner keeps their own Monarch account and shares only what they want to share.
 
 ## Deployment Options

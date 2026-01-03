@@ -47,7 +47,7 @@ class RollupService:
 
         if enabled and not state.rollup.monarch_category_id:
             # Create the rollup category in Monarch
-            if not state.is_configured():
+            if not state.is_configured() or not state.target_group_id:
                 return {"success": False, "error": "Tracker not configured"}
 
             # Create with emoji as icon
@@ -128,7 +128,7 @@ class RollupService:
         """
         state = self.state_manager.load()
 
-        if not state.is_configured():
+        if not state.is_configured() or not state.target_group_id:
             return {"success": False, "error": "Tracker not configured"}
 
         if state.rollup.monarch_category_id:
@@ -174,7 +174,7 @@ class RollupService:
 
         # Auto-enable and create rollup category if needed
         if not state.rollup.enabled or not state.rollup.monarch_category_id:
-            if not state.is_configured():
+            if not state.is_configured() or not state.target_group_id:
                 return {"success": False, "error": "Tracker not configured"}
 
             # Create the rollup category in Monarch if it doesn't exist
@@ -207,7 +207,7 @@ class RollupService:
             current_balance=0,
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=item.frequency_months,
+            frequency_months=int(item.frequency_months),
         )
         monthly_rate = calc.ideal_monthly_rate
 
@@ -251,7 +251,7 @@ class RollupService:
             current_balance=0,
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=item.frequency_months,
+            frequency_months=int(item.frequency_months),
         )
         monthly_rate = calc.ideal_monthly_rate
 
@@ -311,6 +311,7 @@ class RollupService:
         rollup = self.state_manager.update_rollup_emoji(emoji)
 
         # Update category icon in Monarch (emoji is set via icon field, not in name)
+        assert rollup.monarch_category_id is not None
         await self.category_manager.update_category_icon(rollup.monarch_category_id, emoji)
 
         return {
@@ -332,6 +333,7 @@ class RollupService:
         rollup = self.state_manager.update_rollup_category_name(name)
 
         # Update category name in Monarch (without emoji - emoji is set via icon field)
+        assert rollup.monarch_category_id is not None
         await self.category_manager.rename_category(rollup.monarch_category_id, name)
 
         return {
@@ -373,18 +375,18 @@ class RollupService:
         rollup_items = [i for i in recurring_items if i.id in rollup.item_ids]
 
         # Get current balance from Monarch (shared rollup category)
-        current_balance = 0
+        current_balance = 0.0
         if rollup.monarch_category_id:
             all_balances = await self.category_manager.get_all_category_balances()
-            current_balance = all_balances.get(rollup.monarch_category_id, 0)
+            current_balance = all_balances.get(rollup.monarch_category_id, 0.0)
 
         # Calculate total target (sum of all item amounts)
         total_target = sum(item.amount for item in rollup_items)
 
         # Calculate per-item statistics using same logic as standalone categories
-        total_ideal_rate = 0
-        total_frozen_monthly = 0
-        items_data = []
+        total_ideal_rate = 0.0
+        total_frozen_monthly = 0.0
+        items_data: list[dict[str, Any]] = []
         current_month = datetime.now().strftime("%Y-%m")
 
         for item in rollup_items:
@@ -402,7 +404,7 @@ class RollupService:
                 current_balance=item_balance,
                 months_until_due=item.months_until_due,
                 tracked_over_contribution=0,
-                frequency_months=item.frequency_months,
+                frequency_months=int(item.frequency_months),
             )
 
             ideal_monthly_rate = calc.ideal_monthly_rate
@@ -436,10 +438,11 @@ class RollupService:
                     target_month=current_month,
                     balance_at_start=item_balance,
                     amount=item.amount,
-                    frequency_months=item.frequency_months,
+                    frequency_months=int(item.frequency_months),
                 )
                 balance_at_start = item_balance
             else:
+                assert stored_target is not None
                 frozen_target = stored_target["frozen_monthly_target"]
                 balance_at_start = stored_target["balance_at_month_start"] or 0
 
