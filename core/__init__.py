@@ -19,6 +19,14 @@ from .exceptions import (
     ValidationError,
 )
 from .logging_config import configure_logging
+from .sanitization import (
+    safe_error_message,
+    sanitize_emoji,
+    sanitize_for_json,
+    sanitize_id,
+    sanitize_name,
+    sanitize_string,
+)
 from .scheduler import SyncScheduler
 
 __all__ = [
@@ -40,4 +48,10 @@ __all__ = [
     "format_auth_response",
     "is_mfa_error",
     "is_rate_limit_error",
+    "safe_error_message",
+    "sanitize_emoji",
+    "sanitize_for_json",
+    "sanitize_id",
+    "sanitize_name",
+    "sanitize_string",
 ]

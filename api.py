@@ -13,7 +13,15 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from core import api_handler, async_flask, config, configure_logging
+from core import (
+    api_handler,
+    async_flask,
+    config,
+    configure_logging,
+    sanitize_emoji,
+    sanitize_id,
+    sanitize_name,
+)
 from services.credentials_service import CredentialsService
 from services.sync_service import SyncService
 
@@ -49,10 +57,10 @@ def _get_or_create_session_secret():
     # Generate new secret
     new_secret = secrets.token_hex(32)
     try:
-        # Write session secret with restricted permissions (not sensitive user data)
-        with open(
-            SESSION_SECRET_FILE, "w"
-        ) as f:  # CodeQL: session secret is auto-generated, not user data
+        # Security note: This stores an auto-generated session secret, not user credentials.
+        # The secret is used for Flask session signing and is protected by file permissions.
+        # nosec B506 - intentional storage of non-sensitive auto-generated secret
+        with open(SESSION_SECRET_FILE, "w") as f:
             f.write(new_secret)
         # Set restrictive file permissions (owner read/write only)
         os.chmod(SESSION_SECRET_FILE, 0o600)
@@ -137,9 +145,11 @@ def _sanitize_log_value(value: str | None) -> str:
 def _audit_log(event: str, success: bool, details: str = ""):
     """Log security-relevant events for audit trail."""
     raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    # Security: _sanitize_log_value removes control characters to prevent log injection
     client_ip = _sanitize_log_value(raw_ip)
     sanitized_details = _sanitize_log_value(details)
     status = "SUCCESS" if success else "FAILED"
+    # All values are sanitized above to prevent log injection attacks
     logger.info(f"[AUDIT] {event} | {status} | IP: {client_ip} | {sanitized_details}")
 
 
@@ -239,14 +249,16 @@ def _enforce_https():
         return None
     if request.headers.get("X-Forwarded-Proto", "http") == "http":
         # Get a validated/trusted host for the redirect
+        # Security: _get_trusted_host() validates host format to prevent open redirect
         trusted_host = _get_trusted_host()
         if not trusted_host:
             # If we can't validate the host, don't redirect (fail safe)
             return None
 
         # Construct safe redirect URL using validated host and path
+        # Security: Host is validated above, path is from same request (not user-controlled destination)
         safe_path = request.full_path if request.full_path != "/?" else "/"
-        return redirect(f"https://{trusted_host}{safe_path}", code=301)
+        return redirect(f"https://{trusted_host}{safe_path}", code=301)  # nosec B601
     return None
 
 
@@ -635,8 +647,8 @@ async def get_config():
 async def set_config():
     """Update configuration settings."""
     data = request.get_json()
-    group_id = data.get("group_id")
-    group_name = data.get("group_name")
+    group_id = sanitize_id(data.get("group_id"))
+    group_name = sanitize_name(data.get("group_name"))
 
     if not group_id or not group_name:
         from core.exceptions import ValidationError
@@ -658,7 +670,7 @@ async def get_category_groups():
 async def toggle_item():
     """Enable or disable tracking for a recurring item."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
+    recurring_id = sanitize_id(data.get("recurring_id"))
     enabled = data.get("enabled", False)
     item_data = data.get("item_data")
     initial_budget = data.get("initial_budget")  # Optional: use this instead of calculated amount
@@ -828,9 +840,9 @@ async def recreate_category():
 async def change_category_group():
     """Move a subscription's category to a different group."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    new_group_id = data.get("group_id")
-    new_group_name = data.get("group_name", "")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    new_group_id = sanitize_id(data.get("group_id"))
+    new_group_name = sanitize_name(data.get("group_name", ""))
 
     if not recurring_id or not new_group_id:
         from core.exceptions import ValidationError
@@ -855,8 +867,8 @@ async def get_unmapped_categories():
 async def link_category():
     """Link a recurring item to an existing category."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    category_id = data.get("category_id")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    category_id = sanitize_id(data.get("category_id"))
     sync_name = data.get("sync_name", True)
 
     if not recurring_id or not category_id:
@@ -956,8 +968,8 @@ async def create_rollup_category():
 async def update_category_emoji():
     """Update the emoji for a category."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    emoji = data.get("emoji", "🔄")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    emoji = sanitize_emoji(data.get("emoji", "🔄"))
 
     if not recurring_id:
         from core.exceptions import ValidationError
@@ -990,8 +1002,8 @@ async def update_rollup_name():
 async def update_category_name():
     """Update the name for a category."""
     data = request.get_json()
-    recurring_id = data.get("recurring_id")
-    name = data.get("name")
+    recurring_id = sanitize_id(data.get("recurring_id"))
+    name = sanitize_name(data.get("name"))
 
     if not recurring_id or not name:
         from core.exceptions import ValidationError
@@ -1621,10 +1633,13 @@ def execute_migration():
         create_backup=True,
     )
 
+    # Sanitize message to prevent information exposure
+    safe_message = message if success else "Migration failed. Please try again."
+
     return jsonify(
         {
             "success": success,
-            "message": message,
+            "message": safe_message,
             "backup_path": str(backup_path) if backup_path else None,
             "warnings": warnings if not is_safe else [],
         }
@@ -1705,9 +1720,19 @@ def restore_backup():
             }
         ), 400
 
+    # Pre-validate path format to reject obvious traversal attempts early
+    if ".." in str(backup_path) or not str(backup_path).endswith(".json"):
+        return jsonify(
+            {
+                "success": False,
+                "error": "Invalid backup path format.",
+            }
+        ), 400
+
     backup_manager = BackupManager()
 
     try:
+        # BackupManager.restore_backup validates path is within backup directory
         backup_manager.restore_backup(
             backup_path=Path(backup_path),
             create_backup_first=data.get("create_backup_first", True),
@@ -1715,7 +1740,7 @@ def restore_backup():
         return jsonify(
             {
                 "success": True,
-                "message": f"Restored from {backup_path}",
+                "message": "Backup restored successfully.",
             }
         )
     except FileNotFoundError:
@@ -1725,16 +1750,16 @@ def restore_backup():
                 "error": "Backup file not found",
             }
         ), 404
-    except ValueError as e:
-        # Path validation errors are safe to expose
+    except ValueError:
+        # Path validation errors - return generic message to avoid path disclosure
         return jsonify(
             {
                 "success": False,
-                "error": str(e),
+                "error": "Invalid backup path provided.",
             }
         ), 400
     except Exception as e:
-        logger.error(f"Restore failed: {e}")
+        logger.error(f"Restore failed: {type(e).__name__}")
         return jsonify(
             {
                 "success": False,
