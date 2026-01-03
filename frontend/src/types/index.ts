@@ -66,3 +66,18 @@ export type {
   EnableAutoSyncResult,
   DisableAutoSyncResult,
 } from './sync';
+
+// Settings export/import
+export type {
+  EclosionExportMetadata,
+  RecurringExportConfig,
+  RecurringExportCategory,
+  RecurringExportRollup,
+  RecurringExport,
+  AppSettingsExport,
+  EclosionExport,
+  ImportOptions,
+  ImportResult,
+  ImportPreview,
+  ImportPreviewResponse,
+} from './settings-export';

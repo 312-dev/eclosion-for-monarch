@@ -1,0 +1,125 @@
+# Deploy to Cloudflare Pages
+#
+# Builds the frontend in demo mode and deploys to Cloudflare Pages.
+# Supports both production (releases) and beta (pre-releases) deployments.
+#
+# Production: eclosion.app (triggered by release)
+# Beta: beta.eclosion.app (triggered by push to develop)
+#
+# Beta versions are auto-generated as {base-version}-beta.{run_number}
+
+name: Deploy to Cloudflare
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment (production or beta)'
+        required: true
+        type: string
+      version:
+        description: 'Version being deployed'
+        required: false
+        type: string
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: true
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+
+  # Auto-deploy beta on push to develop
+  push:
+    branches: [develop]
+
+  # Trigger on pre-release publication for beta deployments
+  release:
+    types: [prereleased]
+
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - production
+          - beta
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine environment and version
+        id: config
+        run: |
+          # Determine environment
+          if [[ "${{ github.event_name }}" == "workflow_call" ]]; then
+            ENV="${{ inputs.environment }}"
+            VERSION="${{ inputs.version }}"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            ENV="beta"
+            # Generate beta version: {package.json version}-beta.{run_number}
+            BASE_VERSION=$(node -p "require('./frontend/package.json').version")
+            VERSION="${BASE_VERSION}-beta.${{ github.run_number }}"
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            ENV="beta"
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            ENV="${{ inputs.environment || 'beta' }}"
+            BASE_VERSION=$(node -p "require('./frontend/package.json').version")
+            VERSION="${BASE_VERSION}-beta.${{ github.run_number }}"
+          fi
+
+          echo "environment=$ENV" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "branch=$([[ $ENV == 'production' ]] && echo 'main' || echo 'beta')" >> $GITHUB_OUTPUT
+
+          echo "### Deployment Config" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** $ENV" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_DEMO_MODE: 'true'
+          VITE_APP_VERSION: ${{ steps.config.outputs.version }}
+        run: npm run build
+
+      - name: Install Docusaurus dependencies
+        working-directory: docusaurus
+        run: npm ci
+
+      - name: Build Docusaurus
+        working-directory: docusaurus
+        run: npm run build
+
+      - name: Merge builds
+        run: |
+          # Copy Docusaurus build into frontend/dist/docs
+          cp -r docusaurus/build frontend/dist/docs
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=eclosion --branch=${{ steps.config.outputs.branch }}

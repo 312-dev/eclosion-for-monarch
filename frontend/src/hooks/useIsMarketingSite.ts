@@ -1,7 +1,7 @@
 /**
  * Marketing Site Detection Hook
  *
- * Determines if the app is running on the public marketing site (GitHub Pages)
+ * Determines if the app is running on the public marketing site (Cloudflare Pages)
  * vs a self-hosted instance.
  *
  * Marketing site: Shows demo CTAs, getting started, feature showcase
@@ -15,17 +15,16 @@ import { useMemo } from 'react';
  * Add any domains where the marketing/demo site is hosted.
  */
 const MARKETING_HOSTNAMES = [
-  'github.io',
-  'eclosion.app', // Future custom domain
+  'eclosion.app',
+  'pages.dev', // Cloudflare Pages preview deployments
 ];
 
 /**
  * Check if the current site is the public marketing site.
  *
  * Returns true on:
- * - GitHub Pages (*.github.io)
+ * - Cloudflare Pages (*.pages.dev, eclosion.app)
  * - localhost (development)
- * - Any configured marketing domain
  *
  * Returns false on:
  * - Self-hosted Railway instances
