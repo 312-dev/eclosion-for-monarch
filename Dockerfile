@@ -82,7 +82,6 @@ COPY --from=frontend-builder /app/frontend/dist ./static
 # Expose port
 EXPOSE 5001
 
-# Default command
-# Note: Chainguard Python image has ENTRYPOINT ["/usr/bin/python"]
-# so we only specify the script and args here
+# Override Chainguard's default entrypoint to use venv Python with installed packages
+ENTRYPOINT ["/app/venv/bin/python"]
 CMD ["app.py"]
