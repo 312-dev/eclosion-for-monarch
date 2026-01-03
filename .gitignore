@@ -31,4 +31,4 @@ docusaurus/.docusaurus
 docusaurus/.cache-loader
 
 # Static build output (copied from frontend/dist in Docker)
-static/
+/static/
