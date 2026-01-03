@@ -429,6 +429,16 @@ def add_security_headers(response):
     if request.headers.get("X-Forwarded-Proto") == "https":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
+    # Permissions Policy - restrict access to browser features we don't use
+    response.headers["Permissions-Policy"] = (
+        "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
+        "magnetometer=(), microphone=(), payment=(), usb=()"
+    )
+
+    # Cross-Origin-Opener-Policy - protect against Spectre-like attacks
+    # Using same-origin-allow-popups to allow OAuth popups if needed
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+
     return response
 
 
