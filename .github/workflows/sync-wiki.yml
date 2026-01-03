@@ -1,0 +1,25 @@
+name: Sync Docs to Wiki
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Sync to Wiki
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync docs to wiki
+        uses: Andrew-Chen-Wang/github-wiki-action@v4
+        with:
+          path: docs/
+          token: ${{ secrets.GITHUB_TOKEN }}

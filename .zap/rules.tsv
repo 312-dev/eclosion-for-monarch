@@ -11,11 +11,19 @@
 # Informational findings (typically safe to ignore)
 10015	IGNORE	(Incomplete or No Cache-control Header Set)
 10021	IGNORE	(X-Content-Type-Options Header Missing)
+10027	IGNORE	(Suspicious Comments - common in open source JS)
 10036	IGNORE	(Server Leaks Version Information)
 10037	IGNORE	(Server Leaks Information via X-Powered-By)
+10049	IGNORE	(Storable but Non-Cacheable Content)
+10094	IGNORE	(Base64 Disclosure - expected in JS bundles)
 10096	IGNORE	(Timestamp Disclosure - Unix)
 10109	IGNORE	(Modern Web Application)
 10112	IGNORE	(Session Management Response Identified)
+90005	IGNORE	(Sec-Fetch-Dest Header Missing - client-side header, not server controlled)
+
+# Intentional design decisions (documented trade-offs)
+10055	IGNORE	(CSP: Wildcard Directive - intentional for img-src https: to allow external images)
+90004	IGNORE	(Spectre Vulnerability - COEP would break cross-origin image loading)
 
 # These may need attention but don't fail the build
 10010	WARN	(Cookie No HttpOnly Flag)

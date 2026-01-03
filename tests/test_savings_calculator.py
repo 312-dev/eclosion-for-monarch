@@ -243,9 +243,12 @@ class TestSavingsCalculationDataclass:
 
     def test_to_dict(self, savings_calculator: SavingsCalculator) -> None:
         """to_dict should return JSON-serializable dict."""
+        # With target=100, frequency=12, ideal_rate=9
+        # current_balance=55 means shortfall=45, monthly=45/5=9
+        # monthly(9) is within 10% of ideal_rate(9), so status is on_track
         result = savings_calculator.calculate(
             target_amount=100.00,
-            current_balance=50.00,
+            current_balance=55.00,
             months_until_due=5,
             frequency_months=12,
         )
@@ -254,5 +257,5 @@ class TestSavingsCalculationDataclass:
 
         assert isinstance(data, dict)
         assert data["target_amount"] == 100.00
-        assert data["current_balance"] == 50.00
+        assert data["current_balance"] == 55.00
         assert data["status"] == "on_track"  # String value, not enum
