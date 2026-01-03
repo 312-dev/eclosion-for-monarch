@@ -1,0 +1,213 @@
+# Security Scanning Workflow
+# Runs SAST, dependency scanning, container scanning, and DAST on PRs
+# All tools are FREE for public repositories
+
+name: Security Scans
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**.py"
+      - "**.ts"
+      - "**.tsx"
+      - "**.js"
+      - "package*.json"
+      - "requirements*.txt"
+      - "Dockerfile"
+      - "docker-compose.yml"
+  push:
+    branches: [main]
+  schedule:
+    # Weekly scan on Monday at midnight UTC to catch new CVEs
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # CodeQL - Static Application Security Testing (SAST)
+  # Scans for SQL injection, XSS, command injection, path traversal, etc.
+  # Results appear in GitHub Security tab
+  # ============================================================================
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use extended query suite for more comprehensive analysis
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ============================================================================
+  # Dependency Scanning
+  # Checks npm and pip packages for known vulnerabilities
+  # ============================================================================
+  dependency-scan:
+    name: Dependency Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run npm audit (high/critical only)
+        working-directory: frontend
+        # --audit-level=high fails only on high or critical vulnerabilities
+        run: npm audit --audit-level=high
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        # --strict fails on any vulnerability, --desc shows descriptions
+        run: pip-audit --strict --desc -r requirements.txt
+
+  # ============================================================================
+  # Container Scanning with Trivy
+  # Scans Docker image for OS and application vulnerabilities
+  # ============================================================================
+  container-scan:
+    name: Container Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: eclosion:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: eclosion:scan
+          format: "table"
+          exit-code: "1"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true
+
+      - name: Run Trivy and upload SARIF
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: eclosion:scan
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "HIGH,CRITICAL"
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  # ============================================================================
+  # DAST - Dynamic Application Security Testing with OWASP ZAP
+  # Runs penetration testing against the running application
+  # Only runs on non-fork PRs to prevent abuse
+  # ============================================================================
+  dast:
+    name: DAST (OWASP ZAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [container-scan]
+    # Only run DAST on:
+    # - Push events (trusted)
+    # - PRs from the same repo (not forks) to prevent abuse
+    # - Scheduled runs
+    # - Manual runs
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: eclosion:test
+          cache-from: type=gha
+
+      - name: Start application
+        run: |
+          docker run -d --name eclosion -p 5001:5001 \
+            -e INSTANCE_SECRET=zap-test-secret \
+            eclosion:test
+
+      - name: Wait for application to be healthy
+        run: |
+          echo "Waiting for application to start..."
+          timeout 60 bash -c 'until curl -sf http://localhost:5001/health; do sleep 2; done'
+          echo "Application is healthy!"
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: "http://localhost:5001"
+          rules_file_name: ".zap/rules.tsv"
+          fail_action: true
+          # -a: Include alpha rules
+          # -j: Use AJAX spider (disabled for performance)
+          cmd_options: "-a"
+
+      - name: Stop application
+        if: always()
+        run: docker stop eclosion || true
