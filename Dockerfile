@@ -23,8 +23,24 @@ COPY frontend/ ./
 # Build frontend
 RUN npm run build
 
-# Stage 2: Python backend with frontend assets
-FROM python:3.12-slim
+# Stage 2: Build Python dependencies
+# Use Chainguard's dev image which includes pip and build tools
+FROM cgr.dev/chainguard/python:3.12-dev AS python-builder
+
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt ./
+
+# Install Python dependencies to a virtual environment
+# This allows us to copy just the installed packages to the runtime image
+RUN python -m venv /app/venv && \
+    /app/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /app/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Runtime with minimal Chainguard image
+# This image has 0-5 CVEs typically vs 800+ in python:3.12-slim
+FROM cgr.dev/chainguard/python:3.12
 
 # Re-declare build args for this stage
 ARG BUILD_TIME=unknown
@@ -38,41 +54,30 @@ ENV GIT_SHA=${GIT_SHA}
 ENV APP_VERSION=${VERSION}
 ENV RELEASE_CHANNEL=${RELEASE_CHANNEL}
 
-# Create non-root user for security
-RUN groupadd -r eclosion && useradd -r -g eclosion eclosion
+# Chainguard images run as non-root by default (UID 65532)
+# No need to create a user
 
 WORKDIR /app
 
-# Install system dependencies for building some Python packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libffi-dev \
-    libssl-dev \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Copy virtual environment from builder
+COPY --from=python-builder /app/venv /app/venv
 
-# Copy requirements
-COPY requirements.txt ./
-
-# Install Python dependencies and create state directory with secure permissions
-RUN pip install --no-cache-dir -r requirements.txt && \
-    mkdir -p /app/state && chown eclosion:eclosion /app/state && chmod 700 /app/state
+# Set PATH to use the virtual environment
+ENV PATH="/app/venv/bin:$PATH"
 
 # Copy Python source
-COPY --chown=eclosion:eclosion *.py ./
-COPY --chown=eclosion:eclosion services/ ./services/
-COPY --chown=eclosion:eclosion state/ ./state/
-COPY --chown=eclosion:eclosion core/ ./core/
+COPY *.py ./
+COPY services/ ./services/
+COPY state/ ./state/
+COPY core/ ./core/
 
 # Copy built frontend from builder stage
-COPY --from=frontend-builder --chown=eclosion:eclosion /app/frontend/dist ./static
+COPY --from=frontend-builder /app/frontend/dist ./static
 
+# Create state directory (Chainguard user is nonroot with UID 65532)
 # Note: /app/state should be mounted as a volume for persistent data
 # Docker: docker run -v eclosion-data:/app/state ...
 # Railway: Configure via dashboard Settings → Volumes
-
-# Switch to non-root user
-USER eclosion
 
 # Expose port
 EXPOSE 5001

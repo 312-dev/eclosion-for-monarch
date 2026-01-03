@@ -93,29 +93,11 @@ def _safe_error_message(e: Exception) -> str:
     """
     Get a safe error message that doesn't expose internal details.
 
-    For known exception types, returns the message.
-    For unknown types, returns a generic message to prevent information leakage.
+    Uses the centralized safe_error_message from sanitization module.
     """
-    from .exceptions import ValidationError
+    from .sanitization import safe_error_message
 
-    # Known safe exceptions where we can expose the message
-    safe_exception_types = (
-        ValidationError,
-        ValueError,
-        KeyError,
-        FileNotFoundError,
-    )
-
-    if isinstance(e, safe_exception_types):
-        # Still sanitize to remove any potential path info
-        msg = str(e)
-        # Don't expose full file paths
-        if "/" in msg and len(msg) > 100:
-            return "Operation failed"
-        return msg
-
-    # For all other exceptions, return generic message
-    return "An internal error occurred"
+    return safe_error_message(e)
 
 
 def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
@@ -163,11 +145,11 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
             429,
         )
 
-    # Validation error - safe to expose message
+    # Validation error - sanitize message before exposing
     if isinstance(e, ValidationError):
         logger.warning(f"Validation error: {e}")
         return (
-            jsonify({"error": str(e), "code": "VALIDATION_ERROR", "success": False}),
+            jsonify({"error": _safe_error_message(e), "code": "VALIDATION_ERROR", "success": False}),
             400,
         )
 
