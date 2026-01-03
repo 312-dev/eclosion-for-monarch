@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).number || '' }}
+      pr_head_branch: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).headBranchName || '' }}
       pr_created: ${{ steps.release.outputs.pr != '' }}
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -40,7 +41,7 @@ jobs:
       - name: Checkout release branch
         uses: actions/checkout@v4
         with:
-          ref: release-please--branches--main
+          ref: ${{ needs.release-please.outputs.pr_head_branch }}
           fetch-depth: 0
 
       - name: Extract changelog additions
