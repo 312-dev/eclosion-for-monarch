@@ -28,6 +28,7 @@ export function useMediaQuery(query: string): boolean {
     return window.matchMedia(query).matches;
   };
 
+  // Use lazy initialization to get initial value synchronously
   const [matches, setMatches] = useState<boolean>(getMatches);
 
   useEffect(() => {
@@ -41,8 +42,13 @@ export function useMediaQuery(query: string): boolean {
       setMatches(event.matches);
     };
 
-    // Set initial value (in case it changed between render and effect)
-    setMatches(mediaQueryList.matches);
+    // Sync state if query changed (initial value may be stale)
+    // Use functional update to only trigger re-render if value changed
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync for query changes
+    setMatches((prev) => {
+      const current = mediaQueryList.matches;
+      return prev !== current ? current : prev;
+    });
 
     // Modern browsers support addEventListener
     mediaQueryList.addEventListener('change', handleChange);

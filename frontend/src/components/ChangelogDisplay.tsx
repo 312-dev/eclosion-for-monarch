@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useChangelogQuery, useDeploymentInfoQuery } from '../api/queries';
 import type { ChangelogEntry, ChangelogSection } from '../types';
-import { InfoIcon } from './icons';
+import { InfoIcon, CheckCircleIcon, CopyIcon } from './icons';
 
 export interface ChangelogDisplayProps {
   version: string | undefined; // Show specific version, or all if undefined
@@ -36,7 +37,10 @@ export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = 
   return (
     <div className="space-y-6">
       {showUpdateInstructions && (
-        <UpdateInstructions isRailway={deploymentInfo?.is_railway ?? false} />
+        <UpdateInstructions
+          isRailway={deploymentInfo?.is_railway ?? false}
+          railwayProjectUrl={deploymentInfo?.railway_project_url}
+        />
       )}
 
       {entries.map((entry) => (
@@ -46,14 +50,27 @@ export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = 
   );
 }
 
-function UpdateInstructions({ isRailway }: { isRailway: boolean }) {
+function UpdateInstructions({ isRailway, railwayProjectUrl }: { isRailway: boolean; railwayProjectUrl?: string | null | undefined }) {
+  const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCommand(id);
+    setTimeout(() => setCopiedCommand(null), 2000);
+  };
+
+  const dockerCommands = {
+    backup: 'docker compose cp eclosion:/app/state ./backup-$(date +%Y%m%d)',
+    update: 'docker compose pull && docker compose up -d',
+  };
+
   return (
     <div
       className="p-4 rounded-lg mb-4"
       style={{ backgroundColor: 'var(--monarch-bg-elevated, var(--monarch-bg-hover))' }}
     >
       <h4
-        className="font-medium mb-2 flex items-center gap-2"
+        className="font-medium mb-3 flex items-center gap-2"
         style={{ color: 'var(--monarch-text)' }}
       >
         <InfoIcon size={20} />
@@ -61,20 +78,81 @@ function UpdateInstructions({ isRailway }: { isRailway: boolean }) {
       </h4>
 
       {isRailway ? (
-        <ol className="list-decimal list-inside space-y-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-          <li>Go to your <a href="https://railway.app/dashboard" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--monarch-orange)' }}>Railway Dashboard</a></li>
-          <li>Click on your Eclosion project</li>
-          <li>Click <strong>"Deploy"</strong> or <strong>"Redeploy"</strong> to pull the latest version</li>
-          <li>Wait for the deployment to complete (usually 1-2 minutes)</li>
-          <li>Refresh this page to use the new version</li>
-        </ol>
+        <div className="space-y-3">
+          <ol className="list-decimal list-inside space-y-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+            <li>Open your Railway project dashboard</li>
+            <li>Click <strong>"Deploy"</strong> or <strong>"Redeploy"</strong> to pull the latest version</li>
+            <li>Wait for the deployment to complete (1-2 minutes)</li>
+            <li>Refresh this page to use the new version</li>
+          </ol>
+          <a
+            href={railwayProjectUrl || 'https://railway.app/dashboard'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{
+              backgroundColor: 'var(--monarch-orange)',
+              color: 'white',
+            }}
+          >
+            Open Railway Dashboard
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
       ) : (
-        <ol className="list-decimal list-inside space-y-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-          <li>Pull the latest changes from the repository</li>
-          <li>Rebuild and restart the application</li>
-          <li>Refresh this page to use the new version</li>
-        </ol>
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
+              <strong>1. Backup your data first (recommended):</strong>
+            </p>
+            <CopyableCommand
+              command={dockerCommands.backup}
+              copied={copiedCommand === 'backup'}
+              onCopy={() => copyToClipboard(dockerCommands.backup, 'backup')}
+            />
+          </div>
+          <div>
+            <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
+              <strong>2. Pull and restart:</strong>
+            </p>
+            <CopyableCommand
+              command={dockerCommands.update}
+              copied={copiedCommand === 'update'}
+              onCopy={() => copyToClipboard(dockerCommands.update, 'update')}
+            />
+          </div>
+          <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+            <strong>3.</strong> Refresh this page to use the new version.
+          </p>
+        </div>
       )}
+    </div>
+  );
+}
+
+function CopyableCommand({ command, copied, onCopy }: { command: string; copied: boolean; onCopy: () => void }) {
+  return (
+    <div
+      className="flex items-center gap-2 p-2 rounded font-mono text-xs"
+      style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+    >
+      <code className="flex-1 overflow-x-auto" style={{ color: 'var(--monarch-text)' }}>
+        {command}
+      </code>
+      <button
+        onClick={onCopy}
+        className="flex-shrink-0 p-1.5 rounded transition-colors hover:bg-[var(--monarch-bg-hover)]"
+        title={copied ? 'Copied!' : 'Copy to clipboard'}
+        aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
+      >
+        {copied ? (
+          <CheckCircleIcon size={16} className="text-[var(--monarch-success)]" />
+        ) : (
+          <CopyIcon size={16} style={{ color: 'var(--monarch-text-muted)' }} />
+        )}
+      </button>
     </div>
   );
 }

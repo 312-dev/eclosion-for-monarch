@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redirecting...</title>
+    <script>
+      // Single Page App GitHub Pages Redirect
+      // This script handles client-side routing for SPAs hosted on GitHub Pages.
+      // When a user navigates to a path like /demo/recurring, GitHub Pages returns a 404.
+      // This script saves the path and redirects to the root, where the app can restore it.
+
+      // Store the current path in sessionStorage
+      sessionStorage.setItem('spa-redirect', window.location.pathname + window.location.search + window.location.hash);
+
+      // Redirect to the root
+      window.location.replace('/eclosion/');
+    </script>
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>

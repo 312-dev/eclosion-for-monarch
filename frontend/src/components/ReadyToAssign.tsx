@@ -134,7 +134,12 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
         <div className="flex items-center justify-center gap-1.5 text-2xl font-bold mb-1 text-monarch-orange">
           <span>{formatCurrency(currentMonthlyCost, { maximumFractionDigits: 0 })}</span>
           {untrackedCategories.total > 0 && (
-            <Tooltip content={`Excluding ${formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} untracked`}>
+            <Tooltip content={
+              <>
+                <div className="font-medium">Excludes Untracked</div>
+                <div className="text-zinc-400 text-xs mt-1">{formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} in categories not linked to recurring items</div>
+              </>
+            }>
               <span className="cursor-help text-monarch-warning">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
@@ -181,11 +186,14 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
         )}
         {showAnticipatedLower && (
           <button
+            // eslint-disable-next-line react-hooks/refs -- passing ref object to ref prop is correct
             ref={infoDropdown.triggerRef}
             type="button"
             aria-label={`View details: Monthly cost decreases to ${formatCurrency(Math.round(lowestMonthlyCost), { maximumFractionDigits: 0 })} beginning ${lowestDate}`}
+            // eslint-disable-next-line react-hooks/refs -- isOpen is state, not a ref
             aria-expanded={infoDropdown.isOpen}
             aria-haspopup="dialog"
+            // eslint-disable-next-line react-hooks/refs -- isOpen is state, not a ref
             aria-controls={infoDropdown.isOpen ? popoverId : undefined}
             className="text-xs flex items-center gap-1 mt-2 mx-auto text-monarch-success underline decoration-dotted underline-offset-2"
             onClick={infoDropdown.open}
@@ -199,6 +207,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
         )}
 
         {/* Info Popover */}
+        {/* eslint-disable react-hooks/refs -- dropdown hook returns state/callbacks, not ref.current access */}
         {infoDropdown.isOpen && (
           <Portal>
             <div
@@ -264,6 +273,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             </div>
           </Portal>
         )}
+        {/* eslint-enable react-hooks/refs */}
 
       </div>
     </div>

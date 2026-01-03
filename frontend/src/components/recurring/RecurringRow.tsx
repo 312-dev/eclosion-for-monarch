@@ -65,11 +65,11 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
   const [isAddingToRollup, setIsAddingToRollup] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAllocateConfirm, setShowAllocateConfirm] = useState(false);
-  const [budgetInput, setBudgetInput] = useState(item.planned_budget.toString());
+  const [budgetInput, setBudgetInput] = useState(Math.ceil(item.planned_budget).toString());
 
-  // Keep budgetInput in sync with item.planned_budget
+  // Keep budgetInput in sync with item.planned_budget (rounded up to nearest dollar)
   useEffect(() => {
-    setBudgetInput(item.planned_budget.toString());
+    setBudgetInput(Math.ceil(item.planned_budget).toString());
   }, [item.planned_budget]);
 
   // Keep nameValue in sync with item.name
@@ -115,11 +115,13 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
   const progressPercent = Math.min(item.progress_percent, 100);
 
   // Override status based on what user has budgeted vs what's needed
+  // Use rounded target since budget inputs round up to nearest dollar
   let displayStatus: ItemStatus = item.status;
+  const targetRounded = Math.ceil(item.frozen_monthly_target);
   if (item.is_enabled && item.frozen_monthly_target > 0) {
-    if (item.planned_budget > item.frozen_monthly_target) {
+    if (item.planned_budget > targetRounded) {
       displayStatus = 'ahead';
-    } else if (item.planned_budget >= item.frozen_monthly_target) {
+    } else if (item.planned_budget >= targetRounded) {
       displayStatus = item.current_balance >= item.amount ? 'funded' : 'on_track';
     } else {
       displayStatus = 'behind';
@@ -187,11 +189,14 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
   };
 
   const handleBudgetSubmit = async () => {
-    const newAmount = parseFloat(budgetInput);
-    if (isNaN(newAmount) || newAmount < 0) {
-      setBudgetInput(item.planned_budget.toString());
+    const parsedAmount = Number.parseFloat(budgetInput);
+    if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
+      setBudgetInput(Math.ceil(item.planned_budget).toString());
       return;
     }
+    // Round up to nearest dollar
+    const newAmount = Math.ceil(parsedAmount);
+    setBudgetInput(newAmount.toString());
     const diff = newAmount - item.planned_budget;
     if (Math.abs(diff) > 0.01) {
       setIsAllocating(true);
@@ -207,7 +212,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
-      setBudgetInput(item.planned_budget.toString());
+      setBudgetInput(Math.ceil(item.planned_budget).toString());
       (e.target as HTMLInputElement).blur();
     }
   };
@@ -224,7 +229,7 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
       <td className={`${rowPadding} pl-5 pr-2 max-w-40`}>
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
-            <MerchantIcon logoUrl={item.logo_url} size="md" />
+            <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="md" />
             <Tooltip
               content={
                 item.is_enabled
@@ -305,7 +310,12 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
                 </Tooltip>
               )}
               {item.is_stale && (
-                <Tooltip content="This recurring item may be stale - last charge was missed or off from expected date">
+                <Tooltip content={
+                  <>
+                    <div className="font-medium">Possibly Stale</div>
+                    <div className="text-zinc-400 text-xs mt-1">Last charge was missed or off from expected date</div>
+                  </>
+                }>
                   <span className="cursor-help">
                     <WarningIcon />
                   </span>
@@ -339,9 +349,19 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
         <div className="flex items-center justify-end gap-1">
           {item.frozen_monthly_target > item.ideal_monthly_rate && (item.is_enabled || item.frozen_monthly_target > 0) && (
             <Tooltip content={
-              item.is_enabled
-                ? `Catching up: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`
-                : `Higher than usual: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo needed to catch up → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`
+              item.is_enabled ? (
+                <>
+                  <div className="font-medium">Catching Up</div>
+                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                  <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-medium">Higher Than Usual</div>
+                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                  <div className="text-zinc-400 text-xs mt-1">Extra needed to catch up • After {date}</div>
+                </>
+              )
             }>
               <span className={item.is_enabled ? 'cursor-pointer hover:opacity-70' : 'cursor-help'} style={{ color: item.is_enabled ? 'var(--monarch-error)' : 'var(--monarch-text-muted)' }}>
                 <TrendUpIcon size={12} strokeWidth={2.5} />
@@ -350,9 +370,19 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
           )}
           {item.frozen_monthly_target < item.ideal_monthly_rate && (item.is_enabled || item.frozen_monthly_target > 0) && (
             <Tooltip content={
-              item.is_enabled
-                ? `Ahead: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`
-                : `Lower than usual: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo needed → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`
+              item.is_enabled ? (
+                <>
+                  <div className="font-medium">Ahead of Schedule</div>
+                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                  <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-medium">Lower Than Usual</div>
+                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                  <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+                </>
+              )
             }>
               <span className={item.is_enabled ? 'cursor-pointer hover:opacity-70' : 'cursor-help'} style={{ color: item.is_enabled ? 'var(--monarch-success)' : 'var(--monarch-text-muted)' }}>
                 <TrendDownIcon size={12} strokeWidth={2.5} />
@@ -368,7 +398,12 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
         </div>
         {item.is_enabled && (
           <>
-            <Tooltip content={`${formatCurrency(item.current_balance, { maximumFractionDigits: 0 })} of ${formatCurrency(item.amount, { maximumFractionDigits: 0 })} • Resets ${formatFrequencyShort(item.frequency)} after payment`}>
+            <Tooltip content={
+              <>
+                <div className="font-medium">{formatCurrency(item.current_balance, { maximumFractionDigits: 0 })} of {formatCurrency(item.amount, { maximumFractionDigits: 0 })}</div>
+                <div className="text-zinc-400 text-xs mt-1">Resets {formatFrequencyShort(item.frequency)} after payment</div>
+              </>
+            }>
               <div className="w-full rounded-full h-1.5 mt-1.5 cursor-help bg-monarch-border">
                 <div
                   className="h-1.5 rounded-full transition-all"

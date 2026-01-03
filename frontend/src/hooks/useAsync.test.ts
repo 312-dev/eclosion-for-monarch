@@ -186,7 +186,7 @@ describe('useAsync', () => {
 
   describe('race condition handling', () => {
     it('only uses result from the latest execution', async () => {
-      let resolvers: Array<(value: string) => void> = [];
+      const resolvers: Array<(value: string) => void> = [];
       const asyncFn = vi.fn(
         () =>
           new Promise<string>((resolve) => {

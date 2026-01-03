@@ -209,7 +209,7 @@ export function RecurringTab() {
           >
             <div className="px-5 py-4">
               <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--monarch-text-dark)' }}>
-                Monthly Savings Target
+                Monthly Savings Goal
               </h3>
               <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
                 Your monthly contribution will decrease as catch-up payments complete

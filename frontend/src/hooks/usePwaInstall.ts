@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useIsMarketingSite } from './useIsMarketingSite';
+import { useDemo } from '../context/DemoContext';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -23,21 +25,30 @@ export interface PwaInstallState {
 }
 
 export function usePwaInstall(): PwaInstallState {
+  const isMarketingSite = useIsMarketingSite();
+  const isDemo = useDemo();
+
+  // PWA install should only be available on self-hosted production deployments,
+  // not on marketing/docs sites or demo mode
+  const shouldSuppressInstall = isMarketingSite || isDemo;
+
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+
+  // Use lazy initialization for values that can be computed synchronously
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as unknown as { standalone: boolean }).standalone === true
+    );
+  });
+
+  const [isIOS] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream: unknown }).MSStream;
+  });
 
   useEffect(() => {
-    // Check if iOS
-    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream: unknown }).MSStream;
-    setIsIOS(isIOSDevice);
-
-    // Check if already installed (standalone mode)
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as unknown as { standalone: boolean }).standalone === true;
-    setIsInstalled(isStandalone);
-
     // Listen for the install prompt event
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
@@ -76,9 +87,11 @@ export function usePwaInstall(): PwaInstallState {
   }, [deferredPrompt]);
 
   return {
-    canInstall: !!deferredPrompt,
+    // Suppress install capability on marketing/docs sites and demo mode
+    canInstall: !shouldSuppressInstall && !!deferredPrompt,
     isInstalled,
-    isIOS,
+    // Don't show iOS install instructions on marketing/demo sites either
+    isIOS: !shouldSuppressInstall && isIOS,
     promptInstall,
   };
 }

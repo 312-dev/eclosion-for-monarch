@@ -95,7 +95,7 @@ function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTo
       )}
       {data.completingItems.length > 0 && (
         <div className="text-[10px] mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
-          <div>Caught up:</div>
+          <div>Paid / resets:</div>
           {data.completingItems.map((item, i) => (
             <div key={i}>- {item}</div>
           ))}
@@ -159,9 +159,9 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
   const range = maxAmount - minAmount;
   const padding = range > 0 ? range * 0.15 : maxAmount * 0.02;
 
-  // Calculate minimum width based on number of data points (50px per point, minimum 100%)
-  const minChartWidth = Math.max(100, data.length * 50);
-  const needsScroll = data.length > 6;
+  // Only enable horizontal scroll for charts with many data points
+  const minChartWidth = data.length * 70;
+  const needsScroll = data.length > 12;
 
   return (
     <div

@@ -7,10 +7,12 @@
 
 import { useState, useCallback, useMemo, Fragment } from 'react';
 import type { RecurringItem } from '../types';
-import { toggleItemTracking, allocateFunds, recreateCategory, changeCategoryGroup, addToRollup, updateCategoryEmoji, refreshItem, updateCategoryName } from '../api/client';
+import * as api from '../api/client';
+import * as demoApi from '../api/demoClient';
 import { LinkCategoryModal } from './LinkCategoryModal';
 import { Tooltip } from './Tooltip';
 import { useToast } from '../context/ToastContext';
+import { useDemo } from '../context/DemoContext';
 import { formatCurrency, formatFrequency, formatErrorMessage, FREQUENCY_ORDER } from '../utils';
 import { Filter, Inbox, Eye, EyeOff } from 'lucide-react';
 import { RecurringRow, RecurringListHeader } from './recurring';
@@ -29,6 +31,8 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [hideDisabled, setHideDisabled] = useState(false);
   const toast = useToast();
+  const isDemo = useDemo();
+  const client = isDemo ? demoApi : api;
 
   const enabledCount = items.filter(item => item.is_enabled).length;
   const disabledCount = items.length - enabledCount;
@@ -36,7 +40,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
 
   const handleToggleItem = useCallback(async (id: string, enabled: boolean) => {
     try {
-      await toggleItemTracking(id, enabled);
+      await client.toggleItemTracking(id, enabled);
       setHighlightId(id);
       onRefresh();
       toast.success(enabled ? 'Tracking enabled' : 'Tracking disabled');
@@ -44,77 +48,77 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to toggle tracking'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleAllocateItem = useCallback(async (id: string, amount: number) => {
     try {
-      await allocateFunds(id, amount);
+      await client.allocateFunds(id, amount);
       onRefresh();
       toast.success(amount > 0 ? `${formatCurrency(amount, { maximumFractionDigits: 0 })} allocated` : `${formatCurrency(Math.abs(amount), { maximumFractionDigits: 0 })} removed`);
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to allocate funds'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleRecreateItem = useCallback(async (id: string) => {
     try {
-      await recreateCategory(id);
+      await client.recreateCategory(id);
       onRefresh();
       toast.success('Category recreated');
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to recreate category'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleChangeGroupItem = useCallback(async (id: string, groupId: string, groupName: string) => {
     try {
-      await changeCategoryGroup(id, groupId, groupName);
+      await client.changeCategoryGroup(id, groupId, groupName);
       onRefresh();
       toast.success(`Moved to ${groupName}`);
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to change group'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleAddToRollupItem = useCallback(async (id: string) => {
     try {
-      await addToRollup(id);
+      await client.addToRollup(id);
       onRefresh();
       toast.success('Added to rollup');
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to add to rollup'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleEmojiChangeItem = useCallback(async (id: string, emoji: string) => {
     try {
-      await updateCategoryEmoji(id, emoji);
+      await client.updateCategoryEmoji(id, emoji);
       onRefresh();
       toast.success('Emoji updated');
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to update emoji'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleRefreshItem = useCallback(async (id: string) => {
     try {
-      await refreshItem(id);
+      await client.refreshItem(id);
       onRefresh();
       toast.success('Target recalculated');
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to recalculate target'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleNameChangeItem = useCallback(async (id: string, name: string) => {
     try {
-      await updateCategoryName(id, name);
+      await client.updateCategoryName(id, name);
       onRefresh();
       toast.success('Name updated');
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to update name'));
     }
-  }, [onRefresh, toast]);
+  }, [client, onRefresh, toast]);
 
   const handleLinkCategory = useCallback((item: RecurringItem) => {
     setLinkModalItem(item);

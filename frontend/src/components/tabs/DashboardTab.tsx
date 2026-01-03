@@ -10,6 +10,7 @@ import { ToolTile } from '../ui/ToolTile';
 import { RecurringIcon } from '../wizards/WizardComponents';
 import { useDashboardQuery } from '../../api/queries';
 import { usePageTitle } from '../../hooks';
+import { useDemo } from '../../context/DemoContext';
 
 function RedditIcon({ size = 20 }: { size?: number }) {
   return (
@@ -19,19 +20,24 @@ function RedditIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-const tools = [
-  {
-    id: 'recurring',
-    name: 'Recurring',
-    description: 'Track and manage recurring expenses with smart category allocation',
-    icon: <RecurringIcon size={28} />,
-    path: '/recurring',
-  },
-];
+function getTools(isDemo: boolean) {
+  const prefix = isDemo ? '/demo' : '';
+  return [
+    {
+      id: 'recurring',
+      name: 'Recurring',
+      description: 'Track and manage recurring expenses with smart category allocation',
+      icon: <RecurringIcon size={28} />,
+      path: `${prefix}/recurring`,
+    },
+  ];
+}
 
 export function DashboardTab() {
   const navigate = useNavigate();
+  const isDemo = useDemo();
   const { data } = useDashboardQuery();
+  const tools = getTools(isDemo);
 
   // Set page title with user's first name
   usePageTitle('Dashboard', data?.config.user_first_name);

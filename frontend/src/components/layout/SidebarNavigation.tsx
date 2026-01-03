@@ -7,10 +7,11 @@
 
 import { useState, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Settings, LogOut, Lightbulb, Github } from 'lucide-react';
+import { Settings, LogOut, Lightbulb, Github, LayoutDashboard } from 'lucide-react';
 import { RecurringIcon } from '../wizards/WizardComponents';
 import { useClickOutside } from '../../hooks';
 import { RedditIcon } from '../icons';
+import { useDemo } from '../../context/DemoContext';
 
 interface SidebarNavigationProps {
   onSignOut: () => void;
@@ -23,13 +24,18 @@ interface NavItem {
   settingsHash?: string;
 }
 
-const toolkitItems: NavItem[] = [
-  { path: '/recurring', label: 'Recurring', icon: <RecurringIcon size={20} />, settingsHash: '#recurring' },
-];
-
-const otherItems: NavItem[] = [
-  { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
-];
+function getNavItems(isDemo: boolean): { dashboardItem: NavItem; toolkitItems: NavItem[]; otherItems: NavItem[] } {
+  const prefix = isDemo ? '/demo' : '';
+  return {
+    dashboardItem: { path: `${prefix}/dashboard`, label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    toolkitItems: [
+      { path: `${prefix}/recurring`, label: 'Recurring', icon: <RecurringIcon size={20} />, settingsHash: '#recurring' },
+    ],
+    otherItems: [
+      { path: `${prefix}/settings`, label: 'Settings', icon: <Settings size={20} /> },
+    ],
+  };
+}
 
 function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSettingsClick?: (hash: string) => void }>) {
   const settingsHash = item.settingsHash;
@@ -62,13 +68,16 @@ function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSett
 
 export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps>) {
   const navigate = useNavigate();
+  const isDemo = useDemo();
   const [ideaMenuOpen, setIdeaMenuOpen] = useState(false);
   const ideaMenuRef = useRef<HTMLDivElement>(null);
+  const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
 
   useClickOutside([ideaMenuRef], () => setIdeaMenuOpen(false), ideaMenuOpen);
 
   const handleSettingsClick = (hash: string) => {
-    navigate(`/settings${hash}`);
+    const prefix = isDemo ? '/demo' : '';
+    navigate(`${prefix}/settings${hash}`);
   };
 
   // Handle keyboard navigation for idea menu
@@ -83,6 +92,16 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
       {/* Tools section - scrollable on mobile */}
       <div className="sidebar-nav-tools">
         <div className="sidebar-nav-sections">
+          {/* Dashboard link */}
+          <div className="sidebar-nav-section">
+            <ul className="sidebar-nav-list">
+              <li>
+                <NavItemLink item={dashboardItem} />
+              </li>
+            </ul>
+          </div>
+          <div className="sidebar-nav-divider" aria-hidden="true" />
+
           <div className="sidebar-nav-section">
             <div className="sidebar-nav-header-row">
               <div className="sidebar-nav-header" id="toolkit-heading">TOOLKIT</div>

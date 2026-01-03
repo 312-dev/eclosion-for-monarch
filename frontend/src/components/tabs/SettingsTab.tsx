@@ -8,7 +8,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, RefreshCw, Trash2, AlertTriangle, Repeat, Key, Database, ChevronRight, Clock, LogOut, Sun, Moon, Monitor, Home, Download } from 'lucide-react';
+import { Settings, RefreshCw, Trash2, AlertTriangle, Repeat, Key, Database, ChevronRight, Clock, LogOut, Sun, Moon, Monitor, Home, Download, RotateCcw } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ResetAppModal } from '../ResetAppModal';
 import { UninstallModal } from '../UninstallModal';
 import { AutoSyncSettings } from '../AutoSyncSettings';
@@ -17,9 +18,11 @@ import { UpdateModal } from '../UpdateModal';
 import { VersionBadge } from '../VersionBadge';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, type Theme } from '../../context/ThemeContext';
-import { getDashboard, resetRecurringTool, getAutoSyncStatus, enableAutoSync, disableAutoSync, getCategoryGroups, setConfig, updateSettings, getVersion } from '../../api/client';
+import * as api from '../../api/client';
+import * as demoApi from '../../api/demoClient';
 import type { DashboardData, AutoSyncStatus, CategoryGroup, VersionInfo } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { useDemo } from '../../context/DemoContext';
 import { usePageTitle } from '../../hooks';
 import { getLandingPage, setLandingPage } from '../../App';
 import { RecurringIcon } from '../wizards/WizardComponents';
@@ -43,6 +46,8 @@ export function SettingsTab() {
   const toast = useToast();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const isDemo = useDemo();
+  const queryClient = useQueryClient();
 
   // Landing page preference
   const [landingPage, setLandingPageState] = useState<LandingPage>(() => {
@@ -93,9 +98,12 @@ export function SettingsTab() {
     }
   }, []);
 
+  // Get the appropriate client based on demo mode
+  const client = isDemo ? demoApi : api;
+
   const fetchVersionInfo = async () => {
     try {
-      const info = await getVersion();
+      const info = await client.getVersion();
       setVersionInfo(info);
     } catch {
       // Non-critical if this fails
@@ -104,7 +112,7 @@ export function SettingsTab() {
 
   const fetchDashboardData = async () => {
     try {
-      const data = await getDashboard();
+      const data = await client.getDashboard();
       setDashboardData(data);
     } catch {
       // Non-critical if this fails
@@ -115,7 +123,7 @@ export function SettingsTab() {
 
   const fetchAutoSyncStatus = async () => {
     try {
-      const status = await getAutoSyncStatus();
+      const status = await client.getAutoSyncStatus();
       setAutoSyncStatus(status);
     } catch {
       // Non-critical if this fails
@@ -123,14 +131,22 @@ export function SettingsTab() {
   };
 
   const handleEnableAutoSync = async (intervalMinutes: number, passphrase: string) => {
-    const result = await enableAutoSync(intervalMinutes, passphrase, true);
+    if (isDemo) {
+      // Auto-sync not available in demo mode
+      return;
+    }
+    const result = await api.enableAutoSync(intervalMinutes, passphrase, true);
     if (!result.success) {
       throw new Error(result.error || 'Failed to enable auto-sync');
     }
   };
 
   const handleDisableAutoSync = async () => {
-    const result = await disableAutoSync();
+    if (isDemo) {
+      // Auto-sync not available in demo mode
+      return;
+    }
+    const result = await api.disableAutoSync();
     if (!result.success) {
       throw new Error(result.error || 'Failed to disable auto-sync');
     }
@@ -152,7 +168,13 @@ export function SettingsTab() {
     setResettingRecurring(true);
     setResetError(null);
     try {
-      await resetRecurringTool();
+      if (isDemo) {
+        // In demo mode, just reset demo data
+        demoApi.resetDemoData();
+        queryClient.invalidateQueries();
+      } else {
+        await api.resetRecurringTool();
+      }
       // Reload page after reset
       globalThis.location.reload();
     } catch (err) {
@@ -172,7 +194,7 @@ export function SettingsTab() {
   const fetchCategoryGroups = async () => {
     setLoadingGroups(true);
     try {
-      const groups = await getCategoryGroups();
+      const groups = await client.getCategoryGroups();
       setCategoryGroups(groups);
     } catch {
       toast.error('Failed to load category groups');
@@ -188,7 +210,7 @@ export function SettingsTab() {
 
     setSavingGroup(true);
     try {
-      await setConfig(group.id, group.name);
+      await client.setConfig(group.id, group.name);
       await fetchDashboardData();
       toast.success(`Category group set to ${group.name}`);
     } catch {
@@ -203,7 +225,7 @@ export function SettingsTab() {
     const newValue = !(dashboardData?.config.auto_sync_new ?? false);
     setSavingAutoTrack(true);
     try {
-      await updateSettings({ auto_sync_new: newValue });
+      await client.updateSettings({ auto_sync_new: newValue });
       await fetchDashboardData();
       toast.success(newValue ? 'Auto-track enabled' : 'Auto-track disabled');
     } catch {
@@ -217,7 +239,7 @@ export function SettingsTab() {
   const handleThresholdChange = async (value: number | null) => {
     setSavingThreshold(true);
     try {
-      await updateSettings({ auto_track_threshold: value });
+      await client.updateSettings({ auto_track_threshold: value });
       await fetchDashboardData();
       toast.success('Threshold updated');
     } catch {
@@ -232,7 +254,7 @@ export function SettingsTab() {
     const newValue = !(dashboardData?.config.auto_update_targets ?? false);
     setSavingAutoUpdateTargets(true);
     try {
-      await updateSettings({ auto_update_targets: newValue });
+      await client.updateSettings({ auto_update_targets: newValue });
       await fetchDashboardData();
       toast.success(newValue ? 'Auto-update targets enabled' : 'Auto-update targets disabled');
     } catch {
@@ -430,7 +452,7 @@ export function SettingsTab() {
                     type="button"
                     className="p-2 rounded-lg shrink-0 hover-bg-transparent-to-hover"
                     style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                    onClick={() => navigate('/recurring')}
+                    onClick={() => navigate(isDemo ? '/demo/recurring' : '/recurring')}
                   >
                     <ChevronRight size={20} style={{ color: 'var(--monarch-text-muted)' }} />
                   </button>
@@ -701,6 +723,70 @@ export function SettingsTab() {
           </button>
         </div>
       </section>
+
+      {/* Demo Mode Section - only show in demo mode */}
+      {isDemo && (
+        <section className="mb-8">
+          <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-orange)' }}>
+            <RotateCcw size={12} />
+            Demo Mode
+          </h2>
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{
+              backgroundColor: 'var(--monarch-bg-card)',
+              border: '1px solid var(--monarch-orange)',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+            }}
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="p-2.5 rounded-lg"
+                    style={{ backgroundColor: 'var(--monarch-orange-light)' }}
+                  >
+                    <RotateCcw size={20} style={{ color: 'var(--monarch-orange)' }} />
+                  </div>
+                  <div>
+                    <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+                      Reset Demo Data
+                    </div>
+                    <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
+                      Restore demo to its original state
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    demoApi.resetDemoData();
+                    queryClient.invalidateQueries();
+                    toast.success('Demo data has been reset');
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium"
+                  style={{
+                    backgroundColor: 'var(--monarch-orange)',
+                    color: 'white',
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+            <div
+              className="px-4 py-3 text-xs"
+              style={{
+                backgroundColor: 'var(--monarch-bg-page)',
+                color: 'var(--monarch-text-muted)',
+                borderTop: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))',
+              }}
+            >
+              You are viewing the demo version. Changes are saved to your browser only.
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Danger Zone Section */}
       <section>

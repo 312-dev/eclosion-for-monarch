@@ -27,6 +27,7 @@ function getIconProps({
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: color,
+    strokeWidth: 2,
     className,
     ...rest,
   };
@@ -574,6 +575,182 @@ export function SunIcon(props: IconProps) {
 }
 
 // =============================================================================
+// Category Icons (for service type fallbacks)
+// =============================================================================
+
+/** TV/Monitor icon (streaming services) */
+export function TvIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="7" width="20" height="15" rx="2" ry="2" />
+      <polyline points="17 2 12 7 7 2" />
+    </svg>
+  );
+}
+
+/** Music note icon (music streaming) */
+export function MusicIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  );
+}
+
+/** Wifi icon (internet services) */
+export function WifiIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+      <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+      <line x1="12" y1="20" x2="12.01" y2="20" />
+    </svg>
+  );
+}
+
+/** Phone icon (phone/mobile services) */
+export function PhoneIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  );
+}
+
+/** Zap/lightning icon (electric utilities) */
+export function ZapIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+/** Droplet icon (water utilities) */
+export function DropletIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+    </svg>
+  );
+}
+
+/** Flame icon (gas utilities) */
+export function FlameIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </svg>
+  );
+}
+
+/** Car icon (auto insurance/services) */
+export function CarIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2" />
+      <circle cx="6.5" cy="16.5" r="2.5" />
+      <circle cx="16.5" cy="16.5" r="2.5" />
+    </svg>
+  );
+}
+
+/** Heart icon (health insurance) */
+export function HeartIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
+/** Home icon (mortgage/rent) */
+export function HomeIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
+/** Gamepad icon (gaming subscriptions) */
+export function GamepadIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="6" y1="12" x2="10" y2="12" />
+      <line x1="8" y1="10" x2="8" y2="14" />
+      <line x1="15" y1="13" x2="15.01" y2="13" />
+      <line x1="18" y1="11" x2="18.01" y2="11" />
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+    </svg>
+  );
+}
+
+/** Dumbbell icon (gym/fitness) */
+export function DumbbellIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6.5 6.5a2 2 0 0 1 3 0l8 8a2 2 0 0 1-3 3l-8-8a2 2 0 0 1 0-3z" />
+      <path d="M14.5 6.5a2 2 0 0 1 3 0l1 1a2 2 0 0 1-3 3l-1-1a2 2 0 0 1 0-3z" />
+      <path d="M3.5 14.5a2 2 0 0 1 3 0l1 1a2 2 0 0 1-3 3l-1-1a2 2 0 0 1 0-3z" />
+      <line x1="22" y1="22" x2="18" y2="18" />
+      <line x1="6" y1="6" x2="2" y2="2" />
+    </svg>
+  );
+}
+
+/** Cloud icon (cloud storage/services) */
+export function CloudIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+    </svg>
+  );
+}
+
+/** Newspaper icon (news subscriptions) */
+export function NewspaperIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+      <path d="M18 14h-8M15 18h-5M10 6h8v4h-8z" />
+    </svg>
+  );
+}
+
+/** Repeat/recurring icon (generic subscriptions) */
+export function RepeatIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="17 1 21 5 17 9" />
+      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" />
+      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}
+
+// =============================================================================
 // Misc Icons
 // =============================================================================
 
@@ -641,6 +818,17 @@ export function DownloadIcon(props: IconProps) {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+/** Copy/clipboard icon */
+export function CopyIcon(props: IconProps) {
+  const svgProps = getIconProps(props);
+  return (
+    <svg {...svgProps} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
   );
 }
@@ -762,7 +950,13 @@ export function GiftIcon(props: IconProps) {
   );
 }
 
-/** Monarch butterfly icon (app logo) */
+/**
+ * Monarch butterfly icon (app logo)
+ *
+ * Icon: "Butterfly" by Rosa Lia from Noun Project
+ * https://thenounproject.com/icon/butterfly-7666562/
+ * Licensed under CC BY 3.0 - https://creativecommons.org/licenses/by/3.0/
+ */
 export function MonarchIcon(props: IconProps) {
   const { size = 24, color = 'currentColor', ...rest } = props;
   return (
@@ -851,6 +1045,23 @@ export const Icons = {
   Moon: MoonIcon,
   Sun: SunIcon,
 
+  // Category (service type fallbacks)
+  Tv: TvIcon,
+  Music: MusicIcon,
+  Wifi: WifiIcon,
+  Phone: PhoneIcon,
+  Zap: ZapIcon,
+  Droplet: DropletIcon,
+  Flame: FlameIcon,
+  Car: CarIcon,
+  Heart: HeartIcon,
+  Home: HomeIcon,
+  Gamepad: GamepadIcon,
+  Dumbbell: DumbbellIcon,
+  Cloud: CloudIcon,
+  Newspaper: NewspaperIcon,
+  Repeat: RepeatIcon,
+
   // Misc
   Inbox: InboxIcon,
   Package: PackageIcon,
@@ -858,6 +1069,7 @@ export const Icons = {
   Eye: EyeIcon,
   EyeOff: EyeOffIcon,
   Download: DownloadIcon,
+  Copy: CopyIcon,
   GitHub: GitHubIcon,
   Reddit: RedditIcon,
   Folder: FolderIcon,

@@ -262,25 +262,6 @@ input[type="radio"] {
   border-width: 0;
 }
 
-/* Custom scrollbar with Monarch colors */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--monarch-bg-page);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--monarch-border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--monarch-text-muted);
-}
-
 /* App Header */
 .app-header {
   background-color: var(--monarch-bg-card);

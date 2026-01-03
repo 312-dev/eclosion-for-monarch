@@ -12,7 +12,7 @@ A toolkit for Monarch Money that automates recurring expense tracking. Eclosion 
 
 Deploy your own instance with a single click:
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/TEMPLATE-ID?referralCode=YOUR_CODE)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/yE9Dgv?referralCode=epxV1E&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
 > **Note:** After clicking, you'll create a Railway account (if you don't have one), then your instance will deploy automatically. Typical cost is ~$5-7/month.
 
@@ -182,15 +182,57 @@ docker compose up --build
 
 ## Updating Your Instance
 
+Your current version is displayed in **Settings** at the bottom of the page. When updates are available, a banner appears at the top of the app with a link to view what's new.
+
+### Before Updating
+
+Always backup your data before major updates:
+
+**Docker:**
+```bash
+docker compose cp eclosion:/app/state ./backup-$(date +%Y%m%d)
+```
+
+**Railway:** Data is automatically persisted in your Railway volume. For extra safety, you can download your state from Settings > Export Data (if available).
+
 ### Railway
-Railway notifies you when updates are available. Click to preview changes and merge when ready.
+
+Railway automatically detects when updates are available from the upstream repository:
+
+1. Open your [Railway Dashboard](https://railway.app/dashboard)
+2. Click on your Eclosion project
+3. If updates are available, you'll see a prompt to redeploy
+4. Click **Deploy** to pull the latest version
+5. Wait 1-2 minutes for the deployment to complete
+6. Refresh the app to use the new version
 
 ### Docker Self-Hosted
+
+**Using pre-built images (recommended):**
+```bash
+docker compose pull
+docker compose up -d
+```
+
+**Building from source:**
 ```bash
 cd eclosion
 git pull
 docker compose up -d --build
 ```
+
+### Rollback to a Previous Version
+
+If you need to revert to a specific version:
+
+**Docker:** Edit `docker-compose.yml` to pin a version:
+```yaml
+services:
+  eclosion:
+    image: ghcr.io/graysoncadams/eclosion-for-monarch:1.0.0
+```
+
+**Railway:** In your project settings, you can redeploy a previous deployment from the deployment history.
 
 ## Uninstalling / Tearing Down
 

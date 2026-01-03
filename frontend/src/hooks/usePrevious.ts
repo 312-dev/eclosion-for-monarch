@@ -33,5 +33,7 @@ export function usePrevious<T>(value: T): T | undefined {
   }, [value]);
 
   // Return previous value (from before the current render)
+  // This is an intentional pattern for usePrevious - accessing ref.current during render is the whole point
+  // eslint-disable-next-line react-hooks/refs
   return ref.current;
 }

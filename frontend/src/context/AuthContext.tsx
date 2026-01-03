@@ -62,7 +62,7 @@ export interface AuthContextValue extends AuthState, AuthActions {}
 // Context
 // ============================================================================
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 // ============================================================================
 // Provider

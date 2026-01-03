@@ -1,30 +1,25 @@
-import json
 import asyncio
-import functools
 import os
+import re
+from datetime import datetime, timedelta
+
+from cachetools import TTLCache
+from dotenv import load_dotenv
+from gql import gql
+from monarchmoney import MonarchMoney
+
+from core.error_detection import is_rate_limit_error
+
+load_dotenv()
+
 
 # Helper to strip leading emoji and space from a string
-import re
-
-
 def _strip_emoji_and_space(name):
     return re.sub(
         r"^([\U0001F300-\U0001FAFF\U00002700-\U000027BF\U0001F900-\U0001F9FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\u2600-\u26FF\u2700-\u27BF]|[\u200d\u2640-\u2642\u2695-\u2696\u2708-\u2709\u231a-\u231b\u23e9-\u23ef\u23f0-\u23f3\u25fd-\u25fe\u2614-\u2615\u2744-\u2747\u2753-\u2755\u2795-\u2797\u27b0\u27bf\u2b05-\u2b07\u2934-\u2935\u2b1b-\u2b1c\u2b50\u2b55\u3030\u303d\u3297\u3299])+\s*",
         "",
         name,
     )
-
-
-# Import centralized error detection
-from core.error_detection import is_rate_limit_error
-from pathlib import Path
-from dotenv import load_dotenv
-from cachetools import TTLCache
-from monarchmoney import MonarchMoney, RequireMFAException
-from datetime import datetime, timedelta
-from gql import gql
-
-load_dotenv()
 
 
 # =============================================================================
@@ -80,8 +75,10 @@ def clear_cache(cache_name: str):
 # Retry with Exponential Backoff
 # =============================================================================
 
+
 class RateLimitError(Exception):
     """Raised when API returns 429 Too Many Requests."""
+
     pass
 
 
@@ -122,10 +119,14 @@ async def retry_with_backoff(
                 if rate_limited:
                     # For rate limits, use longer delays
                     actual_delay = min(delay * 2, max_delay)
-                    print(f"Rate limited. Waiting {actual_delay:.1f}s before retry {attempt + 1}/{max_retries}...")
+                    print(
+                        f"Rate limited. Waiting {actual_delay:.1f}s before retry {attempt + 1}/{max_retries}..."
+                    )
                 else:
                     actual_delay = min(delay, max_delay)
-                    print(f"Request failed: {e}. Retrying in {actual_delay:.1f}s ({attempt + 1}/{max_retries})...")
+                    print(
+                        f"Request failed: {e}. Retrying in {actual_delay:.1f}s ({attempt + 1}/{max_retries})..."
+                    )
 
                 await asyncio.sleep(actual_delay)
                 delay *= backoff_factor
@@ -142,6 +143,7 @@ def _get_credentials():
     """Get credentials from session or environment variables."""
     # First try session credentials (set after unlock)
     from services.credentials_service import CredentialsService
+
     if CredentialsService._session_credentials:
         creds = CredentialsService._session_credentials
         return (
@@ -211,7 +213,9 @@ async def get_mm(email=None, password=None, mfa_secret_key=None):
     mm = MonarchMoney()
 
     # Use browser-like user agent (per Monarch support guidance for firewall issues)
-    mm._headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    mm._headers["User-Agent"] = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
     session_file = getattr(mm, "_session_file", None)
     use_saved_session = False
     if session_file and os.path.exists(session_file):
@@ -277,12 +281,12 @@ async def get_savings_goals(mm, start_month: str, end_month: str) -> list:
     """)
 
     result = await mm.gql_call(
-        operation='GetSavingsGoals',
+        operation="GetSavingsGoals",
         graphql_query=query,
-        variables={'startDate': start_month, 'endDate': end_month}
+        variables={"startDate": start_month, "endDate": end_month},
     )
 
-    goals = result.get('savingsGoalMonthlyBudgetAmounts', [])
+    goals = result.get("savingsGoalMonthlyBudgetAmounts", [])
     _savings_goals_cache[cache_key] = goals
     return goals
 
@@ -313,22 +317,22 @@ async def get_user_profile(mm) -> dict:
     """)
 
     result = await mm.gql_call(
-        operation='Common_GetMe',
+        operation="Common_GetMe",
         graphql_query=query,
     )
 
-    profile = result.get('me', {})
+    profile = result.get("me", {})
     _user_profile_cache[cache_key] = profile
     return profile
 
 
 def get_user_first_name(profile: dict) -> str:
     """Extract first name from user profile."""
-    name = profile.get('name', '')
+    name = profile.get("name", "")
     if name:
         # Split on spaces and take the first part
         return name.split()[0]
-    return ''
+    return ""
 
 
 # Helper to build category id<->name maps and monthly lookup
@@ -355,9 +359,7 @@ def build_category_maps(budgets):
         for entry in monthly_categories
         for m in entry["monthlyAmounts"]
     }
-    monthly_category_groups = budgets["budgetData"].get(
-        "monthlyAmountsByCategoryGroup", []
-    )
+    monthly_category_groups = budgets["budgetData"].get("monthlyAmountsByCategoryGroup", [])
     monthly_category_groups_lookup = {
         (entry["categoryGroup"]["id"], m["month"]): m
         for entry in monthly_category_groups

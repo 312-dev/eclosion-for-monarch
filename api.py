@@ -1,20 +1,21 @@
 # Eclosion for Monarch - Your budgeting, evolved.
 # A toolkit for Monarch Money that automates recurring expense tracking.
-from datetime import datetime, timedelta
 import json
 import os
 import re
-from pathlib import Path
 import secrets
-from flask import Flask, request, jsonify, send_from_directory, redirect, session
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, redirect, request, send_from_directory, session
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from dotenv import load_dotenv
 
-from core import configure_logging, api_handler, async_flask, config
-from services.sync_service import SyncService
+from core import api_handler, async_flask, config, configure_logging
 from services.credentials_service import CredentialsService
+from services.sync_service import SyncService
 
 load_dotenv()
 
@@ -22,41 +23,44 @@ load_dotenv()
 logger = configure_logging()
 
 # Serve static files from 'static' directory if it exists (production build)
-static_folder = os.path.join(os.path.dirname(__file__), 'static')
+static_folder = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(static_folder):
-    app = Flask(__name__, static_folder=static_folder, static_url_path='')
+    app = Flask(__name__, static_folder=static_folder, static_url_path="")
 else:
     app = Flask(__name__)
 
 # Enable debug mode for local development (disables HTTPS redirect)
-app.debug = os.environ.get('FLASK_DEBUG', '0') == '1'
+app.debug = os.environ.get("FLASK_DEBUG", "0") == "1"
 
 # Session configuration for auth persistence across page refreshes
 # Secret key is generated on first run and stored, or use env var
-SESSION_SECRET_FILE = os.path.join(os.path.dirname(__file__), '.session_secret')
+SESSION_SECRET_FILE = os.path.join(os.path.dirname(__file__), ".session_secret")
+
+
 def _get_or_create_session_secret():
     """Get existing session secret or create a new one."""
     # First check environment variable
-    if env_secret := os.environ.get('SESSION_SECRET'):
+    if env_secret := os.environ.get("SESSION_SECRET"):
         return env_secret
     # Then check/create file-based secret
     if os.path.exists(SESSION_SECRET_FILE):
-        with open(SESSION_SECRET_FILE, 'r') as f:
+        with open(SESSION_SECRET_FILE) as f:
             return f.read().strip()
     # Generate new secret
     new_secret = secrets.token_hex(32)
     try:
-        with open(SESSION_SECRET_FILE, 'w') as f:
+        with open(SESSION_SECRET_FILE, "w") as f:
             f.write(new_secret)
-    except IOError:
+    except OSError:
         pass  # If we can't write, just use the generated secret for this session
     return new_secret
 
+
 app.secret_key = _get_or_create_session_secret()
-app.config['SESSION_COOKIE_SECURE'] = not app.debug  # Only require HTTPS in production
-app.config['SESSION_COOKIE_HTTPONLY'] = True  # Not accessible via JavaScript
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
-app.config['PERMANENT_SESSION_LIFETIME'] = config.SESSION_COOKIE_LIFETIME
+app.config["SESSION_COOKIE_SECURE"] = not app.debug  # Only require HTTPS in production
+app.config["SESSION_COOKIE_HTTPONLY"] = True  # Not accessible via JavaScript
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # CSRF protection
+app.config["PERMANENT_SESSION_LIFETIME"] = config.SESSION_COOKIE_LIFETIME
 
 CORS(app, supports_credentials=True)  # Enable CORS with credentials for session cookies
 
@@ -75,10 +79,12 @@ _last_activity: datetime | None = None
 sync_service = SyncService()
 
 # Initialize scheduler for background sync
-import atexit
-from core.scheduler import SyncScheduler
+import atexit  # noqa: E402 - Intentionally delayed, scheduler depends on app setup
+
+from core.scheduler import SyncScheduler  # noqa: E402
 
 _scheduler_started = False
+
 
 def _init_scheduler():
     """Initialize and start the background scheduler."""
@@ -94,13 +100,16 @@ def _init_scheduler():
     if sync_service.restore_auto_sync():
         logger.info("Auto-sync restored from saved state")
 
+
 def _shutdown_scheduler():
     """Shutdown the background scheduler gracefully."""
     scheduler = SyncScheduler.get_instance()
     scheduler.shutdown()
 
+
 # Register shutdown handler
 atexit.register(_shutdown_scheduler)
+
 
 @app.before_request
 def _ensure_scheduler_started():
@@ -113,7 +122,7 @@ def _ensure_scheduler_started():
 
 def _audit_log(event: str, success: bool, details: str = ""):
     """Log security-relevant events for audit trail."""
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     status = "SUCCESS" if success else "FAILED"
     logger.info(f"[AUDIT] {event} | {status} | IP: {client_ip} | {details}")
 
@@ -143,9 +152,9 @@ def _check_instance_secret():
 
     # Check cookie, query parameter, or header
     return (
-        request.cookies.get(config.INSTANCE_SECRET_COOKIE) == config.INSTANCE_SECRET or
-        request.args.get("secret") == config.INSTANCE_SECRET or
-        request.headers.get("X-Instance-Secret") == config.INSTANCE_SECRET
+        request.cookies.get(config.INSTANCE_SECRET_COOKIE) == config.INSTANCE_SECRET
+        or request.args.get("secret") == config.INSTANCE_SECRET
+        or request.headers.get("X-Instance-Secret") == config.INSTANCE_SECRET
     )
 
 
@@ -184,7 +193,7 @@ def _get_access_denied_page():
 
 def _is_api_request():
     """Check if the request is for an API endpoint."""
-    api_prefixes = ('/auth/', '/recurring/', '/security/', '/version/')
+    api_prefixes = ("/auth/", "/recurring/", "/security/", "/version/")
     return any(request.path.startswith(p) for p in api_prefixes)
 
 
@@ -192,14 +201,14 @@ def _enforce_https():
     """Redirect HTTP to HTTPS in production. Returns redirect response or None."""
     if request.is_secure or app.debug:
         return None
-    if request.headers.get('X-Forwarded-Proto', 'http') == 'http':
-        return redirect(request.url.replace('http://', 'https://', 1), code=301)
+    if request.headers.get("X-Forwarded-Proto", "http") == "http":
+        return redirect(request.url.replace("http://", "https://", 1), code=301)
     return None
 
 
 def _enforce_instance_secret():
     """Check instance secret if configured. Returns error response or None."""
-    if not config.INSTANCE_SECRET or request.endpoint == 'health_check':
+    if not config.INSTANCE_SECRET or request.endpoint == "health_check":
         return None
     if _check_instance_secret():
         return None
@@ -211,12 +220,12 @@ def _enforce_instance_secret():
 
 def _check_and_handle_session_timeout():
     """Lock session if timed out."""
-    if not request.endpoint or request.endpoint.startswith(('auth_', 'serve')):
+    if not request.endpoint or request.endpoint.startswith(("auth_", "serve")):
         return
     if _check_session_timeout() and CredentialsService._session_credentials:
         _audit_log("SESSION_TIMEOUT", True, "Auto-locked due to inactivity")
         sync_service.lock()
-        session.pop('auth_unlocked', None)
+        session.pop("auth_unlocked", None)
 
 
 def _restore_session_credentials():
@@ -232,21 +241,21 @@ def _restore_session_credentials():
         return
 
     # Check if session indicates user was unlocked
-    if not session.get('auth_unlocked'):
+    if not session.get("auth_unlocked"):
         return
 
     # Session says we were unlocked - try to restore from stored credentials
     # This requires the passphrase to be derivable from session or re-unlock
-    passphrase = session.get('session_passphrase')
+    passphrase = session.get("session_passphrase")
     if passphrase and sync_service.has_stored_credentials():
         result = sync_service.unlock(passphrase)
-        if result.get('success'):
+        if result.get("success"):
             _audit_log("SESSION_RESTORE", True, "Credentials restored from session")
             _update_activity()
         else:
             # Passphrase no longer valid, clear session
-            session.pop('auth_unlocked', None)
-            session.pop('session_passphrase', None)
+            session.pop("auth_unlocked", None)
+            session.pop("session_passphrase", None)
             _audit_log("SESSION_RESTORE", False, "Failed to restore credentials")
 
 
@@ -281,34 +290,34 @@ def add_security_headers(response):
                 config.INSTANCE_SECRET,
                 max_age=7 * 24 * 60 * 60,
                 httponly=True,
-                secure=request.headers.get('X-Forwarded-Proto') == 'https',
-                samesite='Strict'
+                secure=request.headers.get("X-Forwarded-Proto") == "https",
+                samesite="Strict",
             )
             _audit_log("INSTANCE_ACCESS", True, "Access cookie set")
 
     # Basic security headers
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
     # Content Security Policy - restrict resource loading
     csp_directives = [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline'",  # React needs inline for some features
-        "style-src 'self' 'unsafe-inline'",   # Tailwind uses inline styles
-        "img-src 'self' data: https:",        # Allow data URIs for emojis/icons
+        "style-src 'self' 'unsafe-inline'",  # Tailwind uses inline styles
+        "img-src 'self' data: https:",  # Allow data URIs for emojis/icons
         "font-src 'self'",
-        "connect-src 'self'",                 # API calls to same origin
-        "frame-ancestors 'none'",             # Prevent framing (clickjacking)
+        "connect-src 'self'",  # API calls to same origin
+        "frame-ancestors 'none'",  # Prevent framing (clickjacking)
         "base-uri 'self'",
         "form-action 'self'",
     ]
-    response.headers['Content-Security-Policy'] = "; ".join(csp_directives)
+    response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
 
     # HSTS in production (when behind HTTPS proxy)
-    if request.headers.get('X-Forwarded-Proto') == 'https':
-        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    if request.headers.get("X-Forwarded-Proto") == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     return response
 
@@ -368,9 +377,9 @@ async def auth_login():
             return jsonify({"success": False, "error": "Email and password are required"}), 400
 
         result = await sync_service.login(email, password, mfa_secret)
-        _audit_log("LOGIN_ATTEMPT", result.get('success', False), f"User: {masked_email}")
+        _audit_log("LOGIN_ATTEMPT", result.get("success", False), f"User: {masked_email}")
 
-        if result.get('success'):
+        if result.get("success"):
             _update_activity()  # Start session timeout tracking
 
         return jsonify(result)
@@ -398,14 +407,14 @@ def auth_set_passphrase():
         return {"success": False, "error": "Passphrase is required"}
 
     result = sync_service.set_passphrase(passphrase)
-    _audit_log("SET_PASSPHRASE", result.get('success', False), "Credentials encrypted")
+    _audit_log("SET_PASSPHRASE", result.get("success", False), "Credentials encrypted")
 
-    if result.get('success'):
+    if result.get("success"):
         _update_activity()
         # Save passphrase in session for auto-restore on page refresh
         session.permanent = True
-        session['auth_unlocked'] = True
-        session['session_passphrase'] = passphrase
+        session["auth_unlocked"] = True
+        session["session_passphrase"] = passphrase
 
     return result
 
@@ -434,30 +443,30 @@ async def auth_unlock():
     if validate:
         # New flow: unlock AND validate against Monarch
         result = await sync_service.unlock_and_validate(passphrase)
-        unlock_success = result.get('unlock_success', False)
-        validation_success = result.get('validation_success', False)
+        unlock_success = result.get("unlock_success", False)
+        validation_success = result.get("validation_success", False)
 
         _audit_log(
             "UNLOCK_AND_VALIDATE",
-            result.get('success', False),
-            f"unlock={unlock_success}, validation={validation_success}"
+            result.get("success", False),
+            f"unlock={unlock_success}, validation={validation_success}",
         )
 
-        if result.get('success'):
+        if result.get("success"):
             _update_activity()
             session.permanent = True
-            session['auth_unlocked'] = True
-            session['session_passphrase'] = passphrase
+            session["auth_unlocked"] = True
+            session["session_passphrase"] = passphrase
     else:
         # Legacy flow: just decrypt, no validation
         result = sync_service.unlock(passphrase)
-        _audit_log("UNLOCK_ATTEMPT", result.get('success', False), "")
+        _audit_log("UNLOCK_ATTEMPT", result.get("success", False), "")
 
-        if result.get('success'):
+        if result.get("success"):
             _update_activity()
             session.permanent = True
-            session['auth_unlocked'] = True
-            session['session_passphrase'] = passphrase
+            session["auth_unlocked"] = True
+            session["session_passphrase"] = passphrase
 
     return result
 
@@ -468,8 +477,8 @@ def auth_lock():
     """Lock the session without clearing stored credentials."""
     sync_service.lock()
     # Clear session auth state (but keep stored credentials on disk)
-    session.pop('auth_unlocked', None)
-    session.pop('session_passphrase', None)
+    session.pop("auth_unlocked", None)
+    session.pop("session_passphrase", None)
     _audit_log("SESSION_LOCK", True, "User initiated lock")
     return {"success": True}
 
@@ -519,14 +528,14 @@ async def auth_update_credentials():
         return {"success": False, "error": "Passphrase is required"}
 
     result = await sync_service.update_credentials(email, password, mfa_secret, passphrase)
-    _audit_log("UPDATE_CREDENTIALS", result.get('success', False), "")
+    _audit_log("UPDATE_CREDENTIALS", result.get("success", False), "")
 
-    if result.get('success'):
+    if result.get("success"):
         _update_activity()
         # Save passphrase in session for auto-restore on page refresh
         session.permanent = True
-        session['auth_unlocked'] = True
-        session['session_passphrase'] = passphrase
+        session["auth_unlocked"] = True
+        session["session_passphrase"] = passphrase
 
     return result
 
@@ -546,8 +555,8 @@ def auth_reset_app():
     """
     sync_service.reset_credentials_only()
     # Clear session
-    session.pop('auth_unlocked', None)
-    session.pop('session_passphrase', None)
+    session.pop("auth_unlocked", None)
+    session.pop("session_passphrase", None)
     _audit_log("RESET_APP", True, "Credentials cleared, preferences preserved")
     return {"success": True, "message": "App reset. Please log in again."}
 
@@ -586,6 +595,7 @@ async def set_config():
 
     if not group_id or not group_name:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'group_id' or 'group_name' in request body.")
 
     return await sync_service.configure(group_id, group_name)
@@ -610,6 +620,7 @@ async def toggle_item():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     return await sync_service.toggle_item(recurring_id, enabled, item_data, initial_budget)
@@ -708,6 +719,7 @@ def dismiss_notice(notice_id):
     result = sync_service.state_manager.dismiss_notice(notice_id)
     if not result:
         from core.exceptions import NotFoundError
+
         raise NotFoundError("Notice not found")
     return {"success": True}
 
@@ -721,6 +733,7 @@ def refresh_item():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     result = sync_service.state_manager.clear_frozen_target(recurring_id)
@@ -744,6 +757,7 @@ async def allocate_funds():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     return await sync_service.allocate_funds(recurring_id, amount)
@@ -758,6 +772,7 @@ async def recreate_category():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     return await sync_service.recreate_category(recurring_id)
@@ -774,6 +789,7 @@ async def change_category_group():
 
     if not recurring_id or not new_group_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id' or 'group_id'")
 
     return await sync_service.change_category_group(recurring_id, new_group_id, new_group_name)
@@ -800,6 +816,7 @@ async def link_category():
 
     if not recurring_id or not category_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id' or 'category_id'")
 
     return await sync_service.link_to_category(recurring_id, category_id, sync_name)
@@ -831,6 +848,7 @@ async def add_to_rollup():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     return await sync_service.add_to_rollup(recurring_id)
@@ -845,6 +863,7 @@ async def remove_from_rollup():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     return await sync_service.remove_from_rollup(recurring_id)
@@ -869,6 +888,7 @@ async def link_rollup_to_category():
 
     if not category_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'category_id'")
 
     return await sync_service.rollup_service.link_rollup_to_category(category_id, sync_name)
@@ -896,6 +916,7 @@ async def update_category_emoji():
 
     if not recurring_id:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id'")
 
     return await sync_service.update_category_emoji(recurring_id, emoji)
@@ -929,6 +950,7 @@ async def update_category_name():
 
     if not recurring_id or not name:
         from core.exceptions import ValidationError
+
         raise ValidationError("Missing 'recurring_id' or 'name'")
 
     return await sync_service.update_category_name(recurring_id, name)
@@ -956,8 +978,11 @@ async def reset_dedicated_categories():
     - Preserves: rollup, config, credentials
     """
     result = await sync_service.reset_dedicated_categories()
-    _audit_log("RESET_DEDICATED", result.get("success", False),
-               f"deleted={result.get('deleted_count', 0)}, untracked={result.get('items_disabled', 0)}")
+    _audit_log(
+        "RESET_DEDICATED",
+        result.get("success", False),
+        f"deleted={result.get('deleted_count', 0)}, untracked={result.get('items_disabled', 0)}",
+    )
     return result
 
 
@@ -972,8 +997,11 @@ async def reset_rollup():
     - Preserves: dedicated categories, config, credentials
     """
     result = await sync_service.reset_rollup()
-    _audit_log("RESET_ROLLUP", result.get("success", False),
-               f"deleted_category={result.get('deleted_category', False)}, untracked={result.get('items_disabled', 0)}")
+    _audit_log(
+        "RESET_ROLLUP",
+        result.get("success", False),
+        f"deleted_category={result.get('deleted_category', False)}, untracked={result.get('items_disabled', 0)}",
+    )
     return result
 
 
@@ -985,8 +1013,11 @@ async def reset_recurring_tool():
     Deletes all categories, disables all items, and resets the setup wizard.
     """
     result = await sync_service.reset_recurring_tool()
-    _audit_log("RESET_RECURRING_TOOL", result.get("success", False),
-               f"dedicated_deleted={result.get('dedicated_deleted', 0)}, rollup_deleted={result.get('rollup_deleted', False)}")
+    _audit_log(
+        "RESET_RECURRING_TOOL",
+        result.get("success", False),
+        f"dedicated_deleted={result.get('dedicated_deleted', 0)}, rollup_deleted={result.get('rollup_deleted', False)}",
+    )
     return result
 
 
@@ -1205,14 +1236,16 @@ def get_version():
     channel = config.RELEASE_CHANNEL
     is_beta = "-beta" in version or "-rc" in version or "-alpha" in version or channel == "beta"
 
-    return jsonify({
-        "version": version,
-        "channel": channel,
-        "is_beta": is_beta,
-        "schema_version": config.SCHEMA_VERSION,
-        "build_time": config.BUILD_TIME,
-        "git_sha": config.GIT_SHA,
-    })
+    return jsonify(
+        {
+            "version": version,
+            "channel": channel,
+            "is_beta": is_beta,
+            "schema_version": config.SCHEMA_VERSION,
+            "build_time": config.BUILD_TIME,
+            "git_sha": config.GIT_SHA,
+        }
+    )
 
 
 @app.route("/version/changelog", methods=["GET"])
@@ -1220,11 +1253,13 @@ def get_changelog():
     """Get parsed changelog entries."""
     limit = request.args.get("limit", type=int, default=5)
     changelog = _parse_changelog()
-    return jsonify({
-        "current_version": _get_app_version(),
-        "entries": changelog[:limit] if limit else changelog,
-        "total_entries": len(changelog),
-    })
+    return jsonify(
+        {
+            "current_version": _get_app_version(),
+            "entries": changelog[:limit] if limit else changelog,
+            "total_entries": len(changelog),
+        }
+    )
 
 
 @app.route("/version/check", methods=["POST"])
@@ -1243,12 +1278,16 @@ def check_version():
 
     update_available = server_parts > client_parts
 
-    return jsonify({
-        "client_version": client_version,
-        "server_version": server_version,
-        "update_available": update_available,
-        "update_type": _get_update_type(client_parts, server_parts) if update_available else None,
-    })
+    return jsonify(
+        {
+            "client_version": client_version,
+            "server_version": server_version,
+            "update_available": update_available,
+            "update_type": _get_update_type(client_parts, server_parts)
+            if update_available
+            else None,
+        }
+    )
 
 
 @app.route("/version/changelog/status", methods=["GET"])
@@ -1264,11 +1303,13 @@ def get_changelog_status():
     # If never read, there are unread entries (unless this is a fresh install with no changelog)
     has_unread = last_read is None or _parse_semver(current_version) > _parse_semver(last_read)
 
-    return jsonify({
-        "current_version": current_version,
-        "last_read_version": last_read,
-        "has_unread": has_unread,
-    })
+    return jsonify(
+        {
+            "current_version": current_version,
+            "last_read_version": last_read,
+            "has_unread": has_unread,
+        }
+    )
 
 
 @app.route("/version/changelog/read", methods=["POST"])
@@ -1281,10 +1322,12 @@ def mark_changelog_read():
     current_version = _get_app_version()
     sync_service.state_manager.set_last_read_changelog_version(current_version)
 
-    return jsonify({
-        "success": True,
-        "marked_version": current_version,
-    })
+    return jsonify(
+        {
+            "success": True,
+            "marked_version": current_version,
+        }
+    )
 
 
 # ---- RELEASES & UPDATES ----
@@ -1297,8 +1340,8 @@ def get_available_releases():
 
     Returns list of recent stable and beta releases.
     """
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     current_version = _get_app_version()
     releases_url = f"https://api.github.com/repos/{config.GITHUB_REPO}/releases"
@@ -1306,10 +1349,7 @@ def get_available_releases():
     try:
         req = urllib.request.Request(
             releases_url,
-            headers={
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "Eclosion"
-            }
+            headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "Eclosion"},
         )
         with urllib.request.urlopen(req, timeout=10) as response:
             releases_data = json.loads(response.read().decode())
@@ -1332,27 +1372,36 @@ def get_available_releases():
                 "is_current": version == current_version or tag == current_version,
             }
 
-            if release.get("prerelease") or "-beta" in version or "-rc" in version or "-alpha" in version:
+            if (
+                release.get("prerelease")
+                or "-beta" in version
+                or "-rc" in version
+                or "-alpha" in version
+            ):
                 beta_releases.append(release_info)
             else:
                 stable_releases.append(release_info)
 
-        return jsonify({
-            "current_version": current_version,
-            "current_channel": config.RELEASE_CHANNEL,
-            "stable_releases": stable_releases[:5],
-            "beta_releases": beta_releases[:5],
-        })
+        return jsonify(
+            {
+                "current_version": current_version,
+                "current_channel": config.RELEASE_CHANNEL,
+                "stable_releases": stable_releases[:5],
+                "beta_releases": beta_releases[:5],
+            }
+        )
 
     except (urllib.error.URLError, json.JSONDecodeError) as e:
         logger.warning(f"Failed to fetch releases: {e}")
-        return jsonify({
-            "current_version": current_version,
-            "current_channel": config.RELEASE_CHANNEL,
-            "stable_releases": [],
-            "beta_releases": [],
-            "error": "Could not fetch releases from GitHub",
-        })
+        return jsonify(
+            {
+                "current_version": current_version,
+                "current_channel": config.RELEASE_CHANNEL,
+                "stable_releases": [],
+                "beta_releases": [],
+                "error": "Could not fetch releases from GitHub",
+            }
+        )
 
 
 @app.route("/version/update-info", methods=["GET"])
@@ -1382,7 +1431,9 @@ def get_update_info():
                 "Change the Docker image tag to the desired version",
                 "Railway will automatically redeploy",
             ],
-            "project_url": f"https://railway.app/project/{os.environ.get('RAILWAY_PROJECT_ID', '')}" if is_railway else None,
+            "project_url": f"https://railway.app/project/{os.environ.get('RAILWAY_PROJECT_ID', '')}"
+            if is_railway
+            else None,
         },
         "docker": {
             "steps": [
@@ -1400,12 +1451,14 @@ def get_update_info():
         },
     }
 
-    return jsonify({
-        "deployment_type": deployment_type,
-        "current_version": _get_app_version(),
-        "current_channel": config.RELEASE_CHANNEL,
-        "instructions": instructions.get(deployment_type, instructions["docker"]),
-    })
+    return jsonify(
+        {
+            "deployment_type": deployment_type,
+            "current_version": _get_app_version(),
+            "current_channel": config.RELEASE_CHANNEL,
+            "instructions": instructions.get(deployment_type, instructions["docker"]),
+        }
+    )
 
 
 # ---- MIGRATION ----
@@ -1419,17 +1472,19 @@ def get_migration_status():
     Returns compatibility status, whether migration is needed,
     and any warnings about the current state.
     """
-    from state.migrations import check_compatibility, BackupManager
+    from state.migrations import BackupManager, check_compatibility
 
     # Load raw state data
     if not config.STATE_FILE.exists():
-        return jsonify({
-            "compatibility": "compatible",
-            "message": "No state file exists yet",
-            "needs_migration": False,
-            "can_auto_migrate": False,
-            "has_backups": False,
-        })
+        return jsonify(
+            {
+                "compatibility": "compatible",
+                "message": "No state file exists yet",
+                "needs_migration": False,
+                "can_auto_migrate": False,
+                "has_backups": False,
+            }
+        )
 
     with open(config.STATE_FILE) as f:
         state_data = json.load(f)
@@ -1438,20 +1493,22 @@ def get_migration_status():
     backup_manager = BackupManager()
     backups = backup_manager.list_backups()
 
-    return jsonify({
-        "compatibility": result.level.value,
-        "current_schema_version": result.current_schema,
-        "file_schema_version": result.file_schema,
-        "current_channel": result.current_channel,
-        "file_channel": result.file_channel,
-        "message": result.message,
-        "needs_migration": result.level.value != "compatible",
-        "can_auto_migrate": result.can_auto_migrate,
-        "requires_backup_first": result.requires_backup_first,
-        "has_beta_data": result.has_beta_data,
-        "has_backups": len(backups) > 0,
-        "latest_backup": backups[0] if backups else None,
-    })
+    return jsonify(
+        {
+            "compatibility": result.level.value,
+            "current_schema_version": result.current_schema,
+            "file_schema_version": result.file_schema,
+            "current_channel": result.current_channel,
+            "file_channel": result.file_channel,
+            "message": result.message,
+            "needs_migration": result.level.value != "compatible",
+            "can_auto_migrate": result.can_auto_migrate,
+            "requires_backup_first": result.requires_backup_first,
+            "has_beta_data": result.has_beta_data,
+            "has_backups": len(backups) > 0,
+            "latest_backup": backups[0] if backups else None,
+        }
+    )
 
 
 @app.route("/migration/execute", methods=["POST"])
@@ -1471,10 +1528,12 @@ def execute_migration():
     data = request.get_json() or {}
 
     if not data.get("confirm_backup"):
-        return jsonify({
-            "success": False,
-            "error": "You must confirm backup creation before migration",
-        }), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": "You must confirm backup creation before migration",
+            }
+        ), 400
 
     target_version = data.get("target_version", config.SCHEMA_VERSION)
     target_channel = data.get("target_channel", config.RELEASE_CHANNEL)
@@ -1484,11 +1543,13 @@ def execute_migration():
     # Check safety first
     is_safe, warnings = executor.check_migration_safety(target_version, target_channel)
     if not is_safe and not data.get("force"):
-        return jsonify({
-            "success": False,
-            "error": "Migration has warnings. Set 'force': true to proceed.",
-            "warnings": warnings,
-        }), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": "Migration has warnings. Set 'force': true to proceed.",
+                "warnings": warnings,
+            }
+        ), 400
 
     success, message, backup_path = executor.execute_migration(
         target_version=target_version,
@@ -1496,12 +1557,14 @@ def execute_migration():
         create_backup=True,
     )
 
-    return jsonify({
-        "success": success,
-        "message": message,
-        "backup_path": str(backup_path) if backup_path else None,
-        "warnings": warnings if not is_safe else [],
-    })
+    return jsonify(
+        {
+            "success": success,
+            "message": message,
+            "backup_path": str(backup_path) if backup_path else None,
+            "warnings": warnings if not is_safe else [],
+        }
+    )
 
 
 @app.route("/migration/backups", methods=["GET"])
@@ -1512,10 +1575,12 @@ def list_backups():
     backup_manager = BackupManager()
     backups = backup_manager.list_backups()
 
-    return jsonify({
-        "backups": backups,
-        "max_backups": config.MAX_BACKUPS,
-    })
+    return jsonify(
+        {
+            "backups": backups,
+            "max_backups": config.MAX_BACKUPS,
+        }
+    )
 
 
 @app.route("/migration/backups", methods=["POST"])
@@ -1537,15 +1602,19 @@ def create_backup():
     backup_path = backup_manager.create_backup(reason=reason)
 
     if backup_path:
-        return jsonify({
-            "success": True,
-            "backup_path": str(backup_path),
-        })
+        return jsonify(
+            {
+                "success": True,
+                "backup_path": str(backup_path),
+            }
+        )
     else:
-        return jsonify({
-            "success": False,
-            "error": "No state file to backup",
-        }), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": "No state file to backup",
+            }
+        ), 400
 
 
 @app.route("/migration/restore", methods=["POST"])
@@ -1565,10 +1634,12 @@ def restore_backup():
     backup_path = data.get("backup_path")
 
     if not backup_path:
-        return jsonify({
-            "success": False,
-            "error": "backup_path is required",
-        }), 400
+        return jsonify(
+            {
+                "success": False,
+                "error": "backup_path is required",
+            }
+        ), 400
 
     backup_manager = BackupManager()
 
@@ -1577,26 +1648,32 @@ def restore_backup():
             backup_path=Path(backup_path),
             create_backup_first=data.get("create_backup_first", True),
         )
-        return jsonify({
-            "success": True,
-            "message": f"Restored from {backup_path}",
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Restored from {backup_path}",
+            }
+        )
     except FileNotFoundError as e:
-        return jsonify({
-            "success": False,
-            "error": str(e),
-        }), 404
+        return jsonify(
+            {
+                "success": False,
+                "error": str(e),
+            }
+        ), 404
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"Restore failed: {str(e)}",
-        }), 500
+        return jsonify(
+            {
+                "success": False,
+                "error": f"Restore failed: {e!s}",
+            }
+        ), 500
 
 
 # ---- FRONTEND SERVING ----
 
 
-INDEX_HTML = 'index.html'
+INDEX_HTML = "index.html"
 
 
 def _serve_spa():
@@ -1606,7 +1683,7 @@ def _serve_spa():
     return None
 
 
-@app.route('/')
+@app.route("/")
 def serve_index():
     """Serve the React frontend."""
     response = _serve_spa()

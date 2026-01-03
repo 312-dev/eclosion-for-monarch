@@ -46,7 +46,7 @@ const RollupItemRow = memo(function RollupItemRow({
       {/* Subscription name with logo */}
       <td className="py-2 px-3">
         <div className="flex items-center gap-2">
-          <MerchantIcon logoUrl={item.logo_url} size="sm" />
+          <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="sm" />
           <a
             href={`https://app.monarchmoney.com/merchants/${item.merchant_id}?date=${new Date().toISOString().slice(0, 8)}01`}
             target="_blank"
@@ -75,7 +75,13 @@ const RollupItemRow = memo(function RollupItemRow({
         <div className="flex items-center justify-end gap-1">
           {/* Catch-up indicator: red up arrow if frozen target > ideal rate */}
           {isCatchingUp && (
-            <Tooltip content={`Catching up: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`}>
+            <Tooltip content={
+              <>
+                <div className="font-medium">Catching Up</div>
+                <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+              </>
+            }>
               <span className="cursor-help text-monarch-error">
                 <TrendUpIcon size={10} strokeWidth={2.5} />
               </span>
@@ -83,7 +89,13 @@ const RollupItemRow = memo(function RollupItemRow({
           )}
           {/* Ahead indicator: green down arrow if frozen target < ideal rate */}
           {isAhead && (
-            <Tooltip content={`Ahead: ${formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → ${formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo after ${date} payment`}>
+            <Tooltip content={
+              <>
+                <div className="font-medium">Ahead of Schedule</div>
+                <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+              </>
+            }>
               <span className="cursor-help text-monarch-success">
                 <TrendDownIcon size={10} strokeWidth={2.5} />
               </span>
@@ -124,7 +136,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
     const saved = sessionStorage.getItem(ROLLUP_COLLAPSED_KEY);
     return saved === 'true';
   });
-  const [budgetValue, setBudgetValue] = useState(rollup.budgeted.toString());
+  const [budgetValue, setBudgetValue] = useState(Math.ceil(rollup.budgeted).toString());
   const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(rollup.category_name || DEFAULT_ROLLUP_NAME);
@@ -147,7 +159,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
   }, [isHoveringName, isEditingName]);
 
   useEffect(() => {
-    setBudgetValue(rollup.budgeted.toString());
+    setBudgetValue(Math.ceil(rollup.budgeted).toString());
   }, [rollup.budgeted]);
 
   useEffect(() => {
@@ -192,17 +204,22 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
   }, [rollup.category_name]);
 
   const handleBudgetSubmit = useCallback(async () => {
-    const newAmount = Number.parseFloat(budgetValue);
-    if (!Number.isNaN(newAmount) && newAmount >= 0 && newAmount !== rollup.budgeted) {
+    const parsedAmount = Number.parseFloat(budgetValue);
+    if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
+      // Reset to current value if invalid
+      setBudgetValue(Math.ceil(rollup.budgeted).toString());
+      return;
+    }
+    // Round up to nearest dollar
+    const newAmount = Math.ceil(parsedAmount);
+    setBudgetValue(newAmount.toString());
+    if (newAmount !== rollup.budgeted) {
       setIsUpdatingBudget(true);
       try {
         await onBudgetChange(newAmount);
       } finally {
         setIsUpdatingBudget(false);
       }
-    } else {
-      // Reset to current value if invalid or unchanged
-      setBudgetValue(rollup.budgeted.toString());
     }
   }, [budgetValue, rollup.budgeted, onBudgetChange]);
 
@@ -210,7 +227,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
-      setBudgetValue(rollup.budgeted.toString());
+      setBudgetValue(Math.ceil(rollup.budgeted).toString());
       (e.target as HTMLInputElement).blur();
     }
   }, [rollup.budgeted]);
@@ -412,14 +429,26 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             <span className="text-xs text-monarch-text-muted">Monthly</span>
             <div className="h-8 font-medium flex items-center justify-center gap-1 text-monarch-text-dark">
               {anyCatchingUp && (
-                <Tooltip content={`Catching up: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
+                <Tooltip content={
+                  <>
+                    <div className="font-medium">Catching Up</div>
+                    <div className="text-zinc-300">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
+                    <div className="text-zinc-400 text-xs mt-1">Rate normalizes as billing cycles complete</div>
+                  </>
+                }>
                   <span className="cursor-help text-monarch-error">
                     <TrendUpIcon size={12} strokeWidth={2.5} />
                   </span>
                 </Tooltip>
               )}
               {!anyCatchingUp && anyAhead && (
-                <Tooltip content={`Ahead: ${formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo now → ${formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo steady rate as items complete their billing cycles`}>
+                <Tooltip content={
+                  <>
+                    <div className="font-medium">Ahead of Schedule</div>
+                    <div className="text-zinc-300">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
+                    <div className="text-zinc-400 text-xs mt-1">Rate normalizes as billing cycles complete</div>
+                  </>
+                }>
                   <span className="cursor-help text-monarch-success">
                     <TrendDownIcon size={12} strokeWidth={2.5} />
                   </span>
@@ -444,15 +473,15 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 onFocus={(e) => { e.target.select(); setIsHoveringName(false); }}
                 disabled={isUpdatingBudget}
                 aria-label="Monthly budget amount for rollup category"
-                aria-describedby={rollup.budgeted < totalMonthly ? 'rollup-budget-warning' : undefined}
-                className={`w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card font-inherit border ${rollup.budgeted < totalMonthly ? 'border-monarch-warning' : 'border-monarch-border'}`}
+                aria-describedby={rollup.budgeted < Math.ceil(totalMonthly) ? 'rollup-budget-warning' : undefined}
+                className={`w-20 sm:w-24 h-8 pl-5 pr-2 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card font-inherit border ${rollup.budgeted < Math.ceil(totalMonthly) ? 'border-monarch-warning' : 'border-monarch-border'}`}
                 min="0"
                 step="1"
               />
             </div>
-            {rollup.budgeted < totalMonthly && (
+            {rollup.budgeted < Math.ceil(totalMonthly) && (
               <div id="rollup-budget-warning" className="text-[10px] mt-0.5 text-monarch-warning" role="alert">
-                need {formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}
+                need {formatCurrency(Math.ceil(totalMonthly), { maximumFractionDigits: 0 })}
               </div>
             )}
           </div>

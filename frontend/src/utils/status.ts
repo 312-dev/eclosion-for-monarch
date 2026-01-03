@@ -127,11 +127,13 @@ export function calculateDisplayStatus(item: {
   const plannedBudget = item.planned_budget ?? 0;
 
   // If frozen target exists, determine status based on budgeted vs target
+  // Use rounded target since budget inputs round up to nearest dollar
   if (item.frozen_monthly_target > 0) {
-    if (plannedBudget > item.frozen_monthly_target) {
+    const targetRounded = Math.ceil(item.frozen_monthly_target);
+    if (plannedBudget > targetRounded) {
       // Budgeting more than needed - ahead
       return 'ahead';
-    } else if (plannedBudget >= item.frozen_monthly_target) {
+    } else if (plannedBudget >= targetRounded) {
       // Budgeting exactly what's needed - on track
       return 'on_track';
     } else {

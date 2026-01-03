@@ -22,6 +22,7 @@ import { NoticeBanner } from '../ui/NoticeBanner';
 import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
 import { useDashboardQuery, useSyncMutation } from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
+import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils/errors';
 import { AppIcon, TourController } from '../wizards/WizardComponents';
@@ -97,12 +98,16 @@ export function AppShell() {
 
   const location = useLocation();
   const { logout } = useAuth();
+  const isDemo = useDemo();
   const toast = useToast();
   const { data, isLoading, error, refetch } = useDashboardQuery();
   const syncMutation = useSyncMutation();
 
+  // Demo-aware path prefix
+  const pathPrefix = isDemo ? '/demo' : '';
+
   // Check if current route has a tour available
-  const hasTour = location.pathname === '/recurring';
+  const hasTour = location.pathname === '/recurring' || location.pathname === '/demo/recurring';
 
   const handleHelpClick = () => {
     if (hasTour) {
@@ -181,7 +186,7 @@ export function AppShell() {
         <header className="app-header" role="banner">
           <div className="app-header-content relative">
             <div className="app-brand">
-              <Link to="/dashboard" className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to dashboard">
+              <Link to={`${pathPrefix}/recurring`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to recurring">
                 <AppIcon size={32} />
                 <h1 className="app-title hidden sm:block" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600 }}>
                   Eclosion

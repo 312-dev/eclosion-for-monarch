@@ -2,16 +2,18 @@ import { useState } from 'react';
 import { login } from '../api/client';
 import { PassphrasePrompt } from './PassphrasePrompt';
 import { SecurityInfo } from './SecurityInfo';
+import { TermsModal, hasAcceptedTerms, setTermsAccepted } from './ui/TermsModal';
 import { getErrorMessage } from '../utils';
 
 interface LoginFormProps {
   onSuccess: () => void;
 }
 
-type LoginStage = 'credentials' | 'passphrase';
+type LoginStage = 'terms' | 'credentials' | 'passphrase';
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
-  const [stage, setStage] = useState<LoginStage>('credentials');
+  // Start at terms stage if not yet accepted, otherwise go straight to credentials
+  const [stage, setStage] = useState<LoginStage>(() => hasAcceptedTerms() ? 'credentials' : 'terms');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mfaSecret, setMfaSecret] = useState('');
@@ -56,6 +58,22 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       setLoading(false);
     }
   };
+
+  // Show terms modal if not yet accepted
+  if (stage === 'terms') {
+    return (
+      <TermsModal
+        isOpen={true}
+        onClose={() => {
+          // Can't close without accepting - just stay on terms
+        }}
+        onAccept={() => {
+          setTermsAccepted();
+          setStage('credentials');
+        }}
+      />
+    );
+  }
 
   // Show passphrase creation after successful Monarch login
   if (stage === 'passphrase') {

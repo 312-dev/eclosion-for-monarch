@@ -191,7 +191,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`w-full ${MAX_WIDTH_CLASSES[maxWidth]} rounded-lg shadow-xl p-0 m-0`}
+        className={`relative w-full ${MAX_WIDTH_CLASSES[maxWidth]} rounded-lg shadow-xl p-0 m-0`}
         style={{ backgroundColor: 'var(--monarch-bg-card)' }}
       >
         {/* Header */}

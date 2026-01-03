@@ -7,11 +7,16 @@ import { readFileSync } from 'fs'
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Set base path for GitHub Pages deployment
+  // When building for ghpages mode, use /eclosion/ as the base path
+  base: mode === 'ghpages' ? '/eclosion/' : '/',
+
   plugins: [react(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __DEMO_MODE__: JSON.stringify(process.env.VITE_DEMO_MODE === 'true'),
   },
   server: {
     proxy: {
@@ -51,4 +56,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

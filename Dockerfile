@@ -67,9 +67,6 @@ COPY --chown=eclosion:eclosion core/ ./core/
 # Copy built frontend from builder stage
 COPY --from=frontend-builder --chown=eclosion:eclosion /app/frontend/dist ./static
 
-# Declare volume for persistent state
-VOLUME ["/app/state"]
-
 # Switch to non-root user
 USER eclosion
 
