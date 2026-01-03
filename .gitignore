@@ -1,3 +1,6 @@
+# OS artifacts
+.DS_Store
+
 .mm
 __pycache__
 monarchmoney
