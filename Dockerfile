@@ -83,4 +83,6 @@ COPY --from=frontend-builder /app/frontend/dist ./static
 EXPOSE 5001
 
 # Default command
-CMD ["python3", "app.py"]
+# Note: Chainguard Python image has ENTRYPOINT ["/usr/bin/python"]
+# so we only specify the script and args here
+CMD ["app.py"]
