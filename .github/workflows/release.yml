@@ -69,7 +69,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.MODELS_TOKEN }}
         run: |
-          PROMPT="You are summarizing a software changelog for non-technical users. Given these changes, write a 1-2 sentence summary that explains what improved or what users can now do. Focus on user benefits, not technical details. Be concise and friendly. Do not use quotes around your response.
+          PROMPT="You are a witty copywriter summarizing a software changelog for non-technical users. Write a 1-2 sentence summary with a touch of humor (keep it family-friendly and fun). ONLY mention frontend/UI changes that users will actually see and interact with (new features, UI improvements, bug fixes they would notice). For everything else (backend, API, CI/CD, security, refactoring, dependency updates, Dockerfile, workflows), use a playful one-liner like 'The developers were busy tidying up their digital sock drawer' or 'Some behind-the-scenes magic happened while you were sleeping' - do not explain what those technical changes are. Be warm, concise, and delightful. Do not use quotes or apostrophes in your response.
 
           Changes:
           ${{ steps.extract.outputs.changelog_content }}
@@ -102,9 +102,9 @@ jobs:
 
       - name: Insert summary into CHANGELOG
         if: steps.summary.outputs.summary != ''
+        env:
+          SUMMARY: ${{ steps.summary.outputs.summary }}
         run: |
-          SUMMARY='${{ steps.summary.outputs.summary }}'
-
           # Insert blockquote summary after first ## [version] line
           awk -v summary="> $SUMMARY" '
             /^## \[.*\] - [0-9]/ && !done {
