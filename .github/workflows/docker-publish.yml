@@ -7,13 +7,54 @@ on:
     tags:
       - 'v*'
   pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.dockerignore'
+      - 'frontend/**'
+      - '*.py'
+      - 'core/**'
+      - 'services/**'
+      - 'state/**'
+      - 'requirements*.txt'
+      - '.github/workflows/docker-publish.yml'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: graysoncadams/eclosion
 
 jobs:
+  # Detect if relevant files changed (for main branch pushes)
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check if build needed
+        id: check
+        run: |
+          # Always build for tags and PRs (PRs already filtered by paths)
+          if [[ "${{ github.ref }}" == refs/tags/* ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For main branch pushes, check if relevant files changed
+          git fetch origin main --depth=2
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+
+          if echo "$CHANGED" | grep -qE '^(Dockerfile|docker-compose\.yml|\.dockerignore|frontend/|.*\.py$|core/|services/|state/|requirements.*\.txt)'; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "No Docker-relevant files changed, skipping build"
+          fi
+
   build-and-publish:
+    needs: changes
+    if: needs.changes.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
