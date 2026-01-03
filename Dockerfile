@@ -68,19 +68,16 @@ ENV PATH="/app/venv/bin:$PATH"
 # Copy Python source
 COPY *.py ./
 COPY services/ ./services/
-COPY state/ ./state/
 COPY core/ ./core/
 
-# Copy built frontend from builder stage
-COPY --from=frontend-builder /app/frontend/dist ./static
-
-# Create state directory with proper permissions for nonroot user (UID 65532)
+# Copy state module with nonroot ownership (UID 65532) so app can write data files
 # Note: /app/state should be mounted as a volume for persistent data
 # Docker: docker run -v eclosion-data:/app/state ...
 # Railway: Configure via dashboard Settings → Volumes
-USER root
-RUN mkdir -p /app/state && chown 65532:65532 /app/state
-USER nonroot
+COPY --chown=65532:65532 state/ ./state/
+
+# Copy built frontend from builder stage
+COPY --from=frontend-builder /app/frontend/dist ./static
 
 # Expose port
 EXPOSE 5001
