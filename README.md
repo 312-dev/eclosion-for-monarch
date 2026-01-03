@@ -2,9 +2,24 @@
 
 > **Your budgeting, evolved.**
 
-A toolkit for Monarch Money that automates recurring expense tracking. Eclosion creates dedicated budget categories for each subscription and calculates the monthly contribution needed to have funds ready when each bill is due.
+A self-hosted toolkit that expands what's possible with Monarch Money. Each tool works independently with your account—enable only what you need.
 
 *Eclosion (n.): The emergence of an insect from its cocoon or a larva from an egg — symbolizing the transformation and growth of your budget.*
+
+**[Try the Demo](https://docs.eclosion.app/demo)** · **[Documentation](https://docs.eclosion.app)**
+
+## The Toolkit
+
+### Recurring Expenses *(Available)*
+Never miss a bill again. Automatically track and manage recurring expenses with smart category allocation. Eclosion calculates monthly savings targets for annual, semi-annual, and quarterly expenses so you're always prepared.
+
+- **Smart Savings Calculation** — Automatically calculates what to set aside each month
+- **Rollup Mode** — Combine small subscriptions into a single category
+- **Progress Tracking** — See at a glance if you're on track for each expense
+- **Monarch Sync** — Changes sync directly to your Monarch budget
+
+### Linked Goals *(Coming Soon)*
+Privacy-first shared goals. Collaborate on financial goals without merging accounts—each partner keeps their own Monarch account and shares only what they want to share.
 
 ## Deployment Options
 
@@ -89,22 +104,18 @@ server {
 }
 ```
 
-## Features
+## Why Self-Host?
 
-- Automatically detects recurring transactions from Monarch Money
-- Creates budget categories for each subscription
-- Calculates monthly contribution amounts based on billing frequency
-- Tracks progress toward each subscription's target
-- Supports rollup categories for grouping small subscriptions
-- Encrypted credential storage with strong passphrase protection
-- PWA support — install as an app on mobile/desktop
+- **Fully Yours** — You own your copy completely. Your credentials stay encrypted on your server—no one else can access them.
+- **Always In Sync** — Changes you make in Eclosion show up in Monarch automatically. No manual updates needed.
+- **Set It & Forget It** — Turn on the features you want, and Eclosion handles the rest in the background.
 
 ## How It Works
 
-1. **Connect**: Enter your Monarch Money credentials (encrypted locally)
-2. **Configure**: Select which category group to use for subscription tracking
-3. **Enable**: Choose which recurring items to track
-4. **Sync**: Eclosion creates categories and calculates monthly targets
+1. **Deploy** — One-click setup with Railway (~$5-7/month) or self-host with Docker
+2. **Connect** — Sign in with your Monarch Money credentials (encrypted with a passphrase only you know)
+3. **Enable** — Pick the tools you want to use
+4. **Relax** — Eclosion syncs with Monarch and keeps everything updated for you
 
 ## Security
 
