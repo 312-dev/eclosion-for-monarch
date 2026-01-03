@@ -2,7 +2,7 @@
 # Runs SAST, dependency scanning, container scanning, and DAST on PRs
 # All tools are FREE for public repositories
 
-name: Security Scans
+name: Security
 
 on:
   pull_request:
