@@ -129,7 +129,7 @@ class BackupManager:
 
                 backups.append(
                     {
-                        "path": str(backup_file),
+                        # Only expose filename, not full path (security: prevent path disclosure)
                         "filename": backup_file.name,
                         "timestamp": timestamp,
                         "channel": channel,
