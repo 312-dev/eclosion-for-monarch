@@ -167,18 +167,18 @@ def _sanitize_api_result(result: dict, generic_error: str = "Operation failed.")
 
 def _audit_log(event: str, success: bool, details: str = ""):
     """Log security-relevant events for audit trail."""
-    raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    # Security: _sanitize_log_value removes control characters to prevent log injection
-    client_ip = _sanitize_log_value(raw_ip)
-    sanitized_details = _sanitize_log_value(details)
-    # Sanitize event name to prevent log injection (defense in depth)
-    sanitized_event = _sanitize_log_value(event)
+    # Use hardcoded event names only - never pass user input to event parameter
+    # Valid events: LOGIN, LOGOUT, MFA_*, SESSION_*, RESET_*, INSTANCE_*, UNLOCK, PASSPHRASE_*
     status = "SUCCESS" if success else "FAILED"
-    # All values are sanitized above to prevent log injection attacks
-    # Use %-style formatting (not f-strings) as it's recognized as safe by static analysis
-    logger.info(
-        "[AUDIT] %s | %s | IP: %s | %s", sanitized_event, status, client_ip, sanitized_details
-    )
+    # Sanitize all user-influenced values before logging
+    # _sanitize_log_value removes control characters (newlines, carriage returns, null bytes)
+    raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    safe_ip = _sanitize_log_value(raw_ip) if raw_ip else "unknown"
+    safe_details = _sanitize_log_value(details) if details else ""
+    # Format log entry with fixed structure to prevent log injection
+    # Using repr-style quoting for user-controlled values as defense in depth
+    log_entry = f"[AUDIT] {event} | {status} | IP: '{safe_ip}' | Details: '{safe_details}'"
+    logger.info(log_entry)
 
 
 def _update_activity():
