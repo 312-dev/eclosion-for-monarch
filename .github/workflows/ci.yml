@@ -123,3 +123,21 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Final status check - always runs and reports aggregate result
+  # Configure branch protection to require only this check
+  ci:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [frontend, backend, docker]
+    if: always()
+    steps:
+      - name: Check CI results
+        run: |
+          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docker.result }}"
+          echo "Job results: $results"
+          if echo "$results" | grep -qE '(failure|cancelled)'; then
+            echo "::error::One or more CI jobs failed or were cancelled"
+            exit 1
+          fi
+          echo "All CI checks passed or were skipped"
