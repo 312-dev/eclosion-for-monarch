@@ -19,6 +19,7 @@ EMOJI_PATTERN = re.compile(r"^([\U0001F300-\U0001F9FF\U00002600-\U000027BF])\s*"
 
 class CategoryManagerProtocol(Protocol):
     """Protocol for category manager dependency injection."""
+
     async def create_category(self, group_id: str, name: str) -> str: ...
     async def rename_category(self, category_id: str, new_name: str) -> None: ...
 
@@ -26,6 +27,7 @@ class CategoryManagerProtocol(Protocol):
 @dataclass
 class CategoryNameParts:
     """Parsed parts of a category name."""
+
     emoji: str
     base_name: str
     full_name: str
@@ -58,7 +60,7 @@ def parse_category_name(full_name: str) -> CategoryNameParts:
     match = EMOJI_PATTERN.match(full_name)
     if match:
         emoji = match.group(1)
-        base_name = full_name[match.end():].strip()
+        base_name = full_name[match.end() :].strip()
         return CategoryNameParts(
             emoji=emoji,
             base_name=base_name,
@@ -73,10 +75,7 @@ def parse_category_name(full_name: str) -> CategoryNameParts:
     )
 
 
-def get_emoji_from_state_or_default(
-    cat_state: Any | None,
-    default: str = DEFAULT_EMOJI
-) -> str:
+def get_emoji_from_state_or_default(cat_state: Any | None, default: str = DEFAULT_EMOJI) -> str:
     """
     Get emoji from category state, falling back to default.
 
@@ -89,7 +88,7 @@ def get_emoji_from_state_or_default(
     """
     if cat_state is None:
         return default
-    return getattr(cat_state, 'emoji', None) or default
+    return getattr(cat_state, "emoji", None) or default
 
 
 async def create_tracked_category(
@@ -203,6 +202,6 @@ def extract_emoji_from_category(category_info: dict[str, Any] | None) -> str:
     if not category_info:
         return DEFAULT_EMOJI
 
-    name = category_info.get('name', '')
+    name = category_info.get("name", "")
     parsed = parse_category_name(name)
     return parsed.emoji

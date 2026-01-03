@@ -43,8 +43,8 @@ def _get_server_key_source() -> str:
 
     # Legacy locations for backward compatibility
     legacy_paths = [
-        Path(__file__).parent.parent / '.session_secret',
-        Path('/app/.session_secret'),
+        Path(__file__).parent.parent / ".session_secret",
+        Path("/app/.session_secret"),
     ]
     for secret_file in legacy_paths:
         if secret_file.exists():
@@ -54,7 +54,7 @@ def _get_server_key_source() -> str:
                 continue
 
     # Fall back to env var
-    return os.environ.get('SESSION_SECRET', '')
+    return os.environ.get("SESSION_SECRET", "")
 
 
 class AutomationCredentialsManager:
@@ -111,7 +111,7 @@ class AutomationCredentialsManager:
         try:
             with open(self.creds_file) as f:
                 data = json.load(f)
-            return data.get('automation_enabled', False)
+            return data.get("automation_enabled", False)
         except Exception:
             return False
 
@@ -141,7 +141,7 @@ class AutomationCredentialsManager:
             "enabled_by_user": True,
         }
 
-        with open(self.creds_file, 'w') as f:
+        with open(self.creds_file, "w") as f:
             json.dump(data, f, indent=2)
 
         # Restrict file permissions (owner read/write only)
@@ -166,7 +166,7 @@ class AutomationCredentialsManager:
             with open(self.creds_file) as f:
                 data = json.load(f)
 
-            if not data.get('automation_enabled'):
+            if not data.get("automation_enabled"):
                 return None
 
             passphrase = self._get_server_passphrase()
@@ -176,7 +176,9 @@ class AutomationCredentialsManager:
             return {
                 "email": enc.decrypt(data["email"]),
                 "password": enc.decrypt(data["password"]),
-                "mfa_secret": enc.decrypt(data.get("mfa_secret", "")) if data.get("mfa_secret") else "",
+                "mfa_secret": (
+                    enc.decrypt(data.get("mfa_secret", "")) if data.get("mfa_secret") else ""
+                ),
             }
         except Exception as e:
             logger.error(f"Failed to load automation credentials: {e}")
@@ -193,9 +195,9 @@ class AutomationCredentialsManager:
             try:
                 with open(self.creds_file) as f:
                     data = json.load(f)
-                data['automation_enabled'] = False
-                data['disabled_at'] = datetime.now().isoformat()
-                with open(self.creds_file, 'w') as f:
+                data["automation_enabled"] = False
+                data["disabled_at"] = datetime.now().isoformat()
+                with open(self.creds_file, "w") as f:
                     json.dump(data, f, indent=2)
                 logger.info("Automation credentials disabled")
             except Exception as e:

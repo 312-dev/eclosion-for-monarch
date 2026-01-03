@@ -4,6 +4,7 @@ Rollup Service for Recurring Savings Tracker
 Handles the rollup feature which allows multiple small recurring expenses
 to be bundled into a single shared category in Monarch Money.
 """
+
 import math
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -95,9 +96,7 @@ class RollupService:
         if sync_name:
             rollup_name = state.rollup.category_name or "Recurring Rollup"
             emoji = state.rollup.emoji
-            await self.category_manager.rename_category(
-                category_id, rollup_name, icon=emoji
-            )
+            await self.category_manager.rename_category(category_id, rollup_name, icon=emoji)
 
         # Update state: set category ID, mark as linked, set budget, enable
         self.state_manager.set_rollup_category_id(category_id)
@@ -148,9 +147,7 @@ class RollupService:
         )
 
         # Set the budget in Monarch
-        await self.category_manager.set_category_budget(
-            category_id, budget, apply_to_future=True
-        )
+        await self.category_manager.set_category_budget(category_id, budget, apply_to_future=True)
 
         # Update state
         self.state_manager.set_rollup_category_id(category_id)
@@ -460,33 +457,33 @@ class RollupService:
             # Calculate monthly progress
             contributed_this_month = max(0, item_balance - balance_at_start)
             monthly_progress_percent = (
-                (contributed_this_month / frozen_target * 100)
-                if frozen_target > 0
-                else 100
+                (contributed_this_month / frozen_target * 100) if frozen_target > 0 else 100
             )
 
             # Calculate overall progress for this item
             progress_percent = (item_balance / item.amount * 100) if item.amount > 0 else 100
 
-            items_data.append({
-                "id": item.id,
-                "name": item.name,
-                "merchant_id": item.merchant_id,
-                "logo_url": item.logo_url,
-                "amount": item.amount,
-                "frequency": item.frequency.value,
-                "frequency_months": item.frequency_months,
-                "next_due_date": item.next_due_date.isoformat(),
-                "months_until_due": item.months_until_due,
-                "current_balance": item_balance,
-                "ideal_monthly_rate": ideal_monthly_rate,
-                "frozen_monthly_target": frozen_target,
-                "contributed_this_month": contributed_this_month,
-                "monthly_progress_percent": monthly_progress_percent,
-                "progress_percent": min(100, progress_percent),
-                "status": calc.status.value,
-                "amount_needed_now": calc.amount_needed_now,
-            })
+            items_data.append(
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "merchant_id": item.merchant_id,
+                    "logo_url": item.logo_url,
+                    "amount": item.amount,
+                    "frequency": item.frequency.value,
+                    "frequency_months": item.frequency_months,
+                    "next_due_date": item.next_due_date.isoformat(),
+                    "months_until_due": item.months_until_due,
+                    "current_balance": item_balance,
+                    "ideal_monthly_rate": ideal_monthly_rate,
+                    "frozen_monthly_target": frozen_target,
+                    "contributed_this_month": contributed_this_month,
+                    "monthly_progress_percent": monthly_progress_percent,
+                    "progress_percent": min(100, progress_percent),
+                    "status": calc.status.value,
+                    "amount_needed_now": calc.amount_needed_now,
+                }
+            )
 
         # Calculate overall progress toward total target
         overall_progress = (current_balance / total_target * 100) if total_target > 0 else 0

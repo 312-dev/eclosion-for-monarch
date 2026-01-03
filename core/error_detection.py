@@ -6,7 +6,6 @@ across the codebase. Eliminates duplication in sync_service.py,
 decorators.py, and monarch_utils.py.
 """
 
-
 from .exceptions import MFARequiredError, RateLimitError
 
 
@@ -30,11 +29,7 @@ def is_rate_limit_error(error: Exception) -> bool:
 
     # String-based fallback for external library exceptions
     error_str = str(error).lower()
-    return (
-        "429" in error_str or
-        "too many requests" in error_str or
-        "rate limit" in error_str
-    )
+    return "429" in error_str or "too many requests" in error_str or "rate limit" in error_str
 
 
 def is_mfa_error(error: Exception) -> bool:
@@ -61,8 +56,7 @@ def is_mfa_error(error: Exception) -> bool:
 
 
 def classify_auth_error(
-    error: Exception,
-    has_mfa_secret: bool = False
+    error: Exception, has_mfa_secret: bool = False
 ) -> tuple[str, str, str | None]:
     """
     Classify an authentication error and return appropriate error type,
@@ -84,33 +78,22 @@ def classify_auth_error(
         return (
             "rate_limit",
             "Rate limited. Please wait a moment and try again.",
-            "RATE_LIMITED"
+            "RATE_LIMITED",
         )
 
     if is_mfa_error(error):
         if has_mfa_secret:
-            return (
-                "mfa_failed",
-                f"MFA verification failed: {error}",
-                "MFA_FAILED"
-            )
+            return ("mfa_failed", f"MFA verification failed: {error}", "MFA_FAILED")
         return (
             "mfa_required",
             "MFA required. Enter your TOTP secret key.",
-            "MFA_REQUIRED"
+            "MFA_REQUIRED",
         )
 
-    return (
-        "auth_failed",
-        f"Login failed: {error}",
-        "AUTH_FAILED"
-    )
+    return ("auth_failed", f"Login failed: {error}", "AUTH_FAILED")
 
 
-def format_auth_response(
-    error: Exception,
-    has_mfa_secret: bool = False
-) -> dict:
+def format_auth_response(error: Exception, has_mfa_secret: bool = False) -> dict:
     """
     Format an authentication error into a standardized API response dict.
 

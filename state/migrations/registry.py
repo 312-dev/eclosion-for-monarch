@@ -2,7 +2,6 @@
 Migration registry for discovering and managing migrations.
 """
 
-
 from typing import ClassVar
 
 from .base import Migration
@@ -76,6 +75,7 @@ class MigrationRegistry:
 
         # BFS to find shortest path
         from collections import deque
+
         queue = deque([(from_version, [])])
         visited = {from_version}
 
@@ -123,6 +123,7 @@ class MigrationRegistry:
 
         # BFS to find path
         from collections import deque
+
         queue = deque([(from_version, [])])
         visited = {from_version}
 

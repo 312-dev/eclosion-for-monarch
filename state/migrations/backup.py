@@ -83,7 +83,13 @@ class BackupManager:
                 # Parse filename: tracker_state.{timestamp}.{channel}.{schema}.{reason}.json
                 parts = backup_file.stem.split(".")
                 if len(parts) >= 5:
-                    _, timestamp, channel, schema, reason = parts[0], parts[1], parts[2], parts[3], parts[4]
+                    _, timestamp, channel, schema, reason = (
+                        parts[0],
+                        parts[1],
+                        parts[2],
+                        parts[3],
+                        parts[4],
+                    )
                 else:
                     # Legacy format or unknown
                     timestamp = parts[1] if len(parts) > 1 else "unknown"
@@ -91,18 +97,20 @@ class BackupManager:
                     schema = "unknown"
                     reason = "unknown"
 
-                backups.append({
-                    "path": str(backup_file),
-                    "filename": backup_file.name,
-                    "timestamp": timestamp,
-                    "channel": channel,
-                    "schema_version": schema,
-                    "reason": reason,
-                    "size_bytes": backup_file.stat().st_size,
-                    "created_at": datetime.fromtimestamp(
-                        backup_file.stat().st_mtime
-                    ).isoformat(),
-                })
+                backups.append(
+                    {
+                        "path": str(backup_file),
+                        "filename": backup_file.name,
+                        "timestamp": timestamp,
+                        "channel": channel,
+                        "schema_version": schema,
+                        "reason": reason,
+                        "size_bytes": backup_file.stat().st_size,
+                        "created_at": datetime.fromtimestamp(
+                            backup_file.stat().st_mtime
+                        ).isoformat(),
+                    }
+                )
             except (ValueError, IndexError):
                 # Skip malformed backup files
                 continue
@@ -193,6 +201,7 @@ class BackupManager:
         if len(backups) > self.max_backups:
             # Remove oldest backups
             import contextlib
-            for backup in backups[self.max_backups:]:
+
+            for backup in backups[self.max_backups :]:
                 with contextlib.suppress(OSError):
                     Path(backup["path"]).unlink()

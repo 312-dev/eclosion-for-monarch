@@ -25,16 +25,16 @@ class SyncScheduler:
     Jobs are executed in background threads via APScheduler.
     """
 
-    _instance: Optional['SyncScheduler'] = None
+    _instance: Optional["SyncScheduler"] = None
     _scheduler: BackgroundScheduler | None = None
 
     SYNC_JOB_ID = "automated_sync"
-    MIN_INTERVAL_MINUTES = 60      # Maximum hourly per tool requirement
-    MAX_INTERVAL_MINUTES = 1440    # 24 hours max
-    DEFAULT_INTERVAL_MINUTES = 360 # 6 hours default
+    MIN_INTERVAL_MINUTES = 60  # Maximum hourly per tool requirement
+    MAX_INTERVAL_MINUTES = 1440  # 24 hours max
+    DEFAULT_INTERVAL_MINUTES = 360  # 6 hours default
 
     @classmethod
-    def get_instance(cls) -> 'SyncScheduler':
+    def get_instance(cls) -> "SyncScheduler":
         """Get or create the singleton scheduler instance."""
         if cls._instance is None:
             cls._instance = cls()
@@ -46,8 +46,7 @@ class SyncScheduler:
             raise RuntimeError("Use SyncScheduler.get_instance() instead")
 
         self._scheduler = BackgroundScheduler(
-            jobstores={'default': MemoryJobStore()},
-            timezone='UTC'
+            jobstores={"default": MemoryJobStore()}, timezone="UTC"
         )
         self._sync_callback: Callable | None = None
         self._is_started = False
@@ -86,10 +85,7 @@ class SyncScheduler:
             Actual interval used (after clamping)
         """
         # Enforce limits
-        interval = max(
-            self.MIN_INTERVAL_MINUTES,
-            min(interval_minutes, self.MAX_INTERVAL_MINUTES)
-        )
+        interval = max(self.MIN_INTERVAL_MINUTES, min(interval_minutes, self.MAX_INTERVAL_MINUTES))
 
         # Remove existing job if present
         self.disable_auto_sync()
@@ -142,7 +138,11 @@ class SyncScheduler:
         job = self._scheduler.get_job(self.SYNC_JOB_ID)
         if job:
             next_run = job.next_run_time.isoformat() if job.next_run_time else None
-            interval = job.trigger.interval.total_seconds() / 60 if hasattr(job.trigger, 'interval') else None
+            interval = (
+                job.trigger.interval.total_seconds() / 60
+                if hasattr(job.trigger, "interval")
+                else None
+            )
             return {
                 "enabled": True,
                 "next_run": next_run,

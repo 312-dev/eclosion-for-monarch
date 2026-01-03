@@ -4,6 +4,7 @@ Centralized configuration module for Eclosion.
 All hardcoded configuration values should be defined here to ensure
 consistency across the application and easy modification.
 """
+
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -130,6 +131,7 @@ MAX_BACKUPS = 10
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
 
 def get_state_file_path(filename: str) -> Path:
     """Get the full path for a state file."""

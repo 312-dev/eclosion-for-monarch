@@ -37,13 +37,9 @@ def _atomic_write_json(file_path: Path, data: dict, indent: int = 2) -> None:
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Create temp file in same directory (ensures same filesystem for atomic rename)
-    fd, temp_path = tempfile.mkstemp(
-        dir=file_path.parent,
-        prefix='.tmp_',
-        suffix='.json'
-    )
+    fd, temp_path = tempfile.mkstemp(dir=file_path.parent, prefix=".tmp_", suffix=".json")
     try:
-        with os.fdopen(fd, 'w') as f:
+        with os.fdopen(fd, "w") as f:
             json.dump(data, f, indent=indent)
         # Atomic rename (on POSIX systems)
         shutil.move(temp_path, file_path)
@@ -57,18 +53,20 @@ def _atomic_write_json(file_path: Path, data: dict, indent: int = 2) -> None:
 @dataclass
 class RemovedItemNotice:
     """Notice for a recurring item that was removed from Monarch."""
-    id: str                    # UUID for dismissal
-    recurring_id: str          # Original recurring item ID
-    name: str                  # Display name (e.g., "Netflix")
-    category_name: str         # Linked category name
-    was_rollup: bool           # Was it in rollup category
-    removed_at: str            # ISO timestamp
-    dismissed: bool = False    # User dismissed this notice
+
+    id: str  # UUID for dismissal
+    recurring_id: str  # Original recurring item ID
+    name: str  # Display name (e.g., "Netflix")
+    category_name: str  # Linked category name
+    was_rollup: bool  # Was it in rollup category
+    removed_at: str  # ISO timestamp
+    dismissed: bool = False  # User dismissed this notice
 
 
 @dataclass
 class CategoryState:
     """State for a single tracked category."""
+
     monarch_category_id: str
     name: str
     target_amount: float
@@ -94,6 +92,7 @@ class CategoryState:
 @dataclass
 class RollupState:
     """State for the rollup category feature."""
+
     enabled: bool = False
     monarch_category_id: str | None = None
     category_name: str = "Recurring Rollup"
@@ -109,6 +108,7 @@ class RollupState:
 @dataclass
 class AutoSyncState:
     """State for automatic background sync."""
+
     enabled: bool = False
     interval_minutes: int = 360  # 6 hours default
     last_auto_sync: str | None = None
@@ -121,6 +121,7 @@ class AutoSyncState:
 @dataclass
 class MigrationMetadata:
     """Tracks migration history for debugging and rollback."""
+
     last_migrated_at: str | None = None
     migration_path: list[str] = field(default_factory=list)
     source_channel: str | None = None  # Channel before last migration
@@ -130,11 +131,14 @@ class MigrationMetadata:
 @dataclass
 class TrackerState:
     """Full tracker state."""
+
     # Schema versioning (separate from app version)
     schema_version: str = "1.0"  # Data structure version
     schema_channel: str = "stable"  # Channel this data was created in
     _migration_metadata: MigrationMetadata = field(default_factory=MigrationMetadata)
-    _unknown_fields: dict[str, Any] = field(default_factory=dict)  # Preserve unknown fields from newer versions
+    _unknown_fields: dict[str, Any] = field(
+        default_factory=dict
+    )  # Preserve unknown fields from newer versions
 
     # Legacy app version (kept for backward compatibility)
     version: str = "1.0.0"
@@ -149,7 +153,9 @@ class TrackerState:
     enabled_items: set = field(default_factory=set)  # IDs of items enabled for tracking
     categories: dict[str, CategoryState] = field(default_factory=dict)
     rollup: RollupState = field(default_factory=RollupState)
-    removed_item_notices: list[RemovedItemNotice] = field(default_factory=list)  # Notices for removed items
+    removed_item_notices: list[RemovedItemNotice] = field(
+        default_factory=list
+    )  # Notices for removed items
     last_read_changelog_version: str | None = None  # Last changelog version user has read
     auto_sync: AutoSyncState = field(default_factory=AutoSyncState)  # Background sync settings
     user_first_name: str | None = None  # User's first name from Monarch profile
@@ -209,14 +215,9 @@ class StateManager:
             "auto_track_threshold": state.auto_track_threshold,
             "auto_update_targets": state.auto_update_targets,
             "enabled_items": list(state.enabled_items),
-            "categories": {
-                k: self._serialize_category(v)
-                for k, v in state.categories.items()
-            },
+            "categories": {k: self._serialize_category(v) for k, v in state.categories.items()},
             "rollup": self._serialize_rollup(state.rollup),
-            "removed_item_notices": [
-                self._serialize_notice(n) for n in state.removed_item_notices
-            ],
+            "removed_item_notices": [self._serialize_notice(n) for n in state.removed_item_notices],
             "last_read_changelog_version": state.last_read_changelog_version,
             "auto_sync": self._serialize_auto_sync(state.auto_sync),
             "user_first_name": state.user_first_name,
@@ -297,19 +298,27 @@ class StateManager:
         """Convert JSON dict back to TrackerState."""
         # Define all known field names at this schema version
         KNOWN_FIELDS = {
-            "schema_version", "schema_channel", "_migration_metadata",
-            "version", "target_group_id", "target_group_name", "last_sync",
-            "auto_sync_new", "auto_track_threshold", "auto_update_targets",
-            "enabled_items", "categories", "rollup",
-            "removed_item_notices", "last_read_changelog_version",
-            "auto_sync", "user_first_name"
+            "schema_version",
+            "schema_channel",
+            "_migration_metadata",
+            "version",
+            "target_group_id",
+            "target_group_name",
+            "last_sync",
+            "auto_sync_new",
+            "auto_track_threshold",
+            "auto_update_targets",
+            "enabled_items",
+            "categories",
+            "rollup",
+            "removed_item_notices",
+            "last_read_changelog_version",
+            "auto_sync",
+            "user_first_name",
         }
 
         # Capture unknown fields (preserves beta data when running stable)
-        unknown_fields = {
-            k: v for k, v in data.items()
-            if k not in KNOWN_FIELDS
-        }
+        unknown_fields = {k: v for k, v in data.items() if k not in KNOWN_FIELDS}
 
         # Deserialize migration metadata
         migration_data = data.get("_migration_metadata", {})
@@ -377,15 +386,17 @@ class StateManager:
 
         # Deserialize removed item notices
         for n in data.get("removed_item_notices", []):
-            state.removed_item_notices.append(RemovedItemNotice(
-                id=n["id"],
-                recurring_id=n["recurring_id"],
-                name=n["name"],
-                category_name=n["category_name"],
-                was_rollup=n["was_rollup"],
-                removed_at=n["removed_at"],
-                dismissed=n.get("dismissed", False),
-            ))
+            state.removed_item_notices.append(
+                RemovedItemNotice(
+                    id=n["id"],
+                    recurring_id=n["recurring_id"],
+                    name=n["name"],
+                    category_name=n["category_name"],
+                    was_rollup=n["was_rollup"],
+                    removed_at=n["removed_at"],
+                    dismissed=n.get("dismissed", False),
+                )
+            )
 
         # Deserialize auto_sync state
         auto_sync_data = data.get("auto_sync", {})
@@ -752,12 +763,14 @@ class StateManager:
             # Skip items in rollup - they use the rollup category
             if recurring_id in state.rollup.item_ids:
                 continue
-            deletable.append({
-                "recurring_id": recurring_id,
-                "category_id": cat.monarch_category_id,
-                "name": cat.name,
-                "is_linked": cat.is_linked,
-            })
+            deletable.append(
+                {
+                    "recurring_id": recurring_id,
+                    "category_id": cat.monarch_category_id,
+                    "name": cat.name,
+                    "is_linked": cat.is_linked,
+                }
+            )
         return deletable
 
     def reset_dedicated_categories(self) -> dict:

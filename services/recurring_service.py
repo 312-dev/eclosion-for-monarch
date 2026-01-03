@@ -17,6 +17,7 @@ from monarch_utils import get_cache, get_mm, retry_with_backoff
 
 class Frequency(Enum):
     """Recurring transaction frequency."""
+
     WEEKLY = "weekly"
     EVERY_TWO_WEEKS = "every_two_weeks"
     TWICE_A_MONTH = "twice_a_month"
@@ -30,9 +31,9 @@ class Frequency(Enum):
         """Return approximate frequency in months (time between occurrences)."""
         # For sub-monthly frequencies, use accurate weeks-per-month (4.33)
         return {
-            Frequency.WEEKLY: 7 / 30.44,           # ~0.23 months
-            Frequency.EVERY_TWO_WEEKS: 14 / 30.44, # ~0.46 months
-            Frequency.TWICE_A_MONTH: 0.5,          # exactly 2x per month
+            Frequency.WEEKLY: 7 / 30.44,  # ~0.23 months
+            Frequency.EVERY_TWO_WEEKS: 14 / 30.44,  # ~0.46 months
+            Frequency.TWICE_A_MONTH: 0.5,  # exactly 2x per month
             Frequency.MONTHLY: 1,
             Frequency.QUARTERLY: 3,
             Frequency.SEMIYEARLY: 6,
@@ -56,6 +57,7 @@ class Frequency(Enum):
 @dataclass
 class RecurringItem:
     """Represents a recurring transaction from Monarch."""
+
     id: str
     name: str
     merchant_id: str | None
@@ -74,9 +76,8 @@ class RecurringItem:
         if self.next_due_date <= today:
             return 0
         # Count calendar months
-        return (
-            (self.next_due_date.year - today.year) * 12
-            + (self.next_due_date.month - today.month)
+        return (self.next_due_date.year - today.year) * 12 + (
+            self.next_due_date.month - today.month
         )
 
     @property
@@ -164,7 +165,10 @@ class RecurringService:
             except ValueError:
                 # Log unknown frequencies for debugging
                 import logging
-                logging.getLogger(__name__).warning(f"Unknown frequency '{freq_str}' for recurring item '{stream.get('name', 'Unknown')}'")
+
+                logging.getLogger(__name__).warning(
+                    f"Unknown frequency '{freq_str}' for recurring item '{stream.get('name', 'Unknown')}'"
+                )
                 continue
 
             merchant = stream.get("merchant", {})

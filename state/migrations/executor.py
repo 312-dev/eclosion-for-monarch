@@ -15,6 +15,7 @@ from .registry import MigrationRegistry
 
 class MigrationError(Exception):
     """Error during migration execution."""
+
     pass
 
 
@@ -68,28 +69,25 @@ class MigrationExecutor:
         # Create backup
         backup_path = None
         if create_backup:
-            backup_path = self.backup_manager.create_backup(
-                self.state_file,
-                reason="pre-migration"
-            )
+            backup_path = self.backup_manager.create_backup(self.state_file, reason="pre-migration")
 
         try:
             # Determine direction and get migration path
             if self._compare_versions(current_version, target_version) < 0:
                 # Forward migration (upgrade)
                 direction = MigrationDirection.FORWARD
-                migrations = MigrationRegistry.get_forward_path(
-                    current_version, target_version
-                )
+                migrations = MigrationRegistry.get_forward_path(current_version, target_version)
             elif self._compare_versions(current_version, target_version) > 0:
                 # Backward migration (downgrade)
                 direction = MigrationDirection.BACKWARD
-                migrations = MigrationRegistry.get_backward_path(
-                    current_version, target_version
-                )
+                migrations = MigrationRegistry.get_backward_path(current_version, target_version)
             else:
                 # Same version, just channel switch
-                direction = MigrationDirection.FORWARD if target_channel == "beta" else MigrationDirection.BACKWARD
+                direction = (
+                    MigrationDirection.FORWARD
+                    if target_channel == "beta"
+                    else MigrationDirection.BACKWARD
+                )
                 migrations = []
 
             # Execute migrations in sequence
@@ -102,9 +100,7 @@ class MigrationExecutor:
                     # Check if backward migration is safe
                     can_migrate, reason = migration.can_migrate_backward(data)
                     if not can_migrate:
-                        raise MigrationError(
-                            f"Cannot migrate backward: {reason}"
-                        )
+                        raise MigrationError(f"Cannot migrate backward: {reason}")
                     data = migration.backward(data)
 
             # Update channel if different
@@ -128,7 +124,7 @@ class MigrationExecutor:
                 True,
                 f"Migrated from {current_channel}/{current_version} "
                 f"to {target_channel}/{target_version}",
-                backup_path
+                backup_path,
             )
 
         except Exception as e:
@@ -136,7 +132,7 @@ class MigrationExecutor:
             return (
                 False,
                 f"Migration failed: {e!s}. Backup available at {backup_path}",
-                backup_path
+                backup_path,
             )
 
     def check_migration_safety(
@@ -165,9 +161,7 @@ class MigrationExecutor:
 
         # Check backward migration safety
         if self._compare_versions(current_version, target_version) > 0:
-            migrations = MigrationRegistry.get_backward_path(
-                current_version, target_version
-            )
+            migrations = MigrationRegistry.get_backward_path(current_version, target_version)
             for migration_class in migrations:
                 migration = migration_class()
                 can_migrate, reason = migration.can_migrate_backward(data)

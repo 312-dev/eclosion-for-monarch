@@ -13,6 +13,7 @@ from enum import Enum
 
 class SavingsStatus(Enum):
     """Status of savings progress."""
+
     ON_TRACK = "on_track"
     BEHIND = "behind"
     AHEAD = "ahead"
@@ -25,6 +26,7 @@ class SavingsStatus(Enum):
 @dataclass
 class SavingsCalculation:
     """Result of savings calculation."""
+
     monthly_contribution: float
     months_remaining: int
     target_amount: float
@@ -34,7 +36,7 @@ class SavingsCalculation:
     progress_percent: float
     status: SavingsStatus
     ideal_monthly_rate: float = 0.0  # Ideal rate from renewal to next renewal
-    amount_needed_now: float = 0.0   # Extra amount needed now to get back on track
+    amount_needed_now: float = 0.0  # Extra amount needed now to get back on track
 
     def to_dict(self) -> dict:
         return {
@@ -78,7 +80,9 @@ class SavingsCalculator:
         # Calculate ideal monthly rate (amount / frequency)
         # This is what you'd save each month from renewal to next renewal
         # Round up to nearest dollar (Monarch doesn't do cents)
-        ideal_monthly_rate = math.ceil(target_amount / frequency_months) if frequency_months > 0 else target_amount
+        ideal_monthly_rate = (
+            math.ceil(target_amount / frequency_months) if frequency_months > 0 else target_amount
+        )
 
         # Calculate progress
         progress_percent = (current_balance / target_amount * 100) if target_amount > 0 else 0

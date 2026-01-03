@@ -26,6 +26,7 @@ SALT_LENGTH = 16  # 128 bits
 
 class PassphraseValidationError(Exception):
     """Raised when passphrase doesn't meet requirements."""
+
     pass
 
 
@@ -47,11 +48,11 @@ def validate_passphrase(passphrase: str) -> tuple[bool, list]:
 
     if len(passphrase) < 12:
         requirements.append("At least 12 characters")
-    if not re.search(r'[A-Z]', passphrase):
+    if not re.search(r"[A-Z]", passphrase):
         requirements.append("At least 1 uppercase letter")
-    if not re.search(r'[a-z]', passphrase):
+    if not re.search(r"[a-z]", passphrase):
         requirements.append("At least 1 lowercase letter")
-    if not re.search(r'[0-9]', passphrase):
+    if not re.search(r"[0-9]", passphrase):
         requirements.append("At least 1 number")
     if not re.search(r'[!@#$%^&*()_+\-=\[\]{}|;:\'",.<>?/\\`~]', passphrase):
         requirements.append("At least 1 special character")
@@ -76,7 +77,7 @@ def derive_key(passphrase: str, salt: bytes) -> bytes:
         salt=salt,
         iterations=PBKDF2_ITERATIONS,
     )
-    key = kdf.derive(passphrase.encode('utf-8'))
+    key = kdf.derive(passphrase.encode("utf-8"))
     # Fernet requires base64-encoded 32-byte key
     return base64.urlsafe_b64encode(key)
 
@@ -119,12 +120,12 @@ class CredentialEncryption:
 
     def get_salt_b64(self) -> str:
         """Get the salt as a base64-encoded string for JSON storage."""
-        return base64.b64encode(self._salt).decode('utf-8')
+        return base64.b64encode(self._salt).decode("utf-8")
 
     @staticmethod
     def salt_from_b64(salt_b64: str) -> bytes:
         """Convert base64-encoded salt back to bytes."""
-        return base64.b64decode(salt_b64.encode('utf-8'))
+        return base64.b64decode(salt_b64.encode("utf-8"))
 
     def encrypt(self, plaintext: str) -> str:
         """
@@ -138,8 +139,8 @@ class CredentialEncryption:
         """
         if not plaintext:
             return ""
-        ciphertext = self._fernet.encrypt(plaintext.encode('utf-8'))
-        return ciphertext.decode('utf-8')
+        ciphertext = self._fernet.encrypt(plaintext.encode("utf-8"))
+        return ciphertext.decode("utf-8")
 
     def decrypt(self, ciphertext: str) -> str:
         """
@@ -156,10 +157,11 @@ class CredentialEncryption:
         """
         if not ciphertext:
             return ""
-        plaintext = self._fernet.decrypt(ciphertext.encode('utf-8'))
-        return plaintext.decode('utf-8')
+        plaintext = self._fernet.decrypt(ciphertext.encode("utf-8"))
+        return plaintext.decode("utf-8")
 
 
 class DecryptionError(Exception):
     """Raised when decryption fails (wrong passphrase or corrupted data)."""
+
     pass
