@@ -120,6 +120,7 @@ jobs:
           echo "Inserted summary into CHANGELOG.md"
 
       - name: Commit and push summary
+        id: commit
         if: steps.summary.outputs.summary != ''
         run: |
           git config user.name "github-actions[bot]"
@@ -128,6 +129,18 @@ jobs:
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "chore: add AI-generated changelog summary"
           git push
+          echo "pushed=true" >> $GITHUB_OUTPUT
+
+      # Trigger CI/Security workflows since GITHUB_TOKEN pushes don't trigger them
+      - name: Trigger required workflows
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
+          gh workflow run ci.yml --ref "$BRANCH"
+          gh workflow run security.yml --ref "$BRANCH"
+          echo "Triggered CI and Security workflows on $BRANCH"
 
   auto-merge:
     needs: [release-please, generate-summary]

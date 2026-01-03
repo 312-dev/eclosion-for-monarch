@@ -148,21 +148,49 @@ def _sanitize_api_result(result: dict, generic_error: str = "Operation failed.")
     """
     Sanitize API result dict to prevent information exposure.
 
-    Replaces all 'error' fields (top-level and nested) with generic messages
-    to prevent stack traces or internal details from being exposed.
+    Creates a NEW dict with only safe fields to ensure CodeQL recognizes
+    the sanitization barrier. All error messages are replaced with generic
+    ones to prevent stack traces from being exposed to users.
     """
-    # Sanitize top-level error
-    if "error" in result and not result.get("success", True):
-        result["error"] = generic_error
+    # Create a completely new dict to break taint tracking
+    sanitized: dict = {}
 
-    # Sanitize nested errors in lists (e.g., sync_errors, errors)
+    # Copy success status as explicit boolean
+    sanitized["success"] = bool(result.get("success", False))
+
+    # Replace error message with generic one on failure
+    if not sanitized["success"]:
+        sanitized["error"] = generic_error
+
+    # Whitelist of safe numeric/boolean fields to copy (explicit type conversion)
+    safe_numeric_fields = (
+        "dedicated_deleted",
+        "dedicated_failed",
+        "rollup_deleted",
+        "items_disabled",
+        "deleted_count",
+        "failed_count",
+        "categories_created",
+        "categories_updated",
+        "items_synced",
+        "retry_after",
+    )
+    for key in safe_numeric_fields:
+        if key in result:
+            val = result[key]
+            if isinstance(val, bool):
+                sanitized[key] = bool(val)
+            elif isinstance(val, int):
+                sanitized[key] = int(val)
+            elif isinstance(val, float):
+                sanitized[key] = float(val)
+
+    # For error lists, only expose count (not the actual error messages)
     for key in ("errors", "sync_errors", "failed"):
         if key in result and isinstance(result[key], list):
-            for item in result[key]:
-                if isinstance(item, dict) and "error" in item:
-                    item["error"] = "Failed"
+            sanitized[f"{key}_count"] = len(result[key])
 
-    return result
+    return sanitized
 
 
 def _audit_log(event: str, success: bool, details: str = ""):
@@ -1691,42 +1719,47 @@ def execute_migration():
     is_safe, warnings = executor.check_migration_safety(target_version, target_channel)
     if not is_safe and not data.get("force"):
         # Sanitize warnings before returning to prevent information exposure
-        safe_warnings = []
+        sanitized_warnings = []
         for warning in warnings:
             # Remove file paths and limit length to prevent sensitive data leakage
             sanitized = re.sub(r"[/\\][\w./\\-]+", "[path]", str(warning))
-            safe_warnings.append(sanitized[:200])
+            sanitized_warnings.append(sanitized[:200])
         return jsonify(
             {
                 "success": False,
                 "error": "Migration has warnings. Set 'force': true to proceed.",
-                "warnings": safe_warnings,
+                "warnings": sanitized_warnings,
             }
         ), 400
 
-    success, message, backup_path = executor.execute_migration(
+    success, _message, backup_path = executor.execute_migration(
         target_version=target_version,
         target_channel=target_channel,
         create_backup=True,
     )
 
-    # Sanitize all output to prevent information exposure
-    safe_message = message if success else "Migration failed. Please try again."
+    # Use hardcoded messages to prevent any tainted data from flowing through
+    # (CodeQL tracks exception info that could be in _message)
+    safe_message = (
+        "Migration completed successfully." if success else "Migration failed. Please try again."
+    )
 
     # Only expose backup filename, not full path (prevents directory structure disclosure)
-    safe_backup_name = backup_path.name if backup_path else None
+    # Use str() explicitly to break any taint tracking from Path object
+    safe_backup_name = str(backup_path.name) if backup_path else None
 
     # Sanitize warnings to remove any paths or sensitive details
-    safe_warnings = []
+    safe_warnings: list[str] = []
     if not is_safe:
         for warning in warnings:
             # Remove file paths from warnings
             sanitized = re.sub(r"[/\\][\w./\\-]+", "[path]", str(warning))
             safe_warnings.append(sanitized[:200])  # Limit length
 
+    # Return a new dict with only safe values to ensure CodeQL sees sanitization
     return jsonify(
         {
-            "success": success,
+            "success": bool(success),
             "message": safe_message,
             "backup_name": safe_backup_name,
             "warnings": safe_warnings,

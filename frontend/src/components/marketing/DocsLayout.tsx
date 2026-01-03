@@ -86,7 +86,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             {!minimal && (
               <nav className="hidden md:flex items-center gap-8">
                 <NavLink to="/features">Features</NavLink>
-                <NavLink to="/developers">Developers</NavLink>
+                <NavLink to="https://docs.eclosion.app/" external>Developers</NavLink>
                 <NavLink to="/demo">Demo</NavLink>
                 <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
                   GitHub
@@ -98,12 +98,14 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             <div className="flex items-center gap-2">
               {/* Developers Link (shown on landing page) */}
               {minimal && (
-                <Link
-                  to="/developers"
+                <a
+                  href="https://docs.eclosion.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
                 >
                   Developers
-                </Link>
+                </a>
               )}
 
               {/* Theme Toggle */}
