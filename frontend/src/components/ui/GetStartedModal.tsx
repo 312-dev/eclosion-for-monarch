@@ -280,7 +280,7 @@ function DeploymentContent() {
       <p className="text-xs text-center text-(--monarch-text-muted)">
         Both options have the same features. Railway offers $5 in free credits to get started.
         <br />
-        Your login is encrypted and stored only on your server — we never see it.
+        Your login is encrypted and stored only on your server — no one else can access it.
       </p>
     </div>
   );
