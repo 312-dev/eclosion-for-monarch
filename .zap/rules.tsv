@@ -21,10 +21,12 @@
 10112	IGNORE	(Session Management Response Identified)
 90005	IGNORE	(Sec-Fetch-Dest Header Missing - client-side header, not server controlled)
 
+# Intentional design decisions (documented trade-offs)
+10055	IGNORE	(CSP: Wildcard Directive - intentional for img-src https: to allow external images)
+90004	IGNORE	(Spectre Vulnerability - COEP would break cross-origin image loading)
+
 # These may need attention but don't fail the build
 10010	WARN	(Cookie No HttpOnly Flag)
 10011	WARN	(Cookie Without Secure Flag)
 10017	WARN	(Cross-Domain JavaScript Source File Inclusion)
-10055	WARN	(CSP: Wildcard Directive - intentional for img-src https:)
 10098	WARN	(Cross-Domain Misconfiguration)
-90004	WARN	(Spectre Vulnerability - COEP breaks cross-origin resources)

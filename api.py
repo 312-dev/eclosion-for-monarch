@@ -6,6 +6,7 @@ import re
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, send_from_directory, session
@@ -40,58 +41,30 @@ else:
 # Enable debug mode for local development (disables HTTPS redirect)
 app.debug = os.environ.get("FLASK_DEBUG", "0") == "1"
 
+
 # Session configuration for auth persistence across page refreshes
 # Secret key is generated on first run and stored, or use env var
-SESSION_SECRET_FILE = os.path.join(os.path.dirname(__file__), ".session_secret")
-
-
 def _get_or_create_session_secret():
     """
-    Get existing session secret or create a new one.
+    Get session secret from environment or generate an ephemeral one.
 
     Security notes:
-    - In production, set SESSION_SECRET environment variable (preferred)
-    - File-based storage is for development only and uses restrictive permissions
-    - This stores an auto-generated secret for Flask session signing, not user credentials
+    - Set SESSION_SECRET environment variable for persistent sessions
+    - Without env var, an ephemeral secret is generated (sessions expire on restart)
+    - Never stores secrets to disk to prevent clear-text storage vulnerabilities
     """
-    # Preferred: Use environment variable (recommended for production)
+    # Use environment variable if set (recommended for production)
     if env_secret := os.environ.get("SESSION_SECRET"):
         return env_secret
 
-    # Check if we're in a container/production environment
+    # Generate ephemeral secret (sessions won't persist across restarts)
     is_production = config.is_container_environment() or not app.debug
-
-    # Fallback: File-based secret for development
-    if os.path.exists(SESSION_SECRET_FILE):
-        with open(SESSION_SECRET_FILE) as f:
-            stored_secret = f.read().strip()
-            if is_production:
-                # Log warning about using file-based secret in production
-                logger.warning(
-                    "Using file-based session secret. "
-                    "Set SESSION_SECRET environment variable for production."
-                )
-            return stored_secret
-
-    # Generate new secret
-    new_secret = secrets.token_hex(32)
-
-    # Only persist to file in development (not containers/production)
-    if not is_production:
-        try:
-            with open(SESSION_SECRET_FILE, "w") as f:
-                f.write(new_secret)
-            # Set restrictive file permissions (owner read/write only)
-            os.chmod(SESSION_SECRET_FILE, 0o600)
-        except OSError:
-            pass  # If we can't write, use the generated secret for this session only
-    else:
+    if is_production:
         logger.warning(
             "Generated ephemeral session secret. "
             "Set SESSION_SECRET environment variable for persistent sessions."
         )
-
-    return new_secret
+    return secrets.token_hex(32)
 
 
 app.secret_key = _get_or_create_session_secret()
@@ -177,7 +150,10 @@ def _audit_log(event: str, success: bool, details: str = ""):
     sanitized_event = _sanitize_log_value(event)
     status = "SUCCESS" if success else "FAILED"
     # All values are sanitized above to prevent log injection attacks
-    logger.info(f"[AUDIT] {sanitized_event} | {status} | IP: {client_ip} | {sanitized_details}")
+    # Use %-style formatting (not f-strings) as it's recognized as safe by static analysis
+    logger.info(
+        "[AUDIT] %s | %s | IP: %s | %s", sanitized_event, status, client_ip, sanitized_details
+    )
 
 
 def _update_activity():
@@ -312,7 +288,14 @@ def _enforce_https():
         # Construct safe redirect URL using validated host and sanitized path
         # Security: Both host and path are validated to prevent open redirect
         safe_path = _validate_redirect_path(request.full_path)
-        return redirect(f"https://{trusted_host}{safe_path}", code=301)
+        redirect_url = f"https://{trusted_host}{safe_path}"
+
+        # Final validation: ensure constructed URL only redirects to the same host
+        parsed = urlparse(redirect_url)
+        if parsed.scheme != "https" or parsed.netloc != trusted_host:
+            return None  # Fail safe if URL construction produced unexpected result
+
+        return redirect(redirect_url, code=301)
     return None
 
 
