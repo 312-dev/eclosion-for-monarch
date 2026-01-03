@@ -170,15 +170,13 @@ def _audit_log(event: str, success: bool, details: str = ""):
     # Use hardcoded event names only - never pass user input to event parameter
     # Valid events: LOGIN, LOGOUT, MFA_*, SESSION_*, RESET_*, INSTANCE_*, UNLOCK, PASSPHRASE_*
     status = "SUCCESS" if success else "FAILED"
-    # Sanitize all user-influenced values before logging
-    # _sanitize_log_value removes control characters (newlines, carriage returns, null bytes)
-    raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    safe_ip = _sanitize_log_value(raw_ip) if raw_ip else "unknown"
-    safe_details = _sanitize_log_value(details) if details else ""
-    # Format log entry with fixed structure to prevent log injection
-    # Using repr-style quoting for user-controlled values as defense in depth
-    log_entry = f"[AUDIT] {event} | {status} | IP: '{safe_ip}' | Details: '{safe_details}'"
-    logger.info(log_entry)
+    # Get client IP, sanitize and use repr() to prevent log injection
+    # repr() is recognized by static analyzers as a sanitization barrier
+    raw_ip = request.headers.get("X-Forwarded-For", request.remote_addr) or "unknown"
+    safe_ip = repr(_sanitize_log_value(raw_ip))
+    safe_details = repr(_sanitize_log_value(details)) if details else "''"
+    # Use %-style formatting with repr'd values for CodeQL compatibility
+    logger.info("[AUDIT] %s | %s | IP: %s | Details: %s", event, status, safe_ip, safe_details)
 
 
 def _update_activity():
