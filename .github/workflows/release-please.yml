@@ -11,6 +11,12 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).number || '' }}
+      pr_created: ${{ steps.release.outputs.pr != '' }}
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,15 +26,114 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-      # Auto-merge the release PR immediately
-      - name: Auto-merge release PR
-        if: ${{ steps.release.outputs.pr }}
-        run: gh pr merge ${{ fromJSON(steps.release.outputs.pr).number }} --squash --auto
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Release created
         if: ${{ steps.release.outputs.release_created }}
         run: |
           echo "Release created: ${{ steps.release.outputs.tag_name }}"
           echo "Version: ${{ steps.release.outputs.version }}"
+
+  generate-summary:
+    needs: release-please
+    if: needs.release-please.outputs.pr_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release-please--branches--main
+          fetch-depth: 0
+
+      - name: Extract changelog additions
+        id: extract
+        run: |
+          # Extract content between first ## [version] header and second ## [version] or end
+          # This captures all the new changelog entries
+          CHANGELOG_CONTENT=$(awk '
+            /^## \[.*\]/ {
+              if (found) exit
+              found = 1
+              next
+            }
+            found { print }
+          ' CHANGELOG.md)
+
+          # Use delimiter for multiline output
+          echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate AI summary
+        id: summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PROMPT="You are summarizing a software changelog for non-technical users. Given these changes, write a 1-2 sentence summary that explains what improved or what users can now do. Focus on user benefits, not technical details. Be concise and friendly. Do not use quotes around your response.
+
+          Changes:
+          ${{ steps.extract.outputs.changelog_content }}
+
+          Summary (1-2 sentences):"
+
+          RESPONSE=$(curl -s https://models.inference.ai.azure.com/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -d "{
+              \"model\": \"gpt-4o-mini\",
+              \"messages\": [{\"role\": \"user\", \"content\": $(echo "$PROMPT" | jq -Rs .)}],
+              \"max_tokens\": 150,
+              \"temperature\": 0.7
+            }")
+
+          SUMMARY=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+
+          if [ -z "$SUMMARY" ]; then
+            echo "Failed to generate summary"
+            echo "API Response: $RESPONSE"
+            echo "summary=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Escape for shell and output
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Insert summary into CHANGELOG
+        if: steps.summary.outputs.summary != ''
+        run: |
+          SUMMARY='${{ steps.summary.outputs.summary }}'
+
+          # Insert blockquote summary after first ## [version] line
+          awk -v summary="> $SUMMARY" '
+            /^## \[.*\] - [0-9]/ && !done {
+              print
+              print ""
+              print summary
+              done = 1
+              next
+            }
+            { print }
+          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+
+          echo "Inserted summary into CHANGELOG.md"
+
+      - name: Commit and push summary
+        if: steps.summary.outputs.summary != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: add AI-generated changelog summary"
+          git push
+
+  auto-merge:
+    needs: [release-please, generate-summary]
+    if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-merge release PR
+        run: gh pr merge ${{ needs.release-please.outputs.pr_number }} --squash --auto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}

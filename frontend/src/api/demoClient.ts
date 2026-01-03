@@ -693,6 +693,7 @@ export async function getChangelog(_limit?: number): Promise<ChangelogResponse> 
       {
         version: '1.0.0',
         date: '2024-01-15',
+        summary: 'First release! Try out Eclosion with a full demo experience right in your browser.',
         sections: {
           added: ['Demo mode for GitHub Pages', 'Landing page with deployment options'],
         },
