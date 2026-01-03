@@ -79,6 +79,7 @@ import {
   Hourglass,
   RotateCw,
   Gift,
+  HeartHandshake,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -163,6 +164,7 @@ export const SadFaceIcon = Frown;
 export const HourglassIcon = Hourglass;
 export const RotateIcon = RotateCw;
 export const GiftIcon = Gift;
+export const HeartHandshakeIcon = HeartHandshake;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -437,6 +439,7 @@ export const Icons = {
   Hourglass: HourglassIcon,
   Rotate: RotateIcon,
   Gift: GiftIcon,
+  HeartHandshake: HeartHandshakeIcon,
 
   // Brand
   GitHub: GitHubIcon,

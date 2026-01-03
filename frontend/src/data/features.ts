@@ -107,7 +107,7 @@ export const FEATURES: FeatureDefinition[] = [
     tagline: 'Privacy-first shared goals',
     description:
       'Collaborate on financial goals without merging accounts or sacrificing privacy. Each partner keeps their own Monarch account—share only what you want to share.',
-    icon: 'Link',
+    icon: 'HeartHandshake',
     status: 'coming-soon',
     benefits: [
       {
