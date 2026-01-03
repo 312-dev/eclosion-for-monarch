@@ -27,6 +27,7 @@ import { RecurringTab } from './components/tabs/RecurringTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
 import { RateLimitError, AuthRequiredError } from './api/client';
 import { ErrorPage } from './components/ui/ErrorPage';
+import { useIsMarketingSite } from './hooks/useIsMarketingSite';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
 
@@ -165,12 +166,7 @@ function GlobalDemoRoutes() {
  */
 function AppRouter() {
   const location = useLocation();
-
-  // Global demo mode - entire app is demo, serve at root paths
-  // This is used for the official demo site (Railway) and GitHub Pages
-  if (isGlobalDemoMode) {
-    return <GlobalDemoRoutes />;
-  }
+  const isMarketingSite = useIsMarketingSite();
 
   const isDemo = location.pathname.startsWith('/demo');
   const isLanding = location.pathname === '/';
@@ -180,21 +176,37 @@ function AppRouter() {
     location.pathname === '/docs' ||
     location.pathname.startsWith('/docs/');
 
-  // Landing page (marketing page)
-  if (isLanding) {
-    return <LandingPage />;
+  // Marketing site (GitHub Pages): Show landing page, docs, and demo at /demo/*
+  if (isMarketingSite) {
+    // Landing page
+    if (isLanding) {
+      return <LandingPage />;
+    }
+
+    // Public documentation pages
+    if (isPublicDocs) {
+      return (
+        <Routes>
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/features/:featureId" element={<FeatureDetailPage />} />
+          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/docs/*" element={<DocsPage />} />
+        </Routes>
+      );
+    }
+
+    // Demo at /demo/* paths
+    if (isDemo) {
+      return <DemoRoutes />;
+    }
+
+    // Catch-all: redirect to landing
+    return <Navigate to="/" replace />;
   }
 
-  // Public documentation pages (no auth required)
-  if (isPublicDocs) {
-    return (
-      <Routes>
-        <Route path="/features" element={<FeaturesPage />} />
-        <Route path="/features/:featureId" element={<FeatureDetailPage />} />
-        <Route path="/docs" element={<DocsPage />} />
-        <Route path="/docs/*" element={<DocsPage />} />
-      </Routes>
-    );
+  // Global demo mode (Railway demo site): Serve demo at root paths
+  if (isGlobalDemoMode) {
+    return <GlobalDemoRoutes />;
   }
 
   // Demo mode routes (path-based /demo/*)
