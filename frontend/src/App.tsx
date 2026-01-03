@@ -27,6 +27,7 @@ import { SettingsTab } from './components/tabs/SettingsTab';
 import { RateLimitError, AuthRequiredError } from './api/client';
 import { ErrorPage } from './components/ui/ErrorPage';
 import { useIsMarketingSite } from './hooks/useIsMarketingSite';
+import { BetaBanner } from './components/ui/BetaBanner';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
 
@@ -173,26 +174,39 @@ function AppRouter() {
     location.pathname === '/features' ||
     location.pathname.startsWith('/features/');
 
-  // Marketing site (GitHub Pages): Show landing page, docs, and demo at /demo/*
+  // Marketing site (Cloudflare Pages): Show landing page, docs, and demo at /demo/*
   if (isMarketingSite) {
     // Landing page
     if (isLanding) {
-      return <LandingPage />;
+      return (
+        <>
+          <BetaBanner />
+          <LandingPage />
+        </>
+      );
     }
 
-    // Features pages (docs are now at /developers via Docusaurus)
+    // Features pages (docs are now at /docs via Docusaurus)
     if (isFeatures) {
       return (
-        <Routes>
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/features/:featureId" element={<FeatureDetailPage />} />
-        </Routes>
+        <>
+          <BetaBanner />
+          <Routes>
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/features/:featureId" element={<FeatureDetailPage />} />
+          </Routes>
+        </>
       );
     }
 
     // Demo at /demo/* paths
     if (isDemo) {
-      return <DemoRoutes />;
+      return (
+        <>
+          <BetaBanner />
+          <DemoRoutes />
+        </>
+      );
     }
 
     // Catch-all: redirect to landing
