@@ -2,9 +2,9 @@
 Version compatibility checking for state files.
 """
 
-from enum import Enum
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 from core import config
 
@@ -41,9 +41,9 @@ def parse_version(version: str) -> tuple:
 
 
 def check_compatibility(
-    state_data: Dict[str, Any],
-    app_schema_version: Optional[str] = None,
-    app_channel: Optional[str] = None,
+    state_data: dict[str, Any],
+    app_schema_version: str | None = None,
+    app_channel: str | None = None,
 ) -> CompatibilityResult:
     """
     Check if current app can load the state file.
@@ -120,8 +120,8 @@ def check_compatibility(
             current_channel=app_channel,
             file_schema=file_schema,
             file_channel=file_channel,
-            message=f"State file is from beta channel. "
-                    f"Migration to stable channel is available.",
+            message="State file is from beta channel. "
+                    "Migration to stable channel is available.",
             can_auto_migrate=False,  # Requires explicit user action
             requires_backup_first=True,
             has_beta_data=True,
@@ -135,8 +135,8 @@ def check_compatibility(
             current_channel=app_channel,
             file_schema=file_schema,
             file_channel=file_channel,
-            message=f"State file is from stable channel. "
-                    f"Migration to beta channel is available.",
+            message="State file is from stable channel. "
+                    "Migration to beta channel is available.",
             can_auto_migrate=True,
             requires_backup_first=True,
             has_beta_data=has_beta_data,

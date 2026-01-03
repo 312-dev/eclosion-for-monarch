@@ -96,6 +96,7 @@ export function SettingsTab() {
         recurringSettingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, UI.SCROLL.AFTER_MOUNT);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Initial mount only, functions are stable
   }, []);
 
   // Get the appropriate client based on demo mode

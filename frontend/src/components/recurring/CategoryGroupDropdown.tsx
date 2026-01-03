@@ -106,6 +106,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
         setIsOpen(false);
         break;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpen/handleSelect are stable
   }, [isOpen, groups, focusedIndex]);
 
   // Focus the selected option when dropdown opens or focus changes

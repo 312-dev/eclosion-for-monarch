@@ -124,7 +124,6 @@ export function useAsync<T, Args extends unknown[] = []>(
  */
 export function useAsyncEffect<T>(
   asyncFn: () => Promise<T>,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _deps: React.DependencyList = [],
   options: UseAsyncOptions<T> = {}
 ): UseAsyncState<T> & { refetch: () => Promise<T | null> } {

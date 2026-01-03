@@ -5,7 +5,7 @@
  * Replaces duplicated MerchantIconWithFallback in RecurringList and RollupZone.
  */
 
-import { useState, type ComponentType } from 'react';
+import { useState, useMemo, type ComponentType } from 'react';
 import {
   TvIcon,
   MusicIcon,
@@ -121,8 +121,21 @@ export function MerchantIcon({
   const iconSize = ICON_SIZES[size];
   const showFallback = !logoUrl || hasError;
 
-  // Get category icon if we have an item name
-  const CategoryIcon = itemName ? getCategoryIcon(itemName) : null;
+  // Get category icon element if we have an item name - memoized to render outside main render
+  /* eslint-disable react-hooks/static-components -- getCategoryIcon returns stable component refs */
+  const categoryIconElement = useMemo(() => {
+    if (!itemName) return null;
+    const IconComponent = getCategoryIcon(itemName);
+    if (!IconComponent) return null;
+    return (
+      <IconComponent
+        size={iconSize}
+        color="var(--monarch-text-muted)"
+        strokeWidth={1.5}
+      />
+    );
+  }, [itemName, iconSize]);
+  /* eslint-enable react-hooks/static-components */
 
   return (
     <div className={`relative shrink-0 ${className}`}>
@@ -139,13 +152,7 @@ export function MerchantIcon({
           className={`${sizeClass} rounded-full flex items-center justify-center`}
           style={{ backgroundColor: 'var(--monarch-bg-page)' }}
         >
-          {CategoryIcon ? (
-            <CategoryIcon
-              size={iconSize}
-              color="var(--monarch-text-muted)"
-              strokeWidth={1.5}
-            />
-          ) : (
+          {categoryIconElement ?? (
             <svg
               width={iconSize}
               height={iconSize}

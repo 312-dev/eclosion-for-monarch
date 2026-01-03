@@ -2,7 +2,7 @@
  * UpdateModal - Shows deployment-specific instructions for updating to a new version
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Modal } from './ui/Modal';
 import { getUpdateInfo, getAvailableReleases, type UpdateInfo, type Release } from '../api/client';
 import { VersionBadge } from './VersionBadge';
@@ -21,6 +21,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading state for async fetch
       setLoading(true);
       Promise.all([getUpdateInfo(), getAvailableReleases()])
         .then(([info, releasesData]) => {
@@ -53,7 +54,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
     }
   };
 
-  const DeploymentIcon = () => {
+  const deploymentIcon = useMemo(() => {
     const iconClass = "w-5 h-5";
     // Railway gets a cloud icon
     if (updateInfo?.deployment_type === 'railway') {
@@ -71,7 +72,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
         <line x1="12" y1="22.08" x2="12" y2="12" />
       </svg>
     );
-  };
+  }, [updateInfo?.deployment_type]);
 
   return (
     <Modal
@@ -126,7 +127,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
                 }}
                 title={getDeploymentLabel()}
               >
-                <DeploymentIcon />
+                {deploymentIcon}
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ Eliminates duplicated emoji/name formatting and category creation patterns.
 
 import re
 from dataclasses import dataclass
-from typing import Optional, Protocol, Dict, Any
+from typing import Any, Protocol
 
 # Default emoji for new categories
 DEFAULT_EMOJI = "🔄"
@@ -74,7 +74,7 @@ def parse_category_name(full_name: str) -> CategoryNameParts:
 
 
 def get_emoji_from_state_or_default(
-    cat_state: Optional[Any],
+    cat_state: Any | None,
     default: str = DEFAULT_EMOJI
 ) -> str:
     """
@@ -126,7 +126,7 @@ async def ensure_category_exists(
     group_id: str,
     name: str,
     emoji: str = DEFAULT_EMOJI,
-    existing_category_id: Optional[str] = None,
+    existing_category_id: str | None = None,
     category_exists: bool = True,
 ) -> tuple[str, bool]:
     """
@@ -164,7 +164,7 @@ async def update_category_name_if_changed(
     new_base_name: str,
     emoji: str,
     sync_name: bool = True,
-) -> Optional[str]:
+) -> str | None:
     """
     Update category name if it has changed.
 
@@ -190,7 +190,7 @@ async def update_category_name_if_changed(
     return None
 
 
-def extract_emoji_from_category(category_info: Optional[Dict[str, Any]]) -> str:
+def extract_emoji_from_category(category_info: dict[str, Any] | None) -> str:
     """
     Extract emoji from category info dict.
 

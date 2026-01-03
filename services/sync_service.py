@@ -9,33 +9,41 @@ Orchestrates the full synchronization process:
 5. Track state and over-contributions
 """
 
-from datetime import datetime
-from typing import Dict, List, Optional, Any
-import sys
-import os
 import math
+import os
+import sys
+from datetime import datetime
+from typing import Any
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from .recurring_service import RecurringService, RecurringItem
-from .savings_calculator import SavingsCalculator, SavingsStatus
+import logging
+
+from core.automation_credentials import AutomationCredentialsManager
+from core.scheduler import SyncScheduler
+from monarch_utils import (
+    clear_all_caches,
+    clear_cache,
+    get_mm,
+    get_user_first_name,
+    get_user_profile,
+)
+from state.state_manager import RollupState, StateManager, TrackerState
+
 from .category_manager import CategoryManager
 from .credentials_service import CredentialsService
+from .recurring_service import RecurringItem, RecurringService
 from .rollup_service import RollupService
-from state.state_manager import StateManager, TrackerState, CategoryState, RollupState
-from monarch_utils import get_mm, clear_all_caches, clear_cache, get_user_profile, get_user_first_name
-from core.scheduler import SyncScheduler
-from core.automation_credentials import AutomationCredentialsManager
+from .savings_calculator import SavingsCalculator
 
-import logging
 logger = logging.getLogger(__name__)
 
 
 class SyncService:
     """Orchestrates the full sync process."""
 
-    def __init__(self, state_manager: Optional[StateManager] = None):
+    def __init__(self, state_manager: StateManager | None = None):
         self.state_manager = state_manager or StateManager()
         self.credentials_service = CredentialsService()
         self.automation_creds = AutomationCredentialsManager()
@@ -65,15 +73,15 @@ class SyncService:
         """Validate that session credentials are still valid with the Monarch API."""
         return await self.credentials_service.validate_auth()
 
-    async def login(self, email: str, password: str, mfa_secret: str = "") -> Dict[str, Any]:
+    async def login(self, email: str, password: str, mfa_secret: str = "") -> dict[str, Any]:
         """Validate credentials by attempting to login to Monarch."""
         return await self.credentials_service.login(email, password, mfa_secret)
 
-    def set_passphrase(self, passphrase: str) -> Dict[str, Any]:
+    def set_passphrase(self, passphrase: str) -> dict[str, Any]:
         """Set the encryption passphrase and save credentials."""
         return self.credentials_service.set_passphrase(passphrase)
 
-    def unlock(self, passphrase: str) -> Dict[str, Any]:
+    def unlock(self, passphrase: str) -> dict[str, Any]:
         """Unlock stored credentials with the passphrase."""
         return self.credentials_service.unlock(passphrase)
 
@@ -85,13 +93,13 @@ class SyncService:
         """Lock the session without clearing stored credentials."""
         self.credentials_service.lock()
 
-    async def unlock_and_validate(self, passphrase: str) -> Dict[str, Any]:
+    async def unlock_and_validate(self, passphrase: str) -> dict[str, Any]:
         """Unlock stored credentials AND validate them against Monarch API."""
         return await self.credentials_service.unlock_and_validate(passphrase)
 
     async def update_credentials(
         self, email: str, password: str, mfa_secret: str, passphrase: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Validate new Monarch credentials and save them encrypted."""
         return await self.credentials_service.update_credentials(
             email, password, mfa_secret, passphrase
@@ -101,11 +109,11 @@ class SyncService:
         """Clear only credentials, preserving preferences."""
         self.credentials_service.reset_credentials_only()
 
-    async def get_category_groups(self) -> List[Dict[str, str]]:
+    async def get_category_groups(self) -> list[dict[str, str]]:
         """Get available category groups for configuration."""
         return await self.category_manager.get_category_groups()
 
-    async def configure(self, group_id: str, group_name: str) -> Dict[str, Any]:
+    async def configure(self, group_id: str, group_name: str) -> dict[str, Any]:
         """Configure the tracker with a target category group."""
         self.state_manager.update_config(group_id, group_name)
         return {
@@ -115,7 +123,7 @@ class SyncService:
             "group_name": group_name,
         }
 
-    async def get_config(self) -> Dict[str, Any]:
+    async def get_config(self) -> dict[str, Any]:
         """Get current configuration."""
         state = self.state_manager.load()
         return {
@@ -132,9 +140,9 @@ class SyncService:
         self,
         recurring_id: str,
         enabled: bool,
-        item_data: Optional[Dict[str, Any]] = None,
-        initial_budget: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        item_data: dict[str, Any] | None = None,
+        initial_budget: float | None = None,
+    ) -> dict[str, Any]:
         """
         Enable or disable tracking for a recurring item.
 
@@ -225,28 +233,28 @@ class SyncService:
         self.state_manager.toggle_item_enabled(recurring_id, enabled)
         return {"success": True, "enabled": enabled}
 
-    def set_auto_sync(self, auto_sync: bool) -> Dict[str, Any]:
+    def set_auto_sync(self, auto_sync: bool) -> dict[str, Any]:
         """Set auto-sync setting for new items."""
         self.state_manager.set_auto_sync_new(auto_sync)
         return {"success": True, "auto_sync_new": auto_sync}
 
-    def set_auto_track_threshold(self, threshold: float | None) -> Dict[str, Any]:
+    def set_auto_track_threshold(self, threshold: float | None) -> dict[str, Any]:
         """Set the maximum monthly amount for auto-tracking."""
         self.state_manager.set_auto_track_threshold(threshold)
         return {"success": True, "auto_track_threshold": threshold}
 
-    def set_auto_update_targets(self, auto_update: bool) -> Dict[str, Any]:
+    def set_auto_update_targets(self, auto_update: bool) -> dict[str, Any]:
         """Set whether to auto-update category targets when recurring amounts change."""
         self.state_manager.set_auto_update_targets(auto_update)
         return {"success": True, "auto_update_targets": auto_update}
 
-    async def get_ready_to_assign(self) -> Dict[str, Any]:
+    async def get_ready_to_assign(self) -> dict[str, Any]:
         """Get ready to assign (unbudgeted) amount."""
         return await self.category_manager.get_ready_to_assign()
 
     async def change_category_group(
         self, recurring_id: str, new_group_id: str, new_group_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Move a subscription's linked category to a different category group.
 
@@ -277,7 +285,7 @@ class SyncService:
             "new_group_name": new_group_name,
         }
 
-    async def recreate_category(self, recurring_id: str) -> Dict[str, Any]:
+    async def recreate_category(self, recurring_id: str) -> dict[str, Any]:
         """
         Recreate a missing category for a recurring item.
 
@@ -339,7 +347,7 @@ class SyncService:
             "name": item.category_name,
         }
 
-    async def get_unmapped_categories(self) -> List[Dict[str, Any]]:
+    async def get_unmapped_categories(self) -> list[dict[str, Any]]:
         """
         Get all categories that are not mapped to any recurring item.
 
@@ -364,7 +372,7 @@ class SyncService:
         recurring_id: str,
         category_id: str,
         sync_name: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Link a recurring item to an existing category.
 
@@ -480,7 +488,7 @@ class SyncService:
             "enabled": True,
         }
 
-    def clear_category_cache(self) -> Dict[str, Any]:
+    def clear_category_cache(self) -> dict[str, Any]:
         """
         Clear the category cache to force a fresh fetch from Monarch.
 
@@ -491,7 +499,7 @@ class SyncService:
         clear_cache("budget")
         return {"success": True, "message": "Category cache cleared"}
 
-    async def allocate_funds(self, recurring_id: str, amount: float) -> Dict[str, Any]:
+    async def allocate_funds(self, recurring_id: str, amount: float) -> dict[str, Any]:
         """
         Allocate funds to a recurring item's category.
 
@@ -517,23 +525,23 @@ class SyncService:
 
     # Rollup methods - delegated to RollupService
 
-    async def toggle_rollup(self, enabled: bool) -> Dict[str, Any]:
+    async def toggle_rollup(self, enabled: bool) -> dict[str, Any]:
         """Enable or disable the rollup feature."""
         return await self.rollup_service.toggle_rollup(enabled)
 
-    async def add_to_rollup(self, recurring_id: str) -> Dict[str, Any]:
+    async def add_to_rollup(self, recurring_id: str) -> dict[str, Any]:
         """Add a subscription to the rollup."""
         return await self.rollup_service.add_to_rollup(recurring_id)
 
-    async def remove_from_rollup(self, recurring_id: str) -> Dict[str, Any]:
+    async def remove_from_rollup(self, recurring_id: str) -> dict[str, Any]:
         """Remove a subscription from the rollup."""
         return await self.rollup_service.remove_from_rollup(recurring_id)
 
-    async def set_rollup_budget(self, amount: float) -> Dict[str, Any]:
+    async def set_rollup_budget(self, amount: float) -> dict[str, Any]:
         """Set the user-defined rollup budget amount."""
         return await self.rollup_service.set_rollup_budget(amount)
 
-    async def update_category_emoji(self, recurring_id: str, emoji: str) -> Dict[str, Any]:
+    async def update_category_emoji(self, recurring_id: str, emoji: str) -> dict[str, Any]:
         """
         Update the emoji/icon for a category in Monarch.
         Sets the emoji via the icon field, not as part of the name.
@@ -557,15 +565,15 @@ class SyncService:
             "emoji": emoji,
         }
 
-    async def update_rollup_emoji(self, emoji: str) -> Dict[str, Any]:
+    async def update_rollup_emoji(self, emoji: str) -> dict[str, Any]:
         """Update the emoji/icon for the rollup category."""
         return await self.rollup_service.update_rollup_emoji(emoji)
 
-    async def update_rollup_category_name(self, name: str) -> Dict[str, Any]:
+    async def update_rollup_category_name(self, name: str) -> dict[str, Any]:
         """Update the name for the rollup category."""
         return await self.rollup_service.update_rollup_category_name(name)
 
-    async def update_category_name(self, recurring_id: str, name: str) -> Dict[str, Any]:
+    async def update_category_name(self, recurring_id: str, name: str) -> dict[str, Any]:
         """
         Update the name for a category and rename it in Monarch.
         Does NOT include emoji in the name - emoji is set separately via the icon field.
@@ -587,11 +595,11 @@ class SyncService:
             "category_name": name,
         }
 
-    async def get_rollup_data(self) -> Dict[str, Any]:
+    async def get_rollup_data(self) -> dict[str, Any]:
         """Get rollup state with computed data."""
         return await self.rollup_service.get_rollup_data()
 
-    async def full_sync(self) -> Dict[str, Any]:
+    async def full_sync(self) -> dict[str, Any]:
         """
         Run full synchronization.
 
@@ -734,10 +742,10 @@ class SyncService:
         self,
         item: RecurringItem,
         state: TrackerState,
-        all_balances: Dict[str, float],
-        all_planned_budgets: Dict[str, int],
-        all_category_info: Dict[str, Dict[str, str]],
-    ) -> Dict[str, Any]:
+        all_balances: dict[str, float],
+        all_planned_budgets: dict[str, int],
+        all_category_info: dict[str, dict[str, str]],
+    ) -> dict[str, Any]:
         """Process a single recurring item."""
         created = False
         cat_state = state.categories.get(item.id)
@@ -833,7 +841,7 @@ class SyncService:
             "status": calc.status.value,
         }
 
-    async def get_deletable_categories(self) -> Dict[str, Any]:
+    async def get_deletable_categories(self) -> dict[str, Any]:
         """
         Get categories that can be deleted (created by this tool, not linked).
 
@@ -881,7 +889,7 @@ class SyncService:
             "count": len(deletable),
         }
 
-    async def delete_all_categories(self) -> Dict[str, Any]:
+    async def delete_all_categories(self) -> dict[str, Any]:
         """
         Delete all categories created by this tool and reset state.
 
@@ -950,7 +958,7 @@ class SyncService:
 
         return results
 
-    async def reset_dedicated_categories(self) -> Dict[str, Any]:
+    async def reset_dedicated_categories(self) -> dict[str, Any]:
         """
         Reset the dedicated categories feature.
 
@@ -1002,7 +1010,7 @@ class SyncService:
 
         return results
 
-    async def reset_rollup(self) -> Dict[str, Any]:
+    async def reset_rollup(self) -> dict[str, Any]:
         """
         Reset the rollup feature.
 
@@ -1041,7 +1049,7 @@ class SyncService:
 
         return results
 
-    async def reset_recurring_tool(self) -> Dict[str, Any]:
+    async def reset_recurring_tool(self) -> dict[str, Any]:
         """
         Full reset of the Recurring tool.
 
@@ -1071,7 +1079,7 @@ class SyncService:
                 for fail in dedicated_result.get("failed", []):
                     results["errors"].append(f"Failed to delete {fail.get('name')}: {fail.get('error')}")
         except Exception as e:
-            results["errors"].append(f"Dedicated reset error: {str(e)}")
+            results["errors"].append(f"Dedicated reset error: {e!s}")
 
         # Step 2: Reset rollup
         try:
@@ -1081,19 +1089,19 @@ class SyncService:
             if rollup_result.get("error"):
                 results["errors"].append(f"Rollup reset error: {rollup_result.get('error')}")
         except Exception as e:
-            results["errors"].append(f"Rollup reset error: {str(e)}")
+            results["errors"].append(f"Rollup reset error: {e!s}")
 
         # Step 3: Reset the setup wizard (clear target_group_id)
         try:
             self.state_manager.reset_config()
         except Exception as e:
-            results["errors"].append(f"Config reset error: {str(e)}")
+            results["errors"].append(f"Config reset error: {e!s}")
 
         results["success"] = len(results["errors"]) == 0
 
         return results
 
-    async def get_dashboard_data(self) -> Dict[str, Any]:
+    async def get_dashboard_data(self) -> dict[str, Any]:
         """Get all data needed for the frontend dashboard."""
         state = self.state_manager.load()
 
@@ -1176,8 +1184,6 @@ class SyncService:
         all_category_info = await self.category_manager.get_all_category_info()
 
         # Debug logging for balance retrieval
-        import logging
-        logger = logging.getLogger(__name__)
         logger.info(f"[Dashboard] Fetched {len(all_balances)} category balances")
 
         items_data = []
@@ -1384,7 +1390,7 @@ class SyncService:
         interval_minutes: int,
         passphrase: str,
         consent_acknowledged: bool,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Enable automatic background sync.
 
@@ -1439,7 +1445,7 @@ class SyncService:
             "next_run": scheduler_status.get("next_run"),
         }
 
-    def disable_auto_sync(self) -> Dict[str, Any]:
+    def disable_auto_sync(self) -> dict[str, Any]:
         """
         Disable automatic background sync.
 
@@ -1453,7 +1459,7 @@ class SyncService:
 
         return {"success": True}
 
-    def get_auto_sync_status(self) -> Dict[str, Any]:
+    def get_auto_sync_status(self) -> dict[str, Any]:
         """
         Get current auto-sync status and configuration.
 

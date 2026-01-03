@@ -190,7 +190,7 @@ export function SpinnerIcon({
 /** Filled check icon (green background with white check) */
 export function CheckFilledIcon({
   size = 24,
-  color = 'currentColor',
+  color: _color = 'currentColor',
   ...rest
 }: IconProps) {
   return (
@@ -216,7 +216,7 @@ export function CheckFilledIcon({
 /** Filled warning icon (yellow/orange background) */
 export function WarningFilledIcon({
   size = 24,
-  color = 'currentColor',
+  color: _color = 'currentColor',
   ...rest
 }: IconProps) {
   return (
@@ -244,7 +244,7 @@ export function WarningFilledIcon({
 /** Filled alert circle icon (red background) */
 export function AlertCircleFilledIcon({
   size = 24,
-  color = 'currentColor',
+  color: _color = 'currentColor',
   ...rest
 }: IconProps) {
   return (

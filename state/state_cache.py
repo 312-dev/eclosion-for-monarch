@@ -16,9 +16,8 @@ Usage:
         # State is auto-saved when context exits
 """
 
-from contextlib import contextmanager
-from typing import Optional
 import threading
+from contextlib import contextmanager
 
 from state.state_manager import StateManager, TrackerState
 
@@ -34,17 +33,17 @@ class RequestScopedStateCache:
     - Exiting scope saves if dirty
     """
 
-    def __init__(self, state_manager: Optional[StateManager] = None):
+    def __init__(self, state_manager: StateManager | None = None):
         self._state_manager = state_manager or StateManager()
         # Thread-local storage for request-scoped cache
         self._local = threading.local()
 
     @property
-    def _cache(self) -> Optional[TrackerState]:
+    def _cache(self) -> TrackerState | None:
         return getattr(self._local, 'cache', None)
 
     @_cache.setter
-    def _cache(self, value: Optional[TrackerState]):
+    def _cache(self, value: TrackerState | None):
         self._local.cache = value
 
     @property

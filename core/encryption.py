@@ -12,15 +12,12 @@ Security Model:
 """
 
 import base64
-import os
 import re
 import secrets
-from typing import Optional, Tuple
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
 
 # PBKDF2 parameters - high iteration count for security
 PBKDF2_ITERATIONS = 480000  # OWASP recommendation for 2023+
@@ -32,7 +29,7 @@ class PassphraseValidationError(Exception):
     pass
 
 
-def validate_passphrase(passphrase: str) -> Tuple[bool, list]:
+def validate_passphrase(passphrase: str) -> tuple[bool, list]:
     """
     Validate passphrase meets complexity requirements.
 
@@ -104,7 +101,7 @@ class CredentialEncryption:
         decrypted = enc.decrypt(encrypted)
     """
 
-    def __init__(self, passphrase: str, salt: Optional[bytes] = None):
+    def __init__(self, passphrase: str, salt: bytes | None = None):
         """
         Initialize encryption with passphrase.
 

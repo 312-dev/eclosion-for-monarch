@@ -11,12 +11,12 @@ to prevent confusing fluctuations as category balances change throughout the mon
 import math
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Dict, Protocol
+from typing import Protocol
 
 
 class StateManagerProtocol(Protocol):
     """Protocol for state manager dependency injection."""
-    def get_frozen_target(self, recurring_id: str) -> Optional[Dict]: ...
+    def get_frozen_target(self, recurring_id: str) -> dict | None: ...
     def set_frozen_target(
         self,
         recurring_id: str,
@@ -47,7 +47,7 @@ def calculate_frozen_target(
     current_balance: float,
     ideal_monthly_rate: float,
     state_manager: StateManagerProtocol,
-    current_month: Optional[str] = None,
+    current_month: str | None = None,
 ) -> FrozenTargetResult:
     """
     Calculate or retrieve the frozen monthly target for a recurring item.

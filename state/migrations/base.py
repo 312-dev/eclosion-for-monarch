@@ -3,8 +3,8 @@ Base classes for schema migrations.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple, Optional
 from enum import Enum
+from typing import Any
 
 
 class MigrationDirection(Enum):
@@ -27,11 +27,11 @@ class Migration(ABC):
     to_version: str
 
     # Optional channel constraints (None = any channel)
-    from_channel: Optional[str] = None
-    to_channel: Optional[str] = None
+    from_channel: str | None = None
+    to_channel: str | None = None
 
     @abstractmethod
-    def forward(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def forward(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Migrate data forward to newer version.
 
@@ -44,7 +44,7 @@ class Migration(ABC):
         pass
 
     @abstractmethod
-    def backward(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def backward(self, data: dict[str, Any]) -> dict[str, Any]:
         """
         Migrate data backward to older version.
 
@@ -57,7 +57,7 @@ class Migration(ABC):
         pass
 
     @abstractmethod
-    def can_migrate_backward(self, data: Dict[str, Any]) -> Tuple[bool, str]:
+    def can_migrate_backward(self, data: dict[str, Any]) -> tuple[bool, str]:
         """
         Check if backward migration is safe.
 

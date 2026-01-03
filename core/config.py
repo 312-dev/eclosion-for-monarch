@@ -5,8 +5,8 @@ All hardcoded configuration values should be defined here to ensure
 consistency across the application and easy modification.
 """
 import os
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 
 # Determine if running in Docker container
 _IN_CONTAINER = os.path.exists("/.dockerenv") or os.environ.get("DOCKER_CONTAINER") == "1"

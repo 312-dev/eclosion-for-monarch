@@ -294,6 +294,7 @@ export function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {
   // Reset acknowledgment when modal opens
   useEffect(() => {
     if (isOpen && !termsAccepted) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset form state on modal open
       setAcknowledged(false);
     }
   }, [isOpen, termsAccepted]);

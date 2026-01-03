@@ -8,12 +8,13 @@ Provides decorators for Flask API endpoints including:
 - Rate limit handling
 """
 
-from functools import wraps
-from flask import jsonify
-import logging
 import asyncio
 import inspect
-from typing import Callable, Any, Optional
+import logging
+from collections.abc import Callable
+from functools import wraps
+
+from flask import jsonify
 
 from .error_detection import is_mfa_error, is_rate_limit_error
 
@@ -37,7 +38,7 @@ def async_flask(f: Callable) -> Callable:
 def api_handler(
     handle_mfa: bool = True,
     require_auth: bool = True,
-    success_wrapper: Optional[str] = None,
+    success_wrapper: str | None = None,
 ) -> Callable:
     """
     Unified API error handler decorator.

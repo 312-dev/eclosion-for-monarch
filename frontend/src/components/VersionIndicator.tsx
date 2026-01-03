@@ -24,6 +24,7 @@ export function VersionIndicator() {
   useEffect(() => {
     if (changelogStatus?.has_unread && !hasShownTooltipRef.current) {
       hasShownTooltipRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- One-time tooltip display
       setShowTooltip(true);
 
       tooltipTimerRef.current = setTimeout(() => {

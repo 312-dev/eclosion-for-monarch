@@ -19,5 +19,20 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Allow underscore-prefixed variables to indicate intentionally unused
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      // Disable Fast Refresh warnings - dev-only, doesn't affect production
+      'react-refresh/only-export-components': 'off',
+      // Disable undefined jsx-a11y rules (plugin not installed)
+      'jsx-a11y/no-static-element-interactions': 'off',
+      'jsx-a11y/click-events-have-key-events': 'off',
+    },
   },
 ])

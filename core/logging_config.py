@@ -5,8 +5,8 @@ Provides Docker-aware logging setup that works in both local
 development and containerized environments.
 """
 
-import os
 import logging
+import os
 from pathlib import Path
 
 
@@ -53,7 +53,7 @@ def configure_logging(
     return logging.getLogger(__name__)
 
 
-def get_logger(name: str = None) -> logging.Logger:
+def get_logger(name: str | None = None) -> logging.Logger:
     """
     Get a logger instance.
 

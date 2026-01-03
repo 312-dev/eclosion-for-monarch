@@ -6,7 +6,7 @@ across the codebase. Eliminates duplication in sync_service.py,
 decorators.py, and monarch_utils.py.
 """
 
-from typing import Tuple, Optional
+
 from .exceptions import MFARequiredError, RateLimitError
 
 
@@ -63,7 +63,7 @@ def is_mfa_error(error: Exception) -> bool:
 def classify_auth_error(
     error: Exception,
     has_mfa_secret: bool = False
-) -> Tuple[str, str, Optional[str]]:
+) -> tuple[str, str, str | None]:
     """
     Classify an authentication error and return appropriate error type,
     message, and optional code.

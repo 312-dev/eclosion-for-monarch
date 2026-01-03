@@ -178,7 +178,6 @@ export function Modal({
   const modalContent = (
     // Backdrop overlay - click to close is handled via onClick
     // Keyboard closing is handled via Escape key in handleKeyDown
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
     <div
       className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}

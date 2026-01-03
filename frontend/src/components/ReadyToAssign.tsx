@@ -196,6 +196,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             // eslint-disable-next-line react-hooks/refs -- isOpen is state, not a ref
             aria-controls={infoDropdown.isOpen ? popoverId : undefined}
             className="text-xs flex items-center gap-1 mt-2 mx-auto text-monarch-success underline decoration-dotted underline-offset-2"
+            // eslint-disable-next-line react-hooks/refs -- open is a callback, not a ref
             onClick={infoDropdown.open}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

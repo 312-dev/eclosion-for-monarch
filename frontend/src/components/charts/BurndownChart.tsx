@@ -37,7 +37,7 @@ function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTo
         setChartRect(chartContainer.getBoundingClientRect());
       }
     }
-  });
+  }, [chartRect]);
 
   const firstPayload = payload?.[0];
   if (!active || !firstPayload || !coordinate) return null;

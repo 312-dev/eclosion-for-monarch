@@ -128,6 +128,7 @@ export function ActionsDropdown({
   return (
     <div className="relative">
       <Tooltip content="Actions">
+        {/* eslint-disable react-hooks/refs -- dropdown hook returns state/callbacks, not direct ref access */}
         <button
           id={triggerId}
           ref={dropdown.triggerRef}
@@ -145,8 +146,10 @@ export function ActionsDropdown({
             <MoreVerticalIcon size={16} color="var(--monarch-text-muted)" aria-hidden="true" />
           )}
         </button>
+        {/* eslint-enable react-hooks/refs */}
       </Tooltip>
 
+      {/* eslint-disable react-hooks/refs -- dropdown hook returns state/callbacks, not direct ref access */}
       {dropdown.isOpen && (
         <div
           id={menuId}
