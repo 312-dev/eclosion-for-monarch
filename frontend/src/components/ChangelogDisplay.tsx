@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useChangelogQuery, useDeploymentInfoQuery } from '../api/queries';
 import type { ChangelogEntry, ChangelogSection } from '../types';
-import { InfoIcon, CheckCircleIcon, CopyIcon } from './icons';
+import { InfoIcon, CheckCircleIcon, CopyIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 
 export interface ChangelogDisplayProps {
   version: string | undefined; // Show specific version, or all if undefined
@@ -158,7 +158,13 @@ function CopyableCommand({ command, copied, onCopy }: { command: string; copied:
 }
 
 function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const sections = Object.entries(entry.sections) as [keyof ChangelogSection, string[]][];
+  const hasSummary = !!entry.summary;
+  const hasDetails = sections.some(([, items]) => items.length > 0);
+
+  // Show details by default if no summary exists
+  const showDetails = !hasSummary || isExpanded;
 
   return (
     <div className="space-y-3">
@@ -177,7 +183,38 @@ function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
         </span>
       </div>
 
-      {sections.map(([section, items]) => (
+      {hasSummary && (
+        <p
+          className="text-sm"
+          style={{ color: 'var(--monarch-text)' }}
+        >
+          {entry.summary}
+        </p>
+      )}
+
+      {hasSummary && hasDetails && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1 text-sm font-medium transition-opacity hover:opacity-80"
+          style={{ color: 'var(--monarch-orange)' }}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? 'Hide technical details' : 'Show technical details'}
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUpIcon size={16} />
+              Hide technical details
+            </>
+          ) : (
+            <>
+              <ChevronDownIcon size={16} />
+              Show technical details
+            </>
+          )}
+        </button>
+      )}
+
+      {showDetails && sections.map(([section, items]) => (
         items.length > 0 && (
           <div key={section} className="space-y-1">
             <div
