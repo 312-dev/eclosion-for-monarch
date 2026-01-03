@@ -22,7 +22,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactour/tour": "^3.8.0",
-    "@tanstack/react-query": "^5.90.15",
+    "@tanstack/react-query": "^5.90.16",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
