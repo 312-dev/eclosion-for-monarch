@@ -16,6 +16,7 @@ on:
       - "requirements*.txt"
       - "Dockerfile"
       - "docker-compose.yml"
+      - ".github/workflows/**"
   push:
     branches: [main]
   schedule:
