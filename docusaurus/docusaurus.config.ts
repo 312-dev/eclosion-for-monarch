@@ -3,8 +3,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 import { themes as prismThemes } from 'prism-react-renderer';
 
 const config: Config = {
-  title: 'Eclosion User Guide',
-  tagline: 'Learn how to use Eclosion for Monarch Money',
+  title: 'Eclosion',
+  tagline: 'An evolving toolkit for Monarch Money',
   favicon: 'img/favicon.ico',
 
   url: 'https://eclosion.app',
@@ -103,20 +103,9 @@ const config: Config = {
           dropdownActiveClassDisabled: true,
         },
         {
-          href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
-          label: 'Self-Hosting',
-          position: 'right',
-        },
-        {
-          // Use href (not to) for routes outside Docusaurus - triggers full page navigation
-          href: '/',
-          label: 'Home',
-          position: 'right',
-        },
-        {
           // Use href (not to) for routes outside Docusaurus - triggers full page navigation
           href: '/demo',
-          label: 'Demo',
+          label: 'Try Demo',
           position: 'right',
         },
         {
@@ -130,7 +119,7 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'User Guide',
+          title: 'Docs',
           items: [
             {
               label: 'Getting Started',
@@ -140,14 +129,22 @@ const config: Config = {
               label: 'Recurring Expenses',
               to: '/docs/recurring/overview',
             },
+            {
+              label: 'Self-Hosting Guide',
+              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
+            },
           ],
         },
         {
-          title: 'Self-Hosting',
+          title: 'Product',
           items: [
             {
-              label: 'GitHub Wiki',
-              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
+              label: 'Home',
+              href: '/',
+            },
+            {
+              label: 'Try Demo',
+              href: '/demo',
             },
           ],
         },
@@ -159,18 +156,13 @@ const config: Config = {
               href: 'https://www.reddit.com/r/Eclosion/',
             },
             {
-              label: 'GitHub Discussions',
+              label: 'Discussions',
               href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/discussions',
             },
             {
-              label: 'Issues',
+              label: 'Report an Issue',
               href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/issues',
             },
-          ],
-        },
-        {
-          title: 'More',
-          items: [
             {
               label: 'GitHub',
               href: 'https://github.com/GraysonCAdams/eclosion-for-monarch',

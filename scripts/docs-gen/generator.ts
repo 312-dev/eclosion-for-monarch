@@ -27,7 +27,10 @@ function buildPrompt(
 ): string {
   const contentJson = JSON.stringify(contents, null, 2);
 
-  return `You are writing user documentation for Eclosion, a self-hosted toolkit that extends Monarch Money with recurring expense tracking and smart budgeting features.
+  return `You are writing user documentation for Eclosion, a modular self-hosted toolkit that extends Monarch Money with additional features.
+
+## Important Framing
+Eclosion is NOT a single-purpose app. It is a growing toolkit that adds multiple features to Monarch Money. The Recurring Expenses feature is just one module among several (with more planned). Never frame Eclosion as "a recurring expense tracker" or center the entire app around any single feature. Each doc page should present its feature as one part of a larger toolkit.
 
 ## Task
 Generate a comprehensive user guide in MDX format based on the extracted UI help content below.
@@ -45,8 +48,10 @@ ${contentJson}
 ## Writing Style Guide
 
 **Tone & Voice:**
-- Casual and conversational, like explaining to a friend
-- Assume the reader uses Monarch Money but isn't tech-savvy
+- Write like you're chatting with a friend who uses Monarch Money
+- Be warm and conversational, not stiff or corporate
+- Use contractions naturally (you'll, it's, don't)
+- Assume the reader isn't tech-savvy but don't be condescending
 - Be direct and confident, avoid hedging language
 
 **Structure:**
@@ -64,14 +69,24 @@ ${contentJson}
 - Never use em-dashes (—)
 - No emojis
 
-**Admonitions:**
-- Use :::tip, :::note, :::warning sparingly for important callouts
-- Don't overdo visual flair
+**CRITICAL: Avoid Repetition**
+- Never repeat the same information twice in different words
+- Each paragraph should introduce NEW information, not rephrase the previous one
+- If you explain something in one section, don't explain it again in another
+- Vary your sentence structures and openings
+
+**Admonitions (:::tip, :::note, :::warning):**
+- Use sparingly for genuinely important callouts
+- CRITICAL: Admonitions must contain STANDALONE information that is NOT already stated in the surrounding text
+- Bad: Explaining something in a paragraph, then adding a :::tip that says the same thing differently
+- Good: A :::tip that adds a genuinely useful shortcut, gotcha, or insight not mentioned elsewhere
+- If you can't think of something new to say in an admonition, don't use one
 
 **Avoid AI Tell-Tales:**
 - No overly formal phrasing ("It is important to note that...")
 - No excessive hedging ("You may want to consider...")
 - No filler phrases ("In order to...", "As you can see...")
+- No repetitive summary sentences at the end of sections
 - Write naturally, as a human would
 
 ## Requirements
@@ -80,6 +95,7 @@ ${contentJson}
 3. Include step-by-step instructions where applicable
 4. Reference specific UI elements when explaining how to use features
 5. Do NOT invent features not present in the source content
+6. Do NOT repeat yourself - every sentence should add new information
 
 ## Format
 Generate valid MDX with:

@@ -8,6 +8,9 @@
  *   generate       - Generate documentation for changed content
  *   update-manifest - Update manifest with current hashes
  *   all            - Run all steps (extract, diff, generate, update-manifest)
+ *
+ * Flags:
+ *   --force        - Force regeneration of all docs, ignoring manifest
  */
 
 import { extractAllContent, generateTopicHash } from './extractor.js';
