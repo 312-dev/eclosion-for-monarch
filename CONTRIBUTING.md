@@ -6,8 +6,8 @@ Thank you for your interest in contributing to Eclosion! This guide will help yo
 
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Making Changes](#making-changes)
+- [Branching Strategy](#branching-strategy)
+- [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
 - [Release Process](#release-process)
 - [Code Style](#code-style)
@@ -68,7 +68,28 @@ Copy `.env.example` to `.env` and configure:
 - `FLASK_DEBUG=1` - Enable debug mode for development
 - See `.env.example` for all available options
 
-## Making Changes
+## Branching Strategy
+
+This project uses a **Git Flow** workflow where all changes flow through `develop` before reaching `main`.
+
+### Branch Types
+
+| Branch | Purpose | Deploys to |
+|--------|---------|------------|
+| `main` | Production-ready code | [eclosion.app](https://eclosion.app) |
+| `develop` | Integration branch for features | [beta.eclosion.app](https://beta.eclosion.app) (via pre-release) |
+| `feature/*` | New features, enhancements | — |
+| `update/*` | Fixes, refactors, docs, chores | — |
+
+### Branch Flow
+
+```
+feature/your-branch ──┐
+                      ├──► develop ──► (beta release) ──► beta.eclosion.app
+update/your-branch ───┘        │
+                               ▼
+                             main ──► (release) ──► eclosion.app
+```
 
 ### Branch Naming
 
@@ -79,37 +100,77 @@ Branch names **must** use one of these prefixes (enforced by CI):
 | `feature/` | New features, enhancements | `feature/add-dark-mode` |
 | `update/` | Fixes, refactors, docs, chores | `update/fix-login-bug` |
 
-PRs with other branch names will be blocked.
+PRs with other branch name prefixes will be blocked.
 
-### Commit Messages
+## Commit Guidelines
 
-Write clear, concise commit messages:
-- Use present tense ("Add feature" not "Added feature")
-- Use imperative mood ("Fix bug" not "Fixes bug")
-- Reference issues when applicable ("Fix #123")
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning and changelog generation.
 
-Example:
+### Commit Message Format
+
 ```
-Add category emoji customization
+<type>[optional scope]: <description>
 
-- Add emoji picker component to category settings
-- Store emoji preference in state manager
-- Update category display across dashboard
+[optional body]
 
-Closes #45
+[optional footer(s)]
 ```
+
+### Commit Types and Version Impact
+
+Your commit type determines how the version number changes when releasing:
+
+| Type | Description | Version Bump | Changelog Section |
+|------|-------------|--------------|-------------------|
+| `feat:` | New feature | **Minor** (1.1.0 → 1.2.0) | Features |
+| `fix:` | Bug fix | **Patch** (1.1.0 → 1.1.1) | Bug Fixes |
+| `perf:` | Performance improvement | **Patch** | Performance |
+| `refactor:` | Code refactoring | None | Code Refactoring |
+| `docs:` | Documentation only | None | Documentation |
+| `test:` | Adding/updating tests | None | (hidden) |
+| `chore:` | Maintenance tasks | None | Miscellaneous |
+| `build:` | Build system changes | None | (hidden) |
+| `ci:` | CI/CD changes | None | (hidden) |
+
+### Breaking Changes
+
+Breaking changes trigger a **major** version bump (1.1.0 → 2.0.0). Indicate them with:
+
+- Add `!` after the type: `feat!: remove legacy API`
+- Or add a footer: `BREAKING CHANGE: description`
+
+### Examples
+
+```
+feat: add dark mode toggle
+
+feat(api): add user preferences endpoint
+
+fix: resolve login timeout on slow connections
+
+Closes #123
+
+refactor: extract validation logic into separate module
+
+feat!: change authentication response format
+
+BREAKING CHANGE: The /auth endpoint now returns {token, user} instead of just token.
+Migration guide available in docs/migration-v2.md.
+```
+
+### Why This Matters
+
+[release-please](https://github.com/googleapis/release-please) automatically:
+- Reads your commit messages when `develop` is merged to `main`
+- Determines the appropriate version bump
+- Generates the changelog
+- Creates a release PR
+
+Using the correct commit type ensures accurate versioning and a useful changelog for users.
 
 ## Pull Request Process
 
-This project uses **Git Flow**: all contributions go through `develop` before reaching `main`.
-
-### Workflow
-
-```
-feature/your-branch → develop → (pre-release) → beta.eclosion.app
-                         ↓
-                       main → eclosion.app
-```
+### Creating a PR
 
 1. **Create a branch from `develop`**
    ```bash
@@ -118,87 +179,146 @@ feature/your-branch → develop → (pre-release) → beta.eclosion.app
    git checkout -b feature/your-feature
    ```
 
-2. **Make your changes** with clear commits
+2. **Make your changes** with clear, conventional commits
 
-3. **Run quality checks locally**:
+3. **Run quality checks locally**
    ```bash
    # Frontend
    cd frontend
    npm run lint
    npm run type-check
    npm run build
+   npm test
 
    # Backend
    ruff check .
    ruff format --check .
+   pytest
    ```
 
 4. **Push and create a PR to `develop`** (not main)
    ```bash
    git push -u origin feature/your-feature
-   # Then create PR targeting 'develop' branch
    ```
+   Then create a PR targeting the `develop` branch.
 
 5. **Address review feedback** promptly
 
-6. **After merge**: Your changes are included in the next pre-release to [beta.eclosion.app](https://beta.eclosion.app)
-
-7. **Release**: Maintainers periodically create pre-releases for beta testing, then merge `develop` → `main` for production
-
 ### PR Requirements
 
-**PRs to `develop`:**
-- CI checks run (linting, type checking, build)
-- Security scans run (results visible in Security tab)
-- No approval required - enables fast iteration for beta testing
+| Target Branch | CI Checks | Security Scans | Code Review | Vulnerability Threshold |
+|---------------|-----------|----------------|-------------|------------------------|
+| `develop` | Run | Run (visible) | None required | — |
+| `main` | Must pass | Must pass | 1 approval | Medium+ blocks merge |
 
-**PRs to `main`:**
-- All CI and security checks must pass
-- 1 approval required from a maintainer
-- Vulnerabilities rated Medium or higher block merge
+> **Note**: PRs directly to `main` will be blocked. Always target `develop` first.
 
-> **Note**: PRs directly to `main` will be blocked. Always target `develop`.
+**Security scans include:** CodeQL (SAST), dependency audit (npm/pip), container scan (Trivy), DAST (OWASP ZAP)
 
 ## Release Process
 
-This project uses a structured release process with security checks at each stage.
+### Versioning
+
+This project uses two versioning schemes:
+
+**Production releases** — Semantic versioning managed by release-please
+- Format: `vX.Y.Z` (e.g., `v1.2.0`)
+- Version determined automatically from conventional commits
+
+**Beta releases** — Date-based versioning
+- Format: `v{current}-beta.{YYYYMMDD}.{sequence}`
+- Example: `v1.1.0-beta.20260104.1`
+- Created via manual workflow dispatch
 
 ### Deployment Environments
 
 | Environment | URL | Trigger | Approval |
 |-------------|-----|---------|----------|
-| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Pre-release published | Required |
+| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Beta pre-release created | Required |
 | **Production** | [eclosion.app](https://eclosion.app) | Release published | Required |
 
-### How Releases Work
+### Release Flow
 
-1. **Development on `develop`**
-   - All feature work is merged to `develop` via PRs
-   - CI runs tests and checks, but no automatic deployment
-   - Changes accumulate until a pre-release is created
+```
+┌─────────────────────────────────────────────────────────┐
+│                    DEVELOP BRANCH                       │
+│  Features merged via PRs                                │
+│  CI runs on each push                                   │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│        MANUAL: Run "Create Beta Release" workflow       │
+│  → Reads version from package.json (e.g., 1.1.0)        │
+│  → Creates tag: v1.1.0-beta.20260104.1                  │
+│  → Creates GitHub pre-release                           │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│              AUTOMATIC: prereleased event               │
+│  → Deploys to beta.eclosion.app                         │
+│  → Builds Docker image with beta tag                    │
+└─────────────────────────────────────────────────────────┘
+                      │
+                      │ (when ready for production)
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│                 PR: develop → main                      │
+│  → CI + Security checks must pass                       │
+│  → Requires maintainer approval                         │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│            AUTOMATIC: release-please runs               │
+│  → Analyzes commits since last release                  │
+│  → Determines version bump (patch/minor/major)          │
+│  → Creates release PR with changelog                    │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────┐
+│              MERGE: Release PR                          │
+│  → GitHub release created (e.g., v1.2.0)                │
+│  → Production deployment triggered                      │
+│  → Docker image published                               │
+│  → Future betas use new version as base                 │
+└─────────────────────────────────────────────────────────┘
+```
 
-2. **Pre-Release (Beta)**
-   - When ready for beta testing, maintainers create a GitHub pre-release (e.g., `v1.2.0-beta.1`)
-   - Pre-releases require approval before deployment to beta.eclosion.app
-   - Each pre-release creates a Docker image and deploys the demo site
+### Creating a Beta Release
 
-3. **Production Release**
-   - When `develop` is stable, maintainers merge to `main`
-   - [release-please](https://github.com/googleapis/release-please) automatically creates a release PR
-   - After merge, a GitHub release is created and deployed to production
+When `develop` is ready for beta testing:
 
-### Security Requirements
+1. Go to **Actions** → **Create Beta Release**
+2. Click **Run workflow**
+3. Select `develop` from the branch dropdown
+4. Click **Run workflow**
 
-| Check | develop (beta) | main (production) |
-|-------|----------------|-------------------|
-| CI checks | Run | Required to pass |
-| Security scans | Run (visible) | Required to pass |
-| Code review | None | 1 approval |
-| Vulnerability threshold | — | Medium+ blocks merge |
+The workflow automatically:
+- Reads the current version from `package.json`
+- Creates a tag like `v1.1.0-beta.20260104.1`
+- Creates a GitHub pre-release with auto-generated notes
+- Triggers deployment to beta.eclosion.app
+- Builds and publishes a Docker image
 
-**Security scans include:** CodeQL (SAST), dependency audit (npm/pip), container scan (Trivy), DAST (OWASP ZAP)
+### How release-please Works
 
-Beta allows rapid iteration while production enforces strict security gates.
+When `develop` is merged to `main`:
+
+1. **Commit analysis** — Scans all commits since the last release tag
+2. **Version calculation** — Determines bump from commit types:
+   - Any `feat!:` or `BREAKING CHANGE:` → major bump
+   - Any `feat:` → minor bump
+   - Only `fix:`/`perf:` → patch bump
+3. **PR creation** — Creates/updates a release PR with:
+   - Version bumps in `package.json`, `pyproject.toml`
+   - Updated `CHANGELOG.md`
+4. **Release** — When the PR is merged:
+   - GitHub release is created
+   - Production deployment triggers
+   - Docker image is published
 
 ## Code Style
 
