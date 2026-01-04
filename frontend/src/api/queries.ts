@@ -114,10 +114,10 @@ export function useSecurityStatusQuery() {
  * Security events with filtering
  */
 export function useSecurityEventsQuery(options?: {
-  limit?: number;
-  offset?: number;
-  eventType?: string;
-  success?: boolean;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  eventType?: string | undefined;
+  success?: boolean | undefined;
 }) {
   const isDemo = useDemo();
   return useQuery({

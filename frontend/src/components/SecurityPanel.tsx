@@ -14,7 +14,7 @@ import {
   useExportSecurityEventsMutation,
 } from '../api/queries';
 import { SecurityEventList } from './SecurityEventList';
-import toast from 'react-hot-toast';
+import { useToast } from '../context/ToastContext';
 
 interface SecurityPanelProps {
   className?: string;
@@ -25,6 +25,7 @@ type EventFilter = 'all' | 'LOGIN_ATTEMPT' | 'UNLOCK_ATTEMPT' | 'LOGOUT' | 'SESS
 export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   const [filter, setFilter] = useState<EventFilter>('all');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const toast = useToast();
 
   const { data: summary, isLoading: summaryLoading } = useSecuritySummaryQuery();
   const { data: events, isLoading: eventsLoading } = useSecurityEventsQuery({
