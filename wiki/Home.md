@@ -14,11 +14,9 @@ Welcome to the Eclosion for Monarch documentation.
 
 ## Getting Started
 
-| Guide | Description |
-|-------|-------------|
-| [[Self Hosting\|self-hosting-overview]] | Deploy Eclosion on your own infrastructure |
-| [[Docker Quick Start\|self-hosting-docker]] | The fastest way to run Eclosion |
-| [[Security\|security]] | Learn how your credentials are protected |
+- [[Self-Hosting Overview|self-hosting-overview]] - Deploy Eclosion on your own infrastructure
+- [[Docker Quick Start|self-hosting-docker]] - The fastest way to run Eclosion
+- [[Security|security]] - Learn how your credentials are protected
 
 ## Try the Demo
 
@@ -31,7 +29,7 @@ Experience Eclosion without installing anything at **[eclosion.app/demo](https:/
 
 ## Contributing
 
-Interested in contributing? See the [[Contributing\|contributing]] guide to get started.
+Interested in contributing? See the [[Contributing|contributing]] guide to get started.
 
 ---
 
