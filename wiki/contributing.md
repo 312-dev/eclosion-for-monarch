@@ -1,10 +1,3 @@
----
-id: contributing
-title: Contributing
-sidebar_label: Contributing
-sidebar_position: 3
----
-
 # Contributing to Eclosion
 
 Thank you for your interest in contributing! This guide will help you get started.
@@ -237,4 +230,4 @@ frontend/src/
 
 - Open a GitHub Discussion for questions
 - Check existing issues before creating new ones
-- See [Security](/docs/security) for security-related questions
+- See [[Security|security]] for security-related questions

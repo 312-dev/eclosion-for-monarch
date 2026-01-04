@@ -1,10 +1,3 @@
----
-id: security
-title: Security
-sidebar_label: Security
-sidebar_position: 2
----
-
 # Security
 
 How Eclosion protects your Monarch Money credentials.
@@ -78,7 +71,7 @@ For maximum security and control, you can run Eclosion on your own infrastructur
 2. You control all aspects of the deployment
 3. You can audit the open-source code
 
-See [Self-Hosting](/docs/self-hosting/overview) for deployment instructions.
+See [[Self-Hosting|self-hosting-overview]] for deployment instructions.
 
 ## Why Not OAuth?
 
