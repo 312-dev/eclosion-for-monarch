@@ -180,6 +180,12 @@ function AppRouter() {
   const isFeatures =
     location.pathname === '/features' ||
     location.pathname.startsWith('/features/');
+  const isDocs =
+    location.pathname === '/docs' ||
+    location.pathname.startsWith('/docs/');
+  const isGuide =
+    location.pathname === '/guide' ||
+    location.pathname.startsWith('/guide/');
 
   // Marketing site (Cloudflare Pages): Show landing page, docs, and demo at /demo/*
   if (isMarketingSite) {
@@ -193,7 +199,7 @@ function AppRouter() {
       );
     }
 
-    // Features pages (docs are now at /docs via Docusaurus)
+    // Features pages
     if (isFeatures) {
       return (
         <>
@@ -201,6 +207,32 @@ function AppRouter() {
           <Routes>
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/features/:featureId" element={<FeatureDetailPage />} />
+          </Routes>
+        </>
+      );
+    }
+
+    // Documentation pages
+    if (isDocs) {
+      return (
+        <>
+          <BetaBanner />
+          <Routes>
+            <Route path="/docs" element={<TechnicalDocsPage />} />
+            <Route path="/docs/:slug" element={<TechnicalDocsPage />} />
+          </Routes>
+        </>
+      );
+    }
+
+    // User guide pages
+    if (isGuide) {
+      return (
+        <>
+          <BetaBanner />
+          <Routes>
+            <Route path="/guide" element={<GuidePage />} />
+            <Route path="/guide/:slug" element={<GuidePage />} />
           </Routes>
         </>
       );
