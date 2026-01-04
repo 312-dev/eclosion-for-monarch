@@ -65,7 +65,7 @@ const config: Config = {
       logo: {
         alt: 'Eclosion Logo',
         src: 'img/logo.svg',
-        href: 'https://eclosion.app',
+        href: '/',
       },
       items: [
         {
@@ -80,12 +80,14 @@ const config: Config = {
           position: 'right',
         },
         {
-          to: '/',
+          // Use href (not to) for routes outside Docusaurus - triggers full page navigation
+          href: '/',
           label: 'Home',
           position: 'right',
         },
         {
-          to: '/demo',
+          // Use href (not to) for routes outside Docusaurus - triggers full page navigation
+          href: '/demo',
           label: 'Demo',
           position: 'right',
         },
