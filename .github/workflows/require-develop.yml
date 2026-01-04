@@ -1,0 +1,31 @@
+# Require develop branch for PRs to main
+# Enforces Git Flow: feature branches → develop → main
+#
+# This ensures all changes are tested on beta.eclosion.app before release
+
+name: Require develop branch
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-source:
+    name: Require develop branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source branch
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "::error::PRs to main must come from the develop branch."
+            echo ""
+            echo "This repository uses Git Flow:"
+            echo "  1. Create feature branches from develop"
+            echo "  2. PR your changes to develop"
+            echo "  3. Test on beta.eclosion.app"
+            echo "  4. Maintainers merge develop → main for releases"
+            echo ""
+            echo "Please close this PR and create a new one targeting develop instead."
+            exit 1
+          fi
+          echo "✅ PR is from develop branch"

@@ -3,8 +3,10 @@
 # Builds the frontend in demo mode and deploys to Cloudflare Pages.
 # Supports both production (releases) and beta (pre-releases) deployments.
 #
-# Production: eclosion.app (triggered by release)
-# Beta: beta.eclosion.app (triggered by push to develop)
+# Deployment triggers:
+# - Push to develop: Auto-deploys to beta.eclosion.app (no approval needed)
+# - Pre-release published: Deploys to beta.eclosion.app (requires approval)
+# - Release published: Deploys to eclosion.app (requires approval)
 #
 # Beta versions are auto-generated as {base-version}-beta.{short_sha}
 
@@ -52,6 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     # Skip if triggered by bot commit (prevents infinite loop)
     if: github.actor != 'github-actions[bot]'
+    # Use environment protection for releases (requires approval)
+    # Push to develop skips environment to allow auto-deploy
+    environment: ${{ (github.event_name == 'release' && 'beta') || (github.event_name == 'workflow_call' && inputs.environment) || (github.event_name == 'workflow_dispatch' && inputs.environment) || null }}
     permissions:
       contents: write  # Need write to commit version snapshots
       deployments: write
@@ -119,6 +124,8 @@ jobs:
       - name: Create docs version snapshot (beta only)
         if: steps.config.outputs.environment == 'beta'
         working-directory: docusaurus
+        env:
+          ECLOSION_BETA: 'true'
         run: |
           VERSION="${{ steps.config.outputs.version }}"
           echo "Creating docs version: $VERSION"

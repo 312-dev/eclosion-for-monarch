@@ -9,6 +9,7 @@ Thank you for your interest in contributing to Eclosion! This guide will help yo
 - [Development Setup](#development-setup)
 - [Making Changes](#making-changes)
 - [Pull Request Process](#pull-request-process)
+- [Release Process](#release-process)
 - [Code Style](#code-style)
 - [Testing](#testing)
 - [Architecture Overview](#architecture-overview)
@@ -97,8 +98,25 @@ Closes #45
 
 ## Pull Request Process
 
-1. **Create a branch** from `main`
+This project uses **Git Flow**: all contributions go through `develop` before reaching `main`.
+
+### Workflow
+
+```
+feature/your-branch → develop → main
+                         ↓
+                   beta.eclosion.app (testing)
+```
+
+1. **Create a branch from `develop`**
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/your-feature
+   ```
+
 2. **Make your changes** with clear commits
+
 3. **Run quality checks locally**:
    ```bash
    # Frontend
@@ -111,16 +129,64 @@ Closes #45
    ruff check .
    ruff format --check .
    ```
-4. **Push and create a PR** with a clear description
+
+4. **Push and create a PR to `develop`** (not main)
+   ```bash
+   git push -u origin feature/your-feature
+   # Then create PR targeting 'develop' branch
+   ```
+
 5. **Address review feedback** promptly
-6. **Squash or rebase** if requested before merge
+
+6. **After merge**: Your changes deploy to [beta.eclosion.app](https://beta.eclosion.app) for testing
+
+7. **Release**: Maintainers periodically merge `develop` → `main` for production releases
 
 ### PR Requirements
 
-- All CI checks must pass
+- All CI and security checks must pass
 - Changes must be reviewed by a maintainer
 - Update documentation if applicable
 - Add tests for new functionality (when test infrastructure exists)
+
+> **Note**: PRs directly to `main` will be blocked. Always target `develop`.
+
+## Release Process
+
+This project uses a structured release process with security checks at each stage.
+
+### Deployment Environments
+
+| Environment | URL | Trigger | Approval |
+|-------------|-----|---------|----------|
+| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Push to `develop` | None (auto-deploy) |
+| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Pre-release published | Required |
+| **Production** | [eclosion.app](https://eclosion.app) | Release published | Required |
+
+### How Releases Work
+
+1. **Continuous Beta Deployment**
+   - Every merge to `develop` automatically deploys to beta.eclosion.app
+   - This allows rapid testing of new features
+
+2. **Pre-Release (Optional)**
+   - Maintainers can create a GitHub pre-release for formal beta testing
+   - Pre-releases require approval before deployment
+   - Use tags like `v1.2.0-beta.1`
+
+3. **Production Release**
+   - When `develop` is stable, maintainers merge to `main`
+   - [release-please](https://github.com/googleapis/release-please) automatically creates a release PR
+   - After merge, a GitHub release is created and deployed to production
+
+### Security Requirements
+
+All deployments are protected by:
+- **CI checks**: Linting, type checking, tests
+- **Security scans**: CodeQL, dependency audit, container scan, DAST
+- **Code review**: 1 approval required for PRs to `main`
+
+Vulnerabilities rated **Medium or higher** block merges.
 
 ## Code Style
 
