@@ -1,10 +1,3 @@
----
-id: data-management
-title: Data Management
-sidebar_label: Data Management
-sidebar_position: 4
----
-
 # Data Management
 
 Manage persistent storage, backups, and migrations for Eclosion.
@@ -21,9 +14,7 @@ All application data is stored in `/app/state` inside the container:
 └── sync_state.json         # Sync status and history
 ```
 
-:::warning Important
-Always mount a volume to `/app/state` to persist data across container restarts.
-:::
+> **Important:** Always mount a volume to `/app/state` to persist data across container restarts.
 
 ## Backup Strategies
 

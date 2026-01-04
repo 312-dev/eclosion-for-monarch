@@ -1,10 +1,3 @@
----
-id: security-hardening
-title: Security Hardening
-sidebar_label: Security Hardening
-sidebar_position: 6
----
-
 # Security Hardening
 
 Secure your Eclosion deployment for production use.
@@ -60,7 +53,7 @@ RATE_LIMIT_HOURLY=200    # Requests per hour per IP
 
 ## Additional Recommendations
 
-- Use a reverse proxy with HTTPS (see [Reverse Proxy](/docs/self-hosting/reverse-proxy))
+- Use a reverse proxy with HTTPS (see [[Reverse Proxy|self-hosting-reverse-proxy]])
 - Regularly update the Docker image
 - Monitor logs for suspicious activity
 - Use a strong `INSTANCE_SECRET`

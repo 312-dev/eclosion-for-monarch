@@ -1,10 +1,3 @@
----
-id: environment-variables
-title: Environment Variables
-sidebar_label: Environment Variables
-sidebar_position: 8
----
-
 # Environment Variables Reference
 
 All available configuration options for Eclosion.
@@ -34,9 +27,7 @@ All available configuration options for Eclosion.
 
 ## Development Only
 
-:::warning
-These variables bypass encryption and should **never** be used in production.
-:::
+> **Warning:** These variables bypass encryption and should **never** be used in production.
 
 | Variable | Description |
 |----------|-------------|

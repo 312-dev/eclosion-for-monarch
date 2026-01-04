@@ -1,10 +1,3 @@
----
-id: docker
-title: Docker Quick Start
-sidebar_label: Docker
-sidebar_position: 2
----
-
 # Quick Start with Docker
 
 The fastest way to run Eclosion is with Docker.
@@ -61,6 +54,6 @@ Available image tags:
 
 ## Next Steps
 
-- Set up a [Reverse Proxy](/docs/self-hosting/reverse-proxy) for HTTPS
-- Configure [Persistent Storage](/docs/self-hosting/data-management) for backups
-- Review [Environment Variables](/docs/self-hosting/environment-variables) for customization
+- Set up a [[Reverse Proxy|self-hosting-reverse-proxy]] for HTTPS
+- Configure [[Persistent Storage|self-hosting-data-management]] for backups
+- Review [[Environment Variables|self-hosting-environment-variables]] for customization

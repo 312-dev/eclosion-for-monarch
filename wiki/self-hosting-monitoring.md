@@ -1,10 +1,3 @@
----
-id: monitoring
-title: Monitoring & Maintenance
-sidebar_label: Monitoring
-sidebar_position: 5
----
-
 # Monitoring & Maintenance
 
 Monitor and maintain your Eclosion deployment.

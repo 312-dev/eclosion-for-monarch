@@ -1,10 +1,3 @@
----
-id: troubleshooting
-title: Troubleshooting
-sidebar_label: Troubleshooting
-sidebar_position: 7
----
-
 # Troubleshooting
 
 Common issues and solutions for Eclosion deployments.
@@ -76,4 +69,4 @@ docker compose up -d
 ## Getting Help
 
 - **GitHub Issues**: [Report bugs](https://github.com/GraysonCAdams/eclosion-for-monarch/issues)
-- **Security Issues**: See [Security](/docs/security) for responsible disclosure
+- **Security Issues**: See [[Security|security]] for responsible disclosure

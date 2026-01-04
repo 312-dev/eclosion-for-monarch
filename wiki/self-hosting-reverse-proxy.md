@@ -1,10 +1,3 @@
----
-id: reverse-proxy
-title: Reverse Proxy Setup
-sidebar_label: Reverse Proxy
-sidebar_position: 3
----
-
 # Reverse Proxy Setup
 
 Configure HTTPS access to Eclosion with a reverse proxy.
