@@ -3,6 +3,8 @@
 # Manually triggered workflow to create a beta pre-release from the develop branch.
 # Beta versions use the format: v{current}-beta.{YYYYMMDD}.{sequence}
 #
+# Security gate: Runs full security scan suite (HIGH+ severity fails the release).
+#
 # This workflow creates a GitHub pre-release, which triggers:
 # - deploy-cloudflare.yml → deploys to beta.eclosion.app
 # - docker-publish.yml → builds Docker image with beta tag
@@ -12,14 +14,43 @@ name: Create Beta Release
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  create-beta:
+  # Validate we're on the develop branch
+  check-branch:
+    name: Check Branch
     runs-on: ubuntu-latest
-    # Only allow running from develop branch
-    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Validate branch
+        if: github.ref != 'refs/heads/develop'
+        run: |
+          echo "::error::This workflow must be run from the develop branch."
+          echo "Current branch: ${{ github.ref }}"
+          echo ""
+          echo "To create a beta release:"
+          echo "1. Go to Actions → Create Beta Release"
+          echo "2. Click 'Run workflow'"
+          echo "3. Select 'develop' from the branch dropdown"
+          exit 1
+
+  # Run full security scan suite
+  security:
+    name: Security Scan
+    needs: check-branch
+    uses: ./.github/workflows/security.yml
+    with:
+      severity: high
+      skip_dast: true  # Skip DAST for faster beta releases
+    permissions:
+      security-events: write
+      contents: read
+
+  # Create the beta release after security passes
+  create-beta:
+    name: Create Beta Release
+    runs-on: ubuntu-latest
+    needs: security
+    permissions:
+      contents: write
     steps:
       - name: Checkout develop
         uses: actions/checkout@v4
@@ -68,19 +99,3 @@ jobs:
           echo "This will trigger:" >> $GITHUB_STEP_SUMMARY
           echo "- Deployment to beta.eclosion.app" >> $GITHUB_STEP_SUMMARY
           echo "- Docker image build with tag \`${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-
-  # Fail gracefully if not on develop branch
-  wrong-branch:
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/develop'
-    steps:
-      - name: Error - wrong branch
-        run: |
-          echo "::error::This workflow must be run from the develop branch."
-          echo "Current branch: ${{ github.ref }}"
-          echo ""
-          echo "To create a beta release:"
-          echo "1. Go to Actions → Create Beta Release"
-          echo "2. Click 'Run workflow'"
-          echo "3. Select 'develop' from the branch dropdown"
-          exit 1

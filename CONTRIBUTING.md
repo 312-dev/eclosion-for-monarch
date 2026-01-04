@@ -213,6 +213,14 @@ Using the correct commit type ensures accurate versioning and a useful changelog
 
 > **Note**: PRs directly to `main` will be blocked. Always target `develop` first.
 
+### Security Thresholds
+
+| Action | Threshold | What's Checked |
+|--------|-----------|----------------|
+| PR to `develop` | None (informational) | CodeQL, npm audit, pip-audit, Trivy, ZAP |
+| **Beta release** | **High+ blocks** | CodeQL, npm audit, pip-audit, Trivy (full scan, no DAST) |
+| PR to `main` | Medium+ blocks | All security scans must pass |
+
 **Security scans include:** CodeQL (SAST), dependency audit (npm/pip), container scan (Trivy), DAST (OWASP ZAP)
 
 ## Release Process
@@ -297,11 +305,14 @@ When `develop` is ready for beta testing:
 4. Click **Run workflow**
 
 The workflow automatically:
+- **Runs full security scan** (CodeQL, npm audit, pip-audit, Trivy — HIGH+ blocks)
 - Reads the current version from `package.json`
 - Creates a tag like `v1.1.0-beta.20260104.1`
 - Creates a GitHub pre-release with auto-generated notes
 - Triggers deployment to beta.eclosion.app
 - Builds and publishes a Docker image
+
+> **Security Gate**: Beta releases run the full security scan suite against the develop branch. Any HIGH or CRITICAL vulnerabilities will block the release. DAST is skipped for faster execution.
 
 ### How release-please Works
 

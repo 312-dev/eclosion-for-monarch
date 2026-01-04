@@ -4,6 +4,8 @@
 #
 # Policy: Vulnerabilities rated MEDIUM or higher block merges to main
 # Configure branch protection to require "Security Status" check
+#
+# Can be called from other workflows (e.g., create-beta.yml) via workflow_call
 
 name: Security
 
@@ -26,6 +28,20 @@ on:
     # Weekly scan on Monday at midnight UTC to catch new CVEs
     - cron: "0 0 * * 1"
   workflow_dispatch:
+
+  # Allow other workflows to call this one
+  workflow_call:
+    inputs:
+      severity:
+        description: 'Minimum severity to fail on (high or medium)'
+        required: false
+        default: 'medium'
+        type: string
+      skip_dast:
+        description: 'Skip DAST scan for faster execution'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: security-${{ github.ref }}
@@ -93,10 +109,17 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Run npm audit (medium and above)
+      - name: Run npm audit
         working-directory: frontend
-        # --audit-level=moderate fails on moderate, high, or critical vulnerabilities
-        run: npm audit --audit-level=moderate
+        # --audit-level controls minimum severity to fail on
+        # moderate = medium+, high = high+
+        run: |
+          LEVEL="${{ inputs.severity || 'medium' }}"
+          if [ "$LEVEL" = "high" ]; then
+            npm audit --audit-level=high
+          else
+            npm audit --audit-level=moderate
+          fi
 
       - name: Install pip-audit
         run: pip install pip-audit
@@ -133,13 +156,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Determine severity threshold
+        id: severity
+        run: |
+          LEVEL="${{ inputs.severity || 'medium' }}"
+          if [ "$LEVEL" = "high" ]; then
+            echo "trivy_severity=HIGH,CRITICAL" >> $GITHUB_OUTPUT
+          else
+            echo "trivy_severity=MEDIUM,HIGH,CRITICAL" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: eclosion:scan
           format: "table"
           exit-code: "1"
-          severity: "MEDIUM,HIGH,CRITICAL"
+          severity: ${{ steps.severity.outputs.trivy_severity }}
           ignore-unfixed: true
 
       - name: Run Trivy and upload SARIF
@@ -149,7 +182,7 @@ jobs:
           image-ref: eclosion:scan
           format: "sarif"
           output: "trivy-results.sarif"
-          severity: "MEDIUM,HIGH,CRITICAL"
+          severity: ${{ steps.severity.outputs.trivy_severity }}
 
       - name: Upload Trivy SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
@@ -171,12 +204,15 @@ jobs:
     # - Push events (trusted)
     # - PRs from the same repo (not forks) to prevent abuse
     # - Scheduled runs
-    # - Manual runs
+    # - Manual runs (not workflow_call with skip_dast=true)
     if: |
-      github.event_name == 'push' ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      inputs.skip_dast != true && (
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'workflow_call' ||
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      )
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
