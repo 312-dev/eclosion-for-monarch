@@ -1,7 +1,7 @@
 # Enforce branch naming conventions
 # Only feature/* and update/* branches are allowed for PRs
 
-name: Branch naming
+name: "Check: Branch Naming"
 
 on:
   pull_request:

@@ -9,7 +9,7 @@
 # - deploy-cloudflare.yml → deploys to beta.eclosion.app
 # - docker-publish.yml → builds Docker image with beta tag
 
-name: Create Beta Release
+name: "Release: Create Beta"
 
 on:
   workflow_dispatch:

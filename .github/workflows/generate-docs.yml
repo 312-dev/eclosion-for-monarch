@@ -1,4 +1,4 @@
-name: Generate Documentation
+name: "Docs: Generate"
 
 on:
   workflow_dispatch:
