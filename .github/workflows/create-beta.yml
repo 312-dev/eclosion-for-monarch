@@ -13,6 +13,8 @@ name: "Release: Create Beta"
 
 on:
   workflow_dispatch:
+    branches:
+      - develop
 
 jobs:
   # Validate we're on the develop branch

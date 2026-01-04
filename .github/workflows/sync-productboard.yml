@@ -69,7 +69,9 @@ jobs:
       - name: Create PR with state and data changes
         if: ${{ !inputs.dry_run }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT instead of GITHUB_TOKEN so the PR triggers CI workflows
+          # Requires: repo scope (or contents:write + pull_requests:write for fine-grained)
+          GH_TOKEN: ${{ secrets.CI_TRIGGER_PAT }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
