@@ -44,6 +44,9 @@ export interface SyncState {
 /** Reason why a discussion was closed */
 export type ClosedReason = 'monarch-committed' | 'eclosion-shipped';
 
+/** Where the idea originated from */
+export type IdeaSource = 'productboard' | 'github';
+
 export interface TrackedIdea {
   /** GitHub Discussion node ID */
   discussionId: string;
@@ -51,16 +54,24 @@ export interface TrackedIdea {
   discussionNumber: number;
   /** Current status of the discussion */
   status: 'open' | 'closed';
-  /** Last known ProductBoard vote count */
+  /** Last known ProductBoard vote count (0 for GitHub-only ideas) */
   lastVoteCount: number;
-  /** Last known ProductBoard status */
-  lastProductBoardStatus: IdeaStatus;
+  /** Last known ProductBoard status (undefined for GitHub-only ideas) */
+  lastProductBoardStatus?: IdeaStatus;
   /** Thumbs-up reactions on GitHub Discussion */
   githubVotes: number;
   /** ISO timestamp when discussion was closed */
   closedAt?: string;
   /** Reason why discussion was closed */
   closedReason?: ClosedReason;
+  /** Where the idea originated from */
+  source: IdeaSource;
+  /** Title (for GitHub-only ideas that aren't in scraped data) */
+  title?: string;
+  /** Description (for GitHub-only ideas) */
+  description?: string;
+  /** Category (for GitHub-only ideas) */
+  category?: string;
 }
 
 /**

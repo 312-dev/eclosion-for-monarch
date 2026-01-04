@@ -331,6 +331,40 @@ function extractProductBoardId(body: string): string | null {
 }
 
 /**
+ * Normalize title for fuzzy matching
+ */
+function normalizeTitle(title: string): string {
+  return title.toLowerCase().trim().replaceAll(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/**
+ * Get closed reason from a discussion
+ */
+function getClosedReason(disc: ExistingDiscussion): TrackedIdea['closedReason'] {
+  if (!disc.closed) return undefined;
+  return disc.labels.includes(ECLOSION_SHIPPED_LABEL) ? 'eclosion-shipped' : 'monarch-committed';
+}
+
+/**
+ * Extract description from discussion body (first paragraph or first 200 chars)
+ */
+function extractDescription(body: string): string {
+  // Remove markdown formatting and get first meaningful content
+  const cleaned = body
+    .replaceAll(/\*\*[^*]+\*\*:?\s*/g, '') // Remove bold labels
+    .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
+    .replaceAll(/<!--[^>]+-->/g, '') // Remove HTML comments
+    .replaceAll(/^#+\s+.+$/gm, '') // Remove headers
+    .replaceAll(/^-+$/gm, '') // Remove horizontal rules
+    .replaceAll(/^\s*[-*]\s+/gm, '') // Remove list markers
+    .trim();
+
+  // Get first paragraph or first 200 chars
+  const firstPara = cleaned.split(/\n\n/)[0]?.trim() || '';
+  return firstPara.length > 200 ? `${firstPara.slice(0, 197)}...` : firstPara;
+}
+
+/**
  * Sync ProductBoard ideas to GitHub Discussions
  */
 export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void> {
@@ -345,11 +379,81 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
 
   // Build a map of ProductBoard ID to existing discussion
   const existingByPbId = new Map<string, ExistingDiscussion>();
+  // Also track discussions by normalized title for matching manually-created ones
+  const existingByTitle = new Map<string, ExistingDiscussion>();
   for (const disc of existingDiscussions) {
     const pbId = extractProductBoardId(disc.body);
     if (pbId) {
       existingByPbId.set(pbId, disc);
     }
+    // Index by normalized title for fallback matching
+    existingByTitle.set(normalizeTitle(disc.title), disc);
+  }
+
+  // Import any manually-created discussions that match scraped ideas by title
+  console.log('\nChecking for manually-created discussions to import...');
+  const matchedDiscussionIds = new Set<string>();
+  for (const idea of ideas) {
+    // Skip if already tracked by ProductBoard ID
+    if (existingByPbId.has(idea.id)) {
+      matchedDiscussionIds.add(existingByPbId.get(idea.id)!.id);
+      continue;
+    }
+    if (state.trackedIdeas[idea.id]?.discussionNumber) continue;
+
+    // Try to match by title
+    const matchingDisc = existingByTitle.get(normalizeTitle(idea.title));
+    if (matchingDisc) {
+      console.log(`  Found manual discussion #${matchingDisc.number} matching "${idea.title}"`);
+      state.trackedIdeas[idea.id] = {
+        discussionId: matchingDisc.id,
+        discussionNumber: matchingDisc.number,
+        status: matchingDisc.closed ? 'closed' : 'open',
+        lastVoteCount: idea.votes,
+        lastProductBoardStatus: idea.status,
+        githubVotes: matchingDisc.thumbsUpCount,
+        closedReason: getClosedReason(matchingDisc),
+        closedAt: matchingDisc.closedAt ?? undefined,
+        source: 'productboard',
+      };
+      // Add to the map so we don't create a duplicate
+      existingByPbId.set(idea.id, matchingDisc);
+      matchedDiscussionIds.add(matchingDisc.id);
+    }
+  }
+
+  // Import GitHub-only discussions (community ideas not on ProductBoard)
+  console.log('\nChecking for GitHub-only community ideas...');
+  for (const disc of existingDiscussions) {
+    // Skip if already matched to a ProductBoard idea
+    if (matchedDiscussionIds.has(disc.id)) continue;
+    // Skip if already in state (use discussion number as key for GitHub-only ideas)
+    const githubKey = `github-${disc.number}`;
+    if (state.trackedIdeas[githubKey]) {
+      // Update vote count
+      state.trackedIdeas[githubKey].githubVotes = disc.thumbsUpCount;
+      state.trackedIdeas[githubKey].status = disc.closed ? 'closed' : 'open';
+      if (disc.closed) {
+        state.trackedIdeas[githubKey].closedReason = getClosedReason(disc);
+        state.trackedIdeas[githubKey].closedAt = disc.closedAt ?? undefined;
+      }
+      continue;
+    }
+
+    console.log(`  Importing GitHub-only idea #${disc.number}: "${disc.title}"`);
+    state.trackedIdeas[githubKey] = {
+      discussionId: disc.id,
+      discussionNumber: disc.number,
+      status: disc.closed ? 'closed' : 'open',
+      lastVoteCount: 0, // No ProductBoard votes
+      githubVotes: disc.thumbsUpCount,
+      closedReason: getClosedReason(disc),
+      closedAt: disc.closedAt ?? undefined,
+      source: 'github',
+      title: disc.title,
+      description: extractDescription(disc.body),
+      category: 'Community',
+    };
   }
 
   // Update GitHub votes for all tracked discussions
@@ -415,6 +519,7 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
         lastVoteCount: idea.votes,
         lastProductBoardStatus: idea.status,
         githubVotes: 0, // New discussions start with 0 GitHub votes
+        source: 'productboard',
       };
       console.log(`    Created discussion #${discussion.number}`);
     } catch (error) {
