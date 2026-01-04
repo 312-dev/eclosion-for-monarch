@@ -1,0 +1,86 @@
+# Create Beta Release
+#
+# Manually triggered workflow to create a beta pre-release from the develop branch.
+# Beta versions use the format: v{current}-beta.{YYYYMMDD}.{sequence}
+#
+# This workflow creates a GitHub pre-release, which triggers:
+# - deploy-cloudflare.yml → deploys to beta.eclosion.app
+# - docker-publish.yml → builds Docker image with beta tag
+
+name: Create Beta Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-beta:
+    runs-on: ubuntu-latest
+    # Only allow running from develop branch
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0  # Need full history for tags
+
+      - name: Calculate beta version
+        id: version
+        run: |
+          # Read current version from package.json
+          BASE=$(node -p "require('./frontend/package.json').version")
+          DATE=$(date +%Y%m%d)
+
+          # Fetch all tags to ensure we have the latest
+          git fetch --tags
+
+          # Count existing tags for today's date
+          EXISTING=$(git tag -l "v${BASE}-beta.${DATE}.*" | wc -l | tr -d ' ')
+          SEQ=$((EXISTING + 1))
+
+          TAG="v${BASE}-beta.${DATE}.${SEQ}"
+
+          echo "base=$BASE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          echo "### Beta Version" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base version:** $BASE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date:** $DATE" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sequence:** $SEQ" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** $TAG" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ steps.version.outputs.tag }} \
+            --target develop \
+            --prerelease \
+            --generate-notes \
+            --title "${{ steps.version.outputs.tag }}"
+
+          echo "### Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "Pre-release [${{ steps.version.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}) created successfully." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This will trigger:" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment to beta.eclosion.app" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker image build with tag \`${{ steps.version.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # Fail gracefully if not on develop branch
+  wrong-branch:
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/develop'
+    steps:
+      - name: Error - wrong branch
+        run: |
+          echo "::error::This workflow must be run from the develop branch."
+          echo "Current branch: ${{ github.ref }}"
+          echo ""
+          echo "To create a beta release:"
+          echo "1. Go to Actions → Create Beta Release"
+          echo "2. Click 'Run workflow'"
+          echo "3. Select 'develop' from the branch dropdown"
+          exit 1

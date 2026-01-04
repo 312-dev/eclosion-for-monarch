@@ -476,9 +476,11 @@ npm run docusaurus docs:version 1.1
 
 **Beta site versioning:**
 - Shows current `docs/` folder content, labeled with the pre-release version
-- Version label comes from `ECLOSION_VERSION` env var (e.g., "1.1.0-beta.1")
+- Version label comes from `ECLOSION_VERSION` env var (e.g., "1.1.0-beta.20260104.1")
+- Beta versions use date-based format: `v{current}-beta.{YYYYMMDD}.{sequence}`
 - No version snapshots are created for beta releases
 - No version dropdown (single version)
+- Beta releases are created via the "Create Beta Release" workflow (manual dispatch on develop)
 
 ### Environment-Aware Configuration
 
