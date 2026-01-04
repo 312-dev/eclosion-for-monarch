@@ -106,9 +106,9 @@ This project uses **Git Flow**: all contributions go through `develop` before re
 ### Workflow
 
 ```
-feature/your-branch → develop → main
+feature/your-branch → develop → (pre-release) → beta.eclosion.app
                          ↓
-                   beta.eclosion.app (testing)
+                       main → eclosion.app
 ```
 
 1. **Create a branch from `develop`**
@@ -141,16 +141,21 @@ feature/your-branch → develop → main
 
 5. **Address review feedback** promptly
 
-6. **After merge**: Your changes deploy to [beta.eclosion.app](https://beta.eclosion.app) for testing
+6. **After merge**: Your changes are included in the next pre-release to [beta.eclosion.app](https://beta.eclosion.app)
 
-7. **Release**: Maintainers periodically merge `develop` → `main` for production releases
+7. **Release**: Maintainers periodically create pre-releases for beta testing, then merge `develop` → `main` for production
 
 ### PR Requirements
 
+**PRs to `develop`:**
+- CI checks run (linting, type checking, build)
+- Security scans run (results visible in Security tab)
+- No approval required - enables fast iteration for beta testing
+
+**PRs to `main`:**
 - All CI and security checks must pass
-- Changes must be reviewed by a maintainer
-- Update documentation if applicable
-- Add tests for new functionality (when test infrastructure exists)
+- 1 approval required from a maintainer
+- Vulnerabilities rated Medium or higher block merge
 
 > **Note**: PRs directly to `main` will be blocked. Always target `develop`.
 
@@ -162,20 +167,20 @@ This project uses a structured release process with security checks at each stag
 
 | Environment | URL | Trigger | Approval |
 |-------------|-----|---------|----------|
-| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Push to `develop` | None (auto-deploy) |
 | **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Pre-release published | Required |
 | **Production** | [eclosion.app](https://eclosion.app) | Release published | Required |
 
 ### How Releases Work
 
-1. **Continuous Beta Deployment**
-   - Every merge to `develop` automatically deploys to beta.eclosion.app
-   - This allows rapid testing of new features
+1. **Development on `develop`**
+   - All feature work is merged to `develop` via PRs
+   - CI runs tests and checks, but no automatic deployment
+   - Changes accumulate until a pre-release is created
 
-2. **Pre-Release (Optional)**
-   - Maintainers can create a GitHub pre-release for formal beta testing
-   - Pre-releases require approval before deployment
-   - Use tags like `v1.2.0-beta.1`
+2. **Pre-Release (Beta)**
+   - When ready for beta testing, maintainers create a GitHub pre-release (e.g., `v1.2.0-beta.1`)
+   - Pre-releases require approval before deployment to beta.eclosion.app
+   - Each pre-release creates a Docker image and deploys the demo site
 
 3. **Production Release**
    - When `develop` is stable, maintainers merge to `main`
@@ -184,12 +189,16 @@ This project uses a structured release process with security checks at each stag
 
 ### Security Requirements
 
-All deployments are protected by:
-- **CI checks**: Linting, type checking, tests
-- **Security scans**: CodeQL, dependency audit, container scan, DAST
-- **Code review**: 1 approval required for PRs to `main`
+| Check | develop (beta) | main (production) |
+|-------|----------------|-------------------|
+| CI checks | Run | Required to pass |
+| Security scans | Run (visible) | Required to pass |
+| Code review | None | 1 approval |
+| Vulnerability threshold | — | Medium+ blocks merge |
 
-Vulnerabilities rated **Medium or higher** block merges.
+**Security scans include:** CodeQL (SAST), dependency audit (npm/pip), container scan (Trivy), DAST (OWASP ZAP)
+
+Beta allows rapid iteration while production enforces strict security gates.
 
 ## Code Style
 

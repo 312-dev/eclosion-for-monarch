@@ -4,11 +4,10 @@
 # Supports both production (releases) and beta (pre-releases) deployments.
 #
 # Deployment triggers:
-# - Push to develop: Auto-deploys to beta.eclosion.app (no approval needed)
 # - Pre-release published: Deploys to beta.eclosion.app (requires approval)
 # - Release published: Deploys to eclosion.app (requires approval)
 #
-# Beta versions are auto-generated as {base-version}-beta.{short_sha}
+# Doc versions are only created for actual releases (not develop commits).
 
 name: Deploy to Cloudflare
 
@@ -29,10 +28,6 @@ on:
       CLOUDFLARE_ACCOUNT_ID:
         required: true
 
-  # Auto-deploy beta on push to develop
-  push:
-    branches: [develop]
-
   # Trigger on pre-release publication for beta deployments
   release:
     types: [prereleased]
@@ -52,39 +47,29 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    # Skip if triggered by bot commit (prevents infinite loop)
-    if: github.actor != 'github-actions[bot]'
     # Use environment protection for releases (requires approval)
-    # Push to develop skips environment to allow auto-deploy
     environment: ${{ (github.event_name == 'release' && 'beta') || (github.event_name == 'workflow_call' && inputs.environment) || (github.event_name == 'workflow_dispatch' && inputs.environment) || null }}
     permissions:
-      contents: write  # Need write to commit version snapshots
+      contents: read
       deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Need full history for version commits
 
       - name: Determine environment and version
         id: config
         run: |
-          # Determine environment
+          # Determine environment and version based on trigger
           if [[ "${{ github.event_name }}" == "workflow_call" ]]; then
             ENV="${{ inputs.environment }}"
             VERSION="${{ inputs.version }}"
-          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            ENV="beta"
-            # Generate beta version: {package.json version}-beta.{short_sha}
-            BASE_VERSION=$(node -p "require('./frontend/package.json').version")
-            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            VERSION="${BASE_VERSION}-beta.${SHORT_SHA}"
           elif [[ "${{ github.event_name }}" == "release" ]]; then
             ENV="beta"
             # Strip 'v' prefix from tag for consistent versioning
             VERSION="${{ github.event.release.tag_name }}"
             VERSION="${VERSION#v}"
           else
+            # Manual dispatch - default to beta with generated version
             ENV="${{ inputs.environment || 'beta' }}"
             BASE_VERSION=$(node -p "require('./frontend/package.json').version")
             SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
@@ -121,63 +106,11 @@ jobs:
         working-directory: docusaurus
         run: npm ci
 
-      - name: Create docs version snapshot (beta only)
-        if: steps.config.outputs.environment == 'beta'
-        working-directory: docusaurus
-        env:
-          ECLOSION_BETA: 'true'
-        run: |
-          VERSION="${{ steps.config.outputs.version }}"
-          echo "Creating docs version: $VERSION"
-
-          # Create the version snapshot
-          npm run version -- "$VERSION"
-
-          echo "Version $VERSION created"
-
-      - name: Cleanup old beta doc versions
-        if: steps.config.outputs.environment == 'beta'
-        run: |
-          KEEP_COUNT=5
-          cd docusaurus
-
-          # Get all beta versions from versions.json
-          if [ ! -f versions.json ]; then
-            echo "No versions.json found"
-            exit 0
-          fi
-
-          # Extract beta versions (contain 'beta'), sorted newest first
-          BETA_VERSIONS=$(jq -r '.[] | select(contains("beta"))' versions.json)
-          BETA_COUNT=$(echo "$BETA_VERSIONS" | grep -c . || echo 0)
-
-          echo "Found $BETA_COUNT beta versions"
-
-          if [ "$BETA_COUNT" -le "$KEEP_COUNT" ]; then
-            echo "No cleanup needed (keeping $KEEP_COUNT)"
-            exit 0
-          fi
-
-          # Get versions to delete (skip first KEEP_COUNT)
-          TO_DELETE=$(echo "$BETA_VERSIONS" | tail -n +$((KEEP_COUNT + 1)))
-
-          for VERSION in $TO_DELETE; do
-            echo "Removing old beta version: $VERSION"
-
-            # Remove from versions.json
-            jq --arg v "$VERSION" 'del(.[] | select(. == $v))' versions.json > versions.tmp && mv versions.tmp versions.json
-
-            # Remove versioned docs and sidebars
-            rm -rf "versioned_docs/version-$VERSION"
-            rm -f "versioned_sidebars/version-$VERSION-sidebars.json"
-          done
-
-          echo "Cleanup complete"
-
       - name: Build Docusaurus
         working-directory: docusaurus
         env:
           ECLOSION_BETA: ${{ steps.config.outputs.environment == 'beta' && 'true' || '' }}
+          ECLOSION_VERSION: ${{ steps.config.outputs.version }}
         run: npm run build
 
       - name: Merge builds
@@ -233,25 +166,3 @@ jobs:
           done
 
           echo "Cleanup complete"
-
-      - name: Commit docs version changes
-        if: steps.config.outputs.environment == 'beta' && github.event_name == 'push'
-        env:
-          # Use PAT to bypass branch protection (GITHUB_TOKEN can't bypass)
-          GH_TOKEN: ${{ secrets.ADMIN_PAT }}
-        run: |
-          # Check if there are changes to commit
-          if git diff --quiet docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars 2>/dev/null; then
-            echo "No version changes to commit"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Configure git to use PAT for push
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-
-          git add docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars
-          git commit -m "docs: create beta version ${{ steps.config.outputs.version }}"
-          git push
