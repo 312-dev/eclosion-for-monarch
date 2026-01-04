@@ -25,6 +25,7 @@ from core import (
     sanitize_name,
 )
 from services.credentials_service import CredentialsService
+from services.security_service import SecurityService
 from services.sync_service import SyncService
 
 load_dotenv()
@@ -89,6 +90,9 @@ _last_activity: datetime | None = None
 
 # Initialize sync service
 sync_service = SyncService()
+
+# Initialize security service
+security_service = SecurityService()
 
 # Initialize scheduler for background sync
 import atexit  # noqa: E402 - Intentionally delayed, scheduler depends on app setup
@@ -233,6 +237,17 @@ def _audit_log(event: str, success: bool, details: str = ""):
     safe_details = repr(_sanitize_log_value(details)) if details else "''"
     # Use %-style formatting with repr'd values for CodeQL compatibility
     logger.info("[AUDIT] %s | %s | IP: %s | Details: %s", event, status, safe_ip, safe_details)
+
+    # Store event in SQLite database for security panel
+    user_agent = request.headers.get("User-Agent", "")[:256]
+    ip_address = raw_ip.split(",")[0].strip() if raw_ip != "unknown" else None
+    security_service.log_event(
+        event_type=event,
+        success=success,
+        ip_address=ip_address,
+        details=_sanitize_log_value(details)[:500] if details else None,
+        user_agent=user_agent,
+    )
 
 
 def _update_activity():
@@ -1417,6 +1432,121 @@ def security_status():
         },
         "audit_logging": True,
     }
+
+
+@app.route("/security/events", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_security_events():
+    """
+    Get security events with optional filtering.
+
+    Query params:
+    - limit: Max events to return (default: 50, max: 200)
+    - offset: Pagination offset (default: 0)
+    - event_type: Filter by event type (e.g., "LOGIN_ATTEMPT")
+    - success: Filter by success/failure (true/false)
+    """
+    limit = min(request.args.get("limit", 50, type=int), 200)
+    offset = request.args.get("offset", 0, type=int)
+    event_type = request.args.get("event_type")
+    success_param = request.args.get("success")
+
+    success_filter: bool | None = None
+    if success_param is not None:
+        success_filter = success_param.lower() == "true"
+
+    events = security_service.get_events(
+        limit=limit, offset=offset, event_type=event_type, success=success_filter
+    )
+
+    return {
+        "events": [
+            {
+                "id": e.id,
+                "event_type": e.event_type,
+                "success": e.success,
+                "timestamp": e.timestamp,
+                "ip_address": e.ip_address,
+                "country": e.country,
+                "city": e.city,
+                "details": e.details,
+            }
+            for e in events
+        ],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@app.route("/security/events/summary", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_security_summary():
+    """Get summary statistics for security events."""
+    summary = security_service.get_summary()
+    return {
+        "total_events": summary.total_events,
+        "successful_logins": summary.successful_logins,
+        "failed_logins": summary.failed_logins,
+        "failed_unlock_attempts": summary.failed_unlock_attempts,
+        "logouts": summary.logouts,
+        "session_timeouts": summary.session_timeouts,
+        "unique_ips": summary.unique_ips,
+        "last_successful_login": summary.last_successful_login,
+        "last_failed_login": summary.last_failed_login,
+    }
+
+
+@app.route("/security/events/export", methods=["GET"])
+@api_handler(handle_mfa=False)
+def export_security_events():
+    """Export security events as CSV file."""
+    from flask import Response
+
+    csv_content = security_service.export_events_csv()
+    return Response(
+        csv_content,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=security_events.csv"},
+    )
+
+
+@app.route("/security/events/clear", methods=["POST"])
+@api_handler(handle_mfa=False)
+def clear_security_events():
+    """Clear all security event logs."""
+    security_service.clear_events()
+    _audit_log("SECURITY_LOGS_CLEARED", True, "All security logs cleared by user")
+    return {"success": True, "message": "Security logs cleared"}
+
+
+@app.route("/security/alerts", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_security_alerts():
+    """Get failed login/unlock attempts since last successful login."""
+    failed_events = security_service.get_failed_since_last_login()
+    return {
+        "has_alerts": len(failed_events) > 0,
+        "count": len(failed_events),
+        "events": [
+            {
+                "id": e.id,
+                "event_type": e.event_type,
+                "timestamp": e.timestamp,
+                "ip_address": e.ip_address,
+                "country": e.country,
+                "city": e.city,
+            }
+            for e in failed_events
+        ],
+    }
+
+
+@app.route("/security/alerts/dismiss", methods=["POST"])
+@api_handler(handle_mfa=False)
+def dismiss_security_alerts():
+    """Dismiss security alert banner."""
+    security_service.dismiss_security_alert()
+    return {"success": True}
 
 
 # ---- UTILITY ENDPOINTS ----

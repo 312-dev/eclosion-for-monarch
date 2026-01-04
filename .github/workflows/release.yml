@@ -143,9 +143,21 @@ jobs:
           gh workflow run security.yml --ref "$BRANCH"
           echo "Triggered CI and Security workflows on $BRANCH"
 
+  # Generate user documentation from source content
+  generate-docs:
+    needs: release-please
+    if: needs.release-please.outputs.pr_created == 'true'
+    uses: ./.github/workflows/generate-docs.yml
+    with:
+      version: ${{ needs.release-please.outputs.version }}
+      branch: ${{ needs.release-please.outputs.pr_head_branch }}
+    secrets: inherit
+
   auto-merge:
-    needs: [release-please, generate-summary]
-    if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success'
+    needs: [release-please, generate-summary, generate-docs]
+    # Only auto-merge if no docs were generated (docs need manual review)
+    # When generate-docs runs successfully and commits changes, skip auto-merge
+    if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success' && needs.generate-docs.result == 'skipped'
     runs-on: ubuntu-latest
     steps:
       - name: Auto-merge release PR
@@ -153,6 +165,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+
+  # Notify when docs are generated and need review
+  docs-review-reminder:
+    needs: [release-please, generate-docs]
+    if: needs.generate-docs.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add review reminder comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh pr comment ${{ needs.release-please.outputs.pr_number }} --body "📚 **Documentation Updated**
+
+          This PR includes auto-generated user guide updates. Please review the changes in:
+          - \`frontend/src/docs/guide/\` (bundled in app)
+          - \`docusaurus/guide/\` (public docs site)
+
+          Once reviewed, manually merge this PR."
 
   # Create Docusaurus version snapshot when a release is created
   create-docs-version:

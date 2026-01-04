@@ -43,7 +43,7 @@ export function DashboardTab() {
   usePageTitle('Dashboard', data?.config.user_first_name);
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl tab-content-enter">
       {/* Welcome Section */}
       <div className="mb-8">
         <h1

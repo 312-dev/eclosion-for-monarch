@@ -23,6 +23,10 @@ import type {
   ImportOptions,
   ImportResult,
   ImportPreviewResponse,
+  SecurityEventsResponse,
+  SecurityEventSummary,
+  SecurityAlertsResponse,
+  SecurityEventsQueryOptions,
 } from '../types';
 import { createInitialDemoState, type DemoState } from './demoData';
 
@@ -873,6 +877,151 @@ export async function getSecurityStatus(): Promise<SecurityStatus> {
   };
 }
 
+// Demo security events data
+const DEMO_SECURITY_EVENTS = [
+  {
+    id: 1,
+    event_type: 'LOGIN_ATTEMPT',
+    success: true,
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    ip_address: '73.45.123.89',
+    country: 'United States',
+    city: 'San Francisco',
+    details: 'User: dem***@example.com',
+  },
+  {
+    id: 2,
+    event_type: 'LOGIN_ATTEMPT',
+    success: false,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    ip_address: '185.220.101.45',
+    country: 'Germany',
+    city: 'Frankfurt',
+    details: 'Invalid credentials',
+  },
+  {
+    id: 3,
+    event_type: 'UNLOCK_ATTEMPT',
+    success: true,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    ip_address: '73.45.123.89',
+    country: 'United States',
+    city: 'San Francisco',
+    details: null,
+  },
+  {
+    id: 4,
+    event_type: 'LOGIN_ATTEMPT',
+    success: false,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    ip_address: '91.243.82.116',
+    country: 'Russia',
+    city: 'Moscow',
+    details: 'Invalid credentials',
+  },
+  {
+    id: 5,
+    event_type: 'SESSION_TIMEOUT',
+    success: true,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+    ip_address: '73.45.123.89',
+    country: 'United States',
+    city: 'San Francisco',
+    details: 'Session expired after inactivity',
+  },
+  {
+    id: 6,
+    event_type: 'LOGOUT',
+    success: true,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
+    ip_address: '73.45.123.89',
+    country: 'United States',
+    city: 'San Francisco',
+    details: null,
+  },
+];
+
+export async function getSecurityEvents(
+  options?: SecurityEventsQueryOptions
+): Promise<SecurityEventsResponse> {
+  await simulateDelay(100);
+
+  let events = [...DEMO_SECURITY_EVENTS];
+
+  if (options?.eventType) {
+    events = events.filter((e) => e.event_type === options.eventType);
+  }
+  if (options?.success !== undefined) {
+    events = events.filter((e) => e.success === options.success);
+  }
+
+  const offset = options?.offset ?? 0;
+  const limit = options?.limit ?? 50;
+
+  return {
+    events: events.slice(offset, offset + limit),
+    limit,
+    offset,
+  };
+}
+
+export async function getSecuritySummary(): Promise<SecurityEventSummary> {
+  await simulateDelay(50);
+  return {
+    total_events: 47,
+    successful_logins: 23,
+    failed_logins: 3,
+    failed_unlock_attempts: 1,
+    logouts: 15,
+    session_timeouts: 5,
+    unique_ips: 4,
+    last_successful_login: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    last_failed_login: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+  };
+}
+
+export async function exportSecurityEvents(): Promise<Blob> {
+  await simulateDelay(100);
+  const csv = [
+    'ID,Event Type,Success,Timestamp,IP Address,Country,City,Details',
+    ...DEMO_SECURITY_EVENTS.map(
+      (e) =>
+        `${e.id},${e.event_type},${e.success ? 'Yes' : 'No'},${e.timestamp},${e.ip_address || ''},${e.country || ''},${e.city || ''},${e.details || ''}`
+    ),
+  ].join('\n');
+  return new Blob([csv], { type: 'text/csv' });
+}
+
+export async function clearSecurityEvents(): Promise<{ success: boolean; message: string }> {
+  await simulateDelay(100);
+  return { success: true, message: 'Demo: Security logs cleared' };
+}
+
+export async function getSecurityAlerts(): Promise<SecurityAlertsResponse> {
+  await simulateDelay(50);
+  // In demo, show 2 failed attempts as an example
+  const failedEvents = DEMO_SECURITY_EVENTS.filter(
+    (e) => e.event_type === 'LOGIN_ATTEMPT' && !e.success
+  );
+  return {
+    has_alerts: failedEvents.length > 0,
+    count: failedEvents.length,
+    events: failedEvents.map((e) => ({
+      id: e.id,
+      event_type: e.event_type,
+      timestamp: e.timestamp,
+      ip_address: e.ip_address,
+      country: e.country,
+      city: e.city,
+    })),
+  };
+}
+
+export async function dismissSecurityAlerts(): Promise<{ success: boolean }> {
+  await simulateDelay(50);
+  return { success: true };
+}
+
 export async function getVersion(): Promise<VersionInfo> {
   await simulateDelay(50);
   return {
@@ -909,6 +1058,75 @@ export async function getChangelogStatus(): Promise<ChangelogStatusResult> {
 export async function markChangelogRead(): Promise<MarkChangelogReadResult> {
   await simulateDelay(50);
   return { success: true, marked_version: `${DEMO_VERSION}-demo` };
+}
+
+// ============================================================================
+// Update Info Functions (Demo mode)
+// ============================================================================
+
+export interface Release {
+  version: string;
+  tag: string;
+  name: string;
+  published_at: string;
+  is_prerelease: boolean;
+  html_url: string;
+  is_current: boolean;
+}
+
+export interface ReleasesResponse {
+  current_version: string;
+  current_channel: string;
+  stable_releases: Release[];
+  beta_releases: Release[];
+  error?: string;
+}
+
+export interface UpdateInfo {
+  deployment_type: 'railway' | 'docker' | 'local';
+  current_version: string;
+  current_channel: string;
+  instructions: {
+    steps: string[];
+    project_url?: string;
+    example_compose?: string;
+  };
+}
+
+export async function getAvailableReleases(): Promise<ReleasesResponse> {
+  await simulateDelay(100);
+  return {
+    current_version: DEMO_VERSION,
+    current_channel: 'demo',
+    stable_releases: [
+      {
+        version: DEMO_VERSION,
+        tag: `v${DEMO_VERSION}`,
+        name: `v${DEMO_VERSION}`,
+        published_at: new Date().toISOString(),
+        is_prerelease: false,
+        html_url: 'https://github.com/monarchmoney/eclosion/releases',
+        is_current: true,
+      },
+    ],
+    beta_releases: [],
+  };
+}
+
+export async function getUpdateInfo(): Promise<UpdateInfo> {
+  await simulateDelay(100);
+  return {
+    deployment_type: 'local',
+    current_version: DEMO_VERSION,
+    current_channel: 'demo',
+    instructions: {
+      steps: [
+        'This is demo mode - no updates are needed!',
+        'In a real deployment, you would see update instructions here.',
+        'Visit the documentation for deployment options.',
+      ],
+    },
+  };
 }
 
 // ============================================================================

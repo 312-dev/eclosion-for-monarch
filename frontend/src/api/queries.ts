@@ -24,6 +24,9 @@ export const queryKeys = {
   unmappedCategories: ['unmappedCategories'] as const,
   deletableCategories: ['deletableCategories'] as const,
   securityStatus: ['securityStatus'] as const,
+  securityEvents: ['securityEvents'] as const,
+  securitySummary: ['securitySummary'] as const,
+  securityAlerts: ['securityAlerts'] as const,
   deploymentInfo: ['deploymentInfo'] as const,
   version: ['version'] as const,
   changelog: ['changelog'] as const,
@@ -104,6 +107,89 @@ export function useSecurityStatusQuery() {
     queryKey: getQueryKey(queryKeys.securityStatus, isDemo),
     queryFn: isDemo ? demoApi.getSecurityStatus : api.getSecurityStatus,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Security events with filtering
+ */
+export function useSecurityEventsQuery(options?: {
+  limit?: number;
+  offset?: number;
+  eventType?: string;
+  success?: boolean;
+}) {
+  const isDemo = useDemo();
+  return useQuery({
+    queryKey: [...getQueryKey(queryKeys.securityEvents, isDemo), options],
+    queryFn: () =>
+      isDemo ? demoApi.getSecurityEvents(options) : api.getSecurityEvents(options),
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+/**
+ * Security summary statistics
+ */
+export function useSecuritySummaryQuery() {
+  const isDemo = useDemo();
+  return useQuery({
+    queryKey: getQueryKey(queryKeys.securitySummary, isDemo),
+    queryFn: isDemo ? demoApi.getSecuritySummary : api.getSecuritySummary,
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Security alerts (failed attempts since last login)
+ */
+export function useSecurityAlertsQuery(options?: { enabled?: boolean }) {
+  const isDemo = useDemo();
+  return useQuery({
+    queryKey: getQueryKey(queryKeys.securityAlerts, isDemo),
+    queryFn: isDemo ? demoApi.getSecurityAlerts : api.getSecurityAlerts,
+    staleTime: 30 * 1000,
+    ...options,
+  });
+}
+
+/**
+ * Clear security events
+ */
+export function useClearSecurityEventsMutation() {
+  const isDemo = useDemo();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: isDemo ? demoApi.clearSecurityEvents : api.clearSecurityEvents,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securityEvents, isDemo) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securitySummary, isDemo) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securityAlerts, isDemo) });
+    },
+  });
+}
+
+/**
+ * Dismiss security alerts
+ */
+export function useDismissSecurityAlertsMutation() {
+  const isDemo = useDemo();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: isDemo ? demoApi.dismissSecurityAlerts : api.dismissSecurityAlerts,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securityAlerts, isDemo) });
+    },
+  });
+}
+
+/**
+ * Export security events as CSV
+ */
+export function useExportSecurityEventsMutation() {
+  const isDemo = useDemo();
+  return useMutation({
+    mutationFn: isDemo ? demoApi.exportSecurityEvents : api.exportSecurityEvents,
   });
 }
 

@@ -9,16 +9,17 @@
  * - Footer with GitHub link
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { TourProvider } from '@reactour/tour';
-import { HelpCircle, ShieldCheck } from 'lucide-react';
+import { HelpCircle, ShieldCheck, BookOpen, FileText, ChevronDown } from 'lucide-react';
 import { SidebarNavigation } from './SidebarNavigation';
 import { SyncButton } from '../SyncButton';
 import { SecurityInfo } from '../SecurityInfo';
 import { UpdateBanner } from '../UpdateBanner';
 import { VersionIndicator } from '../VersionIndicator';
 import { NoticeBanner } from '../ui/NoticeBanner';
+import { SecurityAlertBanner } from '../SecurityAlertBanner';
 import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
 import { useDashboardQuery, useSyncMutation } from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
@@ -26,6 +27,9 @@ import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils/errors';
 import { AppIcon, TourController } from '../wizards/WizardComponents';
+
+// Vite injects app version at build time
+declare const __APP_VERSION__: string;
 
 // Tour steps for the main app
 const TOUR_STEPS = [
@@ -95,6 +99,8 @@ const tourStyles = {
 export function AppShell() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showHelpDropdown, setShowHelpDropdown] = useState(false);
+  const helpDropdownRef = useRef<HTMLDivElement>(null);
 
   const location = useLocation();
   const { logout } = useAuth();
@@ -109,12 +115,32 @@ export function AppShell() {
   // Check if current route has a tour available
   const hasTour = location.pathname === '/recurring' || location.pathname === '/demo/recurring';
 
+  // Close help dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (helpDropdownRef.current && !helpDropdownRef.current.contains(event.target as Node)) {
+        setShowHelpDropdown(false);
+      }
+    }
+    if (showHelpDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showHelpDropdown]);
+
   const handleHelpClick = () => {
     if (hasTour) {
+      // On recurring page, open the tour directly
       setShowTour(true);
     } else {
-      window.open('https://github.com/graysoncadams/eclosion-for-monarch/discussions', '_blank');
+      // On other pages, show the dropdown
+      setShowHelpDropdown(!showHelpDropdown);
     }
+  };
+
+  const handleHelpOption = (path: string) => {
+    setShowHelpDropdown(false);
+    window.open(path, '_blank');
   };
 
   const handleSignOut = async () => {
@@ -186,7 +212,7 @@ export function AppShell() {
         <header className="app-header" role="banner">
           <div className="app-header-content relative">
             <div className="app-brand">
-              <Link to={`${pathPrefix}/recurring`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to recurring">
+              <Link to={`${pathPrefix}/`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to home">
                 <AppIcon size={32} />
                 <h1 className="app-title hidden sm:block" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600 }}>
                   Eclosion
@@ -216,15 +242,52 @@ export function AppShell() {
               >
                 <ShieldCheck className="app-header-icon" aria-hidden="true" />
               </button>
-              <button
-                type="button"
-                onClick={handleHelpClick}
-                className="app-header-btn hidden sm:flex"
-                style={{ color: 'var(--monarch-text-muted)' }}
-                aria-label={hasTour ? 'Show tutorial' : 'Get help'}
-              >
-                <HelpCircle className="app-header-icon" aria-hidden="true" />
-              </button>
+              <div className="relative hidden sm:block" ref={helpDropdownRef}>
+                <button
+                  type="button"
+                  onClick={handleHelpClick}
+                  className="app-header-btn flex items-center gap-1"
+                  style={{ color: 'var(--monarch-text-muted)' }}
+                  aria-label={hasTour ? 'Show tutorial' : 'Get help'}
+                  aria-expanded={showHelpDropdown}
+                  aria-haspopup={!hasTour}
+                >
+                  <HelpCircle className="app-header-icon" aria-hidden="true" />
+                  {!hasTour && <ChevronDown className="h-3 w-3" aria-hidden="true" />}
+                </button>
+                {showHelpDropdown && (
+                  <div
+                    className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-1 z-50"
+                    style={{
+                      backgroundColor: 'var(--monarch-bg-card)',
+                      border: '1px solid var(--monarch-border)',
+                    }}
+                    role="menu"
+                    aria-orientation="vertical"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleHelpOption('/guide')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-[var(--monarch-bg-page)]"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                      role="menuitem"
+                    >
+                      <BookOpen className="h-4 w-4" style={{ color: 'var(--monarch-orange)' }} aria-hidden="true" />
+                      How to Use
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleHelpOption('/docs')}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-[var(--monarch-bg-page)]"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                      role="menuitem"
+                    >
+                      <FileText className="h-4 w-4" style={{ color: 'var(--monarch-orange)' }} aria-hidden="true" />
+                      Technical Docs
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>
@@ -241,6 +304,9 @@ export function AppShell() {
 
           {/* Main content wrapper */}
           <div className="app-content-wrapper">
+            {/* Security Alert Banner - shown if failed login attempts detected */}
+            <SecurityAlertBanner />
+
             {/* Notices - announced to screen readers */}
             {data.notices && data.notices.length > 0 && (
               <section className="px-4 pt-2" aria-label="Notifications">

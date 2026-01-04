@@ -108,6 +108,70 @@ TOOLTIP: 70        // Tooltips (highest layer)
 
 Import from constants: `import { Z_INDEX } from '../constants';`
 
+### Animations
+
+**Use the centralized animation framework.**
+
+The animation system is defined in `index.css` with CSS variables matching `constants/index.ts`. All animations respect `prefers-reduced-motion` for accessibility.
+
+**Timing Variables (CSS):**
+```css
+--animation-fast: 150ms   /* Micro-interactions */
+--animation-normal: 200ms /* Standard transitions */
+--animation-slow: 300ms   /* Emphasis animations */
+```
+
+**Page Transitions:**
+```tsx
+// Tab/page content wrappers
+<div className="tab-content-enter">
+
+// Cards/sections within pages (auto-staggers)
+<div className="section-enter">
+```
+
+**Micro-Interactions:**
+```tsx
+// Buttons - subtle press feedback
+<button className="btn-press">
+
+// Icon buttons - scale on hover/press
+<button className="icon-btn-hover">
+
+// Toggle switches
+<button className="toggle-switch">
+  <span className="toggle-knob" />
+</button>
+```
+
+**List Animations:**
+```tsx
+// List items with stagger (up to 15 items)
+<tr className="list-item-enter">
+
+// Item highlight after action
+<tr className="list-item-highlight">
+```
+
+**Feedback States:**
+```tsx
+// Error shake
+<div className="animate-error-shake">
+
+// Success pulse
+<div className="animate-success">
+
+// Loading pulse
+<div className="animate-loading">
+```
+
+**Utility Classes:**
+- `fade-in`, `fade-out` - Basic fades
+- `slide-up`, `slide-down` - Slide animations
+- `scale-in`, `pop-in` - Scale (pop-in has bounce)
+- `transition-fast`, `transition-normal`, `transition-slow` - Duration utilities
+- `transition-colors-fast`, `transition-transform-fast` - Property-specific
+
 ### Error Handling
 
 **Use standardized error utilities.**

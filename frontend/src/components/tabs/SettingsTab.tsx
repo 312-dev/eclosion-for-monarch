@@ -8,11 +8,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, RefreshCw, Trash2, AlertTriangle, Repeat, Key, Database, ChevronRight, Clock, LogOut, Sun, Moon, Monitor, Home, Download, Upload, RotateCcw } from 'lucide-react';
+import { Settings, RefreshCw, Trash2, AlertTriangle, Repeat, Key, Database, ChevronRight, Clock, LogOut, Sun, Moon, Monitor, Home, Download, Upload, RotateCcw, Shield } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ResetAppModal } from '../ResetAppModal';
 import { UninstallModal } from '../UninstallModal';
 import { ImportSettingsModal } from '../ImportSettingsModal';
+import { SecurityPanel } from '../SecurityPanel';
 import { AutoSyncSettings } from '../AutoSyncSettings';
 import { SearchableSelect } from '../SearchableSelect';
 import { UpdateModal } from '../UpdateModal';
@@ -285,7 +286,7 @@ export function SettingsTab() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto tab-content-enter">
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -461,19 +462,6 @@ export function SettingsTab() {
                   </button>
                 </div>
 
-                {/* Bottom row with Reset link */}
-                {hasAnythingToReset && (
-                  <div className="flex justify-end mt-3">
-                    <button
-                      type="button"
-                      className="text-sm font-medium hover-opacity-80"
-                      style={{ color: 'var(--monarch-orange)', background: 'none', border: 'none', cursor: 'pointer' }}
-                      onClick={() => setShowRecurringResetModal(true)}
-                    >
-                      Reset
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Nested Settings - Only show when configured */}
@@ -513,7 +501,7 @@ export function SettingsTab() {
                         type="button"
                         onClick={handleAutoTrackChange}
                         disabled={savingAutoTrack}
-                        className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                        className="relative inline-flex h-5 w-9 items-center rounded-full toggle-switch"
                         style={{
                           backgroundColor: dashboardData?.config.auto_sync_new
                             ? 'var(--monarch-orange)'
@@ -521,7 +509,7 @@ export function SettingsTab() {
                         }}
                       >
                         <span
-                          className="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm"
+                          className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm toggle-knob"
                           style={{
                             transform: dashboardData?.config.auto_sync_new
                               ? 'translateX(1rem)'
@@ -590,7 +578,7 @@ export function SettingsTab() {
                         type="button"
                         onClick={handleAutoUpdateTargetsChange}
                         disabled={savingAutoUpdateTargets}
-                        className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                        className="relative inline-flex h-5 w-9 items-center rounded-full toggle-switch"
                         style={{
                           backgroundColor: dashboardData?.config.auto_update_targets
                             ? 'var(--monarch-orange)'
@@ -598,7 +586,7 @@ export function SettingsTab() {
                         }}
                       >
                         <span
-                          className="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm"
+                          className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm toggle-knob"
                           style={{
                             transform: dashboardData?.config.auto_update_targets
                               ? 'translateX(1rem)'
@@ -613,6 +601,20 @@ export function SettingsTab() {
             </>
           )}
         </div>
+
+        {/* Reset link - outside the card */}
+        {hasAnythingToReset && (
+          <div className="mt-2 px-1">
+            <button
+              type="button"
+              className="text-sm font-medium hover:opacity-80 transition-opacity"
+              style={{ color: 'var(--monarch-error)', background: 'none', border: 'none', cursor: 'pointer' }}
+              onClick={() => setShowRecurringResetModal(true)}
+            >
+              Reset Recurring Tool
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Automation Section */}
@@ -666,7 +668,7 @@ export function SettingsTab() {
                   </div>
                   <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
                     {versionInfo?.build_time && versionInfo.build_time !== 'unknown'
-                      ? `Built ${new Date(versionInfo.build_time).toLocaleDateString()}`
+                      ? `Last updated: ${new Date(versionInfo.build_time).toLocaleDateString()}`
                       : 'Current version'
                     }
                   </div>
@@ -724,6 +726,24 @@ export function SettingsTab() {
             </div>
             <ChevronRight size={16} style={{ color: 'var(--monarch-text-muted)' }} />
           </button>
+        </div>
+      </section>
+
+      {/* Security Section */}
+      <section className="mb-8">
+        <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
+          <Shield size={12} />
+          Security & Activity
+        </h2>
+        <div
+          className="rounded-xl overflow-hidden p-4"
+          style={{
+            backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+          }}
+        >
+          <SecurityPanel />
         </div>
       </section>
 

@@ -86,7 +86,7 @@ export function Button({
       aria-label={ariaLabel}
       className={`
         inline-flex items-center justify-center gap-2
-        rounded-md font-medium
+        rounded-md font-medium btn-press
         focus:outline-none focus:ring-2 focus:ring-offset-2
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variantStyle.hoverClass}

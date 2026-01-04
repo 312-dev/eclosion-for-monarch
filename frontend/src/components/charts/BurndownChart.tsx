@@ -25,87 +25,71 @@ interface CustomTooltipProps {
   viewBox?: { x: number; y: number; width: number; height: number };
 }
 
+// Store chart rect ref at module level so Portal-rendered tooltip can access it
+let chartRectCache: DOMRect | null = null;
+
 function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTooltipProps) {
-  const [chartRect, setChartRect] = useState<DOMRect | null>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-
-  // Get chart position on first render
-  useEffect(() => {
-    if (tooltipRef.current && !chartRect) {
-      const chartContainer = tooltipRef.current.closest('.recharts-wrapper');
-      if (chartContainer) {
-        setChartRect(chartContainer.getBoundingClientRect());
-      }
-    }
-  }, [chartRect]);
-
   const firstPayload = payload?.[0];
-  if (!active || !firstPayload || !coordinate) return null;
+  if (!active || !firstPayload || !coordinate || !chartRectCache) return null;
 
   const data = firstPayload.payload;
-
-  // Calculate position directly from current coordinate, with viewport boundary checks
+  const chartRect = chartRectCache;
   const tooltipWidth = 180;
   const tooltipHeight = 80;
-  let position = null;
-  if (chartRect) {
-    let left = chartRect.left + coordinate.x + 10;
-    let top = chartRect.top + coordinate.y - 60;
 
-    // Check right edge - flip to left side if needed
-    if (left + tooltipWidth > window.innerWidth - 10) {
-      left = chartRect.left + coordinate.x - tooltipWidth - 10;
-    }
-    // Check bottom edge
-    if (top + tooltipHeight > window.innerHeight - 10) {
-      top = window.innerHeight - tooltipHeight - 10;
-    }
-    // Check top edge
-    if (top < 10) {
-      top = 10;
-    }
+  let left = chartRect.left + coordinate.x + 10;
+  let top = chartRect.top + coordinate.y - 60;
 
-    position = { top, left };
+  // Check right edge - flip to left side if needed
+  if (left + tooltipWidth > window.innerWidth - 10) {
+    left = chartRect.left + coordinate.x - tooltipWidth - 10;
+  }
+  // Check bottom edge
+  if (top + tooltipHeight > window.innerHeight - 10) {
+    top = window.innerHeight - tooltipHeight - 10;
+  }
+  // Check top edge
+  if (top < 10) {
+    top = 10;
   }
 
-  const tooltipContent = (
-    <div
-      ref={tooltipRef}
-      className="px-2 py-1.5 rounded-md shadow-lg text-xs"
-      style={{
-        backgroundColor: 'var(--monarch-bg-card)',
-        border: '1px solid var(--monarch-border)',
-        position: position ? 'fixed' : 'relative',
-        top: position?.top,
-        left: position?.left,
-        zIndex: Z_INDEX.TOOLTIP,
-        pointerEvents: 'none',
-      }}
-    >
-      <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-        {data.fullLabel}
-      </div>
-      <div style={{ color: 'var(--monarch-success)' }}>
-        {formatCurrency(data.amount, { maximumFractionDigits: 0 })}/mo
-      </div>
-      {data.rollupAmount > 0 && (
-        <div className="text-[10px]" style={{ color: 'var(--monarch-text-muted)' }}>
-          incl. {formatCurrency(data.rollupAmount, { maximumFractionDigits: 0 })} rollup
+  // Always render via Portal to escape overflow:hidden containers
+  return (
+    <Portal>
+      <div
+        className="px-2 py-1.5 rounded-md shadow-lg text-xs"
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+          position: 'fixed',
+          top,
+          left,
+          zIndex: Z_INDEX.TOOLTIP,
+          pointerEvents: 'none',
+        }}
+      >
+        <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+          {data.fullLabel}
         </div>
-      )}
-      {data.completingItems.length > 0 && (
-        <div className="text-[10px] mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
-          <div>Paid / resets:</div>
-          {data.completingItems.map((item, i) => (
-            <div key={i}>- {item}</div>
-          ))}
+        <div style={{ color: 'var(--monarch-success)' }}>
+          {formatCurrency(data.amount, { maximumFractionDigits: 0 })}/mo
         </div>
-      )}
-    </div>
+        {data.rollupAmount > 0 && (
+          <div className="text-[10px]" style={{ color: 'var(--monarch-text-muted)' }}>
+            incl. {formatCurrency(data.rollupAmount, { maximumFractionDigits: 0 })} rollup
+          </div>
+        )}
+        {data.completingItems.length > 0 && (
+          <div className="text-[10px] mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
+            <div>Paid / resets:</div>
+            {data.completingItems.map((item, i) => (
+              <div key={i}>- {item}</div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Portal>
   );
-
-  // Render via Portal to escape sidebar overflow
-  return position ? <Portal>{tooltipContent}</Portal> : tooltipContent;
 }
 
 // Hook to get CSS variable values for Recharts
@@ -150,6 +134,17 @@ function useChartColors() {
 
 export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
   const colors = useChartColors();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Update chart rect cache on mouse interaction so tooltip can calculate position
+  const updateChartRect = () => {
+    if (containerRef.current) {
+      const wrapper = containerRef.current.querySelector('.recharts-wrapper');
+      if (wrapper) {
+        chartRectCache = wrapper.getBoundingClientRect();
+      }
+    }
+  };
 
   if (data.length < 2) return null;
 
@@ -165,7 +160,9 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
 
   return (
     <div
+      ref={containerRef}
       className="mt-3"
+      onMouseMove={updateChartRect}
       style={{
         height: 180,
         overflowX: needsScroll ? 'auto' : 'visible',

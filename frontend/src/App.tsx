@@ -24,6 +24,8 @@ import { FeatureDetailPage } from './pages/FeatureDetailPage';
 import { DashboardTab } from './components/tabs/DashboardTab';
 import { RecurringTab } from './components/tabs/RecurringTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
+import { GuidePage } from './pages/GuidePage';
+import { TechnicalDocsPage } from './pages/TechnicalDocsPage';
 import { RateLimitError, AuthRequiredError } from './api/client';
 import { ErrorPage } from './components/ui/ErrorPage';
 import { useIsMarketingSite } from './hooks/useIsMarketingSite';
@@ -110,6 +112,11 @@ function ProductionRoutes() {
           <Route path="/recurring" element={<RecurringTab />} />
           <Route path="/settings" element={<SettingsTab />} />
         </Route>
+        {/* Bundled docs - open in new tab, no AppShell */}
+        <Route path="/guide" element={<GuidePage />} />
+        <Route path="/guide/:slug" element={<GuidePage />} />
+        <Route path="/docs" element={<TechnicalDocsPage />} />
+        <Route path="/docs/:slug" element={<TechnicalDocsPage />} />
       </Route>
 
       {/* Catch-all redirect */}

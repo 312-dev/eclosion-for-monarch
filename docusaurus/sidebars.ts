@@ -1,5 +1,8 @@
 import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
+/**
+ * Sidebar configuration for technical documentation (/docs)
+ */
 const sidebars: SidebarsConfig = {
   docsSidebar: [
     'intro',
