@@ -195,24 +195,29 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
           {/* Attribution */}
           <div className="mt-4 pt-4 border-t border-[var(--monarch-border)] text-center text-xs text-[var(--monarch-text-muted)]">
-            Logo by{' '}
-            <a
-              href="https://thenounproject.com/rosa991/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[var(--monarch-text-dark)]"
-            >
-              Rosa Lia
-            </a>{' '}
-            from{' '}
-            <a
-              href="https://thenounproject.com/icon/butterfly-7666562/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[var(--monarch-text-dark)]"
-            >
-              Noun Project
-            </a>
+            <p>
+              Logo by{' '}
+              <a
+                href="https://thenounproject.com/rosa991/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[var(--monarch-text-dark)]"
+              >
+                Rosa Lia
+              </a>{' '}
+              from{' '}
+              <a
+                href="https://thenounproject.com/icon/butterfly-7666562/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[var(--monarch-text-dark)]"
+              >
+                Noun Project
+              </a>
+            </p>
+            <p className="mt-2">
+              Eclosion is not affiliated with, endorsed by, or sponsored by Monarch Money.
+            </p>
           </div>
         </div>
       </footer>
