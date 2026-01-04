@@ -1,0 +1,35 @@
+# Enforce branch naming conventions
+# Only feature/* and update/* branches are allowed for PRs
+
+name: Branch naming
+
+on:
+  pull_request:
+    branches: [develop]
+
+jobs:
+  check-branch-name:
+    name: Check branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+
+          # Allow these prefixes
+          if [[ "$BRANCH" =~ ^(feature|update)/ ]]; then
+            echo "✅ Branch name '$BRANCH' follows naming convention"
+            exit 0
+          fi
+
+          echo "::error::Branch name '$BRANCH' does not follow naming conventions."
+          echo ""
+          echo "Please use one of these prefixes:"
+          echo "  feature/  - For new features (e.g., feature/add-dark-mode)"
+          echo "  update/   - For fixes, refactors, docs, chores (e.g., update/fix-login)"
+          echo ""
+          echo "To rename your branch:"
+          echo "  git branch -m $BRANCH feature/your-description"
+          echo "  git push origin -u feature/your-description"
+          echo "  # Then close this PR and open a new one"
+          exit 1

@@ -72,11 +72,14 @@ Copy `.env.example` to `.env` and configure:
 
 ### Branch Naming
 
-Use descriptive branch names:
-- `feature/add-dark-mode` - New features
-- `fix/login-validation` - Bug fixes
-- `docs/update-readme` - Documentation
-- `refactor/api-cleanup` - Code refactoring
+Branch names **must** use one of these prefixes (enforced by CI):
+
+| Prefix | Use for | Example |
+|--------|---------|---------|
+| `feature/` | New features, enhancements | `feature/add-dark-mode` |
+| `update/` | Fixes, refactors, docs, chores | `update/fix-login-bug` |
+
+PRs with other branch names will be blocked.
 
 ### Commit Messages
 

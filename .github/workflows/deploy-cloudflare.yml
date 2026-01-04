@@ -236,6 +236,9 @@ jobs:
 
       - name: Commit docs version changes
         if: steps.config.outputs.environment == 'beta' && github.event_name == 'push'
+        env:
+          # Use PAT to bypass branch protection (GITHUB_TOKEN can't bypass)
+          GH_TOKEN: ${{ secrets.ADMIN_PAT }}
         run: |
           # Check if there are changes to commit
           if git diff --quiet docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars 2>/dev/null; then
@@ -245,6 +248,9 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Configure git to use PAT for push
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
 
           git add docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars
           git commit -m "docs: create beta version ${{ steps.config.outputs.version }}"
