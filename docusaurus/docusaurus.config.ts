@@ -47,7 +47,8 @@ const config: Config = {
             current: {
               label: 'Next',
               path: process.env.ECLOSION_BETA === 'true' ? '' : 'next',
-              banner: 'unreleased',
+              // On beta site, we use the announcement bar instead of this banner
+              banner: process.env.ECLOSION_BETA === 'true' ? 'none' : 'unreleased',
             },
             '1.0': {
               label: '1.0',
