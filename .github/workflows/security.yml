@@ -12,16 +12,8 @@ name: Security
 on:
   pull_request:
     branches: [main, develop]
-    paths:
-      - "**.py"
-      - "**.ts"
-      - "**.tsx"
-      - "**.js"
-      - "**/package*.json"
-      - "**/requirements*.txt"
-      - "Dockerfile"
-      - "docker-compose.yml"
-      - ".github/**"
+    # Note: No paths filter here - we always run to report status
+    # Individual jobs use dorny/paths-filter to skip when not needed
   push:
     branches: [main, develop]
   schedule:
@@ -49,12 +41,38 @@ concurrency:
 
 jobs:
   # ============================================================================
+  # Detect which files changed - skip scans if no security-relevant files
+  # ============================================================================
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      security_relevant: ${{ steps.filter.outputs.security_relevant }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            security_relevant:
+              - '**.py'
+              - '**.ts'
+              - '**.tsx'
+              - '**.js'
+              - '**/package*.json'
+              - '**/requirements*.txt'
+              - 'Dockerfile'
+              - 'docker-compose.yml'
+              - '.github/**'
+
+  # ============================================================================
   # CodeQL - Static Application Security Testing (SAST)
   # Scans for SQL injection, XSS, command injection, path traversal, etc.
   # Results appear in GitHub Security tab
   # ============================================================================
   codeql:
     name: CodeQL (${{ matrix.language }})
+    needs: changes
+    if: needs.changes.outputs.security_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -89,6 +107,8 @@ jobs:
   # ============================================================================
   dependency-scan:
     name: Dependency Scan
+    needs: changes
+    if: needs.changes.outputs.security_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -134,6 +154,8 @@ jobs:
   # ============================================================================
   container-scan:
     name: Container Scan
+    needs: changes
+    if: needs.changes.outputs.security_relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -199,13 +221,14 @@ jobs:
     name: DAST (OWASP ZAP)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [container-scan]
+    needs: [changes, container-scan]
     # Only run DAST on:
     # - Push events (trusted)
     # - PRs from the same repo (not forks) to prevent abuse
     # - Scheduled runs
     # - Manual runs (not workflow_call with skip_dast=true)
     if: |
+      needs.changes.outputs.security_relevant == 'true' &&
       inputs.skip_dast != true && (
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
@@ -314,17 +337,24 @@ jobs:
   security-status:
     name: Security Status
     runs-on: ubuntu-latest
-    needs: [codeql, dependency-scan, container-scan, dast]
+    needs: [changes, codeql, dependency-scan, container-scan, dast]
     if: always()
     steps:
       - name: Check security scan results
         run: |
           echo "=== Security Scan Results ==="
+          echo "Security-relevant files changed: ${{ needs.changes.outputs.security_relevant }}"
           echo "CodeQL: ${{ needs.codeql.result }}"
           echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
           echo "Container Scan: ${{ needs.container-scan.result }}"
           echo "DAST: ${{ needs.dast.result }}"
           echo ""
+
+          # If no security-relevant files changed, all scans were skipped - that's OK
+          if [ "${{ needs.changes.outputs.security_relevant }}" != "true" ]; then
+            echo "✅ No security-relevant files changed - scans skipped"
+            exit 0
+          fi
 
           # DAST is allowed to be skipped (fork PRs)
           results="${{ needs.codeql.result }} ${{ needs.dependency-scan.result }} ${{ needs.container-scan.result }}"

@@ -16,7 +16,20 @@ jobs:
     steps:
       - name: Check source branch
         run: |
-          if [ "${{ github.head_ref }}" != "develop" ]; then
+          HEAD_REF="${{ github.head_ref }}"
+
+          # Allow automated branches from release-please and productboard-sync
+          if [[ "$HEAD_REF" =~ ^release-please-- ]]; then
+            echo "✅ Release-please branch - automated release PR"
+            exit 0
+          fi
+
+          if [[ "$HEAD_REF" =~ ^chore/productboard-sync- ]]; then
+            echo "✅ ProductBoard sync branch - automated data update"
+            exit 0
+          fi
+
+          if [ "$HEAD_REF" != "develop" ]; then
             echo "::error::PRs to main must come from the develop branch."
             echo ""
             echo "This repository uses Git Flow:"
