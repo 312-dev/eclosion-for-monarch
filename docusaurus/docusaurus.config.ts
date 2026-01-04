@@ -13,7 +13,9 @@ const config: Config = {
   organizationName: 'GraysonCAdams',
   projectName: 'eclosion-for-monarch',
 
-  onBrokenLinks: 'throw',
+  // Links to / and /demo are served by the main React app, not Docusaurus
+  // These are valid at runtime but unknown to Docusaurus during build
+  onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
 
   i18n: {
@@ -32,13 +34,6 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           editUrl:
             'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
-          lastVersion: 'current',
-          versions: {
-            current: {
-              label: 'Next',
-              path: '',
-            },
-          },
           showLastUpdateTime: true,
         },
         blog: false,
@@ -50,6 +45,17 @@ const config: Config = {
   ],
 
   themeConfig: {
+    // Beta announcement bar - shown when ECLOSION_BETA env var is set
+    ...(process.env.ECLOSION_BETA === 'true' && {
+      announcementBar: {
+        id: 'beta_warning',
+        content:
+          'You are viewing documentation for the <strong>beta</strong> version. Some features may be unstable. <a href="https://eclosion.app/docs">View stable docs</a>',
+        backgroundColor: '#fef3c7',
+        textColor: '#92400e',
+        isCloseable: false,
+      },
+    }),
     colorMode: {
       defaultMode: 'dark',
       respectPrefersColorScheme: true,
@@ -69,22 +75,17 @@ const config: Config = {
           label: 'User Guide',
         },
         {
-          type: 'docsVersionDropdown',
-          position: 'right',
-          dropdownActiveClassDisabled: true,
-        },
-        {
           href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
           label: 'Self-Hosting',
           position: 'right',
         },
         {
-          href: 'https://eclosion.app',
+          to: '/',
           label: 'Home',
           position: 'right',
         },
         {
-          href: 'https://eclosion.app/demo',
+          to: '/demo',
           label: 'Demo',
           position: 'right',
         },
@@ -107,7 +108,7 @@ const config: Config = {
             },
             {
               label: 'Recurring Expenses',
-              to: '/docs/recurring-expenses',
+              to: '/docs/recurring/overview',
             },
           ],
         },

@@ -12,10 +12,21 @@ const sidebars: SidebarsConfig = {
       label: 'Features',
       collapsed: false,
       items: [
-        'recurring-expenses',
-        'setup-wizard',
-        'rollup-category',
-        'category-linking',
+        {
+          type: 'category',
+          label: 'Recurring Expenses',
+          collapsed: false,
+          link: {
+            type: 'doc',
+            id: 'recurring/overview',
+          },
+          items: [
+            'recurring/setup-wizard',
+            'recurring/rollup-category',
+            'recurring/category-linking',
+          ],
+        },
+        // Future features go here as additional categories
       ],
     },
   ],

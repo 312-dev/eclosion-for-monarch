@@ -325,3 +325,77 @@ export function useNewFeatureMutation() {
 | `frontend/src/api/demoData.ts` | Initial seed data for demo |
 | `frontend/src/api/queries.ts` | Routes queries/mutations based on demo mode |
 | `frontend/src/context/DemoAuthContext.tsx` | Auth bypass for demo mode |
+
+## Documentation Structure
+
+The user-facing documentation is built with Docusaurus and located in `docusaurus/`. Documentation is auto-generated from in-app help content via `scripts/docs-gen/`.
+
+### Documentation Hierarchy
+
+Eclosion is a **toolkit** with multiple **features**. The docs are organized to reflect this:
+
+```
+docs/
+├── intro.mdx              # Getting Started (top level)
+└── recurring/             # Feature: Recurring Expenses
+    ├── _category_.json    # Category metadata
+    ├── overview.mdx       # Main feature overview (position 1)
+    ├── setup-wizard.mdx   # Sub-feature (position 2)
+    ├── rollup-category.mdx # Sub-feature (position 3)
+    └── category-linking.mdx # Sub-feature (position 4)
+```
+
+**Key principles:**
+1. Each major feature gets its own folder under `docs/`
+2. The folder contains an `overview.mdx` as the entry point
+3. Sub-features/related pages are nested within the feature folder
+4. Use `_category_.json` for Docusaurus category metadata
+
+### When Adding New Features
+
+1. Create a new folder: `docs/{feature-name}/`
+2. Add `_category_.json` with label and position
+3. Add `overview.mdx` as the main entry point
+4. Add sub-feature pages with appropriate `sidebar_position`
+5. Update `sidebars.ts` to include the new category
+6. Update `scripts/docs-gen/types.ts` DOC_MAPPINGS if auto-generating
+
+### Auto-Generated Documentation
+
+The docs generator (`scripts/docs-gen/`) extracts help content from TSX components and generates MDX files.
+
+**Key files:**
+- `scripts/docs-gen/types.ts` - DOC_MAPPINGS defines source files and output paths
+- `scripts/docs-gen/generator.ts` - AI prompt and generation logic
+- `scripts/docs-gen/manifest.ts` - Tracks changes to avoid unnecessary regeneration
+
+**DOC_MAPPINGS structure:**
+```typescript
+{
+  topic: 'recurring-overview',
+  sourceFiles: ['frontend/src/components/tabs/RecurringTab.tsx', ...],
+  outputFile: 'docusaurus/docs/recurring/overview.mdx',
+  feature: 'recurring',
+  userFlow: 'main-dashboard',
+  parentFeature: undefined,      // undefined for top-level, 'recurring' for sub-features
+  sidebarPosition: 1,
+}
+```
+
+### Documentation Components
+
+Always include interactive demos in feature docs:
+
+```mdx
+import { DemoEmbed } from '@site/src/components/DemoEmbed';
+
+<DemoEmbed path="/recurring" height={450} />
+```
+
+Available paths: `/recurring`, `/settings`, `/dashboard`
+
+### Environment-Aware Configuration
+
+- **Beta banner**: Set `ECLOSION_BETA=true` env var to show warning banner
+- **Demo links**: Use relative paths (`/demo`) not absolute URLs
+- **DemoEmbed**: Automatically uses current origin for iframes

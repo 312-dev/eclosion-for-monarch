@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 
 interface DemoEmbedProps {
   /**
@@ -26,14 +27,15 @@ interface DemoEmbedProps {
   title?: string;
 }
 
-export function DemoEmbed({
+function DemoEmbedInner({
   path,
   height = 500,
   title = 'Eclosion Demo',
 }: DemoEmbedProps): JSX.Element {
   // Ensure path starts with /demo
   const demoPath = path.startsWith('/demo') ? path : `/demo${path}`;
-  const src = `https://docs.eclosion.app${demoPath}`;
+  // Use current origin - works on any instance (stable, beta, self-hosted)
+  const src = `${window.location.origin}${demoPath}`;
 
   return (
     <div className="demo-embed-container" style={{ marginBottom: '1.5rem' }}>
@@ -75,6 +77,15 @@ export function DemoEmbed({
         allow="clipboard-write"
       />
     </div>
+  );
+}
+
+// Wrapper component that handles SSR - only renders on client
+export function DemoEmbed(props: DemoEmbedProps): JSX.Element {
+  return (
+    <BrowserOnly fallback={<div style={{ height: props.height || 500 }}>Loading demo...</div>}>
+      {() => <DemoEmbedInner {...props} />}
+    </BrowserOnly>
   );
 }
 

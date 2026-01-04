@@ -39,6 +39,8 @@ ${contentJson}
 - Feature: ${mapping.feature}
 - User Flow: ${mapping.userFlow}
 - Topic: ${topic}
+- Parent Feature: ${mapping.parentFeature || 'none (top-level)'}
+- Sidebar Position: ${mapping.sidebarPosition || 'auto'}
 
 ## Writing Style Guide
 
@@ -87,15 +89,21 @@ Generate valid MDX with:
 - Code blocks with \`\`\` if showing any code
 - Admonitions for tips/notes (used sparingly)
 
-## Demo Embed
-You can optionally include an interactive demo embed using:
+## Demo Embed (REQUIRED for feature docs)
+ALWAYS include an interactive demo embed for feature documentation. Place it near the top of the page, after the introduction paragraph but before detailed instructions.
+
 \`\`\`mdx
 import { DemoEmbed } from '@site/src/components/DemoEmbed';
 
 <DemoEmbed path="/recurring" height={400} />
 \`\`\`
 
-The demo paths available are: /recurring, /settings, /dashboard
+Demo paths by feature:
+- recurring feature: path="/recurring"
+- settings: path="/settings"
+- dashboard: path="/dashboard"
+
+Match the demo path to the feature being documented. Height can be 400-600 depending on content.
 
 Generate the complete MDX document:`;
 }
