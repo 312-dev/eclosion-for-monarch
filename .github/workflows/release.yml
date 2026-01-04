@@ -141,7 +141,8 @@ jobs:
           BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
           gh workflow run ci.yml --ref "$BRANCH"
           gh workflow run security.yml --ref "$BRANCH"
-          echo "Triggered CI and Security workflows on $BRANCH"
+          gh workflow run require-develop.yml --ref main -f pr_branch="$BRANCH"
+          echo "Triggered CI, Security, and Require Develop workflows on $BRANCH"
 
   # Generate user documentation from source content
   generate-docs:
