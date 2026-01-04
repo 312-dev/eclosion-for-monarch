@@ -8,21 +8,9 @@
       "include-component-in-tag": false,
       "include-v-in-tag": true,
       "extra-files": [
-        {
-          "type": "json",
-          "path": "frontend/package.json",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
-          "path": "docusaurus/package.json",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "toml",
-          "path": "pyproject.toml",
-          "key": "project.version"
-        }
+        "frontend/package.json",
+        "docusaurus/package.json",
+        "pyproject.toml"
       ]
     }
   },
