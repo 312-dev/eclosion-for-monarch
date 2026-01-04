@@ -31,6 +31,7 @@ on:
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -104,9 +105,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="${{ inputs.branch }}"
-          gh workflow run ci.yml --ref "$BRANCH"
-          gh workflow run security.yml --ref "$BRANCH"
-          echo "Triggered CI and Security workflows on $BRANCH"
+          # Get the head SHA for commit status posting
+          HEAD_SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/$BRANCH --jq '.object.sha')
+          gh workflow run ci.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
+          gh workflow run security.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
+          echo "Triggered CI and Security workflows on $BRANCH (SHA: $HEAD_SHA)"
 
       - name: No changes summary
         if: steps.diff.outputs.has_changes != 'true' && !inputs.force

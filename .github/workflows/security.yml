@@ -20,6 +20,11 @@ on:
     # Weekly scan on Monday at midnight UTC to catch new CVEs
     - cron: "0 0 * * 1"
   workflow_dispatch:
+    inputs:
+      head_sha:
+        description: 'Commit SHA to post status to (for PR association)'
+        required: false
+        type: string
 
   # Allow other workflows to call this one
   workflow_call:
@@ -215,7 +220,7 @@ jobs:
           fi
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: eclosion:scan
           format: "table"
@@ -224,7 +229,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Run Trivy and upload SARIF
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         if: always()
         with:
           image-ref: eclosion:scan
@@ -367,6 +372,7 @@ jobs:
     if: always()
     steps:
       - name: Check security scan results
+        id: check
         run: |
           echo "=== Security Scan Results ==="
           echo "Security-relevant files changed: ${{ needs.changes.outputs.security_relevant }}"
@@ -379,6 +385,8 @@ jobs:
           # If no security-relevant files changed, all scans were skipped - that's OK
           if [ "${{ needs.changes.outputs.security_relevant }}" != "true" ]; then
             echo "✅ No security-relevant files changed - scans skipped"
+            echo "result=success" >> $GITHUB_OUTPUT
+            echo "description=No security-relevant files changed" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -388,13 +396,31 @@ jobs:
 
           if echo "$results" | grep -qE '(failure|cancelled)'; then
             echo "::error::One or more security scans failed"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=One or more security scans failed" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           # DAST failure should also fail, but skipped is OK
           if [ "$dast_result" = "failure" ] || [ "$dast_result" = "cancelled" ]; then
             echo "::error::DAST scan failed or was cancelled"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=DAST scan failed or was cancelled" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           echo "✅ All security scans passed"
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "description=All security scans passed" >> $GITHUB_OUTPUT
+
+      # For workflow_dispatch, post status to the commit so it appears on PRs
+      - name: Post commit status
+        if: github.event_name == 'workflow_dispatch' && inputs.head_sha && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ inputs.head_sha }} \
+            -f state="${{ steps.check.outputs.result || 'success' }}" \
+            -f context="Security Status" \
+            -f description="${{ steps.check.outputs.description || 'Security scans passed' }}"
+          echo "Posted Security Status to commit ${{ inputs.head_sha }}"
