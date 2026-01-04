@@ -3,7 +3,7 @@ name: Sync Docs to Wiki
 on:
   push:
     paths:
-      - 'docusaurus/wiki/**'
+      - 'wiki/**'
     branches: [main]
   workflow_dispatch:
 
@@ -21,5 +21,5 @@ jobs:
       - name: Sync docs to wiki
         uses: Andrew-Chen-Wang/github-wiki-action@v5
         with:
-          path: docusaurus/wiki/
+          path: wiki/
           token: ${{ secrets.GITHUB_TOKEN }}
