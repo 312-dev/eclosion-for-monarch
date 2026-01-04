@@ -157,14 +157,36 @@ function CopyableCommand({ command, copied, onCopy }: { command: string; copied:
   );
 }
 
+const SUMMARY_LABELS: { key: keyof ChangelogSection; singular: string; plural: string }[] = [
+  { key: 'added', singular: 'new feature', plural: 'new features' },
+  { key: 'fixed', singular: 'bug fix', plural: 'bug fixes' },
+  { key: 'changed', singular: 'improvement', plural: 'improvements' },
+  { key: 'security', singular: 'security update', plural: 'security updates' },
+  { key: 'deprecated', singular: 'deprecation', plural: 'deprecations' },
+  { key: 'removed', singular: 'removal', plural: 'removals' },
+];
+
+function generateAutoSummary(sections: ChangelogSection): string {
+  const parts = SUMMARY_LABELS
+    .filter(({ key }) => sections[key]?.length)
+    .map(({ key, singular, plural }) => {
+      const count = sections[key]!.length;
+      return `${count} ${count > 1 ? plural : singular}`;
+    });
+
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return `This release includes ${parts[0]}.`;
+  const last = parts.pop();
+  return `This release includes ${parts.join(', ')}, and ${last}.`;
+}
+
 function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const sections = Object.entries(entry.sections) as [keyof ChangelogSection, string[]][];
-  const hasSummary = !!entry.summary;
   const hasDetails = sections.some(([, items]) => items.length > 0);
 
-  // Show details by default if no summary exists
-  const showDetails = !hasSummary || isExpanded;
+  // Use provided summary or generate one from sections
+  const summary = entry.summary || generateAutoSummary(entry.sections);
 
   return (
     <div className="space-y-3">
@@ -183,16 +205,16 @@ function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
         </span>
       </div>
 
-      {hasSummary && (
+      {summary && (
         <p
           className="text-sm"
           style={{ color: 'var(--monarch-text)' }}
         >
-          {entry.summary}
+          {summary}
         </p>
       )}
 
-      {hasSummary && hasDetails && (
+      {hasDetails && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-1 text-sm font-medium transition-opacity hover:opacity-80"
@@ -214,7 +236,7 @@ function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
         </button>
       )}
 
-      {showDetails && sections.map(([section, items]) => (
+      {isExpanded && sections.map(([section, items]) => (
         items.length > 0 && (
           <div key={section} className="space-y-1">
             <div

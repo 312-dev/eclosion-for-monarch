@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0](https://github.com/GraysonCAdams/eclosion-for-monarch/compare/v1.0.0...v1.1.0) (2026-01-03)
 
+> Major update with enhanced security scanning, comprehensive documentation, demo mode for trying the app without setup, and a new burndown chart for visualizing monthly savings progress.
 
 ### Features
 
@@ -83,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [1.0.0] - 2025-01-15
+
+> Initial release of Eclosion for Monarch Money with recurring expense tracking, smart savings calculations, encrypted credential storage, and PWA support.
 
 ### Added
 - Initial release of Eclosion for Monarch Money
