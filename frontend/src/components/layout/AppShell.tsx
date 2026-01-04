@@ -138,9 +138,14 @@ export function AppShell() {
     }
   };
 
-  const handleHelpOption = (path: string) => {
+  // Build versioned docs URL
+  const docsBaseUrl = 'https://eclosion.app/docs';
+  const userGuideUrl = __APP_VERSION__ ? `${docsBaseUrl}/${__APP_VERSION__}` : docsBaseUrl;
+  const wikiUrl = 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki';
+
+  const handleHelpOption = (url: string) => {
     setShowHelpDropdown(false);
-    window.open(path, '_blank');
+    window.open(url, '_blank');
   };
 
   const handleSignOut = async () => {
@@ -267,23 +272,23 @@ export function AppShell() {
                   >
                     <button
                       type="button"
-                      onClick={() => handleHelpOption('/guide')}
+                      onClick={() => handleHelpOption(userGuideUrl)}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-[var(--monarch-bg-page)]"
                       style={{ color: 'var(--monarch-text-dark)' }}
                       role="menuitem"
                     >
                       <BookOpen className="h-4 w-4" style={{ color: 'var(--monarch-orange)' }} aria-hidden="true" />
-                      How to Use
+                      User Guide
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleHelpOption('/docs')}
+                      onClick={() => handleHelpOption(wikiUrl)}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors hover:bg-[var(--monarch-bg-page)]"
                       style={{ color: 'var(--monarch-text-dark)' }}
                       role="menuitem"
                     >
                       <FileText className="h-4 w-4" style={{ color: 'var(--monarch-orange)' }} aria-hidden="true" />
-                      Technical Docs
+                      Self-Hosting
                     </button>
                   </div>
                 )}
