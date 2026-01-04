@@ -80,6 +80,7 @@ import {
   RotateCw,
   Gift,
   HeartHandshake,
+  HelpCircle,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -112,6 +113,7 @@ export const TrashIcon = Trash2;
 export const ExternalLinkIcon = ExternalLink;
 export const LinkIcon = Link;
 export const InfoIcon = Info;
+export const HelpIcon = HelpCircle;
 export const AlertCircleIcon = AlertCircle;
 export const WarningIcon = AlertTriangle;
 export const CheckCircleIcon = CheckCircle;

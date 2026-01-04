@@ -1,10 +1,12 @@
 /**
- * RecurringRow - Individual row component for recurring items
+ * RecurringCard - Mobile card component for recurring items
+ *
+ * Displays recurring item information in a card layout optimized
+ * for narrow viewports. Uses the same sub-components as RecurringRow.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import type { RecurringItem, ItemStatus } from '../../types';
-import { Tooltip } from '../ui/Tooltip';
 import { formatDateRelative } from '../../utils';
 import { RecurringItemHeader } from './RecurringItemHeader';
 import { RecurringItemCost } from './RecurringItemCost';
@@ -12,9 +14,8 @@ import { RecurringItemBudget } from './RecurringItemBudget';
 import { RecurringItemStatus } from './RecurringItemStatus';
 import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
-import { SpinnerIcon, ArrowUpIcon } from '../icons';
 
-interface RecurringRowProps {
+interface RecurringCardProps {
   readonly item: RecurringItem;
   readonly onToggle: (id: string, enabled: boolean) => Promise<void>;
   readonly onAllocate: (id: string, amount: number) => Promise<void>;
@@ -28,7 +29,7 @@ interface RecurringRowProps {
   readonly highlightId?: string | null;
 }
 
-export function RecurringRow({
+export function RecurringCard({
   item,
   onToggle,
   onAllocate,
@@ -40,18 +41,17 @@ export function RecurringRow({
   onNameChange,
   onLinkCategory,
   highlightId,
-}: RecurringRowProps) {
+}: RecurringCardProps) {
   const [isToggling, setIsToggling] = useState(false);
   const [isAllocating, setIsAllocating] = useState(false);
   const [isRecreating, setIsRecreating] = useState(false);
   const [isAddingToRollup, setIsAddingToRollup] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const rowRef = useRef<HTMLTableRowElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
 
-  // Handle highlight when this row is the highlighted one
   useEffect(() => {
-    if (highlightId === item.id && rowRef.current) {
+    if (highlightId === item.id && cardRef.current) {
       setIsHighlighted(true);
       const timer = setTimeout(() => setIsHighlighted(false), UI.HIGHLIGHT.SHORT);
       return () => clearTimeout(timer);
@@ -60,7 +60,7 @@ export function RecurringRow({
 
   const progressPercent = Math.min(item.progress_percent, 100);
 
-  // Override status based on what user has budgeted vs what's needed
+  // Calculate display status
   let displayStatus: ItemStatus = item.status;
   const targetRounded = Math.ceil(item.frozen_monthly_target);
   const budgetRounded = Math.ceil(item.planned_budget);
@@ -145,57 +145,31 @@ export function RecurringRow({
   };
 
   const contentOpacity = item.is_enabled ? '' : 'opacity-50';
-  const rowPadding = item.is_enabled ? 'py-4' : 'py-1.5';
 
   return (
-    <tr
-      ref={rowRef}
-      className={`group transition-all duration-300 border-b border-monarch-border ${isHighlighted ? 'animate-highlight bg-monarch-orange-light' : 'bg-monarch-bg-card hover:bg-monarch-bg-hover'}`}
+    <article
+      ref={cardRef}
+      aria-label={`${item.name} recurring expense`}
+      className={`rounded-lg border p-4 transition-all duration-300 ${
+        isHighlighted
+          ? 'animate-highlight bg-monarch-orange-light border-monarch-orange'
+          : 'bg-monarch-bg-card border-monarch-border'
+      } ${!item.is_enabled ? 'opacity-75' : ''}`}
     >
-      <td className={`${rowPadding} pl-5 pr-2 max-w-40`}>
-        <RecurringItemHeader
-          item={item}
-          onToggle={handleToggle}
-          onEmojiChange={handleEmojiChange}
-          onNameChange={handleNameChange}
-          onChangeGroup={handleChangeGroup}
-          isToggling={isToggling}
-          contentOpacity={contentOpacity}
-        />
-      </td>
-      <td className={`${rowPadding} px-4 w-28 ${contentOpacity}`}>
-        <div className="text-monarch-text-dark">{date}</div>
-        {relative && (
-          <div className="text-sm text-monarch-text-light">
-            {relative}
-          </div>
-        )}
-      </td>
-      <td className={`${rowPadding} px-4 text-right w-40 ${contentOpacity}`}>
-        <RecurringItemCost
-          item={item}
-          displayStatus={displayStatus}
-          progressPercent={progressPercent}
-          date={date}
-        />
-      </td>
-      <td className={`${rowPadding} px-4 text-right w-28 ${contentOpacity}`}>
-        <RecurringItemBudget
-          item={item}
-          onAllocate={handleAllocate}
-          isAllocating={isAllocating}
-        />
-      </td>
-      <td className={`${rowPadding} px-5 text-center w-24`}>
-        <RecurringItemStatus
-          item={item}
-          displayStatus={displayStatus}
-          onAllocate={handleAllocateNeeded}
-          isAllocating={isAllocating}
-        />
-      </td>
-      <td className={`${rowPadding} px-3 w-12`}>
-        {item.is_enabled ? (
+      {/* Row 1: Header + Actions */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <RecurringItemHeader
+            item={item}
+            onToggle={handleToggle}
+            onEmojiChange={handleEmojiChange}
+            onNameChange={handleNameChange}
+            onChangeGroup={handleChangeGroup}
+            isToggling={isToggling}
+            contentOpacity={contentOpacity}
+          />
+        </div>
+        {item.is_enabled && (
           <ActionsDropdown
             item={item}
             onToggle={handleToggle}
@@ -208,24 +182,43 @@ export function RecurringRow({
             isAddingToRollup={isAddingToRollup}
             isRefreshing={isRefreshing}
           />
-        ) : (
-          onAddToRollup && (
-            <Tooltip content="Add to rollover">
-              <button
-                onClick={handleAddToRollup}
-                disabled={isAddingToRollup}
-                className="w-7 h-7 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 hover:bg-black/10 disabled:opacity-50"
-              >
-                {isAddingToRollup ? (
-                  <SpinnerIcon size={16} color="var(--monarch-orange)" />
-                ) : (
-                  <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
-                )}
-              </button>
-            </Tooltip>
-          )
         )}
-      </td>
-    </tr>
+      </div>
+
+      {/* Row 2: Date + Status */}
+      <div className={`flex items-center justify-between mb-3 ${contentOpacity}`}>
+        <div className="text-sm">
+          <span className="text-monarch-text-dark">{date}</span>
+          {relative && (
+            <span className="text-monarch-text-light ml-2">{relative}</span>
+          )}
+        </div>
+        <RecurringItemStatus
+          item={item}
+          displayStatus={displayStatus}
+          onAllocate={handleAllocateNeeded}
+          isAllocating={isAllocating}
+        />
+      </div>
+
+      {/* Row 3: Cost + Budget */}
+      <div className={`grid grid-cols-2 gap-4 ${contentOpacity}`}>
+        <RecurringItemCost
+          item={item}
+          displayStatus={displayStatus}
+          progressPercent={progressPercent}
+          date={date}
+          compact
+        />
+        <div className="flex flex-col items-end justify-start">
+          <span className="text-xs text-monarch-text-light mb-1">Budgeted</span>
+          <RecurringItemBudget
+            item={item}
+            onAllocate={handleAllocate}
+            isAllocating={isAllocating}
+          />
+        </div>
+      </div>
+    </article>
   );
 }

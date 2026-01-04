@@ -10,6 +10,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Settings, LogOut, Lightbulb, LayoutDashboard } from 'lucide-react';
 import { RecurringIcon } from '../wizards/WizardComponents';
 import { IdeasModal } from '../IdeasModal';
+import { Portal } from '../Portal';
 import { useDemo } from '../../context/DemoContext';
 
 interface SidebarNavigationProps {
@@ -141,8 +142,10 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
         </div>
       </div>
 
-      {/* Ideas Modal */}
-      <IdeasModal isOpen={ideasModalOpen} onClose={() => setIdeasModalOpen(false)} />
+      {/* Ideas Modal - rendered via Portal to escape sidebar stacking context */}
+      <Portal>
+        <IdeasModal isOpen={ideasModalOpen} onClose={() => setIdeasModalOpen(false)} />
+      </Portal>
     </nav>
   );
 }

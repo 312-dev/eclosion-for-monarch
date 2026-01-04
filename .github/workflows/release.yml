@@ -159,6 +159,7 @@ jobs:
       - name: Trigger required workflows
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
           # Get the final HEAD SHA after all commits from generate-summary and generate-docs

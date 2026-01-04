@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ProductBoardIdea, TrackedIdea, SyncState, ClosedReason } from './types.js';
+import type { ProductBoardIdea, TrackedIdea, SyncState, ClosedReason, IdeaSource } from './types.js';
 import { CONFIG } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -26,12 +26,13 @@ export interface PublicIdea {
   description: string;
   votes: number; // GitHub votes (thumbs-up reactions)
   category: string;
-  productboardUrl: string;
+  productboardUrl: string | null; // null for GitHub-only ideas
   discussionUrl: string | null;
   discussionNumber: number | null;
   status: 'open' | 'closed';
   closedReason: ClosedReason | null;
   closedAt: string | null;
+  source: IdeaSource; // 'productboard' or 'github'
 }
 
 interface ExportedData {
@@ -65,36 +66,57 @@ function getRepoUrl(): string {
 }
 
 /**
- * Transform internal ideas to public format
- * Only includes ideas that have been synced to GitHub Discussions
+ * Transform ProductBoard ideas to public format
  */
-function toPublicIdeas(
+function toPublicIdeasFromProductBoard(
   ideas: ProductBoardIdea[],
-  state: Record<string, TrackedIdea>
+  state: Record<string, TrackedIdea>,
+  repoUrl: string
 ): PublicIdea[] {
-  const repoUrl = getRepoUrl();
-
-  // Only export ideas that have been synced to GitHub Discussions
   return ideas
     .filter((idea) => state[idea.id]?.discussionNumber)
     .map((idea) => {
       const tracked = state[idea.id];
-      const discussionNumber = tracked.discussionNumber;
-
       return {
         id: idea.id,
         title: idea.title,
         description: idea.description,
-        votes: tracked.githubVotes ?? 0, // Use GitHub votes, not ProductBoard
+        votes: tracked.githubVotes ?? 0,
         category: idea.category,
         productboardUrl: idea.url,
-        discussionUrl: `${repoUrl}/discussions/${discussionNumber}`,
-        discussionNumber,
+        discussionUrl: `${repoUrl}/discussions/${tracked.discussionNumber}`,
+        discussionNumber: tracked.discussionNumber,
         status: tracked.status,
         closedReason: tracked.closedReason ?? null,
         closedAt: tracked.closedAt ?? null,
+        source: 'productboard' as const,
       };
     });
+}
+
+/**
+ * Transform GitHub-only ideas to public format
+ */
+function toPublicIdeasFromGitHub(
+  state: Record<string, TrackedIdea>,
+  repoUrl: string
+): PublicIdea[] {
+  return Object.entries(state)
+    .filter(([key, tracked]) => key.startsWith('github-') && tracked.source === 'github')
+    .map(([key, tracked]) => ({
+      id: key,
+      title: tracked.title ?? 'Untitled',
+      description: tracked.description ?? '',
+      votes: tracked.githubVotes ?? 0,
+      category: tracked.category ?? 'Community',
+      productboardUrl: null,
+      discussionUrl: `${repoUrl}/discussions/${tracked.discussionNumber}`,
+      discussionNumber: tracked.discussionNumber,
+      status: tracked.status,
+      closedReason: tracked.closedReason ?? null,
+      closedAt: tracked.closedAt ?? null,
+      source: 'github' as const,
+    }));
 }
 
 /**
@@ -105,26 +127,32 @@ export function exportIdeas(): void {
   console.log('Export Ideas to JSON');
   console.log('='.repeat(60));
 
-  // Load ideas (prefer filtered, fall back to scraped)
-  const dataFile = existsSync(FILTERED_DATA_FILE) ? FILTERED_DATA_FILE : SCRAPED_DATA_FILE;
+  const state = loadState();
+  const repoUrl = getRepoUrl();
 
-  if (!existsSync(dataFile)) {
-    console.error('No ideas data found. Run scrape (and filter) first.');
-    process.exit(1);
+  // Load ProductBoard ideas if available
+  let productBoardIdeas: PublicIdea[] = [];
+  const dataFile = existsSync(FILTERED_DATA_FILE) ? FILTERED_DATA_FILE : SCRAPED_DATA_FILE;
+  if (existsSync(dataFile)) {
+    const ideas = JSON.parse(readFileSync(dataFile, 'utf-8')) as ProductBoardIdea[];
+    productBoardIdeas = toPublicIdeasFromProductBoard(ideas, state, repoUrl);
+    console.log(`Found ${productBoardIdeas.length} ProductBoard ideas with discussions`);
+  } else {
+    console.log('No ProductBoard data found, checking for GitHub-only ideas...');
   }
 
-  const ideas = JSON.parse(readFileSync(dataFile, 'utf-8')) as ProductBoardIdea[];
-  const state = loadState();
+  // Get GitHub-only ideas
+  const githubIdeas = toPublicIdeasFromGitHub(state, repoUrl);
+  console.log(`Found ${githubIdeas.length} GitHub-only ideas`);
 
-  // Include all ideas that have been synced (both open and closed)
-  // The sync process already filters for high-vote ideas
-  const publicIdeas = toPublicIdeas(ideas, state);
+  // Combine all ideas
+  const allIdeas = [...productBoardIdeas, ...githubIdeas];
 
   // Separate open and closed for counting
-  const openIdeas = publicIdeas.filter((i) => i.status === 'open');
-  const closedIdeas = publicIdeas.filter((i) => i.status === 'closed');
+  const openIdeas = allIdeas.filter((i) => i.status === 'open');
+  const closedIdeas = allIdeas.filter((i) => i.status === 'closed');
 
-  console.log(`Found ${openIdeas.length} open ideas, ${closedIdeas.length} closed ideas`);
+  console.log(`Total: ${openIdeas.length} open, ${closedIdeas.length} closed`);
 
   // Sort: open ideas first by votes descending, then closed by votes descending
   const sortedIdeas = [
@@ -149,8 +177,8 @@ export function exportIdeas(): void {
   // Write JSON
   writeFileSync(OUTPUT_FILE, jsonContent);
   console.log(`\nExported ${sortedIdeas.length} ideas to ${OUTPUT_FILE}`);
-  console.log(`  - ${openIdeas.length} open`);
-  console.log(`  - ${closedIdeas.length} closed`);
+  console.log(`  - ${productBoardIdeas.length} from ProductBoard`);
+  console.log(`  - ${githubIdeas.length} from GitHub`);
   console.log(`\nFrontend can fetch from:`);
   console.log(`  https://raw.githubusercontent.com/<owner>/<repo>/main/data/ideas.json`);
 }

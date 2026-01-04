@@ -15,7 +15,7 @@ import { useToast } from '../context/ToastContext';
 import { useDemo } from '../context/DemoContext';
 import { formatCurrency, formatFrequency, formatErrorMessage, FREQUENCY_ORDER } from '../utils';
 import { Filter, Inbox, Eye, EyeOff } from 'lucide-react';
-import { RecurringRow, RecurringListHeader } from './recurring';
+import { RecurringRow, RecurringListHeader, RecurringCard } from './recurring';
 import type { SortField, SortDirection } from './recurring';
 import { UI } from '../constants';
 
@@ -226,7 +226,35 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
           onToggleHide={() => setHideDisabled(!hideDisabled)}
         />
 
-        <table className="w-full animate-fade-in">
+        {/* Mobile: Card Layout */}
+        <div className="recurring-cards">
+          {sortedFrequencies.map((frequency, index) => (
+            <Fragment key={frequency}>
+              <div className={`recurring-cards-group-header ${index === 0 ? 'mt-0!' : ''}`}>
+                {formatFrequency(frequency)}
+              </div>
+              {sortItems(groupedItems[frequency] ?? []).map((item) => (
+                <RecurringCard
+                  key={item.id}
+                  item={item}
+                  onToggle={handleToggleItem}
+                  onAllocate={handleAllocateItem}
+                  onRecreate={handleRecreateItem}
+                  onChangeGroup={handleChangeGroupItem}
+                  onAddToRollup={handleAddToRollupItem}
+                  onEmojiChange={handleEmojiChangeItem}
+                  onRefreshItem={handleRefreshItem}
+                  onNameChange={handleNameChangeItem}
+                  onLinkCategory={handleLinkCategory}
+                  highlightId={highlightId}
+                />
+              ))}
+            </Fragment>
+          ))}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <table className="recurring-table animate-fade-in">
           <RecurringListHeader
             sortField={sortField}
             sortDirection={sortDirection}

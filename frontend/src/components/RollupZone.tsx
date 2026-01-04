@@ -9,7 +9,7 @@ import {
   calculateDisplayStatus,
 } from '../utils';
 import { MerchantIcon, StatusBadge, LoadingSpinner } from './ui';
-import { TrendUpIcon, TrendDownIcon, XIcon, ExternalLinkIcon, ChevronRightIcon, PlusIcon } from './icons';
+import { TrendUpIcon, TrendDownIcon, XIcon, ChevronRightIcon, PlusIcon, HelpIcon } from './icons';
 import { UI } from '../constants';
 
 interface RollupZoneProps {
@@ -78,8 +78,8 @@ const RollupItemRow = memo(function RollupItemRow({
             <Tooltip content={
               <>
                 <div className="font-medium">Catching Up</div>
-                <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+                <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
               </>
             }>
               <span className="cursor-help text-monarch-error">
@@ -92,8 +92,8 @@ const RollupItemRow = memo(function RollupItemRow({
             <Tooltip content={
               <>
                 <div className="font-medium">Ahead of Schedule</div>
-                <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
+                <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
               </>
             }>
               <span className="cursor-help text-monarch-success">
@@ -195,6 +195,8 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
   }, [nameValue, rollup.category_name, onNameChange]);
 
   const handleNameKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
+    // Stop propagation to prevent parent's collapse toggle from intercepting space key
+    e.stopPropagation();
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
@@ -399,28 +401,19 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 <span className="text-xs text-monarch-text-muted">
                   ({rollup.items.length})
                 </span>
-                {rollup.category_id && (
-                  <Tooltip content="View linked category in Monarch">
-                    <a
-                      href={`https://app.monarchmoney.com/categories/${rollup.category_id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="View linked category in Monarch (opens in new tab)"
-                      className="shrink-0 hover:opacity-70 transition-opacity text-monarch-text-light"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLinkIcon size={12} aria-hidden="true" />
-                    </a>
-                  </Tooltip>
-                )}
               </>
             )}
+            <Tooltip content="A shared bucket for smaller recurring expenses not worth a dedicated category">
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="p-0.5 rounded hover:bg-black/5 transition-colors cursor-help flex items-center justify-center"
+                aria-label="Rollup category info"
+              >
+                <HelpIcon size={14} color="var(--monarch-text-muted)" aria-hidden="true" />
+              </button>
+            </Tooltip>
           </div>
-          {!isCollapsed && (
-            <span className="text-xs ml-7 text-monarch-text-muted">
-              A shared bucket for smaller recurring expenses not worth a dedicated category
-            </span>
-          )}
         </div>
 
         {/* Stats in header */}
@@ -432,8 +425,8 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 <Tooltip content={
                   <>
                     <div className="font-medium">Catching Up</div>
-                    <div className="text-zinc-300">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
-                    <div className="text-zinc-400 text-xs mt-1">Rate normalizes as billing cycles complete</div>
+                    <div className="text-monarch-text-dark">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
+                    <div className="text-monarch-text-muted text-xs mt-1">Rate normalizes as billing cycles complete</div>
                   </>
                 }>
                   <span className="cursor-help text-monarch-error">
@@ -445,8 +438,8 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
                 <Tooltip content={
                   <>
                     <div className="font-medium">Ahead of Schedule</div>
-                    <div className="text-zinc-300">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
-                    <div className="text-zinc-400 text-xs mt-1">Rate normalizes as billing cycles complete</div>
+                    <div className="text-monarch-text-dark">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
+                    <div className="text-monarch-text-muted text-xs mt-1">Rate normalizes as billing cycles complete</div>
                   </>
                 }>
                   <span className="cursor-help text-monarch-success">
