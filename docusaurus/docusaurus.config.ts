@@ -35,6 +35,28 @@ const config: Config = {
           editUrl:
             'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
           showLastUpdateTime: true,
+          // Versioning - scoped by site:
+          // - Stable site: Only stable versions (1.0, 1.1, etc.)
+          // - Beta site: Only pre-release versions (1.1-beta.1, etc.) + Next
+          lastVersion: process.env.DOCS_LAST_VERSION || '1.0',
+          // Only include versions appropriate for this site
+          onlyIncludeVersions: process.env.ECLOSION_BETA === 'true'
+            ? ['current'] // Beta site: Next + any beta versions added to this array
+            : ['1.0'],    // Stable site: Only stable versions
+          versions: {
+            current: {
+              label: 'Next',
+              path: process.env.ECLOSION_BETA === 'true' ? '' : 'next',
+              banner: 'unreleased',
+            },
+            '1.0': {
+              label: '1.0',
+              banner: 'none',
+            },
+            // Add pre-release versions here and include in onlyIncludeVersions for beta:
+            // '1.1-beta.1': { label: '1.1-beta.1', banner: 'unreleased' },
+          },
+          includeCurrentVersion: true,
         },
         blog: false,
         theme: {
@@ -73,6 +95,11 @@ const config: Config = {
           sidebarId: 'guideSidebar',
           position: 'left',
           label: 'User Guide',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'left',
+          dropdownActiveClassDisabled: true,
         },
         {
           href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
@@ -126,6 +153,10 @@ const config: Config = {
         {
           title: 'Community',
           items: [
+            {
+              label: 'Reddit',
+              href: 'https://www.reddit.com/r/Eclosion/',
+            },
             {
               label: 'GitHub Discussions',
               href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/discussions',

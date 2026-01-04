@@ -384,18 +384,82 @@ The docs generator (`scripts/docs-gen/`) extracts help content from TSX componen
 
 ### Documentation Components
 
-Always include interactive demos in feature docs:
+Use these interactive components to make docs engaging:
+
+**FeatureGrid + FeatureCard** - Highlight key capabilities at the top of feature pages:
 
 ```mdx
-import { DemoEmbed } from '@site/src/components/DemoEmbed';
+import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
 
-<DemoEmbed path="/recurring" height={450} />
+<FeatureGrid>
+  <FeatureCard icon="📦" title="Rollup Zone" description="Combine subscriptions" />
+  <FeatureCard icon="📋" title="Individual" description="Track bills separately" />
+</FeatureGrid>
 ```
 
-Available paths: `/recurring`, `/settings`, `/dashboard`
+**WorkflowSteps** - Step-by-step instructions (3-5 steps work best):
+
+```mdx
+import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+
+<WorkflowSteps
+  title="Add a Recurring Expense"
+  steps={[
+    { title: "Select Add Item", description: "Click the Add Item button..." },
+    { title: "Enter Details", description: "Fill in the expense name..." },
+  ]}
+/>
+```
+
+**AnnotatedImage** - Screenshots with numbered callouts:
+
+```mdx
+import { AnnotatedImage } from '@site/src/components/AnnotatedImage';
+
+<AnnotatedImage
+  src="/img/recurring-tab.png"
+  alt="Recurring tab"
+  callouts={[
+    { x: 20, y: 15, label: "1", description: "The rollup zone" },
+  ]}
+/>
+```
+
+### Documentation Versioning
+
+Versions are **scoped by site** - stable site shows only stable versions, beta site shows only pre-release versions.
+
+**Creating a version (matches release):**
+```bash
+cd docusaurus
+# For stable release (e.g., v1.1.0)
+npm run docusaurus docs:version 1.1
+
+# For pre-release (e.g., v1.2.0-beta.1)
+npm run docusaurus docs:version 1.2-beta.1
+```
+
+**Then update `docusaurus.config.ts`:**
+```typescript
+// 1. Add version to versions object
+versions: {
+  current: { label: 'Next', ... },
+  '1.1': { label: '1.1', banner: 'none' },           // stable
+  '1.2-beta.1': { label: '1.2-beta.1', banner: 'unreleased' }, // pre-release
+},
+
+// 2. Add to appropriate onlyIncludeVersions array
+onlyIncludeVersions: process.env.ECLOSION_BETA === 'true'
+  ? ['current', '1.2-beta.1']  // Beta: Next + pre-release versions
+  : ['1.0', '1.1'],            // Stable: Only stable versions
+```
+
+**Deployment:**
+- Stable site: Shows only stable versions (1.0, 1.1, etc.)
+- Beta site: `ECLOSION_BETA=true` - Shows only Next + pre-release versions
 
 ### Environment-Aware Configuration
 
 - **Beta banner**: Set `ECLOSION_BETA=true` env var to show warning banner
 - **Demo links**: Use relative paths (`/demo`) not absolute URLs
-- **DemoEmbed**: Automatically uses current origin for iframes
+- **Default version**: Set `DOCS_LAST_VERSION` to control which version loads by default

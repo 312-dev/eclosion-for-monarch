@@ -84,26 +84,64 @@ ${contentJson}
 ## Format
 Generate valid MDX with:
 - Frontmatter with title, description, and sidebar_position
-- Import for DemoEmbed component if interactive demo is helpful
 - Proper heading hierarchy (# for title, ## for sections)
 - Code blocks with \`\`\` if showing any code
 - Admonitions for tips/notes (used sparingly)
 
-## Demo Embed (REQUIRED for feature docs)
-ALWAYS include an interactive demo embed for feature documentation. Place it near the top of the page, after the introduction paragraph but before detailed instructions.
+## Interactive Components (use these to make docs engaging)
+
+### FeatureGrid + FeatureCard
+Use near the top of feature overview pages to highlight 2-4 key capabilities:
 
 \`\`\`mdx
-import { DemoEmbed } from '@site/src/components/DemoEmbed';
+import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
 
-<DemoEmbed path="/recurring" height={400} />
+<FeatureGrid>
+  <FeatureCard
+    icon="📦"
+    title="Rollup Zone"
+    description="Combine small subscriptions into a single budget category"
+  />
+  <FeatureCard
+    icon="📋"
+    title="Individual Tracking"
+    description="Track major bills separately with their own categories"
+  />
+</FeatureGrid>
 \`\`\`
 
-Demo paths by feature:
-- recurring feature: path="/recurring"
-- settings: path="/settings"
-- dashboard: path="/dashboard"
+### WorkflowSteps
+Use for step-by-step instructions (3-5 steps work best):
 
-Match the demo path to the feature being documented. Height can be 400-600 depending on content.
+\`\`\`mdx
+import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+
+<WorkflowSteps
+  title="Add a Recurring Expense"
+  steps={[
+    { title: "Select Add Item", description: "Click the Add Item button..." },
+    { title: "Enter Details", description: "Fill in the expense name..." },
+  ]}
+/>
+\`\`\`
+
+### AnnotatedImage
+Use for screenshots with numbered callouts (when images are available):
+
+\`\`\`mdx
+import { AnnotatedImage } from '@site/src/components/AnnotatedImage';
+
+<AnnotatedImage
+  src="/img/recurring-tab.png"
+  alt="Recurring tab overview"
+  callouts={[
+    { x: 20, y: 15, label: "1", description: "The rollup zone" },
+    { x: 70, y: 40, label: "2", description: "Individual items" },
+  ]}
+/>
+\`\`\`
+
+ALWAYS include at least one interactive component (FeatureGrid or WorkflowSteps) in feature documentation.
 
 Generate the complete MDX document:`;
 }
