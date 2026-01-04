@@ -21,7 +21,7 @@
         {
           "type": "toml",
           "path": "pyproject.toml",
-          "glob": "project.version"
+          "key": "project.version"
         }
       ]
     }
