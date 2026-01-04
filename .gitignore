@@ -1,9 +1,24 @@
 # OS artifacts
 .DS_Store
+*.swp
+*.swo
 
-.mm
-__pycache__
-monarchmoney
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+coverage/
+
+# Node (catch-all for any nested projects)
+**/node_modules/
 
 # Logs
 *.log
@@ -12,30 +27,33 @@ logs/
 # Sensitive files
 .env
 .env.*
-.venv
 *.pem
 *.key
 secrets.json
 credentials.json
 .session_secret
 
+# IDE
+.idea/
+.vscode/
+
+# Project-specific
+.mm
+monarchmoney
+
 # State files
 state/tracker_state.json
 state/credentials.json
 
 # Frontend
-frontend/node_modules
 frontend/dist
 
 # Docusaurus
-docusaurus/node_modules
 docusaurus/build
 docusaurus/.docusaurus
 docusaurus/.cache-loader
 
 # Scripts
-scripts/docs-gen/node_modules
-scripts/productboard-sync/node_modules
 scripts/productboard-sync/scraped-ideas.json
 scripts/productboard-sync/filtered-ideas.json
 scripts/productboard-sync/debug*.png
