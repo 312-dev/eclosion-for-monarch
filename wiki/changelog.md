@@ -1,10 +1,3 @@
----
-id: changelog
-title: Changelog
-sidebar_label: Changelog
-sidebar_position: 4
----
-
 # Changelog
 
 All notable changes to Eclosion are documented in the [GitHub Releases](https://github.com/GraysonCAdams/eclosion-for-monarch/releases).
@@ -13,7 +6,7 @@ All notable changes to Eclosion are documented in the [GitHub Releases](https://
 
 View the full changelog and release notes on GitHub:
 
-**[View All Releases →](https://github.com/GraysonCAdams/eclosion-for-monarch/releases)**
+**[View All Releases](https://github.com/GraysonCAdams/eclosion-for-monarch/releases)**
 
 ## Version History
 
