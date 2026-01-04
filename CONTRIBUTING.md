@@ -223,6 +223,20 @@ Using the correct commit type ensures accurate versioning and a useful changelog
 
 **Security scans include:** CodeQL (SAST), dependency audit (npm/pip), container scan (Trivy), DAST (OWASP ZAP)
 
+### Repository Secrets
+
+The following secrets are required for CI/CD workflows:
+
+| Secret | Purpose | Required Scopes |
+|--------|---------|-----------------|
+| `CI_TRIGGER_PAT` | Allow automated PRs to trigger CI workflows | `repo` (classic) or `contents:write` + `pull_requests:write` (fine-grained) |
+| `DISCUSSIONS_PAT` | Create GitHub Discussions from ProductBoard sync | `discussions:write` |
+| `MODELS_TOKEN` | Access GitHub Models API for AI features | GitHub Models access |
+| `CLOUDFLARE_API_TOKEN` | Deploy to Cloudflare Pages | Cloudflare API token |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | — |
+
+> **Note**: PRs created using `GITHUB_TOKEN` don't trigger other workflows (GitHub's recursive workflow prevention). Workflows that create PRs with auto-merge use `CI_TRIGGER_PAT` to ensure CI runs.
+
 ## Release Process
 
 ### Versioning
