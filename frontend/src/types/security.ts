@@ -63,8 +63,8 @@ export type SecurityEventType =
   | 'SECURITY_LOGS_CLEARED';
 
 export interface SecurityEventsQueryOptions {
-  limit?: number;
-  offset?: number;
-  eventType?: string;
-  success?: boolean;
+  limit?: number | undefined;
+  offset?: number | undefined;
+  eventType?: string | undefined;
+  success?: boolean | undefined;
 }

@@ -13,6 +13,7 @@ import { useDemo } from '../context/DemoContext';
 import * as api from './client';
 import * as demoApi from './demoClient';
 import { getChangelogResponse } from '../data/changelog';
+import type { SecurityEventsQueryOptions } from '../types';
 
 // ============================================================================
 // Query Keys
@@ -113,12 +114,7 @@ export function useSecurityStatusQuery() {
 /**
  * Security events with filtering
  */
-export function useSecurityEventsQuery(options?: {
-  limit?: number | undefined;
-  offset?: number | undefined;
-  eventType?: string | undefined;
-  success?: boolean | undefined;
-}) {
+export function useSecurityEventsQuery(options?: SecurityEventsQueryOptions) {
   const isDemo = useDemo();
   return useQuery({
     queryKey: [...getQueryKey(queryKeys.securityEvents, isDemo), options],
