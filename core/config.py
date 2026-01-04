@@ -70,6 +70,10 @@ STATE_FILE = STATE_DIR / "tracker_state.json"
 CREDENTIALS_FILE = STATE_DIR / "credentials.json"
 AUTOMATION_CREDENTIALS_FILE = STATE_DIR / "automation_credentials.json"
 SESSION_SECRET_FILE = STATE_DIR / ".session_secret"
+SECURITY_DB_FILE = STATE_DIR / "security_events.db"
+
+# Security event retention (days)
+SECURITY_EVENT_RETENTION_DAYS = 90
 
 # Legacy paths for backward compatibility (check these first during migration)
 LEGACY_STATE_FILE = Path(__file__).parent.parent / "state" / "tracker_state.json"

@@ -1,4 +1,4 @@
-import type { DashboardData, CategoryGroup, SyncResult, AuthStatus, LoginResult, AllocateResult, RollupData, UnmappedCategory, LinkCategoryResult, DeletableCategoriesResult, DeleteCategoriesResult, SetPassphraseResult, UnlockResult, UpdateCredentialsResult, ResetAppResult, SecurityStatus, VersionInfo, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult, ResetDedicatedResult, ResetRollupResult, AutoSyncStatus, EnableAutoSyncResult, DisableAutoSyncResult, EclosionExport, ImportOptions, ImportResult, ImportPreviewResponse } from '../types';
+import type { DashboardData, CategoryGroup, SyncResult, AuthStatus, LoginResult, AllocateResult, RollupData, UnmappedCategory, LinkCategoryResult, DeletableCategoriesResult, DeleteCategoriesResult, SetPassphraseResult, UnlockResult, UpdateCredentialsResult, ResetAppResult, SecurityStatus, VersionInfo, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult, ResetDedicatedResult, ResetRollupResult, AutoSyncStatus, EnableAutoSyncResult, DisableAutoSyncResult, EclosionExport, ImportOptions, ImportResult, ImportPreviewResponse, SecurityEventsResponse, SecurityEventSummary, SecurityAlertsResponse, SecurityEventsQueryOptions } from '../types';
 
 const API_BASE = '';
 
@@ -169,6 +169,46 @@ export async function logout(): Promise<void> {
 // Security functions
 export async function getSecurityStatus(): Promise<SecurityStatus> {
   return fetchApi<SecurityStatus>('/security/status');
+}
+
+export async function getSecurityEvents(
+  options?: SecurityEventsQueryOptions
+): Promise<SecurityEventsResponse> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.eventType) params.set('event_type', options.eventType);
+  if (options?.success !== undefined) params.set('success', String(options.success));
+
+  const query = params.toString();
+  const endpoint = query ? `/security/events?${query}` : '/security/events';
+  return fetchApi<SecurityEventsResponse>(endpoint);
+}
+
+export async function getSecuritySummary(): Promise<SecurityEventSummary> {
+  return fetchApi<SecurityEventSummary>('/security/events/summary');
+}
+
+export async function exportSecurityEvents(): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/security/events/export`, {
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to export security events');
+  }
+  return response.blob();
+}
+
+export async function clearSecurityEvents(): Promise<{ success: boolean; message: string }> {
+  return fetchApi('/security/events/clear', { method: 'POST' });
+}
+
+export async function getSecurityAlerts(): Promise<SecurityAlertsResponse> {
+  return fetchApi<SecurityAlertsResponse>('/security/alerts');
+}
+
+export async function dismissSecurityAlerts(): Promise<{ success: boolean }> {
+  return fetchApi('/security/alerts/dismiss', { method: 'POST' });
 }
 
 export async function getDashboard(): Promise<DashboardData> {

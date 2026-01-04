@@ -81,3 +81,14 @@ export type {
   ImportPreview,
   ImportPreviewResponse,
 } from './settings-export';
+
+// Security events and audit logging
+export type {
+  SecurityEvent,
+  SecurityEventsResponse,
+  SecurityEventSummary,
+  SecurityAlertsResponse,
+  SecurityAlertEvent,
+  SecurityEventType,
+  SecurityEventsQueryOptions,
+} from './security';

@@ -68,7 +68,14 @@ export function SyncButton({ onSync, isSyncing, lastSync, compact = false }: Syn
         ) : (
           <SyncIcon size={14} />
         )}
-        <span aria-live="polite">{isSyncing ? 'Syncing...' : syncStatus}</span>
+        <span aria-live="polite">
+          {isSyncing ? 'Syncing...' : (
+            <>
+              <span className="hidden sm:inline">Synced </span>
+              {formattedTime}
+            </>
+          )}
+        </span>
       </button>
     );
   }
