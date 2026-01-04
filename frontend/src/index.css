@@ -72,6 +72,27 @@
   --z-modal: 50;
   --z-toast: 60;
   --z-tooltip: 70;
+
+  /* Font family - Plus Jakarta Sans as default */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Plus Jakarta Sans Font for Body */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  src: url('/fonts/PlusJakartaSans-VariableFont_wght.ttf') format('truetype');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Figtree Font for Headers */
+@font-face {
+  font-family: 'Figtree';
+  src: url('/fonts/Figtree-VariableFont_wght.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
 }
 
 /* Unbounded Font for Logo */
@@ -118,11 +139,31 @@
   --monarch-info-bg: #eff6ff;
 
   /* Font */
-  --monarch-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --monarch-font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* App icon */
   --app-icon-bg: #1a1a2e;
   --app-icon-border: transparent;
+
+  /* ============================================================================
+     Animation System
+     ============================================================================
+     Centralized timing values that match constants/index.ts UI.ANIMATION.
+     Use these CSS variables for consistent animation timing across the app.
+     ============================================================================ */
+
+  /* Animation durations - matches UI.ANIMATION in constants/index.ts */
+  --animation-fast: 150ms;
+  --animation-normal: 200ms;
+  --animation-slow: 300ms;
+
+  /* Easing curves for different animation types */
+  --ease-out-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* List stagger delay */
+  --stagger-delay: 25ms;
 }
 
 /* Dark Mode */
@@ -181,6 +222,11 @@ body {
   font-family: var(--monarch-font);
   color: var(--monarch-text-dark);
   background-color: var(--monarch-bg-page);
+}
+
+/* Headings - Figtree */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Figtree', var(--monarch-font);
 }
 
 /* Focus ring using Monarch orange */
@@ -269,7 +315,7 @@ input[type="radio"] {
   position: sticky;
   top: 0;
   z-index: var(--z-index-sticky);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .app-header-content {
@@ -652,6 +698,7 @@ input[type="radio"] {
     display: flex;
     flex-direction: row;
     justify-content: center;
+    gap: 0.5rem;
     height: auto;
     padding: 0.5rem 1rem;
     position: fixed;
@@ -665,12 +712,13 @@ input[type="radio"] {
   }
 
   .sidebar-nav-header,
+  .sidebar-nav-header-row,
   .sidebar-nav-divider {
     display: none;
   }
 
   .sidebar-nav-tools {
-    flex: 1;
+    flex: none;
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
@@ -712,7 +760,6 @@ input[type="radio"] {
     width: 1px;
     height: 2.5rem;
     background-color: var(--monarch-border);
-    margin: 0 0.75rem;
     flex-shrink: 0;
     align-self: center;
   }
@@ -726,7 +773,7 @@ input[type="radio"] {
   .sidebar-nav-item {
     flex-direction: column;
     gap: 0.25rem;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
     flex-shrink: 0;
   }
@@ -1467,4 +1514,323 @@ input[type="radio"] {
 .hover-item-card-unchecked:not(.item-card-checked):hover {
   border-color: var(--monarch-orange);
   background-color: rgba(255, 105, 45, 0.04);
+}
+
+/* ============================================================================
+   ECLOSION ANIMATION FRAMEWORK
+   ============================================================================
+
+   A consistent, accessible animation system for the entire app.
+   All animations respect prefers-reduced-motion for accessibility.
+
+   ## Timing Reference (matches constants/index.ts UI.ANIMATION)
+   --animation-fast:   150ms - Micro-interactions (buttons, hovers)
+   --animation-normal: 200ms - Standard transitions (modals, tabs)
+   --animation-slow:   300ms - Emphasis animations (page loads)
+
+   ## Page Transitions
+   .tab-content-enter    - Apply to tab panel content wrappers
+   .section-enter        - Apply to card sections within pages (auto-staggers)
+
+   ## List Animations
+   .list-item-enter      - Apply to list/table rows (auto-staggers up to 15 items)
+   .list-item-exit       - Apply when removing items (with JS to trigger)
+   .list-item-highlight  - Flash highlight after update
+
+   ## Micro-Interactions
+   .btn-press            - Add to buttons for press feedback (scale down on click)
+   .btn-hover-lift       - Add to buttons for hover lift effect
+   .icon-btn-hover       - Add to icon buttons for scale effect
+   .toggle-switch        - Add to toggle switch containers
+   .toggle-knob          - Add to toggle switch knobs
+
+   ## Modals & Overlays
+   .modal-backdrop       - Fade in for modal overlays
+   .modal-content        - Scale in for modal content
+   .dropdown-menu        - Slide down for dropdowns
+
+   ## Feedback States
+   .animate-error-shake  - Shake animation for errors
+   .animate-success      - Pulse animation for success
+   .animate-loading      - Subtle pulse for loading states
+
+   ## Utility Classes
+   .fade-in, .fade-out   - Basic fade animations
+   .slide-up, .slide-down - Slide animations
+   .scale-in, .pop-in    - Scale animations (pop-in has bounce)
+   .transition-fast/normal/slow - Apply transition durations
+
+   ## Reduced Motion
+   All animations automatically reduce for users with
+   prefers-reduced-motion: reduce. No additional work needed.
+
+   ============================================================================ */
+
+/* ============================================================================
+   Reduced Motion Support (Accessibility)
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep skeleton visible but static */
+  .skeleton {
+    animation: none;
+    background: var(--monarch-bg-page);
+  }
+}
+
+/* ============================================================================
+   Page & Tab Transitions
+   ============================================================================ */
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tab content entrance - apply to tab panel containers */
+.tab-content-enter {
+  animation: pageEnter var(--animation-normal) var(--ease-out-smooth) forwards;
+}
+
+/* Section entrance - for cards/sections within a page */
+.section-enter {
+  animation: fadeIn var(--animation-normal) var(--ease-out-smooth) forwards;
+  animation-delay: 50ms;
+  opacity: 0;
+}
+
+/* Staggered section entrance */
+.section-enter:nth-child(1) { animation-delay: 0ms; }
+.section-enter:nth-child(2) { animation-delay: 50ms; }
+.section-enter:nth-child(3) { animation-delay: 100ms; }
+.section-enter:nth-child(4) { animation-delay: 150ms; }
+.section-enter:nth-child(5) { animation-delay: 200ms; }
+
+/* ============================================================================
+   Micro-Interactions
+   ============================================================================ */
+
+/* Button press effect - subtle scale-down on active */
+.btn-press {
+  transition: transform var(--animation-fast) var(--ease-out-smooth),
+              box-shadow var(--animation-fast) var(--ease-out-smooth);
+}
+
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Icon button hover - scale effect */
+.icon-btn-hover {
+  transition: transform var(--animation-fast) var(--ease-out-smooth),
+              color var(--animation-fast) var(--ease-out-smooth),
+              background-color var(--animation-fast) var(--ease-out-smooth);
+}
+
+.icon-btn-hover:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.icon-btn-hover:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Toggle switch - smooth background transition */
+.toggle-switch {
+  transition: background-color var(--animation-fast) var(--ease-in-out);
+}
+
+/* Toggle knob - smooth movement with slight bounce */
+.toggle-knob {
+  transition: transform var(--animation-fast) var(--ease-out-back);
+}
+
+/* Checkbox check animation */
+@keyframes checkMark {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.checkbox-animate path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.checkbox-animate.checked path {
+  animation: checkMark var(--animation-fast) var(--ease-out-smooth) forwards;
+}
+
+/* ============================================================================
+   List Animations
+   ============================================================================ */
+
+/* List item entrance */
+@keyframes listItemEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.list-item-enter {
+  animation: listItemEnter var(--animation-normal) var(--ease-out-smooth) forwards;
+  opacity: 0;
+}
+
+/* Extended stagger support (up to 15 items, then caps) */
+.list-item-enter:nth-child(1) { animation-delay: calc(0 * var(--stagger-delay)); }
+.list-item-enter:nth-child(2) { animation-delay: calc(1 * var(--stagger-delay)); }
+.list-item-enter:nth-child(3) { animation-delay: calc(2 * var(--stagger-delay)); }
+.list-item-enter:nth-child(4) { animation-delay: calc(3 * var(--stagger-delay)); }
+.list-item-enter:nth-child(5) { animation-delay: calc(4 * var(--stagger-delay)); }
+.list-item-enter:nth-child(6) { animation-delay: calc(5 * var(--stagger-delay)); }
+.list-item-enter:nth-child(7) { animation-delay: calc(6 * var(--stagger-delay)); }
+.list-item-enter:nth-child(8) { animation-delay: calc(7 * var(--stagger-delay)); }
+.list-item-enter:nth-child(9) { animation-delay: calc(8 * var(--stagger-delay)); }
+.list-item-enter:nth-child(10) { animation-delay: calc(9 * var(--stagger-delay)); }
+.list-item-enter:nth-child(11) { animation-delay: calc(10 * var(--stagger-delay)); }
+.list-item-enter:nth-child(12) { animation-delay: calc(11 * var(--stagger-delay)); }
+.list-item-enter:nth-child(13) { animation-delay: calc(12 * var(--stagger-delay)); }
+.list-item-enter:nth-child(14) { animation-delay: calc(13 * var(--stagger-delay)); }
+.list-item-enter:nth-child(15) { animation-delay: calc(14 * var(--stagger-delay)); }
+/* Cap at 350ms max delay for items 16+ */
+.list-item-enter:nth-child(n+16) { animation-delay: 350ms; }
+
+/* List item removal */
+@keyframes listItemExit {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+.list-item-exit {
+  animation: listItemExit var(--animation-normal) var(--ease-out-smooth) forwards;
+}
+
+/* List item highlight after action */
+.list-item-highlight {
+  animation: highlightFade 1.5s ease-out forwards;
+}
+
+/* ============================================================================
+   Feedback States
+   ============================================================================ */
+
+/* Error shake - refined version */
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+.animate-error-shake {
+  animation: errorShake 0.4s ease-in-out;
+}
+
+/* Success pulse */
+@keyframes successPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 160, 107, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 160, 107, 0); }
+}
+
+.animate-success {
+  animation: successPulse 0.6s ease-out;
+}
+
+/* Loading pulse - subtle */
+@keyframes loadingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-loading {
+  animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================================================
+   Utility Animation Classes
+   ============================================================================ */
+
+/* Fade utilities */
+.fade-in { animation: fadeIn var(--animation-fast) ease-out forwards; }
+.fade-in-slow { animation: fadeIn var(--animation-slow) ease-out forwards; }
+.fade-out { animation: fadeOut var(--animation-fast) ease-out forwards; }
+
+/* Slide utilities */
+.slide-up { animation: slideUp var(--animation-fast) ease-out forwards; }
+.slide-down { animation: slideDown var(--animation-fast) ease-out forwards; }
+
+/* Scale utilities */
+.scale-in { animation: scaleIn var(--animation-fast) ease-out forwards; }
+.pop-in { animation: scaleIn var(--animation-fast) var(--ease-out-back) forwards; }
+
+/* Transition duration utilities */
+.transition-fast { transition-duration: var(--animation-fast); }
+.transition-normal { transition-duration: var(--animation-normal); }
+.transition-slow { transition-duration: var(--animation-slow); }
+
+/* Combined transition utilities for common patterns */
+.transition-all-fast {
+  transition: all var(--animation-fast) var(--ease-out-smooth);
+}
+
+.transition-colors-fast {
+  transition: color var(--animation-fast) ease,
+              background-color var(--animation-fast) ease,
+              border-color var(--animation-fast) ease;
+}
+
+.transition-transform-fast {
+  transition: transform var(--animation-fast) var(--ease-out-smooth);
+}
+
+.transition-opacity-fast {
+  transition: opacity var(--animation-fast) ease;
+}
+
+/* Card/panel entrance - for dynamically loaded content */
+.card-enter {
+  animation: scaleIn var(--animation-normal) var(--ease-out-smooth) forwards;
+}
+
+/* Tooltip entrance - subtle slide from direction */
+@keyframes tooltipEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tooltip-enter {
+  animation: tooltipEnter var(--animation-fast) var(--ease-out-smooth) forwards;
 }

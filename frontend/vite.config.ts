@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import mdx from '@mdx-js/rollup'
+import remarkGfm from 'remark-gfm'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
@@ -169,7 +171,15 @@ export default defineConfig(() => ({
   // Base path for deployment (root for Cloudflare Pages with custom domain)
   base: '/',
 
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    // MDX plugin must come before React plugin
+    mdx({
+      remarkPlugins: [remarkGfm],
+      providerImportSource: '@mdx-js/react',
+    }),
+    react(),
+    tailwindcss(),
+  ],
   define: {
     // Use VITE_APP_VERSION from CI for beta builds, otherwise use package.json version
     __APP_VERSION__: JSON.stringify(process.env.VITE_APP_VERSION || pkg.version),

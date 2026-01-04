@@ -8,7 +8,7 @@ const config: Config = {
   favicon: 'img/favicon.ico',
 
   url: 'https://docs.eclosion.app',
-  baseUrl: '/developers/',
+  baseUrl: '/',
 
   organizationName: 'GraysonCAdams',
   projectName: 'eclosion-for-monarch',
@@ -25,11 +25,13 @@ const config: Config = {
     [
       'classic',
       {
+        // Technical docs at /docs
         docs: {
+          path: 'docs',
+          routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
           editUrl:
             'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
-          routeBasePath: '/',
           lastVersion: 'current',
           versions: {
             current: {
@@ -47,6 +49,29 @@ const config: Config = {
     ],
   ],
 
+  plugins: [
+    // User guides at /guide
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'guide',
+        path: 'guide',
+        routeBasePath: 'guide',
+        sidebarPath: './sidebarsGuide.ts',
+        editUrl:
+          'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
+        lastVersion: 'current',
+        versions: {
+          current: {
+            label: 'Next',
+            path: '',
+          },
+        },
+        showLastUpdateTime: true,
+      },
+    ],
+  ],
+
   themeConfig: {
     colorMode: {
       defaultMode: 'dark',
@@ -61,9 +86,16 @@ const config: Config = {
       items: [
         {
           type: 'docSidebar',
+          sidebarId: 'guideSidebar',
+          docsPluginId: 'guide',
+          position: 'left',
+          label: 'User Guide',
+        },
+        {
+          type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: 'Documentation',
+          label: 'Technical Docs',
         },
         {
           type: 'docsVersionDropdown',
@@ -71,12 +103,18 @@ const config: Config = {
           dropdownActiveClassDisabled: true,
         },
         {
-          href: 'https://docs.eclosion.app',
+          type: 'docsVersionDropdown',
+          docsPluginId: 'guide',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
+        {
+          href: 'https://eclosion.app',
           label: 'Home',
           position: 'right',
         },
         {
-          href: 'https://docs.eclosion.app/demo',
+          href: 'https://eclosion.app/demo',
           label: 'Demo',
           position: 'right',
         },
@@ -91,15 +129,28 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'User Guides',
           items: [
             {
               label: 'Getting Started',
-              to: '/',
+              to: '/guide',
             },
             {
+              label: 'Recurring Expenses',
+              to: '/guide/recurring-expenses',
+            },
+          ],
+        },
+        {
+          title: 'Technical Docs',
+          items: [
+            {
               label: 'Self-Hosting',
-              to: '/self-hosting/overview',
+              to: '/docs/self-hosting/overview',
+            },
+            {
+              label: 'Security',
+              to: '/docs/security',
             },
           ],
         },
@@ -121,7 +172,7 @@ const config: Config = {
           items: [
             {
               label: 'Changelog',
-              to: '/changelog',
+              to: '/docs/changelog',
             },
             {
               label: 'GitHub',

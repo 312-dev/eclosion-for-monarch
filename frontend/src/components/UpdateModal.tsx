@@ -5,6 +5,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal } from './ui/Modal';
 import { getUpdateInfo, getAvailableReleases, type UpdateInfo, type Release } from '../api/client';
+import * as demoApi from '../api/demoClient';
+import { useDemo } from '../context/DemoContext';
 import { VersionBadge } from './VersionBadge';
 
 interface UpdateModalProps {
@@ -14,6 +16,7 @@ interface UpdateModalProps {
 }
 
 export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps) {
+  const isDemo = useDemo();
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [releases, setReleases] = useState<{ stable: Release[]; beta: Release[] }>({ stable: [], beta: [] });
   const [loading, setLoading] = useState(true);
@@ -23,7 +26,9 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
     if (isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading state for async fetch
       setLoading(true);
-      Promise.all([getUpdateInfo(), getAvailableReleases()])
+      const fetchUpdateInfo = isDemo ? demoApi.getUpdateInfo : getUpdateInfo;
+      const fetchReleases = isDemo ? demoApi.getAvailableReleases : getAvailableReleases;
+      Promise.all([fetchUpdateInfo(), fetchReleases()])
         .then(([info, releasesData]) => {
           setUpdateInfo(info);
           setReleases({
@@ -41,7 +46,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
         })
         .finally(() => setLoading(false));
     }
-  }, [isOpen, selectedVersion]);
+  }, [isOpen, selectedVersion, isDemo]);
 
   const getDeploymentLabel = () => {
     switch (updateInfo?.deployment_type) {
@@ -84,13 +89,13 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
       footer={
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded-lg transition-colors"
+          className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
           style={{
-            backgroundColor: 'var(--monarch-bg-input)',
-            color: 'var(--monarch-text)',
+            backgroundColor: 'var(--monarch-orange)',
+            color: 'white',
           }}
         >
-          Got it, Close
+          Done
         </button>
       }
     >

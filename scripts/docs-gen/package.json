@@ -1,0 +1,22 @@
+{
+  "name": "docs-gen",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI-powered documentation generator from React component help content",
+  "scripts": {
+    "extract": "tsx index.ts extract",
+    "diff": "tsx index.ts diff",
+    "generate": "tsx index.ts generate",
+    "update-manifest": "tsx index.ts update-manifest",
+    "all": "tsx index.ts all"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/typescript-estree": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0"
+  }
+}
