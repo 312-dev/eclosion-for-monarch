@@ -4,15 +4,16 @@
  * Usage in MDX:
  * ```mdx
  * import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
+ * import { Package, ClipboardList, RefreshCw } from 'lucide-react';
  *
  * <FeatureGrid>
  *   <FeatureCard
- *     icon="📊"
+ *     icon={<Package />}
  *     title="Track Subscriptions"
  *     description="Keep all your recurring charges in one place"
  *   />
  *   <FeatureCard
- *     icon="🎯"
+ *     icon={<ClipboardList />}
  *     title="Smart Rollups"
  *     description="Combine small expenses into budget-friendly groups"
  *   />
@@ -23,8 +24,8 @@
 import React from 'react';
 
 interface FeatureCardProps {
-  /** Emoji or icon character */
-  icon: string;
+  /** Lucide icon component */
+  icon: React.ReactNode;
   /** Feature title */
   title: string;
   /** Feature description */
@@ -45,7 +46,14 @@ export function FeatureCard({
         backgroundColor: 'var(--ifm-background-surface-color)',
       }}
     >
-      <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{icon}</div>
+      <div
+        style={{
+          marginBottom: '0.5rem',
+          color: 'var(--ifm-color-primary)',
+        }}
+      >
+        {icon}
+      </div>
       <h4
         style={{
           margin: '0 0 0.5rem 0',

@@ -34,7 +34,10 @@ export interface ExtractedContent {
 }
 
 export interface ManifestEntry {
+  /** Hash of source content (to detect when source changes) */
   hash: string;
+  /** Hash of the generated doc file (to detect human edits) */
+  generatedDocHash?: string;
   lastGenerated: string;
   sourceFiles: string[];
   outputFile: string;
@@ -51,6 +54,8 @@ export interface DiffResult {
   added: ExtractedContent[];
   modified: ExtractedContent[];
   unchanged: string[];
+  /** Topics where human edited the generated doc - need AI merge */
+  humanEdited: string[];
   hasChanges: boolean;
 }
 

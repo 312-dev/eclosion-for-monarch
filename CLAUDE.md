@@ -367,7 +367,7 @@ The docs generator (`scripts/docs-gen/`) extracts help content from TSX componen
 **Key files:**
 - `scripts/docs-gen/types.ts` - DOC_MAPPINGS defines source files and output paths
 - `scripts/docs-gen/generator.ts` - AI prompt and generation logic
-- `scripts/docs-gen/manifest.ts` - Tracks changes to avoid unnecessary regeneration
+- `scripts/docs-gen/manifest.ts` - Tracks changes and detects human edits
 
 **DOC_MAPPINGS structure:**
 ```typescript
@@ -382,6 +382,35 @@ The docs generator (`scripts/docs-gen/`) extracts help content from TSX componen
 }
 ```
 
+### Human Edits and AI Merge
+
+The doc generator preserves human edits using a "suggest, don't overwrite" approach:
+
+| Scenario | Behavior |
+|----------|----------|
+| New doc (no manifest entry) | Generate fresh |
+| Source changed, doc untouched | Regenerate fresh |
+| Human edited, source unchanged | **Skip** (preserves human edits) |
+| Human edited + source changed | **Merge mode** (AI reconciles both) |
+
+**How it works:**
+1. The manifest tracks both source content hash and generated doc hash
+2. On each run, the system compares the current doc file hash to the last generated hash
+3. If they differ, a human edited the doc
+4. If source also changed, the AI receives both the human-edited doc and new source content
+5. The AI preserves human improvements while incorporating new features
+
+**Merge mode prompt instructs the AI to:**
+- Preserve the human's tone, phrasing, and structural choices
+- Incorporate new information from updated source content
+- Mark uncertain changes with `<!-- REVIEW: explanation -->` comments
+
+**Force regeneration:**
+```bash
+cd scripts/docs-gen
+npx tsx index.ts all --force  # Ignores manifest, regenerates everything
+```
+
 ### Documentation Components
 
 Use these interactive components to make docs engaging:
@@ -390,10 +419,11 @@ Use these interactive components to make docs engaging:
 
 ```mdx
 import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
+import { Package, ClipboardList } from 'lucide-react';
 
 <FeatureGrid>
-  <FeatureCard icon="📦" title="Rollup Zone" description="Combine subscriptions" />
-  <FeatureCard icon="📋" title="Individual" description="Track bills separately" />
+  <FeatureCard icon={<Package size={24} />} title="Rollup Zone" description="Combine subscriptions" />
+  <FeatureCard icon={<ClipboardList size={24} />} title="Individual" description="Track bills separately" />
 </FeatureGrid>
 ```
 

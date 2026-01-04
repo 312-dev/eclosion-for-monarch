@@ -13,8 +13,8 @@
  *   --force        - Force regeneration of all docs, ignoring manifest
  */
 
-import { extractAllContent, generateTopicHash } from './extractor.js';
-import { loadManifest, saveManifest, detectChanges, updateManifest, getTopicsToRegenerate } from './manifest.js';
+import { extractAllContent } from './extractor.js';
+import { loadManifest, saveManifest, detectChanges, updateManifest, getTopicsToRegenerate, readDocFile } from './manifest.js';
 import { generateDocs } from './generator.js';
 import { writeAllDocs, createGuidesCategory, ensureGeneratedDir } from './mdx-builder.js';
 import { DOC_MAPPINGS } from './types.js';
@@ -73,7 +73,7 @@ async function runDiff(contentByTopic: Map<string, import('./types.js').Extracte
 async function runGenerate(
   contentByTopic: Map<string, import('./types.js').ExtractedContent[]>,
   diffResult: import('./types.js').DiffResult
-): Promise<void> {
+): Promise<string[]> {
   console.log('\n🤖 Generating documentation with AI...\n');
 
   // Ensure directories exist
@@ -85,39 +85,77 @@ async function runGenerate(
 
   if (topicsToRegenerate.length === 0) {
     console.log('No topics need regeneration.');
-    return;
+    return [];
   }
 
   console.log(`Regenerating ${topicsToRegenerate.length} topics:`);
   for (const mapping of topicsToRegenerate) {
-    console.log(`  - ${mapping.topic}`);
+    const isMerge = diffResult.humanEdited.includes(mapping.topic);
+    console.log(`  - ${mapping.topic}${isMerge ? ' (merge mode)' : ''}`);
   }
 
-  // Generate docs
-  const docs = await generateDocs(contentByTopic, topicsToRegenerate);
+  // Build merge topics map for human-edited docs
+  const mergeTopics = new Map<string, string>();
+  for (const topic of diffResult.humanEdited) {
+    const mapping = DOC_MAPPINGS.find(m => m.topic === topic);
+    if (mapping) {
+      const currentDoc = readDocFile(mapping.outputFile);
+      if (currentDoc) {
+        mergeTopics.set(topic, currentDoc);
+      }
+    }
+  }
+
+  if (mergeTopics.size > 0) {
+    console.log(`\n📎 ${mergeTopics.size} topic(s) will use merge mode to preserve human edits`);
+  }
+
+  // Generate docs (with merge mode where needed)
+  const docs = await generateDocs(contentByTopic, topicsToRegenerate, mergeTopics);
 
   // Write to disk
   console.log('\n📝 Writing MDX files...\n');
   writeAllDocs(docs, topicsToRegenerate);
 
   console.log(`\n✅ Generated ${docs.length} documentation files`);
+
+  // Return list of generated topics for manifest update
+  return docs.map(d => d.topic);
 }
 
 async function runUpdateManifest(
-  contentByTopic: Map<string, import('./types.js').ExtractedContent[]>
+  contentByTopic: Map<string, import('./types.js').ExtractedContent[]>,
+  generatedTopics?: string[]
 ): Promise<void> {
   console.log('\n📋 Updating manifest...\n');
-  const appVersion = await getAppVersion();
+  const appVersion = getAppVersion();
   const manifest = loadManifest();
-  const updated = updateManifest(manifest, contentByTopic, DOC_MAPPINGS, appVersion);
+  const updated = updateManifest(manifest, contentByTopic, DOC_MAPPINGS, appVersion, generatedTopics);
   saveManifest(updated);
 }
 
+async function runForceGenerate(
+  contentByTopic: Map<string, import('./types.js').ExtractedContent[]>
+): Promise<void> {
+  console.log('\n🤖 Force generating all documentation...\n');
+  ensureGeneratedDir();
+  createGuidesCategory();
+  const docs = await generateDocs(contentByTopic, DOC_MAPPINGS);
+  console.log('\n📝 Writing MDX files...\n');
+  writeAllDocs(docs, DOC_MAPPINGS);
+  console.log(`\n✅ Generated ${docs.length} documentation files`);
+}
+
 async function main() {
-  const command = process.argv[2] || 'all';
+  const args = process.argv.slice(2);
+  const forceFlag = args.includes('--force');
+  const command = args.find(arg => !arg.startsWith('--')) || 'all';
 
   console.log('='.repeat(50));
   console.log('📚 Eclosion Documentation Generator');
+  if (forceFlag) {
+    console.log('⚡ Force mode: regenerating all docs');
+  }
   console.log('='.repeat(50));
 
   try {
@@ -135,11 +173,15 @@ async function main() {
 
       case 'generate': {
         const content = await runExtract();
-        const diff = await runDiff(content);
-        if (diff.hasChanges) {
-          await runGenerate(content, diff);
+        if (forceFlag) {
+          await runForceGenerate(content);
         } else {
-          console.log('\n✅ No changes detected, skipping generation');
+          const diff = await runDiff(content);
+          if (diff.hasChanges) {
+            await runGenerate(content, diff);
+          } else {
+            console.log('\n✅ No changes detected, skipping generation');
+          }
         }
         break;
       }
@@ -152,20 +194,26 @@ async function main() {
 
       case 'all': {
         const content = await runExtract();
-        const diff = await runDiff(content);
-        if (diff.hasChanges) {
-          await runGenerate(content, diff);
-          await runUpdateManifest(content);
+        if (forceFlag) {
+          await runForceGenerate(content);
+          await runUpdateManifest(content, DOC_MAPPINGS.map(m => m.topic));
         } else {
-          console.log('\n✅ No changes detected');
+          const diff = await runDiff(content);
+          if (diff.hasChanges) {
+            const generatedTopics = await runGenerate(content, diff);
+            await runUpdateManifest(content, generatedTopics);
+          } else {
+            console.log('\n✅ No changes detected');
+          }
         }
         break;
       }
 
       default:
         console.error(`Unknown command: ${command}`);
-        console.log('\nUsage: tsx index.ts <command>');
+        console.log('\nUsage: tsx index.ts <command> [--force]');
         console.log('Commands: extract, diff, generate, update-manifest, all');
+        console.log('Flags: --force (regenerate all docs, ignoring manifest)');
         process.exit(1);
     }
 

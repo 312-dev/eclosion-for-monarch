@@ -2,13 +2,45 @@
  * Manifest management - tracks content hashes for diff detection
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as crypto from 'node:crypto';
 import type { Manifest, ManifestEntry, DiffResult, ExtractedContent, DocMapping } from './types.js';
 import { generateTopicHash } from './extractor.js';
 
 const PROJECT_ROOT = path.resolve(process.cwd(), '../..');
 const MANIFEST_PATH = path.join(PROJECT_ROOT, 'docusaurus/docs/_generated/content-manifest.json');
+
+/**
+ * Compute SHA256 hash of a file on disk
+ */
+export function hashFile(filePath: string): string | null {
+  try {
+    const absolutePath = path.join(PROJECT_ROOT, filePath);
+    if (!fs.existsSync(absolutePath)) {
+      return null;
+    }
+    const content = fs.readFileSync(absolutePath, 'utf-8');
+    return crypto.createHash('sha256').update(content).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read file content from disk
+ */
+export function readDocFile(filePath: string): string | null {
+  try {
+    const absolutePath = path.join(PROJECT_ROOT, filePath);
+    if (!fs.existsSync(absolutePath)) {
+      return null;
+    }
+    return fs.readFileSync(absolutePath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Load existing manifest or return empty one
@@ -56,22 +88,38 @@ export function detectChanges(
   const added: ExtractedContent[] = [];
   const modified: ExtractedContent[] = [];
   const unchanged: string[] = [];
+  const humanEdited: string[] = [];
 
   for (const mapping of mappings) {
     const topicContent = contentByTopic.get(mapping.topic) ?? [];
-    const currentHash = generateTopicHash(topicContent);
+    const currentSourceHash = generateTopicHash(topicContent);
     const existingEntry = manifest.contents[mapping.topic];
 
+    // Check if human edited the doc file
+    const currentDocHash = hashFile(mapping.outputFile);
+    const wasHumanEdited = existingEntry?.generatedDocHash &&
+      currentDocHash &&
+      existingEntry.generatedDocHash !== currentDocHash;
+
     if (!existingEntry) {
-      // New topic
+      // New topic - generate fresh
       added.push(...topicContent);
       console.log(`[NEW] ${mapping.topic}`);
-    } else if (existingEntry.hash !== currentHash) {
-      // Modified topic
+    } else if (wasHumanEdited && existingEntry.hash !== currentSourceHash) {
+      // Source changed AND human edited - need AI merge
+      humanEdited.push(mapping.topic);
       modified.push(...topicContent);
-      console.log(`[MODIFIED] ${mapping.topic} (hash changed)`);
+      console.log(`[MERGE NEEDED] ${mapping.topic} (source changed + human edits detected)`);
+    } else if (wasHumanEdited) {
+      // Human edited but source unchanged - skip regeneration
+      unchanged.push(mapping.topic);
+      console.log(`[HUMAN EDITED] ${mapping.topic} (skipping - human edits preserved)`);
+    } else if (existingEntry.hash !== currentSourceHash) {
+      // Source changed, no human edits - regenerate fresh
+      modified.push(...topicContent);
+      console.log(`[MODIFIED] ${mapping.topic} (source changed)`);
     } else {
-      // Unchanged
+      // Nothing changed
       unchanged.push(mapping.topic);
       console.log(`[UNCHANGED] ${mapping.topic}`);
     }
@@ -81,6 +129,7 @@ export function detectChanges(
     added,
     modified,
     unchanged,
+    humanEdited,
     hasChanges: added.length > 0 || modified.length > 0,
   };
 }
@@ -92,17 +141,23 @@ export function updateManifest(
   manifest: Manifest,
   contentByTopic: Map<string, ExtractedContent[]>,
   mappings: DocMapping[],
-  appVersion: string
+  appVersion: string,
+  generatedTopics?: string[]
 ): Manifest {
   manifest.appVersion = appVersion;
 
   for (const mapping of mappings) {
     const topicContent = contentByTopic.get(mapping.topic) ?? [];
-    const hash = generateTopicHash(topicContent);
+    const sourceHash = generateTopicHash(topicContent);
+
+    // Only update generatedDocHash if we actually generated this topic
+    const wasGenerated = !generatedTopics || generatedTopics.includes(mapping.topic);
+    const generatedDocHash = wasGenerated ? hashFile(mapping.outputFile) : manifest.contents[mapping.topic]?.generatedDocHash;
 
     manifest.contents[mapping.topic] = {
-      hash,
-      lastGenerated: new Date().toISOString(),
+      hash: sourceHash,
+      generatedDocHash: generatedDocHash ?? undefined,
+      lastGenerated: wasGenerated ? new Date().toISOString() : manifest.contents[mapping.topic]?.lastGenerated ?? new Date().toISOString(),
       sourceFiles: mapping.sourceFiles,
       outputFile: mapping.outputFile,
     };

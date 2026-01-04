@@ -6,6 +6,7 @@ sidebar_position: 1
 
 import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
 import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+import { Package, ClipboardList, RefreshCw } from 'lucide-react';
 
 # Recurring Expenses
 
@@ -13,17 +14,17 @@ The Recurring tab is the heart of Eclosion. Track all your recurring bills, subs
 
 <FeatureGrid>
   <FeatureCard
-    icon="📦"
+    icon={<Package size={24} />}
     title="Rollup Zone"
     description="Combine small subscriptions into a single budget category"
   />
   <FeatureCard
-    icon="📋"
+    icon={<ClipboardList size={24} />}
     title="Individual Tracking"
     description="Track major bills separately with their own categories"
   />
   <FeatureCard
-    icon="🔄"
+    icon={<RefreshCw size={24} />}
     title="Auto Sync"
     description="Changes sync automatically with Monarch Money"
   />

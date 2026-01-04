@@ -18,7 +18,7 @@ interface GeneratedDoc {
 }
 
 /**
- * Build the prompt for AI doc generation
+ * Build the prompt for fresh AI doc generation
  */
 function buildPrompt(
   topic: string,
@@ -27,7 +27,58 @@ function buildPrompt(
 ): string {
   const contentJson = JSON.stringify(contents, null, 2);
 
+  return buildBasePrompt(topic, contentJson, mapping, null);
+}
+
+/**
+ * Build the prompt for AI-assisted merge (human edits + source changes)
+ */
+function buildMergePrompt(
+  topic: string,
+  contents: ExtractedContent[],
+  mapping: DocMapping,
+  currentDoc: string
+): string {
+  const contentJson = JSON.stringify(contents, null, 2);
+
+  return buildBasePrompt(topic, contentJson, mapping, currentDoc);
+}
+
+/**
+ * Build the base prompt with optional merge context
+ */
+function buildBasePrompt(
+  topic: string,
+  contentJson: string,
+  mapping: DocMapping,
+  currentDoc: string | null
+): string {
+  const mergeInstructions = currentDoc ? `
+## IMPORTANT: This is a MERGE operation
+
+A human previously edited this documentation. You must:
+1. **Preserve the human's improvements** - their tone, phrasing, added explanations, and structural choices
+2. **Incorporate new information** from the updated source content below
+3. **Mark conflicts** with <!-- REVIEW: explanation --> if you're unsure how to reconcile differences
+
+The human-edited document you're updating:
+\`\`\`mdx
+${currentDoc}
+\`\`\`
+
+Analyze what the human changed from typical AI output:
+- Did they add sections or examples?
+- Did they change the tone or phrasing?
+- Did they restructure content?
+
+Carry these decisions forward while adding any new features or changes from the source.
+
+---
+
+` : '';
+
   return `You are writing user documentation for Eclosion, a modular self-hosted toolkit that extends Monarch Money with additional features.
+${mergeInstructions}
 
 ## Important Framing
 Eclosion is NOT a single-purpose app. It is a growing toolkit that adds multiple features to Monarch Money. The Recurring Expenses feature is just one module among several (with more planned). Never frame Eclosion as "a recurring expense tracker" or center the entire app around any single feature. Each doc page should present its feature as one part of a larger toolkit.
@@ -243,16 +294,21 @@ function formatTopicTitle(topic: string): string {
 
 /**
  * Generate documentation for a single topic
+ * @param currentDoc - If provided, triggers merge mode (preserves human edits)
  */
 export async function generateDocForTopic(
   topic: string,
   contents: ExtractedContent[],
   mapping: DocMapping,
-  position: number
+  position: number,
+  currentDoc?: string
 ): Promise<GeneratedDoc> {
-  console.log(`Generating documentation for: ${topic}`);
+  const mode = currentDoc ? 'Merging' : 'Generating';
+  console.log(`${mode} documentation for: ${topic}`);
 
-  const prompt = buildPrompt(topic, contents, mapping);
+  const prompt = currentDoc
+    ? buildMergePrompt(topic, contents, mapping, currentDoc)
+    : buildPrompt(topic, contents, mapping);
   const generated = await callAzureOpenAI(prompt);
 
   return parseMdxOutput(generated, topic, position);
@@ -260,10 +316,12 @@ export async function generateDocForTopic(
 
 /**
  * Generate documentation for multiple topics
+ * @param mergeTopics - Map of topic names to current doc content (for merge mode)
  */
 export async function generateDocs(
   contentByTopic: Map<string, ExtractedContent[]>,
-  mappings: DocMapping[]
+  mappings: DocMapping[],
+  mergeTopics?: Map<string, string>
 ): Promise<GeneratedDoc[]> {
   const results: GeneratedDoc[] = [];
 
@@ -277,7 +335,9 @@ export async function generateDocs(
     }
 
     try {
-      const doc = await generateDocForTopic(mapping.topic, contents, mapping, i + 1);
+      // Check if this topic needs merge mode
+      const currentDoc = mergeTopics?.get(mapping.topic);
+      const doc = await generateDocForTopic(mapping.topic, contents, mapping, i + 1, currentDoc);
       results.push(doc);
 
       // Rate limiting - wait between requests

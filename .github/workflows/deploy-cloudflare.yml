@@ -50,12 +50,16 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Skip if triggered by bot commit (prevents infinite loop)
+    if: github.actor != 'github-actions[bot]'
     permissions:
-      contents: read
+      contents: write  # Need write to commit version snapshots
       deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for version commits
 
       - name: Determine environment and version
         id: config
@@ -72,7 +76,9 @@ jobs:
             VERSION="${BASE_VERSION}-beta.${SHORT_SHA}"
           elif [[ "${{ github.event_name }}" == "release" ]]; then
             ENV="beta"
+            # Strip 'v' prefix from tag for consistent versioning
             VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
           else
             ENV="${{ inputs.environment || 'beta' }}"
             BASE_VERSION=$(node -p "require('./frontend/package.json').version")
@@ -110,11 +116,61 @@ jobs:
         working-directory: docusaurus
         run: npm ci
 
+      - name: Create docs version snapshot (beta only)
+        if: steps.config.outputs.environment == 'beta'
+        working-directory: docusaurus
+        run: |
+          VERSION="${{ steps.config.outputs.version }}"
+          echo "Creating docs version: $VERSION"
+
+          # Create the version snapshot
+          npm run version -- "$VERSION"
+
+          echo "Version $VERSION created"
+
+      - name: Cleanup old beta doc versions
+        if: steps.config.outputs.environment == 'beta'
+        run: |
+          KEEP_COUNT=5
+          cd docusaurus
+
+          # Get all beta versions from versions.json
+          if [ ! -f versions.json ]; then
+            echo "No versions.json found"
+            exit 0
+          fi
+
+          # Extract beta versions (contain 'beta'), sorted newest first
+          BETA_VERSIONS=$(jq -r '.[] | select(contains("beta"))' versions.json)
+          BETA_COUNT=$(echo "$BETA_VERSIONS" | grep -c . || echo 0)
+
+          echo "Found $BETA_COUNT beta versions"
+
+          if [ "$BETA_COUNT" -le "$KEEP_COUNT" ]; then
+            echo "No cleanup needed (keeping $KEEP_COUNT)"
+            exit 0
+          fi
+
+          # Get versions to delete (skip first KEEP_COUNT)
+          TO_DELETE=$(echo "$BETA_VERSIONS" | tail -n +$((KEEP_COUNT + 1)))
+
+          for VERSION in $TO_DELETE; do
+            echo "Removing old beta version: $VERSION"
+
+            # Remove from versions.json
+            jq --arg v "$VERSION" 'del(.[] | select(. == $v))' versions.json > versions.tmp && mv versions.tmp versions.json
+
+            # Remove versioned docs and sidebars
+            rm -rf "versioned_docs/version-$VERSION"
+            rm -f "versioned_sidebars/version-$VERSION-sidebars.json"
+          done
+
+          echo "Cleanup complete"
+
       - name: Build Docusaurus
         working-directory: docusaurus
         env:
           ECLOSION_BETA: ${{ steps.config.outputs.environment == 'beta' && 'true' || '' }}
-          DOCS_LAST_VERSION: ${{ steps.config.outputs.environment == 'beta' && 'current' || '1.0' }}
         run: npm run build
 
       - name: Merge builds
@@ -170,3 +226,19 @@ jobs:
           done
 
           echo "Cleanup complete"
+
+      - name: Commit docs version changes
+        if: steps.config.outputs.environment == 'beta' && github.event_name == 'push'
+        run: |
+          # Check if there are changes to commit
+          if git diff --quiet docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars 2>/dev/null; then
+            echo "No version changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars
+          git commit -m "docs: create beta version ${{ steps.config.outputs.version }}"
+          git push

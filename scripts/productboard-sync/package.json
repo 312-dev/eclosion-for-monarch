@@ -1,0 +1,19 @@
+{
+  "name": "productboard-sync",
+  "version": "1.0.0",
+  "description": "Sync Monarch Money ProductBoard ideas to GitHub Discussions",
+  "type": "module",
+  "scripts": {
+    "scrape": "tsx index.ts scrape",
+    "sync": "tsx index.ts sync",
+    "run": "tsx index.ts scrape && tsx index.ts sync"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

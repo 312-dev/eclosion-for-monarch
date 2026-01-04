@@ -1,6 +1,37 @@
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 import { themes as prismThemes } from 'prism-react-renderer';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Load versions dynamically and filter based on site type (beta vs stable)
+const isBetaSite = process.env.ECLOSION_BETA === 'true';
+const allVersions: string[] = fs.existsSync(path.join(__dirname, 'versions.json'))
+  ? JSON.parse(fs.readFileSync(path.join(__dirname, 'versions.json'), 'utf-8'))
+  : [];
+
+// Stable versions are simple semver (e.g., 1.0, 1.1)
+const stableVersions = allVersions.filter(v => !v.includes('beta'));
+
+// Beta versions contain 'beta' in the name
+// Pre-release versions: 1.1.0-beta.1 (ends with number)
+// Develop push versions: 1.0.0-beta.abc1234 (ends with 7-char SHA)
+const betaVersions = allVersions.filter(v => v.includes('beta'));
+const preReleaseVersions = betaVersions.filter(v => /beta\.\d+$/.test(v));
+const developPushVersions = betaVersions.filter(v => /beta\.[a-f0-9]{7}$/.test(v));
+
+// Determine which versions to include
+const includedVersions = isBetaSite
+  ? ['current', ...betaVersions]  // Beta site: Unreleased + all beta versions
+  : stableVersions;               // Stable site: Only stable versions
+
+// Determine default version for beta site:
+// 1. Latest pre-release (e.g., 1.1.0-beta.1)
+// 2. Fall back to latest develop push if no pre-releases
+// 3. Fall back to 'current' if neither exist
+const lastVersion = isBetaSite
+  ? (preReleaseVersions[0] || developPushVersions[0] || 'current')
+  : (stableVersions[0] || 'current');
 
 const config: Config = {
   title: 'Eclosion',
@@ -35,29 +66,27 @@ const config: Config = {
           editUrl:
             'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
           showLastUpdateTime: true,
-          // Versioning - scoped by site:
-          // - Stable site: Only stable versions (1.0, 1.1, etc.)
-          // - Beta site: Only pre-release versions (1.1-beta.1, etc.) + Next
-          lastVersion: process.env.DOCS_LAST_VERSION || '1.0',
-          // Only include versions appropriate for this site
-          onlyIncludeVersions: process.env.ECLOSION_BETA === 'true'
-            ? ['current'] // Beta site: Next + any beta versions added to this array
-            : ['1.0'],    // Stable site: Only stable versions
+          // Versioning - dynamically loaded from versions.json
+          // Beta site: Shows 'Unreleased' + all beta versions
+          // Stable site: Shows only stable versions (1.0, 1.1, etc.)
+          lastVersion,
+          onlyIncludeVersions: includedVersions,
           versions: {
             current: {
-              label: 'Next',
-              path: process.env.ECLOSION_BETA === 'true' ? '' : 'next',
-              // On beta site, we use the announcement bar instead of this banner
-              banner: process.env.ECLOSION_BETA === 'true' ? 'none' : 'unreleased',
+              label: 'Unreleased',
+              path: isBetaSite ? 'next' : 'next',
+              banner: 'unreleased',
             },
-            '1.0': {
-              label: '1.0',
-              banner: 'none',
-            },
-            // Add pre-release versions here and include in onlyIncludeVersions for beta:
-            // '1.1-beta.1': { label: '1.1-beta.1', banner: 'unreleased' },
+            // Stable versions get clean labels
+            ...Object.fromEntries(
+              stableVersions.map(v => [v, { label: v, banner: 'none' as const }])
+            ),
+            // Beta versions show full version string
+            ...Object.fromEntries(
+              betaVersions.map(v => [v, { label: v, banner: 'none' as const }])
+            ),
           },
-          includeCurrentVersion: true,
+          includeCurrentVersion: isBetaSite, // Only show 'Unreleased' on beta site
         },
         blog: false,
         theme: {

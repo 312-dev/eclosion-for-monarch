@@ -1,6 +1,18 @@
 name: Generate Documentation
 
 on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        type: string
+        default: 'develop'
+        description: Branch to commit generated docs to
+      force:
+        required: false
+        type: boolean
+        default: false
+        description: Force regeneration of all docs, ignoring manifest
   workflow_call:
     inputs:
       version:
@@ -10,6 +22,11 @@ on:
         required: true
         type: string
         description: Branch to commit generated docs to
+      force:
+        required: false
+        type: boolean
+        default: false
+        description: Force regeneration of all docs, ignoring manifest
 
 jobs:
   generate-docs:
@@ -43,35 +60,41 @@ jobs:
 
       - name: Detect changes
         id: diff
+        if: ${{ !inputs.force }}
         working-directory: scripts/docs-gen
         run: npx tsx index.ts diff
 
       - name: Generate documentation
-        if: steps.diff.outputs.has_changes == 'true'
+        if: steps.diff.outputs.has_changes == 'true' || inputs.force
         working-directory: scripts/docs-gen
         env:
           GH_TOKEN: ${{ secrets.MODELS_TOKEN }}
           APP_VERSION: ${{ inputs.version }}
-        run: npx tsx index.ts generate
+        run: npx tsx index.ts generate ${{ inputs.force && '--force' || '' }}
 
       - name: Update manifest
-        if: steps.diff.outputs.has_changes == 'true'
+        if: steps.diff.outputs.has_changes == 'true' || inputs.force
         working-directory: scripts/docs-gen
         env:
           APP_VERSION: ${{ inputs.version }}
         run: npx tsx index.ts update-manifest
 
       - name: Commit generated docs
-        if: steps.diff.outputs.has_changes == 'true'
+        if: steps.diff.outputs.has_changes == 'true' || inputs.force
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # Add generated docs to Docusaurus
           git add docusaurus/docs/
           git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "docs: auto-generate user guides for v${{ inputs.version }}"
+          VERSION="${{ inputs.version }}"
+          if [ -n "$VERSION" ]; then
+            git commit -m "docs: auto-generate user guides for v${VERSION}"
+          else
+            git commit -m "docs: regenerate user guides"
+          fi
           git push
 
       - name: No changes summary
-        if: steps.diff.outputs.has_changes != 'true'
+        if: steps.diff.outputs.has_changes != 'true' && !inputs.force
         run: echo "No documentation changes detected - skipping generation"
