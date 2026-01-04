@@ -1,0 +1,103 @@
+name: Sync ProductBoard Ideas
+
+on:
+  schedule:
+    # Run weekly on Monday at 9am UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only scrape and filter, do not create discussions'
+        required: false
+        type: boolean
+        default: false
+      skip_filter:
+        description: 'Skip AI filtering (sync all high-vote ideas)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      discussions: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/productboard-sync/package-lock.json
+
+      - name: Install dependencies
+        working-directory: scripts/productboard-sync
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: scripts/productboard-sync
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape ProductBoard
+        working-directory: scripts/productboard-sync
+        run: npx tsx index.ts scrape
+
+      - name: Filter with AI
+        if: ${{ !inputs.skip_filter }}
+        working-directory: scripts/productboard-sync
+        env:
+          GH_TOKEN: ${{ secrets.MODELS_TOKEN }}
+        run: npx tsx index.ts filter
+
+      - name: Sync to GitHub Discussions
+        if: ${{ !inputs.dry_run }}
+        working-directory: scripts/productboard-sync
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tsx index.ts sync
+
+      - name: Export ideas JSON for frontend
+        working-directory: scripts/productboard-sync
+        run: npx tsx index.ts export
+
+      - name: Commit state and data changes
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/productboard-sync/state.json data/ideas.json
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: update productboard sync state and ideas data"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## ProductBoard Sync Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f scripts/productboard-sync/scraped-ideas.json ]; then
+            TOTAL=$(jq 'length' scripts/productboard-sync/scraped-ideas.json)
+            HIGH_VOTE=$(jq '[.[] | select(.votes >= 500 and .status == "idea")] | length' scripts/productboard-sync/scraped-ideas.json)
+            echo "- **Total ideas scraped**: $TOTAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **High-vote uncommitted ideas**: $HIGH_VOTE" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f scripts/productboard-sync/filtered-ideas.json ]; then
+            FEASIBLE=$(jq 'length' scripts/productboard-sync/filtered-ideas.json)
+            echo "- **Feasible for Eclosion (AI filtered)**: $FEASIBLE" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f data/ideas.json ]; then
+            EXPORTED=$(jq '.totalIdeas' data/ideas.json)
+            echo "- **Exported to ideas.json**: $EXPORTED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Note**: This was a dry run. No discussions were created." >> $GITHUB_STEP_SUMMARY
+          fi

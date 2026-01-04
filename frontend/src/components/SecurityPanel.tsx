@@ -6,11 +6,10 @@
  */
 
 import { useState } from 'react';
-import { CheckCircle, AlertCircle, Globe, Clock, Download, Trash2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Globe, Download } from 'lucide-react';
 import {
   useSecuritySummaryQuery,
   useSecurityEventsQuery,
-  useClearSecurityEventsMutation,
   useExportSecurityEventsMutation,
 } from '../api/queries';
 import { SecurityEventList } from './SecurityEventList';
@@ -20,30 +19,22 @@ interface SecurityPanelProps {
   className?: string;
 }
 
-type EventFilter = 'all' | 'LOGIN_ATTEMPT' | 'UNLOCK_ATTEMPT' | 'LOGOUT' | 'SESSION_TIMEOUT';
+type EventFilter = 'all' | 'LOGIN_ATTEMPT' | 'UNLOCK_ATTEMPT';
+
+const PAGE_SIZE = 10;
 
 export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   const [filter, setFilter] = useState<EventFilter>('all');
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [page, setPage] = useState(0);
   const toast = useToast();
 
   const { data: summary, isLoading: summaryLoading } = useSecuritySummaryQuery();
   const { data: events, isLoading: eventsLoading } = useSecurityEventsQuery({
-    limit: 20,
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
     eventType: filter === 'all' ? undefined : filter,
   });
-  const clearMutation = useClearSecurityEventsMutation();
   const exportMutation = useExportSecurityEventsMutation();
-
-  const handleClear = async () => {
-    try {
-      await clearMutation.mutateAsync();
-      toast.success('Security logs cleared');
-      setShowClearConfirm(false);
-    } catch {
-      toast.error('Failed to clear logs');
-    }
-  };
 
   const handleExport = async () => {
     try {
@@ -81,13 +72,11 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       icon: Globe,
       color: 'var(--monarch-orange, #ff692d)',
     },
-    {
-      label: 'Session Timeouts',
-      value: summary?.session_timeouts ?? 0,
-      icon: Clock,
-      color: 'var(--monarch-text-muted)',
-    },
   ];
+
+  // Calculate total pages from summary data
+  const totalEvents = summary?.total_events ?? 0;
+  const totalPages = Math.ceil(totalEvents / PAGE_SIZE);
 
   return (
     <div className={className}>
@@ -131,8 +120,6 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
           <option value="all">All Events</option>
           <option value="LOGIN_ATTEMPT">Logins</option>
           <option value="UNLOCK_ATTEMPT">Unlocks</option>
-          <option value="LOGOUT">Logouts</option>
-          <option value="SESSION_TIMEOUT">Timeouts</option>
         </select>
 
         <div className="flex gap-2">
@@ -152,25 +139,46 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
             Export
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowClearConfirm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:opacity-80 transition-opacity"
-            style={{
-              color: 'var(--monarch-error, #ef4444)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--monarch-error, #ef4444)',
-            }}
-            aria-label="Clear security logs"
-          >
-            <Trash2 size={14} aria-hidden="true" />
-            Clear
-          </button>
         </div>
       </div>
 
       {/* Events List */}
       <SecurityEventList events={events?.events ?? []} loading={eventsLoading} />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="px-3 py-1.5 rounded-lg text-sm disabled:opacity-40"
+            style={{
+              backgroundColor: 'var(--monarch-bg-page)',
+              color: 'var(--monarch-text-dark)',
+            }}
+            aria-label="Previous page"
+          >
+            ←
+          </button>
+          <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+            Page {page + 1} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 rounded-lg text-sm disabled:opacity-40"
+            style={{
+              backgroundColor: 'var(--monarch-bg-page)',
+              color: 'var(--monarch-text-dark)',
+            }}
+            aria-label="Next page"
+          >
+            →
+          </button>
+        </div>
+      )}
 
       {/* Retention Notice */}
       <p
@@ -179,54 +187,6 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       >
         Logs auto-delete after 90 days
       </p>
-
-      {/* Clear Confirmation Modal */}
-      {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setShowClearConfirm(false)}
-            aria-hidden="true"
-          />
-          <div
-            className="relative p-4 rounded-xl max-w-sm mx-4"
-            style={{ backgroundColor: 'var(--monarch-bg-card)' }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="clear-dialog-title"
-          >
-            <h3
-              id="clear-dialog-title"
-              className="font-semibold mb-2"
-              style={{ color: 'var(--monarch-text-dark)' }}
-            >
-              Clear Security Logs?
-            </h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
-              This will permanently delete all security event history.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowClearConfirm(false)}
-                className="flex-1 px-3 py-2 rounded-lg text-sm"
-                style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleClear}
-                disabled={clearMutation.isPending}
-                className="flex-1 px-3 py-2 rounded-lg text-sm text-white"
-                style={{ backgroundColor: 'var(--monarch-error, #ef4444)' }}
-              >
-                {clearMutation.isPending ? 'Clearing...' : 'Clear All'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

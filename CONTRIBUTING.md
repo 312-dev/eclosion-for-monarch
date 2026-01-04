@@ -21,7 +21,7 @@ Please be respectful and constructive in all interactions. Contributors of all e
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.11+
 - Node.js 20+
 - Docker (optional, for containerized development)
 
@@ -30,7 +30,7 @@ Please be respectful and constructive in all interactions. Contributors of all e
 1. **Clone the repository**
    ```bash
    git clone https://github.com/graysoncadams/eclosion-for-monarch.git
-   cd eclosion
+   cd eclosion-for-monarch
    ```
 
 2. **Backend setup**

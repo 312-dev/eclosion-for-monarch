@@ -877,7 +877,7 @@ export async function getSecurityStatus(): Promise<SecurityStatus> {
   };
 }
 
-// Demo security events data
+// Demo security events data (login and unlock attempts only)
 const DEMO_SECURITY_EVENTS = [
   {
     id: 1,
@@ -919,26 +919,6 @@ const DEMO_SECURITY_EVENTS = [
     city: 'Moscow',
     details: 'Invalid credentials',
   },
-  {
-    id: 5,
-    event_type: 'SESSION_TIMEOUT',
-    success: true,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    ip_address: '73.45.123.89',
-    country: 'United States',
-    city: 'San Francisco',
-    details: 'Session expired after inactivity',
-  },
-  {
-    id: 6,
-    event_type: 'LOGOUT',
-    success: true,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-    ip_address: '73.45.123.89',
-    country: 'United States',
-    city: 'San Francisco',
-    details: null,
-  },
 ];
 
 export async function getSecurityEvents(
@@ -968,12 +948,10 @@ export async function getSecurityEvents(
 export async function getSecuritySummary(): Promise<SecurityEventSummary> {
   await simulateDelay(50);
   return {
-    total_events: 47,
+    total_events: 27,
     successful_logins: 23,
     failed_logins: 3,
     failed_unlock_attempts: 1,
-    logouts: 15,
-    session_timeouts: 5,
     unique_ips: 4,
     last_successful_login: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     last_failed_login: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
@@ -992,28 +970,13 @@ export async function exportSecurityEvents(): Promise<Blob> {
   return new Blob([csv], { type: 'text/csv' });
 }
 
-export async function clearSecurityEvents(): Promise<{ success: boolean; message: string }> {
-  await simulateDelay(100);
-  return { success: true, message: 'Demo: Security logs cleared' };
-}
-
 export async function getSecurityAlerts(): Promise<SecurityAlertsResponse> {
   await simulateDelay(50);
-  // In demo, show 2 failed attempts as an example
-  const failedEvents = DEMO_SECURITY_EVENTS.filter(
-    (e) => e.event_type === 'LOGIN_ATTEMPT' && !e.success
-  );
+  // In demo, consider alerts as already viewed so banner doesn't show
   return {
-    has_alerts: failedEvents.length > 0,
-    count: failedEvents.length,
-    events: failedEvents.map((e) => ({
-      id: e.id,
-      event_type: e.event_type,
-      timestamp: e.timestamp,
-      ip_address: e.ip_address,
-      country: e.country,
-      city: e.city,
-    })),
+    has_alerts: false,
+    count: 0,
+    events: [],
   };
 }
 

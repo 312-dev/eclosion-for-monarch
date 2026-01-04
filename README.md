@@ -42,12 +42,12 @@ Then access your instance at: `https://your-app.railway.app?secret=YOUR_SECRET`
 
 ### Option 2: Self-Host with Docker
 
-Run your own instance on any server with Docker. For comprehensive guides including platform-specific instructions (AWS, DigitalOcean, Kubernetes, NAS, Raspberry Pi, etc.) and reverse proxy setup, see the **[Self-Hosting Guide](docs/SELF_HOSTING.md)**.
+Run your own instance on any server with Docker. For comprehensive guides including platform-specific instructions (AWS, DigitalOcean, Kubernetes, NAS, Raspberry Pi, etc.) and reverse proxy setup, see the **[Self-Hosting Guide](https://github.com/GraysonCAdams/eclosion-for-monarch/wiki/SELF_HOSTING)**.
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/graysoncadams/eclosion-for-monarch.git
-cd eclosion
+cd eclosion-for-monarch
 
 # 2. Generate a secret access code
 export INSTANCE_SECRET=$(openssl rand -hex 16)
@@ -144,21 +144,28 @@ The server cannot decrypt your credentials without your passphrase.
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `INSTANCE_SECRET` | Access code to protect your instance | **Recommended** |
-| `TZ` | Timezone (e.g., `America/New_York`) | No |
-| `MONARCH_MONEY_EMAIL` | Fallback Monarch email | No |
-| `MONARCH_MONEY_PASSWORD` | Fallback Monarch password | No |
-| `MFA_SECRET_KEY` | TOTP MFA secret for auto-login | No |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `INSTANCE_SECRET` | Access code to protect your instance | None (**Recommended**) |
+| `TZ` | Timezone (e.g., `America/New_York`) | `UTC` |
+| `PORT` | Server port | `5001` |
+| `SESSION_SECRET` | Fixed session secret for consistent sessions across restarts | Auto-generated |
+| `SESSION_TIMEOUT_MINUTES` | Lock after inactivity | `30` |
+| `SESSION_LIFETIME_DAYS` | Cookie lifetime | `7` |
+| `RATE_LIMIT_DAILY` | Daily requests per IP | `1000` |
+| `RATE_LIMIT_HOURLY` | Hourly requests per IP | `200` |
+| `FLASK_DEBUG` | Enable debug mode | `0` |
+| `MONARCH_MONEY_EMAIL` | Fallback Monarch email (dev only) | None |
+| `MONARCH_MONEY_PASSWORD` | Fallback Monarch password (dev only) | None |
+| `MFA_SECRET_KEY` | TOTP MFA secret for auto-login (dev only) | None |
 
-> **Note:** Credentials should be entered via the web UI. Environment variables are only for advanced automation.
+> **Note:** Credentials should be entered via the web UI. The `MONARCH_*` environment variables bypass encryption and are only for local development.
 
 ## Local Development
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.11+
 - Node.js 20+
 
 ### Backend Setup
@@ -168,7 +175,7 @@ The server cannot decrypt your credentials without your passphrase.
 pip install -r requirements.txt
 
 # Run the API server
-python api.py
+python app.py
 ```
 
 ### Frontend Setup
@@ -229,7 +236,7 @@ docker compose up -d
 
 **Building from source:**
 ```bash
-cd eclosion
+cd eclosion-for-monarch
 git pull
 docker compose up -d --build
 ```

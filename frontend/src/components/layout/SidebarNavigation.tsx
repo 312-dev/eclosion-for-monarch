@@ -5,12 +5,11 @@
  * Converts to bottom navigation on mobile screens.
  */
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Settings, LogOut, Lightbulb, Github, LayoutDashboard } from 'lucide-react';
+import { Settings, LogOut, Lightbulb, LayoutDashboard } from 'lucide-react';
 import { RecurringIcon } from '../wizards/WizardComponents';
-import { useClickOutside } from '../../hooks';
-import { RedditIcon } from '../icons';
+import { IdeasModal } from '../IdeasModal';
 import { useDemo } from '../../context/DemoContext';
 
 interface SidebarNavigationProps {
@@ -69,22 +68,12 @@ function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSett
 export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps>) {
   const navigate = useNavigate();
   const isDemo = useDemo();
-  const [ideaMenuOpen, setIdeaMenuOpen] = useState(false);
-  const ideaMenuRef = useRef<HTMLDivElement>(null);
+  const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
-
-  useClickOutside([ideaMenuRef], () => setIdeaMenuOpen(false), ideaMenuOpen);
 
   const handleSettingsClick = (hash: string) => {
     const prefix = isDemo ? '/demo' : '';
     navigate(`${prefix}/settings${hash}`);
-  };
-
-  // Handle keyboard navigation for idea menu
-  const handleIdeaMenuKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setIdeaMenuOpen(false);
-    }
   };
 
   return (
@@ -105,51 +94,15 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
           <div className="sidebar-nav-section">
             <div className="sidebar-nav-header-row">
               <div className="sidebar-nav-header" id="toolkit-heading">TOOLKIT</div>
-              <div className="sidebar-suggest-dropdown" ref={ideaMenuRef}>
-                <button
-                  type="button"
-                  className="sidebar-suggest-btn"
-                  onClick={() => setIdeaMenuOpen(!ideaMenuOpen)}
-                  aria-expanded={ideaMenuOpen}
-                  aria-haspopup="menu"
-                  aria-label="Suggest a feature"
-                >
-                  <Lightbulb size={12} aria-hidden="true" />
-                  <span>Suggest</span>
-                </button>
-                {ideaMenuOpen && (
-                  <div
-                    className="sidebar-idea-menu"
-                    role="menu"
-                    aria-label="Suggestion options"
-                    onKeyDown={handleIdeaMenuKeyDown}
-                    tabIndex={-1}
-                  >
-                    <a
-                      href="https://github.com/graysoncadams/eclosion-for-monarch/discussions"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="sidebar-idea-option"
-                      onClick={() => setIdeaMenuOpen(false)}
-                      role="menuitem"
-                    >
-                      <Github size={16} aria-hidden="true" />
-                      <span>GitHub Discussions</span>
-                    </a>
-                    <a
-                      href="https://www.reddit.com/r/Eclosion/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="sidebar-idea-option"
-                      onClick={() => setIdeaMenuOpen(false)}
-                      role="menuitem"
-                    >
-                      <RedditIcon size={16} />
-                      <span>Reddit Community</span>
-                    </a>
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                className="sidebar-suggest-btn"
+                onClick={() => setIdeasModalOpen(true)}
+                aria-label="Browse and suggest ideas"
+              >
+                <Lightbulb size={12} aria-hidden="true" />
+                <span>Suggest</span>
+              </button>
             </div>
             <ul className="sidebar-nav-list" aria-labelledby="toolkit-heading">
               {toolkitItems.map((item) => (
@@ -187,6 +140,9 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
           </button>
         </div>
       </div>
+
+      {/* Ideas Modal */}
+      <IdeasModal isOpen={ideasModalOpen} onClose={() => setIdeasModalOpen(false)} />
     </nav>
   );
 }

@@ -26,8 +26,6 @@ export interface SecurityEventSummary {
   successful_logins: number;
   failed_logins: number;
   failed_unlock_attempts: number;
-  logouts: number;
-  session_timeouts: number;
   unique_ips: number;
   last_successful_login: string | null;
   last_failed_login: string | null;
@@ -50,17 +48,14 @@ export interface SecurityAlertEvent {
 
 export type SecurityEventType =
   | 'LOGIN_ATTEMPT'
-  | 'LOGOUT'
   | 'UNLOCK_ATTEMPT'
   | 'UNLOCK_AND_VALIDATE'
-  | 'SESSION_TIMEOUT'
   | 'SESSION_LOCK'
   | 'SESSION_RESTORE'
   | 'SET_PASSPHRASE'
   | 'UPDATE_CREDENTIALS'
   | 'RESET_APP'
-  | 'INSTANCE_ACCESS'
-  | 'SECURITY_LOGS_CLEARED';
+  | 'INSTANCE_ACCESS';
 
 export interface SecurityEventsQueryOptions {
   limit?: number | undefined;

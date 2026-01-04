@@ -41,3 +41,10 @@ export {
   type StatusStyles,
   type StatusStylesExtended,
 } from './status';
+
+export {
+  isBetaEnvironment,
+  getDocsBaseUrl,
+  getDocsUrl,
+  getSiteBaseUrl,
+} from './environment';

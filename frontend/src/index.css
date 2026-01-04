@@ -455,7 +455,12 @@ input[type="radio"] {
   background-color: transparent;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: fit-content;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  position: sticky;
+  top: 60px;
+  align-self: flex-start;
 }
 
 /* Desktop: wrapper elements are transparent */

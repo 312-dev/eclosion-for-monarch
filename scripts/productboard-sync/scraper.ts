@@ -1,173 +1,107 @@
-import { chromium, type Page } from 'playwright';
+import { chromium } from 'playwright';
 import {
   type ProductBoardIdea,
   type IdeaStatus,
-  TAB_STATUS_MAP,
   CONFIG,
 } from './types.js';
 
+/** Raw data structure from ProductBoard's window.pbData */
+interface PbData {
+  portalCards: Array<{
+    id: string;
+    name: string;
+    description: string;
+    portalVotesCount: number;
+    slug: string;
+  }>;
+  portalCardAssignments: Array<{
+    portalCardId: string;
+    portalTabId: string;
+    portalSectionId: string;
+  }>;
+  portalTabs: Array<{
+    id: string;
+    name: string;
+    slug: string;
+  }>;
+  portalSections: Array<{
+    id: string;
+    name: string;
+  }>;
+}
+
+/** Map ProductBoard tab names to our status enum */
+const TAB_TO_STATUS: Record<string, IdeaStatus> = {
+  'Ideas': 'idea',
+  'In Progress': 'in_progress',
+  'Up Next': 'up_next',
+  'Released': 'released',
+  'Recently Released': 'released',
+};
+
 /**
- * Scrape ideas from all configured tabs on the ProductBoard portal
+ * Scrape ideas from ProductBoard portal by extracting window.pbData
  */
 export async function scrapeProductBoard(): Promise<ProductBoardIdea[]> {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  const allIdeas: ProductBoardIdea[] = [];
-
   try {
-    // Navigate to the portal
     console.log(`Navigating to ${CONFIG.PORTAL_URL}...`);
     await page.goto(CONFIG.PORTAL_URL, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(3000);
 
-    // Wait for the portal to load
-    await page.waitForSelector('[data-testid="portal-tabs"], .portal-tabs, nav', {
-      timeout: 30000,
-    });
+    // Extract the pbData object from the page (injected by ProductBoard)
+    const pbData = await page.evaluate(() => {
+      return (globalThis as unknown as { pbData: PbData }).pbData;
+    }) as PbData;
 
-    // Scrape each configured tab
-    for (const tabName of CONFIG.TABS) {
-      console.log(`Scraping tab: ${tabName}...`);
-      const ideas = await scrapeTab(page, tabName);
-      allIdeas.push(...ideas);
-      console.log(`  Found ${ideas.length} ideas`);
+    if (!pbData || !pbData.portalCards) {
+      throw new Error('Could not find pbData on page');
     }
 
-    return allIdeas;
+    console.log(`Found ${pbData.portalCards.length} total cards`);
+
+    // Build lookup maps
+    const tabMap = new Map(pbData.portalTabs.map((t) => [t.id, t]));
+    const sectionMap = new Map(pbData.portalSections.map((s) => [s.id, s]));
+    const assignmentMap = new Map(
+      pbData.portalCardAssignments.map((a) => [a.portalCardId, a])
+    );
+
+    // Transform cards to our format
+    const ideas: ProductBoardIdea[] = pbData.portalCards.map((card) => {
+      const assignment = assignmentMap.get(card.id);
+      const tab = assignment ? tabMap.get(assignment.portalTabId) : null;
+      const section = assignment ? sectionMap.get(assignment.portalSectionId) : null;
+
+      const tabName = tab?.name || 'Unknown';
+      const status = TAB_TO_STATUS[tabName] || 'idea';
+
+      return {
+        id: card.id,
+        title: card.name,
+        description: card.description || '',
+        votes: card.portalVotesCount || 0,
+        category: section?.name || 'Uncategorized',
+        status,
+        url: `${CONFIG.PORTAL_URL}/c/${card.slug}`,
+      };
+    });
+
+    // Log summary by tab
+    const byTab = new Map<string, number>();
+    for (const idea of ideas) {
+      const count = byTab.get(idea.status) || 0;
+      byTab.set(idea.status, count + 1);
+    }
+    console.log('Ideas by status:', Object.fromEntries(byTab));
+
+    return ideas;
   } finally {
     await browser.close();
   }
-}
-
-/**
- * Scrape ideas from a specific tab
- */
-async function scrapeTab(page: Page, tabName: string): Promise<ProductBoardIdea[]> {
-  const status = TAB_STATUS_MAP[tabName] || 'idea';
-
-  // Click the tab to switch to it
-  const tabSelector = `[role="tab"]:has-text("${tabName}"), button:has-text("${tabName}"), a:has-text("${tabName}")`;
-
-  try {
-    await page.click(tabSelector, { timeout: 5000 });
-    // Wait for content to load
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
-  } catch {
-    console.warn(`  Could not find tab "${tabName}", skipping...`);
-    return [];
-  }
-
-  // Extract ideas from the current view
-  const ideas = await page.evaluate(
-    ({ status, tabName, portalUrl }) => {
-      const results: ProductBoardIdea[] = [];
-
-      // ProductBoard uses various card/feature selectors
-      // Try multiple patterns to find idea cards
-      const cardSelectors = [
-        '[data-testid="feature-card"]',
-        '[data-testid="idea-card"]',
-        '.feature-card',
-        '.idea-card',
-        '[class*="FeatureCard"]',
-        '[class*="IdeaCard"]',
-        'article',
-        '[role="listitem"]',
-      ];
-
-      let cards: Element[] = [];
-      for (const selector of cardSelectors) {
-        const found = document.querySelectorAll(selector);
-        if (found.length > 0) {
-          cards = Array.from(found);
-          break;
-        }
-      }
-
-      // If no cards found with specific selectors, try a more generic approach
-      if (cards.length === 0) {
-        // Look for elements that have vote counts (indicative of idea cards)
-        const allElements = document.querySelectorAll('*');
-        cards = Array.from(allElements).filter((el) => {
-          const text = el.textContent || '';
-          // Look for vote patterns like "1,234" or "123 votes"
-          return /\d{2,}/.test(text) && el.querySelector('h2, h3, h4, [class*="title"]');
-        });
-      }
-
-      for (const card of cards) {
-        try {
-          // Extract title - look for heading elements or title classes
-          const titleEl =
-            card.querySelector('h1, h2, h3, h4, [class*="title"], [class*="Title"]') ||
-            card.querySelector('[data-testid="feature-title"]');
-          const title = titleEl?.textContent?.trim() || '';
-
-          if (!title) continue;
-
-          // Extract description
-          const descEl =
-            card.querySelector('p, [class*="description"], [class*="Description"]') ||
-            card.querySelector('[data-testid="feature-description"]');
-          const description = descEl?.textContent?.trim() || '';
-
-          // Extract vote count - look for numbers that could be votes
-          const voteEl =
-            card.querySelector('[class*="vote"], [class*="Vote"], [data-testid*="vote"]') ||
-            card.querySelector('[class*="count"], [class*="Count"]');
-          let votes = 0;
-          if (voteEl) {
-            const voteText = voteEl.textContent || '';
-            const match = voteText.replace(/,/g, '').match(/(\d+)/);
-            if (match) {
-              votes = parseInt(match[1], 10);
-            }
-          }
-
-          // Extract category from section headers or breadcrumbs
-          let category = 'Uncategorized';
-          const sectionEl = card.closest('section, [class*="section"], [class*="Section"]');
-          if (sectionEl) {
-            const sectionTitle = sectionEl.querySelector('h2, h3, [class*="header"]');
-            if (sectionTitle) {
-              category = sectionTitle.textContent?.trim() || category;
-            }
-          }
-
-          // Extract ID from data attributes or generate from title
-          const id =
-            card.getAttribute('data-id') ||
-            card.getAttribute('data-feature-id') ||
-            card.querySelector('a')?.href?.split('/').pop() ||
-            title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-          // Extract URL
-          const linkEl = card.querySelector('a[href]') as HTMLAnchorElement | null;
-          const url = linkEl?.href || `${portalUrl}/tabs/1-ideas`;
-
-          results.push({
-            id,
-            title,
-            description,
-            votes,
-            category,
-            status: status as IdeaStatus,
-            url,
-          });
-        } catch {
-          // Skip cards that can't be parsed
-          continue;
-        }
-      }
-
-      return results;
-    },
-    { status, tabName, portalUrl: CONFIG.PORTAL_URL }
-  );
-
-  return ideas;
 }
 
 /**

@@ -6,7 +6,7 @@ name: Security
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - "**.py"
       - "**.ts"
@@ -18,7 +18,7 @@ on:
       - "docker-compose.yml"
       - ".github/**"
   push:
-    branches: [main]
+    branches: [main, develop]
   schedule:
     # Weekly scan on Monday at midnight UTC to catch new CVEs
     - cron: "0 0 * * 1"

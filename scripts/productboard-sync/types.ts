@@ -41,6 +41,9 @@ export interface SyncState {
   trackedIdeas: Record<string, TrackedIdea>;
 }
 
+/** Reason why a discussion was closed */
+export type ClosedReason = 'monarch-committed' | 'eclosion-shipped';
+
 export interface TrackedIdea {
   /** GitHub Discussion node ID */
   discussionId: string;
@@ -48,10 +51,16 @@ export interface TrackedIdea {
   discussionNumber: number;
   /** Current status of the discussion */
   status: 'open' | 'closed';
-  /** Last known vote count */
+  /** Last known ProductBoard vote count */
   lastVoteCount: number;
   /** Last known ProductBoard status */
   lastProductBoardStatus: IdeaStatus;
+  /** Thumbs-up reactions on GitHub Discussion */
+  githubVotes: number;
+  /** ISO timestamp when discussion was closed */
+  closedAt?: string;
+  /** Reason why discussion was closed */
+  closedReason?: ClosedReason;
 }
 
 /**

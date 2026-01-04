@@ -25,7 +25,7 @@ import { useDashboardQuery, useSyncMutation } from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
 import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
-import { getErrorMessage, isRateLimitError } from '../../utils/errors';
+import { getErrorMessage, isRateLimitError, getDocsUrl } from '../../utils';
 import { AppIcon, TourController } from '../wizards/WizardComponents';
 
 // Vite injects app version at build time
@@ -138,9 +138,8 @@ export function AppShell() {
     }
   };
 
-  // Build versioned docs URL
-  const docsBaseUrl = 'https://eclosion.app/docs';
-  const userGuideUrl = __APP_VERSION__ ? `${docsBaseUrl}/${__APP_VERSION__}` : docsBaseUrl;
+  // Build versioned docs URL (environment-aware: beta -> beta.eclosion.app)
+  const userGuideUrl = getDocsUrl(__APP_VERSION__);
   const wikiUrl = 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki';
 
   const handleHelpOption = (url: string) => {

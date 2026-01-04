@@ -263,7 +263,7 @@ function DeploymentContent() {
           <span className="text-xs opacity-80">Hosted on Railway</span>
         </a>
         <a
-          href="https://docs.eclosion.app/self-hosting"
+          href="https://github.com/GraysonCAdams/eclosion-for-monarch/wiki"
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-lg border-2 border-(--monarch-border) text-(--monarch-text-dark) hover:bg-(--monarch-bg-page) transition-colors"

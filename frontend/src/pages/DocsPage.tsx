@@ -174,7 +174,7 @@ function MarketingDocsContent() {
             />
             <FaqItem
               question="Can I use this without Railway?"
-              answer="Absolutely! You can self-host with Docker on any server you control. See the documentation at docs.eclosion.app for instructions."
+              answer="Absolutely! You can self-host with Docker on any server you control. See the self-hosting guide on GitHub Wiki for instructions."
             />
           </div>
         </div>

@@ -33,6 +33,8 @@ export default defineConfig([
       // Disable undefined jsx-a11y rules (plugin not installed)
       'jsx-a11y/no-static-element-interactions': 'off',
       'jsx-a11y/click-events-have-key-events': 'off',
+      // Warn on files exceeding 300 lines (per CLAUDE.md component size standard)
+      'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }],
     },
   },
 ])

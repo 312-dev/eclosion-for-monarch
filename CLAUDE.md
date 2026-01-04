@@ -8,7 +8,7 @@ Eclosion for Monarch is a self-hosted toolkit that expands what's possible with 
 
 ## Code Standards
 
-All new code must follow these standards.
+All new code must follow these standards. Existing code is being progressively updated to meet these standards, so you may encounter legacy patterns that don't follow these rules. When modifying existing files, update the code you touch to follow these standards.
 
 ### Hover States
 
@@ -117,8 +117,8 @@ The animation system is defined in `index.css` with CSS variables matching `cons
 **Timing Variables (CSS):**
 ```css
 --animation-fast: 150ms   /* Micro-interactions */
---animation-normal: 200ms /* Standard transitions */
---animation-slow: 300ms   /* Emphasis animations */
+--animation-normal: 300ms /* Standard transitions */
+--animation-slow: 500ms   /* Emphasis animations */
 ```
 
 **Page Transitions:**

@@ -2,9 +2,23 @@
 #
 # Static files are served automatically by Cloudflare Pages before these rules apply.
 # These rules only match when no static file exists for the requested path.
+#
+# Rule order matters: first match wins.
+
+# React SPA routes - explicitly serve index.html
+# These rules ensure direct URL access works for all SPA paths
+/demo/* /index.html 200
+/demo /index.html 200
+/login /index.html 200
+/unlock /index.html 200
+/dashboard /index.html 200
+/recurring /index.html 200
+/settings /index.html 200
+/features/* /index.html 200
+/features /index.html 200
 
 # For missing /docs paths, show Docusaurus 404 page (not the React SPA)
 /docs/* /404.html 404
 
-# SPA fallback for all other routes (React app)
+# SPA fallback for all other routes (React app landing page, etc.)
 /* /index.html 200

@@ -74,7 +74,7 @@ const config: Config = {
           versions: {
             current: {
               label: 'Unreleased',
-              path: isBetaSite ? 'next' : 'next',
+              path: 'next',
               banner: 'unreleased',
             },
             // Stable versions get clean labels

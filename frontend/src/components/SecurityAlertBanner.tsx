@@ -40,10 +40,10 @@ export function SecurityAlertBanner() {
 
   return (
     <div
-      className="w-full px-4 py-3 flex items-start gap-3"
+      className="mx-4 mt-4 px-4 py-3 flex items-start gap-3 rounded-lg"
       style={{
         backgroundColor: 'var(--monarch-error-bg, rgba(239, 68, 68, 0.1))',
-        borderBottom: '1px solid var(--monarch-error, #ef4444)',
+        border: '1px solid var(--monarch-error, #ef4444)',
       }}
       role="alert"
       aria-live="polite"

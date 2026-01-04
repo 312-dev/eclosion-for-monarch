@@ -150,22 +150,6 @@ export function useSecurityAlertsQuery(options?: { enabled?: boolean }) {
 }
 
 /**
- * Clear security events
- */
-export function useClearSecurityEventsMutation() {
-  const isDemo = useDemo();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: isDemo ? demoApi.clearSecurityEvents : api.clearSecurityEvents,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securityEvents, isDemo) });
-      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securitySummary, isDemo) });
-      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.securityAlerts, isDemo) });
-    },
-  });
-}
-
-/**
  * Dismiss security alerts
  */
 export function useDismissSecurityAlertsMutation() {

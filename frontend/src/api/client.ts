@@ -199,10 +199,6 @@ export async function exportSecurityEvents(): Promise<Blob> {
   return response.blob();
 }
 
-export async function clearSecurityEvents(): Promise<{ success: boolean; message: string }> {
-  return fetchApi('/security/events/clear', { method: 'POST' });
-}
-
 export async function getSecurityAlerts(): Promise<SecurityAlertsResponse> {
   return fetchApi<SecurityAlertsResponse>('/security/alerts');
 }

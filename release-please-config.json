@@ -12,6 +12,16 @@
           "type": "json",
           "path": "frontend/package.json",
           "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": "docusaurus/package.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "toml",
+          "path": "pyproject.toml",
+          "glob": "project.version"
         }
       ]
     }
