@@ -16,7 +16,7 @@ jobs:
     name: Sync to Wiki
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Sync docs to wiki
         uses: Andrew-Chen-Wang/github-wiki-action@v5

@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -31,15 +31,19 @@ function saveState(state: SyncState): void {
 
 /**
  * Execute a gh CLI command and return the result
+ * Uses spawnSync to avoid shell parsing issues with special characters
  */
-function gh(args: string): string {
-  try {
-    return execSync(`gh ${args}`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
-  } catch (error) {
-    const execError = error as { stderr?: string; message?: string };
-    console.error('gh command failed:', execError.stderr || execError.message);
-    throw error;
+function gh(args: string[]): string {
+  const result = spawnSync('gh', args, { encoding: 'utf-8' });
+  if (result.error) {
+    console.error('gh command failed:', result.error.message);
+    throw result.error;
   }
+  if (result.status !== 0) {
+    console.error('gh command failed:', result.stderr);
+    throw new Error(`Command failed: gh ${args.join(' ')}\n${result.stderr}`);
+  }
+  return result.stdout;
 }
 
 /**
@@ -74,7 +78,7 @@ async function getCategoryId(): Promise<string> {
     }
   `;
 
-  const result = gh(`api graphql -f query='${query.replace(/\n/g, ' ')}'`);
+  const result = gh(['api', 'graphql', '-f', `query=${query.replaceAll('\n', ' ')}`]);
   const data = JSON.parse(result) as {
     data: {
       repository: {
@@ -148,7 +152,7 @@ async function getExistingDiscussions(): Promise<ExistingDiscussion[]> {
     }
   `;
 
-  const result = gh(`api graphql -f query='${query.replace(/\n/g, ' ')}'`);
+  const result = gh(['api', 'graphql', '-f', `query=${query.replaceAll('\n', ' ')}`]);
   const data = JSON.parse(result) as {
     data: {
       repository: {
@@ -215,12 +219,12 @@ async function createDiscussion(
 
   // First get the repository ID
   const repoQuery = `query { repository(owner: "${owner}", name: "${repo}") { id } }`;
-  const repoResult = gh(`api graphql -f query='${repoQuery}'`);
+  const repoResult = gh(['api', 'graphql', '-f', `query=${repoQuery}`]);
   const repoData = JSON.parse(repoResult) as { data: { repository: { id: string } } };
   const repoId = repoData.data.repository.id;
 
   const finalMutation = mutation.replace('REPO_ID_PLACEHOLDER', repoId);
-  const result = gh(`api graphql -f query='${finalMutation.replace(/\n/g, ' ')}'`);
+  const result = gh(['api', 'graphql', '-f', `query=${finalMutation.replaceAll('\n', ' ')}`]);
   const data = JSON.parse(result) as {
     data: { createDiscussion: { discussion: { id: string; number: number } } };
   };
@@ -249,7 +253,7 @@ async function updateDiscussionVotes(
     }
   `;
 
-  gh(`api graphql -f query='${mutation.replaceAll('\n', ' ')}'`);
+  gh(['api', 'graphql', '-f', `query=${mutation.replaceAll('\n', ' ')}`]);
   console.log(
     `    Updated votes: ${oldVotes.toLocaleString()} → ${idea.votes.toLocaleString()}`
   );
@@ -270,7 +274,7 @@ async function closeDiscussion(discussionId: string, reason: string): Promise<vo
       }
     }
   `;
-  gh(`api graphql -f query='${commentMutation.replace(/\n/g, ' ')}'`);
+  gh(['api', 'graphql', '-f', `query=${commentMutation.replaceAll('\n', ' ')}`]);
 
   // Close the discussion
   const closeMutation = `
@@ -283,7 +287,7 @@ async function closeDiscussion(discussionId: string, reason: string): Promise<vo
       }
     }
   `;
-  gh(`api graphql -f query='${closeMutation.replace(/\n/g, ' ')}'`);
+  gh(['api', 'graphql', '-f', `query=${closeMutation.replaceAll('\n', ' ')}`]);
 }
 
 /**
