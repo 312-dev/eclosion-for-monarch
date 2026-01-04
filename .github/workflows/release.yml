@@ -136,20 +136,6 @@ jobs:
           git push
           echo "pushed=true" >> $GITHUB_OUTPUT
 
-      # Trigger CI/Security workflows since GITHUB_TOKEN pushes don't trigger them
-      - name: Trigger required workflows
-        if: steps.commit.outputs.pushed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
-          # Get the head SHA for commit status posting
-          HEAD_SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/$BRANCH --jq '.object.sha')
-          gh workflow run ci.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
-          gh workflow run security.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
-          gh workflow run require-develop.yml --ref main -f pr_branch="$BRANCH"
-          echo "Triggered CI, Security, and Require Develop workflows on $BRANCH (SHA: $HEAD_SHA)"
-
   # Generate user documentation from source content
   # Must run after generate-summary to avoid push conflicts (both commit to same branch)
   generate-docs:
@@ -161,8 +147,32 @@ jobs:
       branch: ${{ needs.release-please.outputs.pr_head_branch }}
     secrets: inherit
 
-  auto-merge:
+  # Trigger CI/Security workflows after all commits are done
+  # Runs once with final HEAD SHA, regardless of which jobs pushed
+  # Uses workflow_dispatch since GITHUB_TOKEN pushes don't trigger on:push/pull_request
+  trigger-checks:
     needs: [release-please, generate-summary, generate-docs]
+    if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger required workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
+          # Get the final HEAD SHA after all commits from generate-summary and generate-docs
+          HEAD_SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/$BRANCH --jq '.object.sha')
+          echo "Triggering workflows for $BRANCH at SHA $HEAD_SHA"
+
+          gh workflow run ci.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
+          gh workflow run security.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
+          gh workflow run require-develop.yml --ref main -f pr_branch="$BRANCH"
+
+          echo "✅ Triggered CI, Security, and Require Develop workflows"
+
+  auto-merge:
+    needs: [release-please, generate-docs, trigger-checks]
     # Only auto-merge if no docs were generated (docs need manual review)
     # When generate-docs runs successfully and commits changes, skip auto-merge
     if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success' && needs.generate-docs.result == 'skipped'

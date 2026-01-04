@@ -333,6 +333,58 @@ uses: some-org/some-action@master
 uses: some-org/some-action@v1.2.3
 ```
 
+#### Centralized Trigger Pattern
+
+When multiple jobs in a workflow may push commits, use a dedicated trigger job at the end:
+
+```yaml
+# BAD - Each job triggers CI, causing duplicates
+generate-summary:
+  steps:
+    - run: git push
+    - run: gh workflow run ci.yml  # First trigger
+
+generate-docs:
+  needs: generate-summary
+  steps:
+    - run: git push
+    - run: gh workflow run ci.yml  # Duplicate trigger!
+
+# GOOD - Single trigger after all commits
+generate-summary:
+  steps:
+    - run: git push
+    # No trigger here
+
+generate-docs:
+  needs: generate-summary
+  steps:
+    - run: git push
+    # No trigger here
+
+trigger-checks:
+  needs: [generate-summary, generate-docs]
+  if: always()
+  steps:
+    - run: |
+        HEAD_SHA=$(gh api .../git/ref/heads/$BRANCH --jq '.object.sha')
+        gh workflow run ci.yml -f head_sha="$HEAD_SHA"  # Single trigger with final SHA
+```
+
+#### Keeping Reusable Workflows Generic
+
+Workflows called via `workflow_call` should remain generic and reusable:
+
+```yaml
+# BAD - Release-specific logic in a reusable workflow
+# generate-docs.yml
+- run: gh workflow run require-develop.yml  # This is release.yml's concern
+
+# GOOD - Keep it generic, let the caller handle orchestration
+# generate-docs.yml just generates docs
+# release.yml handles the trigger orchestration
+```
+
 ## Release Process
 
 ### Versioning
@@ -440,6 +492,33 @@ When `develop` is merged to `main`:
    - GitHub release is created
    - Production deployment triggers
    - Docker image is published
+
+### Release PR Pipeline
+
+When release-please creates a PR, several automated jobs run sequentially to enhance the PR:
+
+```
+release-please creates PR (GITHUB_TOKEN)
+       │
+       ▼
+generate-summary ─── Adds AI changelog summary (may push)
+       │
+       ▼
+generate-docs ─── Updates user documentation (may push)
+       │
+       ▼
+trigger-checks ─── Dispatches CI/Security/require-develop ONCE
+       │              with final HEAD SHA
+       ▼
+auto-merge ─── Sets up auto-merge (if no docs review needed)
+```
+
+**Key design principles:**
+
+1. **Single trigger point** — CI/Security are triggered exactly once by `trigger-checks` after all commits are done
+2. **Final SHA** — The trigger uses the HEAD SHA after all jobs have potentially pushed commits
+3. **No loops** — All pushes use `GITHUB_TOKEN` which doesn't trigger `on:push` events
+4. **Reusable workflows** — `generate-docs.yml` stays generic with no release-specific logic
 
 ## Code Style
 
