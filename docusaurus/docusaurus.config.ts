@@ -4,34 +4,19 @@ import { themes as prismThemes } from 'prism-react-renderer';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Load versions dynamically and filter based on site type (beta vs stable)
+// Site type and version configuration
 const isBetaSite = process.env.ECLOSION_BETA === 'true';
-const allVersions: string[] = fs.existsSync(path.join(__dirname, 'versions.json'))
-  ? JSON.parse(fs.readFileSync(path.join(__dirname, 'versions.json'), 'utf-8'))
+const betaVersion = process.env.ECLOSION_VERSION; // e.g., "1.1.0-beta.1"
+
+// Load stable versions from versions.json (only used for stable site)
+const stableVersions: string[] = fs.existsSync(path.join(__dirname, 'versions.json'))
+  ? JSON.parse(fs.readFileSync(path.join(__dirname, 'versions.json'), 'utf-8')).filter((v: string) => !v.includes('beta'))
   : [];
 
-// Stable versions are simple semver (e.g., 1.0, 1.1)
-const stableVersions = allVersions.filter(v => !v.includes('beta'));
-
-// Beta versions contain 'beta' in the name
-// Pre-release versions: 1.1.0-beta.1 (ends with number)
-// Develop push versions: 1.0.0-beta.abc1234 (ends with 7-char SHA)
-const betaVersions = allVersions.filter(v => v.includes('beta'));
-const preReleaseVersions = betaVersions.filter(v => /beta\.\d+$/.test(v));
-const developPushVersions = betaVersions.filter(v => /beta\.[a-f0-9]{7}$/.test(v));
-
-// Determine which versions to include
-const includedVersions = isBetaSite
-  ? ['current', ...betaVersions]  // Beta site: Unreleased + all beta versions
-  : stableVersions;               // Stable site: Only stable versions
-
-// Determine default version for beta site:
-// 1. Latest pre-release (e.g., 1.1.0-beta.1)
-// 2. Fall back to latest develop push if no pre-releases
-// 3. Fall back to 'current' if neither exist
-const lastVersion = isBetaSite
-  ? (preReleaseVersions[0] || developPushVersions[0] || 'current')
-  : (stableVersions[0] || 'current');
+// Beta site: Shows only current docs labeled with the pre-release version
+// Stable site: Shows versioned docs from versions.json (1.0, 1.1, etc.)
+const includedVersions = isBetaSite ? ['current'] : stableVersions;
+const lastVersion = isBetaSite ? 'current' : (stableVersions[0] || 'current');
 
 const config: Config = {
   title: 'Eclosion',
@@ -66,27 +51,24 @@ const config: Config = {
           editUrl:
             'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
           showLastUpdateTime: true,
-          // Versioning - dynamically loaded from versions.json
-          // Beta site: Shows 'Unreleased' + all beta versions
-          // Stable site: Shows only stable versions (1.0, 1.1, etc.)
+          // Versioning configuration
+          // Beta site: Shows only current docs labeled with pre-release version (no version dropdown)
+          // Stable site: Shows versioned docs with version dropdown
           lastVersion,
           onlyIncludeVersions: includedVersions,
           versions: {
+            // Current docs - labeled with beta version on beta site
             current: {
-              label: 'Unreleased',
-              path: 'next',
-              banner: 'unreleased',
+              label: betaVersion || 'Next',
+              path: '',
+              banner: 'none',
             },
             // Stable versions get clean labels
             ...Object.fromEntries(
               stableVersions.map(v => [v, { label: v, banner: 'none' as const }])
             ),
-            // Beta versions show full version string
-            ...Object.fromEntries(
-              betaVersions.map(v => [v, { label: v, banner: 'none' as const }])
-            ),
           },
-          includeCurrentVersion: isBetaSite, // Only show 'Unreleased' on beta site
+          includeCurrentVersion: isBetaSite, // Only include current on beta site
         },
         blog: false,
         theme: {
@@ -126,11 +108,12 @@ const config: Config = {
           position: 'left',
           label: 'User Guide',
         },
-        {
-          type: 'docsVersionDropdown',
-          position: 'left',
+        // Version dropdown - only show on stable site (beta has single version)
+        ...(!isBetaSite ? [{
+          type: 'docsVersionDropdown' as const,
+          position: 'left' as const,
           dropdownActiveClassDisabled: true,
-        },
+        }] : []),
         {
           // Use href (not to) for routes outside Docusaurus - triggers full page navigation
           href: '/demo',

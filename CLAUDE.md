@@ -457,39 +457,31 @@ import { AnnotatedImage } from '@site/src/components/AnnotatedImage';
 
 ### Documentation Versioning
 
-Versions are **scoped by site** - stable site shows only stable versions, beta site shows only pre-release versions.
+Documentation versioning differs between stable and beta sites:
 
-**Creating a version (matches release):**
+| Site | Versions shown | Version dropdown |
+|------|----------------|------------------|
+| **Stable** (eclosion.app) | Versioned snapshots (1.0, 1.1) | Yes |
+| **Beta** (beta.eclosion.app) | Current docs only | No |
+
+**Stable site versioning:**
+- Versions are created manually when releasing stable versions
+- Each version is a snapshot in `versioned_docs/`
+
 ```bash
 cd docusaurus
-# For stable release (e.g., v1.1.0)
+# Create version snapshot for stable release
 npm run docusaurus docs:version 1.1
-
-# For pre-release (e.g., v1.2.0-beta.1)
-npm run docusaurus docs:version 1.2-beta.1
 ```
 
-**Then update `docusaurus.config.ts`:**
-```typescript
-// 1. Add version to versions object
-versions: {
-  current: { label: 'Next', ... },
-  '1.1': { label: '1.1', banner: 'none' },           // stable
-  '1.2-beta.1': { label: '1.2-beta.1', banner: 'unreleased' }, // pre-release
-},
-
-// 2. Add to appropriate onlyIncludeVersions array
-onlyIncludeVersions: process.env.ECLOSION_BETA === 'true'
-  ? ['current', '1.2-beta.1']  // Beta: Next + pre-release versions
-  : ['1.0', '1.1'],            // Stable: Only stable versions
-```
-
-**Deployment:**
-- Stable site: Shows only stable versions (1.0, 1.1, etc.)
-- Beta site: `ECLOSION_BETA=true` - Shows only Next + pre-release versions
+**Beta site versioning:**
+- Shows current `docs/` folder content, labeled with the pre-release version
+- Version label comes from `ECLOSION_VERSION` env var (e.g., "1.1.0-beta.1")
+- No version snapshots are created for beta releases
+- No version dropdown (single version)
 
 ### Environment-Aware Configuration
 
-- **Beta banner**: Set `ECLOSION_BETA=true` env var to show warning banner
+- **Beta mode**: Set `ECLOSION_BETA=true` to enable beta site features (announcement banner, hide version dropdown)
+- **Version label**: Set `ECLOSION_VERSION` to label the docs with the pre-release version
 - **Demo links**: Use relative paths (`/demo`) not absolute URLs
-- **Default version**: Set `DOCS_LAST_VERSION` to control which version loads by default
