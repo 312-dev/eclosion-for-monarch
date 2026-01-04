@@ -46,11 +46,26 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      security_relevant: ${{ steps.filter.outputs.security_relevant }}
+      security_relevant: ${{ steps.result.outputs.security_relevant }}
     steps:
       - uses: actions/checkout@v4
+
+      # For workflow_dispatch and workflow_call, always run scans (explicit request)
+      # For push/pull_request, use paths-filter to skip if no security-relevant files changed
+      - name: Check if explicit trigger
+        id: explicit
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || \
+             [ "${{ github.event_name }}" = "workflow_call" ] || \
+             [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "is_explicit=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_explicit=false" >> $GITHUB_OUTPUT
+          fi
+
       - uses: dorny/paths-filter@v3
         id: filter
+        if: steps.explicit.outputs.is_explicit == 'false'
         with:
           filters: |
             security_relevant:
@@ -63,6 +78,17 @@ jobs:
               - 'Dockerfile'
               - 'docker-compose.yml'
               - '.github/**'
+
+      - name: Determine if scans should run
+        id: result
+        run: |
+          if [ "${{ steps.explicit.outputs.is_explicit }}" = "true" ]; then
+            echo "security_relevant=true" >> $GITHUB_OUTPUT
+            echo "Explicit trigger - running all scans"
+          else
+            echo "security_relevant=${{ steps.filter.outputs.security_relevant }}" >> $GITHUB_OUTPUT
+            echo "Paths filter result: ${{ steps.filter.outputs.security_relevant }}"
+          fi
 
   # ============================================================================
   # CodeQL - Static Application Security Testing (SAST)
