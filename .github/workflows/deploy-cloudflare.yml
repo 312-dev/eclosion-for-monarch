@@ -9,7 +9,7 @@
 #
 # Doc versions are only created for actual releases (not develop commits).
 
-name: Deploy to Cloudflare
+name: "Deploy: Cloudflare"
 
 on:
   workflow_call:

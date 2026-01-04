@@ -3,7 +3,7 @@
 #
 # This ensures all changes are tested on beta.eclosion.app before release
 
-name: Require develop branch
+name: "Check: Require Develop"
 
 on:
   pull_request:

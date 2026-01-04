@@ -1,4 +1,4 @@
-name: Sync ProductBoard Ideas
+name: "Sync: ProductBoard"
 
 on:
   schedule:
