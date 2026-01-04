@@ -237,4 +237,4 @@ frontend/src/
 
 - Open a GitHub Discussion for questions
 - Check existing issues before creating new ones
-- See [Security](/security) for security-related questions
+- See [Security](/docs/security) for security-related questions

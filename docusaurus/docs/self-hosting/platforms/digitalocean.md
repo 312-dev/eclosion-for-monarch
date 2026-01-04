@@ -62,5 +62,5 @@ ufw allow 5001/tcp
 
 ## Next Steps
 
-- Set up a [Reverse Proxy](/self-hosting/reverse-proxy) for HTTPS with Let's Encrypt
-- Configure [Monitoring](/self-hosting/monitoring) for uptime alerts
+- Set up a [Reverse Proxy](/docs/self-hosting/reverse-proxy) for HTTPS with Let's Encrypt
+- Configure [Monitoring](/docs/self-hosting/monitoring) for uptime alerts

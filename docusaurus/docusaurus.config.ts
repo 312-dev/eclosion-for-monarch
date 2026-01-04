@@ -82,6 +82,7 @@ const config: Config = {
       logo: {
         alt: 'Eclosion Logo',
         src: 'img/logo.svg',
+        href: 'https://eclosion.app',
       },
       items: [
         {

@@ -84,4 +84,4 @@ aws ecs create-service \
 
 ## Using EC2
 
-Follow the [DigitalOcean Droplet](/self-hosting/platforms/digitalocean#using-a-droplet) instructions - the process is identical for any Linux VM.
+Follow the [DigitalOcean Droplet](/docs/self-hosting/platforms/digitalocean#using-a-droplet) instructions - the process is identical for any Linux VM.

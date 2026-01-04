@@ -19,10 +19,10 @@ Welcome to the Eclosion for Monarch documentation. Eclosion is a self-hosted too
 
 ## Quick Links
 
-- [Self-Hosting Overview](/self-hosting/overview) - Get started with deploying Eclosion
-- [Docker Quick Start](/self-hosting/docker) - The fastest way to run Eclosion
-- [Security](/security) - Learn how your credentials are protected
-- [Contributing](/contributing) - Help improve Eclosion
+- [Self-Hosting Overview](/docs/self-hosting/overview) - Get started with deploying Eclosion
+- [Docker Quick Start](/docs/self-hosting/docker) - The fastest way to run Eclosion
+- [Security](/docs/security) - Learn how your credentials are protected
+- [Contributing](/docs/contributing) - Help improve Eclosion
 
 ## Demo
 

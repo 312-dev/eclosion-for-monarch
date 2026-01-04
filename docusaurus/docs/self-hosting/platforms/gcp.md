@@ -44,5 +44,5 @@ Cloud Run is stateless. For persistent data, use Cloud Storage or Filestore moun
 
 ## Next Steps
 
-- Review [Data Management](/self-hosting/data-management) for backup strategies
-- Configure [Monitoring](/self-hosting/monitoring) with Cloud Monitoring
+- Review [Data Management](/docs/self-hosting/data-management) for backup strategies
+- Configure [Monitoring](/docs/self-hosting/monitoring) with Cloud Monitoring

@@ -36,22 +36,22 @@ Choose the deployment method that works best for your infrastructure:
 
 ### Recommended: Docker
 
-The easiest way to run Eclosion. See the [Docker Quick Start](/self-hosting/docker) guide.
+The easiest way to run Eclosion. See the [Docker Quick Start](/docs/self-hosting/docker) guide.
 
 ### Platform-Specific Guides
 
-- [DigitalOcean](/self-hosting/platforms/digitalocean) - App Platform or Droplet
-- [AWS](/self-hosting/platforms/aws) - ECS/Fargate or EC2
-- [Google Cloud Run](/self-hosting/platforms/gcp) - Serverless containers
-- [Kubernetes](/self-hosting/platforms/kubernetes) - Full K8s deployment
-- [Synology NAS](/self-hosting/platforms/synology) - Container Manager or SSH
-- [Raspberry Pi](/self-hosting/platforms/raspberry-pi) - ARM-based deployment
-- [Unraid](/self-hosting/platforms/unraid) - Docker on Unraid
-- [Portainer](/self-hosting/platforms/portainer) - Docker management UI
+- [DigitalOcean](/docs/self-hosting/platforms/digitalocean) - App Platform or Droplet
+- [AWS](/docs/self-hosting/platforms/aws) - ECS/Fargate or EC2
+- [Google Cloud Run](/docs/self-hosting/platforms/gcp) - Serverless containers
+- [Kubernetes](/docs/self-hosting/platforms/kubernetes) - Full K8s deployment
+- [Synology NAS](/docs/self-hosting/platforms/synology) - Container Manager or SSH
+- [Raspberry Pi](/docs/self-hosting/platforms/raspberry-pi) - ARM-based deployment
+- [Unraid](/docs/self-hosting/platforms/unraid) - Docker on Unraid
+- [Portainer](/docs/self-hosting/platforms/portainer) - Docker management UI
 
 ## What's Next?
 
-1. Start with the [Docker Quick Start](/self-hosting/docker) for the fastest setup
-2. Review [Security](/security) to understand how your credentials are protected
-3. Set up [Reverse Proxy](/self-hosting/reverse-proxy) for HTTPS access
-4. Configure [Monitoring](/self-hosting/monitoring) for production deployments
+1. Start with the [Docker Quick Start](/docs/self-hosting/docker) for the fastest setup
+2. Review [Security](/docs/security) to understand how your credentials are protected
+3. Set up [Reverse Proxy](/docs/self-hosting/reverse-proxy) for HTTPS access
+4. Configure [Monitoring](/docs/self-hosting/monitoring) for production deployments
