@@ -1,9 +1,7 @@
 /**
  * MDX Builder - Writes generated documentation to MDX files
  *
- * Outputs to two locations:
- * 1. frontend/src/docs/guide/ - Bundled in the frontend app
- * 2. docusaurus/guide/ - Public docs site
+ * Outputs to Docusaurus docs directory for the public user guide site
  */
 
 import * as fs from 'node:fs';
@@ -11,8 +9,7 @@ import * as path from 'node:path';
 import type { DocMapping } from './types.js';
 
 const PROJECT_ROOT = path.resolve(process.cwd(), '../..');
-const FRONTEND_GUIDE_DIR = 'frontend/src/docs/guide';
-const DOCUSAURUS_GUIDE_DIR = 'docusaurus/guide';
+const DOCUSAURUS_DOCS_DIR = 'docusaurus/docs';
 
 interface GeneratedDoc {
   topic: string;
@@ -41,29 +38,20 @@ ${doc.content}
 }
 
 /**
- * Write a single MDX file to both frontend and docusaurus locations
+ * Write a single MDX file to Docusaurus docs directory
  */
 export function writeMdxFile(doc: GeneratedDoc, mapping: DocMapping): void {
   const content = buildMdxFile(doc);
   const filename = path.basename(mapping.outputFile);
 
-  // Write to frontend bundle location (primary)
-  const frontendPath = path.join(PROJECT_ROOT, mapping.outputFile);
-  const frontendDir = path.dirname(frontendPath);
-  if (!fs.existsSync(frontendDir)) {
-    fs.mkdirSync(frontendDir, { recursive: true });
-  }
-  fs.writeFileSync(frontendPath, content, 'utf-8');
-  console.log(`  Written: ${mapping.outputFile}`);
-
-  // Also copy to docusaurus location
-  const docusaurusPath = path.join(PROJECT_ROOT, DOCUSAURUS_GUIDE_DIR, filename);
+  // Write to Docusaurus docs directory
+  const docusaurusPath = path.join(PROJECT_ROOT, DOCUSAURUS_DOCS_DIR, filename);
   const docusaurusDir = path.dirname(docusaurusPath);
   if (!fs.existsSync(docusaurusDir)) {
     fs.mkdirSync(docusaurusDir, { recursive: true });
   }
   fs.writeFileSync(docusaurusPath, content, 'utf-8');
-  console.log(`  Copied to: ${DOCUSAURUS_GUIDE_DIR}/${filename}`);
+  console.log(`  Written: ${DOCUSAURUS_DOCS_DIR}/${filename}`);
 }
 
 /**
@@ -85,7 +73,7 @@ export function writeAllDocs(
  * Create guides category file for Docusaurus
  */
 export function createGuidesCategory(): void {
-  const categoryPath = path.join(PROJECT_ROOT, DOCUSAURUS_GUIDE_DIR, '_category_.json');
+  const categoryPath = path.join(PROJECT_ROOT, DOCUSAURUS_DOCS_DIR, '_category_.json');
   const dir = path.dirname(categoryPath);
 
   if (!fs.existsSync(dir)) {
@@ -109,18 +97,11 @@ export function createGuidesCategory(): void {
 }
 
 /**
- * Ensure output directories exist
+ * Ensure output directory exists
  */
 export function ensureGeneratedDir(): void {
-  // Frontend guide directory
-  const frontendGuideDir = path.join(PROJECT_ROOT, FRONTEND_GUIDE_DIR);
-  if (!fs.existsSync(frontendGuideDir)) {
-    fs.mkdirSync(frontendGuideDir, { recursive: true });
-  }
-
-  // Docusaurus guide directory
-  const docusaurusGuideDir = path.join(PROJECT_ROOT, DOCUSAURUS_GUIDE_DIR);
-  if (!fs.existsSync(docusaurusGuideDir)) {
-    fs.mkdirSync(docusaurusGuideDir, { recursive: true });
+  const docusaurusDocsDir = path.join(PROJECT_ROOT, DOCUSAURUS_DOCS_DIR);
+  if (!fs.existsSync(docusaurusDocsDir)) {
+    fs.mkdirSync(docusaurusDocsDir, { recursive: true });
   }
 }

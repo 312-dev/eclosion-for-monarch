@@ -63,8 +63,7 @@ export interface DocMapping {
 }
 
 // Content mapping configuration
-// outputFile is the primary destination (frontend bundle)
-// Files are also copied to docusaurus/guide/ for the public docs site
+// outputFile is the destination in docusaurus/docs/ for the public user guide site
 export const DOC_MAPPINGS: DocMapping[] = [
   {
     topic: 'recurring-expenses',
@@ -73,7 +72,7 @@ export const DOC_MAPPINGS: DocMapping[] = [
       'frontend/src/components/tabs/RecurringTab.tsx',
       'frontend/src/components/RollupZone.tsx',
     ],
-    outputFile: 'frontend/src/docs/guide/recurring-expenses.mdx',
+    outputFile: 'docusaurus/docs/recurring-expenses.mdx',
     feature: 'recurring',
     userFlow: 'main-dashboard',
   },
@@ -87,7 +86,7 @@ export const DOC_MAPPINGS: DocMapping[] = [
       'frontend/src/components/wizards/steps/RollupConfigStep.tsx',
       'frontend/src/components/wizards/steps/FinishStep.tsx',
     ],
-    outputFile: 'frontend/src/docs/guide/setup-wizard.mdx',
+    outputFile: 'docusaurus/docs/setup-wizard.mdx',
     feature: 'setup',
     userFlow: 'onboarding',
   },
@@ -97,7 +96,7 @@ export const DOC_MAPPINGS: DocMapping[] = [
       'frontend/src/components/wizards/steps/RollupConfigStep.tsx',
       'frontend/src/components/RollupZone.tsx',
     ],
-    outputFile: 'frontend/src/docs/guide/rollup-category.mdx',
+    outputFile: 'docusaurus/docs/rollup-category.mdx',
     feature: 'recurring',
     userFlow: 'configuration',
   },
@@ -107,7 +106,7 @@ export const DOC_MAPPINGS: DocMapping[] = [
       'frontend/src/components/LinkCategoryModal.tsx',
       'frontend/src/components/wizards/steps/ItemSelectionStep.tsx',
     ],
-    outputFile: 'frontend/src/docs/guide/category-linking.mdx',
+    outputFile: 'docusaurus/docs/category-linking.mdx',
     feature: 'recurring',
     userFlow: 'configuration',
   },

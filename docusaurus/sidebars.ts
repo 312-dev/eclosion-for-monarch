@@ -1,43 +1,23 @@
 import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
 /**
- * Sidebar configuration for technical documentation (/docs)
+ * Sidebar configuration for user guides (/docs)
+ * These are AI-generated from in-app help content
  */
 const sidebars: SidebarsConfig = {
-  docsSidebar: [
+  guideSidebar: [
     'intro',
     {
       type: 'category',
-      label: 'Self-Hosting',
+      label: 'Features',
       collapsed: false,
       items: [
-        'self-hosting/overview',
-        'self-hosting/docker',
-        {
-          type: 'category',
-          label: 'Platform Guides',
-          items: [
-            'self-hosting/platforms/digitalocean',
-            'self-hosting/platforms/aws',
-            'self-hosting/platforms/gcp',
-            'self-hosting/platforms/kubernetes',
-            'self-hosting/platforms/synology',
-            'self-hosting/platforms/raspberry-pi',
-            'self-hosting/platforms/unraid',
-            'self-hosting/platforms/portainer',
-          ],
-        },
-        'self-hosting/reverse-proxy',
-        'self-hosting/data-management',
-        'self-hosting/monitoring',
-        'self-hosting/security-hardening',
-        'self-hosting/troubleshooting',
-        'self-hosting/environment-variables',
+        'recurring-expenses',
+        'setup-wizard',
+        'rollup-category',
+        'category-linking',
       ],
     },
-    'security',
-    'contributing',
-    'changelog',
   ],
 };
 

@@ -66,8 +66,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Add docs from both frontend bundle and docusaurus locations
-          git add frontend/src/docs/guide/ docusaurus/guide/
+          # Add generated docs to Docusaurus
+          git add docusaurus/docs/
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "docs: auto-generate user guides for v${{ inputs.version }}"
           git push

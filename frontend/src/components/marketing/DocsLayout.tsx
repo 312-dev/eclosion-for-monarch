@@ -86,9 +86,19 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             {!minimal && (
               <nav className="hidden md:flex items-center gap-8">
                 <NavLink to="/features">Features</NavLink>
-                <NavLink to="/guide">Help</NavLink>
-                <NavLink to="/docs">Docs</NavLink>
+                <a
+                  href="/docs"
+                  className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors"
+                >
+                  User Guide
+                </a>
                 <NavLink to="/demo">Demo</NavLink>
+                <NavLink
+                  to="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
+                  external
+                >
+                  Self-Hosting
+                </NavLink>
                 <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
                   GitHub
                 </NavLink>
@@ -97,21 +107,23 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              {/* Help & Docs Links (shown on landing page) */}
+              {/* User Guide & Self-Hosting Links (shown on landing page) */}
               {minimal && (
                 <>
-                  <Link
-                    to="/guide"
+                  <a
+                    href="/docs"
                     className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
                   >
-                    Help
-                  </Link>
-                  <Link
-                    to="/docs"
+                    User Guide
+                  </a>
+                  <a
+                    href="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
                   >
-                    Docs
-                  </Link>
+                    Self-Hosting
+                  </a>
                 </>
               )}
 

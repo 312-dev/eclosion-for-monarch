@@ -3,11 +3,11 @@ import type * as Preset from '@docusaurus/preset-classic';
 import { themes as prismThemes } from 'prism-react-renderer';
 
 const config: Config = {
-  title: 'Eclosion Documentation',
-  tagline: 'Self-hosted toolkit for Monarch Money',
+  title: 'Eclosion User Guide',
+  tagline: 'Learn how to use Eclosion for Monarch Money',
   favicon: 'img/favicon.ico',
 
-  url: 'https://docs.eclosion.app',
+  url: 'https://eclosion.app',
   baseUrl: '/',
 
   organizationName: 'GraysonCAdams',
@@ -25,7 +25,7 @@ const config: Config = {
     [
       'classic',
       {
-        // Technical docs at /docs
+        // User guides at /docs
         docs: {
           path: 'docs',
           routeBasePath: 'docs',
@@ -49,29 +49,6 @@ const config: Config = {
     ],
   ],
 
-  plugins: [
-    // User guides at /guide
-    [
-      '@docusaurus/plugin-content-docs',
-      {
-        id: 'guide',
-        path: 'guide',
-        routeBasePath: 'guide',
-        sidebarPath: './sidebarsGuide.ts',
-        editUrl:
-          'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
-        lastVersion: 'current',
-        versions: {
-          current: {
-            label: 'Next',
-            path: '',
-          },
-        },
-        showLastUpdateTime: true,
-      },
-    ],
-  ],
-
   themeConfig: {
     colorMode: {
       defaultMode: 'dark',
@@ -88,26 +65,18 @@ const config: Config = {
         {
           type: 'docSidebar',
           sidebarId: 'guideSidebar',
-          docsPluginId: 'guide',
           position: 'left',
           label: 'User Guide',
         },
         {
-          type: 'docSidebar',
-          sidebarId: 'docsSidebar',
-          position: 'left',
-          label: 'Technical Docs',
-        },
-        {
           type: 'docsVersionDropdown',
           position: 'right',
           dropdownActiveClassDisabled: true,
         },
         {
-          type: 'docsVersionDropdown',
-          docsPluginId: 'guide',
+          href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
+          label: 'Self-Hosting',
           position: 'right',
-          dropdownActiveClassDisabled: true,
         },
         {
           href: 'https://eclosion.app',
@@ -130,28 +99,24 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'User Guides',
+          title: 'User Guide',
           items: [
             {
               label: 'Getting Started',
-              to: '/guide',
+              to: '/docs',
             },
             {
               label: 'Recurring Expenses',
-              to: '/guide/recurring-expenses',
+              to: '/docs/recurring-expenses',
             },
           ],
         },
         {
-          title: 'Technical Docs',
+          title: 'Self-Hosting',
           items: [
             {
-              label: 'Self-Hosting',
-              to: '/docs/self-hosting/overview',
-            },
-            {
-              label: 'Security',
-              to: '/docs/security',
+              label: 'GitHub Wiki',
+              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
             },
           ],
         },
@@ -171,10 +136,6 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            {
-              label: 'Changelog',
-              to: '/docs/changelog',
-            },
             {
               label: 'GitHub',
               href: 'https://github.com/GraysonCAdams/eclosion-for-monarch',
