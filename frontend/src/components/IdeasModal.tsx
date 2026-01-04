@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ThumbsUp, ExternalLink, Search, X } from 'lucide-react';
-import { useDemo } from '../context/DemoContext';
+import { ThumbsUp, ExternalLink, Search, X, AtSign } from 'lucide-react';
 
 /** Public idea from the ideas.json export */
 interface PublicIdea {
@@ -9,12 +8,13 @@ interface PublicIdea {
   description: string;
   votes: number;
   category: string;
-  productboardUrl: string;
+  productboardUrl: string | null;
   discussionUrl: string | null;
   discussionNumber: number | null;
   status: 'open' | 'closed';
   closedReason: 'monarch-committed' | 'eclosion-shipped' | null;
   closedAt: string | null;
+  source: 'productboard' | 'github';
 }
 
 interface IdeasData {
@@ -31,87 +31,10 @@ interface IdeasModalProps {
   onClose: () => void;
 }
 
-/** Sample data for demo mode */
-const DEMO_IDEAS: IdeasData = {
-  generatedAt: new Date().toISOString(),
-  votesThreshold: 500,
-  totalIdeas: 5,
-  openCount: 3,
-  closedCount: 2,
-  ideas: [
-    {
-      id: 'demo-1',
-      title: 'Multi-currency account support',
-      description: 'Track accounts and transactions in multiple currencies with automatic conversion...',
-      votes: 42,
-      category: 'Dashboard & System Wide',
-      productboardUrl: 'https://portal.productboard.com/example/1',
-      discussionUrl: null,
-      discussionNumber: null,
-      status: 'open',
-      closedReason: null,
-      closedAt: null,
-    },
-    {
-      id: 'demo-2',
-      title: 'Custom recurring expense categories',
-      description: 'Allow users to create custom categories for recurring expenses beyond the defaults...',
-      votes: 28,
-      category: 'Recurring & Bills',
-      productboardUrl: 'https://portal.productboard.com/example/2',
-      discussionUrl: null,
-      discussionNumber: null,
-      status: 'open',
-      closedReason: null,
-      closedAt: null,
-    },
-    {
-      id: 'demo-3',
-      title: 'Better transaction search',
-      description: 'Advanced search filters including date ranges, amount ranges, and merchant search...',
-      votes: 15,
-      category: 'Transactions',
-      productboardUrl: 'https://portal.productboard.com/example/3',
-      discussionUrl: null,
-      discussionNumber: null,
-      status: 'open',
-      closedReason: null,
-      closedAt: null,
-    },
-    {
-      id: 'demo-4',
-      title: 'Bank sync improvements',
-      description: 'Better handling of pending transactions and faster sync times...',
-      votes: 89,
-      category: 'Accounts',
-      productboardUrl: 'https://portal.productboard.com/example/4',
-      discussionUrl: null,
-      discussionNumber: null,
-      status: 'closed',
-      closedReason: 'monarch-committed',
-      closedAt: '2024-12-15T00:00:00Z',
-    },
-    {
-      id: 'demo-5',
-      title: 'Recurring expense tracking',
-      description: 'Track and forecast recurring expenses like subscriptions and bills...',
-      votes: 156,
-      category: 'Recurring & Bills',
-      productboardUrl: 'https://portal.productboard.com/example/5',
-      discussionUrl: null,
-      discussionNumber: null,
-      status: 'closed',
-      closedReason: 'eclosion-shipped',
-      closedAt: '2024-11-01T00:00:00Z',
-    },
-  ],
-};
-
 const IDEAS_JSON_URL = 'https://raw.githubusercontent.com/graysoncadams/eclosion-for-monarch/main/data/ideas.json';
 const NEW_DISCUSSION_URL = 'https://github.com/graysoncadams/eclosion-for-monarch/discussions/new?category=Ideas';
 
 export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
-  const isDemo = useDemo();
   const [data, setData] = useState<IdeasData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,14 +45,10 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
     if (isOpen) {
       setSearchQuery('');
       setActiveTab('open');
-
-      if (isDemo) {
-        setData(DEMO_IDEAS);
-      } else {
-        fetchIdeas();
-      }
+      // Always fetch real ideas from GitHub, even in demo mode
+      fetchIdeas();
     }
-  }, [isOpen, isDemo]);
+  }, [isOpen]);
 
   const fetchIdeas = async () => {
     setLoading(true);
@@ -171,33 +90,51 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
       <div className="relative w-full max-w-2xl mx-4 rounded-xl shadow-xl max-h-[85vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
         {/* Header */}
         <div className="p-4 border-b border-monarch-border">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-monarch-text-dark">Community Ideas</h2>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-semibold text-monarch-text-dark">Community Ideas</h2>
+              <p className="text-sm mt-0.5 text-monarch-text-muted">
+                Ideas from{' '}
+                <a
+                  href="https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/categories/ideas"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-monarch-text-dark hover:underline"
+                >
+                  Eclosion's GitHub
+                </a>
+                {' '}and{' '}
+                <a
+                  href="https://portal.productboard.com/3qsdvcsy5aq69hhkycf4dtpi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-monarch-text-dark hover:underline"
+                >
+                  Monarch Money's roadmap
+                </a>
+              </p>
+            </div>
+            <a
+              href={NEW_DISCUSSION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-colors bg-monarch-orange hover:opacity-90 shrink-0"
+            >
+              Suggest an Idea
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
             <button
               onClick={onClose}
-              className="p-1 rounded hover:bg-gray-100 transition-colors text-monarch-text-muted"
+              className="p-1.5 rounded-lg hover:bg-monarch-bg-page transition-colors text-monarch-text-muted shrink-0"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-sm mt-1 text-monarch-text-muted">
-            Vote on ideas you'd like Eclosion to build
-          </p>
         </div>
 
-        {/* Suggest button and search */}
-        <div className="p-4 border-b border-monarch-border space-y-3">
-          <a
-            href={NEW_DISCUSSION_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors bg-monarch-orange hover:opacity-90"
-          >
-            Suggest an Idea
-            <ExternalLink className="w-4 h-4" />
-          </a>
-
+        {/* Search */}
+        <div className="px-4 py-3 border-b border-monarch-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-monarch-text-muted" />
             <input
@@ -205,7 +142,7 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
               placeholder="Search ideas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-monarch-border bg-monarch-bg-card text-monarch-text-dark"
+              className="w-full pl-10 pr-3 py-2 rounded-lg text-sm border border-monarch-border bg-monarch-bg-page text-monarch-text-dark placeholder:text-monarch-text-muted"
             />
           </div>
         </div>
@@ -263,13 +200,7 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
 
         {/* Footer */}
         <div className="p-4 border-t border-monarch-border text-center text-xs text-monarch-text-muted">
-          {data && (
-            <>
-              Last updated: {new Date(data.generatedAt).toLocaleDateString()}
-              {' · '}
-              Ideas with {data.votesThreshold}+ votes on Monarch's roadmap
-            </>
-          )}
+          {data && <>Last updated: {new Date(data.generatedAt).toLocaleDateString()}</>}
         </div>
       </div>
     </div>
@@ -309,7 +240,7 @@ function IdeaCard({ idea }: { idea: PublicIdea }) {
             {/* Status badge for closed */}
             {idea.status === 'closed' && idea.closedReason && (
               <span
-                className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${
+                className={`shrink-0 text-xs px-2 py-0.5 rounded font-medium ${
                   idea.closedReason === 'eclosion-shipped'
                     ? 'bg-green-100 text-green-700'
                     : 'bg-blue-100 text-blue-700'
@@ -322,19 +253,32 @@ function IdeaCard({ idea }: { idea: PublicIdea }) {
 
           <p className="text-xs text-monarch-text-muted mt-1 line-clamp-2">{idea.description}</p>
 
-          <div className="flex items-center gap-3 mt-2">
-            <span className="text-xs px-2 py-0.5 rounded bg-monarch-bg-card text-monarch-text-muted">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {/* Source badge */}
+            <span
+              className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded font-medium ${
+                idea.source === 'github'
+                  ? 'bg-monarch-orange/10 text-monarch-orange'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+              }`}
+            >
+              <AtSign className="w-3 h-3" />
+              {idea.source === 'github' ? 'Eclosion' : 'Monarch'}
+            </span>
+            <span className="text-xs px-2 py-0.5 rounded font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
               {idea.category}
             </span>
-            <a
-              href={idea.productboardUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-monarch-text-muted hover:text-monarch-orange transition-colors flex items-center gap-1"
-            >
-              View on Monarch
-              <ExternalLink className="w-3 h-3" />
-            </a>
+            {idea.productboardUrl && (
+              <a
+                href={idea.productboardUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-monarch-text-muted hover:text-monarch-orange transition-colors flex items-center gap-1"
+              >
+                View on Monarch
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
           </div>
         </div>
       </div>

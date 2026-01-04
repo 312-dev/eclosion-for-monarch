@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Settings, RefreshCw, Trash2, AlertTriangle, Repeat, Key, Database, ChevronRight, Clock, LogOut, Sun, Moon, Monitor, Home, Download, Upload, RotateCcw, Shield } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -598,23 +599,23 @@ export function SettingsTab() {
                   </div>
                 </div>
               )}
+
+              {/* Reset link - inside card at bottom right */}
+              {hasAnythingToReset && (
+                <div className="px-4 py-2 text-right" style={{ borderTop: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}>
+                  <button
+                    type="button"
+                    className="text-xs hover:opacity-80 transition-opacity"
+                    style={{ color: 'var(--monarch-error)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    onClick={() => setShowRecurringResetModal(true)}
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
-
-        {/* Reset link - outside the card */}
-        {hasAnythingToReset && (
-          <div className="mt-2 px-1">
-            <button
-              type="button"
-              className="text-sm font-medium hover:opacity-80 transition-opacity"
-              style={{ color: 'var(--monarch-error)', background: 'none', border: 'none', cursor: 'pointer' }}
-              onClick={() => setShowRecurringResetModal(true)}
-            >
-              Reset Recurring Tool
-            </button>
-          </div>
-        )}
       </section>
 
       {/* Automation Section */}
@@ -986,8 +987,8 @@ export function SettingsTab() {
         onClose={() => setShowImportModal(false)}
       />
 
-      {/* Recurring Tool Reset Modal */}
-      {showRecurringResetModal && (
+      {/* Recurring Tool Reset Modal - portaled to body for proper positioning */}
+      {showRecurringResetModal && createPortal(
         <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50 modal-backdrop"
@@ -1116,7 +1117,8 @@ export function SettingsTab() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

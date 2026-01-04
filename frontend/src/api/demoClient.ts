@@ -948,7 +948,7 @@ export async function getSecurityEvents(
 export async function getSecuritySummary(): Promise<SecurityEventSummary> {
   await simulateDelay(50);
   return {
-    total_events: 27,
+    total_events: DEMO_SECURITY_EVENTS.length,
     successful_logins: 23,
     failed_logins: 3,
     failed_unlock_attempts: 1,
