@@ -13,6 +13,7 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       pr_number: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).number || '' }}
       pr_head_branch: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).headBranchName || '' }}
@@ -39,6 +40,7 @@ jobs:
     needs: release-please
     if: needs.release-please.outputs.pr_created == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout release branch
         uses: actions/checkout@v4
@@ -91,7 +93,9 @@ jobs:
 
           if [ -z "$SUMMARY" ]; then
             echo "Failed to generate summary"
-            echo "API Response: $RESPONSE"
+            # Only log error info, not full response (may contain sensitive data)
+            ERROR=$(echo "$RESPONSE" | jq -r '.error.message // .error // "Unknown error"')
+            echo "API Error: $ERROR"
             echo "summary=" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -139,10 +143,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
-          gh workflow run ci.yml --ref "$BRANCH"
-          gh workflow run security.yml --ref "$BRANCH"
+          # Get the head SHA for commit status posting
+          HEAD_SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/$BRANCH --jq '.object.sha')
+          gh workflow run ci.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
+          gh workflow run security.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
           gh workflow run require-develop.yml --ref main -f pr_branch="$BRANCH"
-          echo "Triggered CI, Security, and Require Develop workflows on $BRANCH"
+          echo "Triggered CI, Security, and Require Develop workflows on $BRANCH (SHA: $HEAD_SHA)"
 
   # Generate user documentation from source content
   generate-docs:
@@ -160,6 +166,7 @@ jobs:
     # When generate-docs runs successfully and commits changes, skip auto-merge
     if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success' && needs.generate-docs.result == 'skipped'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Auto-merge release PR
         run: gh pr merge ${{ needs.release-please.outputs.pr_number }} --squash --auto
@@ -172,6 +179,7 @@ jobs:
     needs: [release-please, generate-docs]
     if: needs.generate-docs.result == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Add review reminder comment
         env:
@@ -191,6 +199,7 @@ jobs:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
