@@ -35,6 +35,7 @@ import {
   DemoModeSection,
   DataManagementSection,
   DangerZoneSection,
+  CreditsSection,
 } from '../settings';
 
 export function SettingsTab() {
@@ -163,6 +164,8 @@ export function SettingsTab() {
         versionInfo={versionInfo}
         onShowUpdateModal={() => setShowUpdateModal(true)}
       />
+
+      <CreditsSection />
 
       <AccountSection />
 

@@ -1,0 +1,75 @@
+name: "Generate: Contributors"
+
+on:
+  # Run on releases
+  release:
+    types: [published]
+
+  # Run weekly to catch new contributors
+  schedule:
+    - cron: '0 0 * * 0'  # Every Sunday at midnight UTC
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        type: string
+        default: 'develop'
+        description: Branch to generate contributors for
+
+  # Can be called from other workflows
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+        description: Branch to commit generated data to
+
+jobs:
+  generate-contributors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+          fetch-depth: 0  # Full history for git log
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/contributors-gen/package-lock.json
+
+      - name: Install dependencies
+        working-directory: scripts/contributors-gen
+        run: npm ci
+
+      - name: Generate contributor data
+        working-directory: scripts/contributors-gen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tsx index.ts
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add generated files
+          git add frontend/src/data/contributors.json
+          git add scripts/contributors-gen/cache.json || true
+
+          # Check if there are changes
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+
+          # Commit and push
+          git commit -m "chore: update contributor attribution data"
+          git push

@@ -2,11 +2,14 @@
  * Feature Card Component
  *
  * Displays a single feature in the feature grid.
- * Shows icon, name, tagline, status badge, and CTA buttons.
+ * Shows icon, name, tagline, status badge, contributors, and CTA buttons.
  */
 
 import { Link } from 'react-router-dom';
-import { Icons, ChevronRightIcon } from '../icons';
+import { Icons, ChevronRightIcon, UsersIcon } from '../icons';
+import { ContributorAvatar } from '../ui/ContributorAvatar';
+import { Tooltip } from '../ui/Tooltip';
+import { useContributors } from '../../hooks/useContributors';
 import type { FeatureDefinition } from '../../data/features';
 
 interface FeatureCardProps {
@@ -40,6 +43,7 @@ function StatusBadge({ status }: { status: FeatureDefinition['status'] }) {
 export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) {
   const IconComponent = Icons[feature.icon];
   const isAvailable = feature.status === 'available';
+  const contributorData = useContributors(feature.id);
 
   if (variant === 'detailed') {
     return (
@@ -53,12 +57,64 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
         </div>
 
         {/* Content */}
-        <h3 className="text-xl font-semibold text-[var(--monarch-text-dark)] mb-2">
-          {feature.name}
-        </h3>
+        <div className="flex items-center gap-2 mb-2">
+          {contributorData?.ideator && (
+            <Tooltip content={`Ideated by @${contributorData.ideator.username}`}>
+              <a
+                href={contributorData.ideator.profileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                aria-label={`Ideated by ${contributorData.ideator.username}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src={contributorData.ideator.avatarUrl}
+                  alt={`@${contributorData.ideator.username}`}
+                  className="w-7 h-7 rounded-full border border-[var(--monarch-border)]"
+                  loading="lazy"
+                />
+              </a>
+            </Tooltip>
+          )}
+          <h3 className="text-xl font-semibold text-[var(--monarch-text-dark)]">
+            {feature.name}
+          </h3>
+        </div>
         <p className="text-sm text-[var(--monarch-text)] mb-4 flex-1">
           {feature.description}
         </p>
+
+        {/* Contributors */}
+        {contributorData && contributorData.contributors.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-4">
+            <UsersIcon
+              size={14}
+              className="text-[var(--monarch-text-muted)] flex-shrink-0"
+            />
+            <span className="text-xs text-[var(--monarch-text-muted)]">
+              Community Devs
+            </span>
+            <div className="flex items-center -space-x-1.5 ml-0.5">
+              {contributorData.contributors.slice(0, 4).map((c) => (
+                <ContributorAvatar
+                  key={c.username}
+                  username={c.username}
+                  avatarUrl={c.avatarUrl}
+                  profileUrl={c.profileUrl}
+                  size="sm"
+                />
+              ))}
+              {contributorData.contributors.length > 4 && (
+                <Tooltip content={`+${contributorData.contributors.length - 4} more`}>
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--monarch-bg-hover)] text-xs text-[var(--monarch-text-muted)] border border-[var(--monarch-border)] ml-1">
+                    +{contributorData.contributors.length - 4}
+                  </span>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-3">
@@ -67,7 +123,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
               to={feature.demoPath}
               className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg bg-[var(--monarch-orange)] text-white hover:opacity-90 transition-opacity"
             >
-              Try Demo
+              Try it out
               <ChevronRightIcon size={16} color="white" />
             </Link>
           )}

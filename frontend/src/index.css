@@ -347,6 +347,11 @@ input[type="radio"] {
   to { transform: rotate(0deg); opacity: 1; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .app-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -1824,6 +1829,20 @@ input[type="radio"] {
   animation: scaleIn var(--animation-normal) var(--ease-out-smooth) forwards;
 }
 
+/* Bouncing down arrow - attention-drawing scroll indicator */
+@keyframes bounceDown {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+.animate-bounce-down {
+  animation: bounceDown 1s ease-in-out infinite;
+}
+
 /* Tooltip entrance - subtle slide from direction */
 @keyframes tooltipEnter {
   from {
@@ -1880,5 +1899,393 @@ input[type="radio"] {
 
   .recurring-cards {
     display: none;
+  }
+}
+
+/* ============================================================================
+   Marketing Page - Mockup Components
+   ============================================================================
+   Styles for the landing page live React component mockups.
+   Uses CSS transform scaling to render full-size components as screenshots.
+   ============================================================================ */
+
+/* Device frame - browser chrome wrapper */
+.mockup-device-frame {
+  border-radius: 12px;
+  border: 1px solid var(--monarch-border);
+  background: var(--monarch-bg-card);
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  width: 100%;
+}
+
+.mockup-browser-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--monarch-border);
+  background: var(--monarch-bg-page);
+}
+
+.mockup-traffic-lights {
+  display: flex;
+  gap: 6px;
+}
+
+.mockup-traffic-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.mockup-traffic-light-red {
+  background-color: #ff5f57;
+}
+
+.mockup-traffic-light-yellow {
+  background-color: #ffbd2e;
+}
+
+.mockup-traffic-light-green {
+  background-color: #28c840;
+}
+
+.mockup-url-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--monarch-bg-card);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--monarch-text-muted);
+}
+
+/* Content area inside browser chrome */
+.mockup-content {
+  background: var(--monarch-bg-page);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1rem;
+}
+
+/* Scaled container - maintains visual size after transform */
+.mockup-scaled-container {
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Scaled content - renders at full size, then scales down */
+.mockup-scaled-content {
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+/* Marketing page section animations */
+@keyframes marketingEmerge {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.marketing-section-emerge {
+  animation: marketingEmerge 0.6s var(--ease-out-smooth) forwards;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 0 0 0 rgba(255, 105, 45, 0);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 0 20px 4px rgba(255, 105, 45, 0.35);
+  }
+}
+
+/* Frustration card styling */
+.frustration-card {
+  background: var(--monarch-bg-card);
+  border: 1px solid var(--monarch-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.frustration-card:hover {
+  border-color: var(--monarch-orange);
+  box-shadow: 0 4px 12px rgba(255, 105, 45, 0.08);
+}
+
+/* Social proof bar */
+.social-proof-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+}
+
+.social-proof-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--monarch-text-muted);
+}
+
+/* Price explainer trigger */
+.price-explainer-trigger {
+  color: var(--monarch-orange);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+
+.price-explainer-trigger:hover {
+  color: var(--monarch-orange-hover);
+}
+
+/* Price explainer popover */
+.price-explainer-popover {
+  max-width: 400px;
+  padding: 1.25rem;
+  background: var(--monarch-bg-card);
+  border: 1px solid var(--monarch-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: var(--z-index-popover);
+}
+
+.price-explainer-popover h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--monarch-text-dark);
+  margin-bottom: 0.75rem;
+}
+
+.price-explainer-popover p {
+  font-size: 0.875rem;
+  color: var(--monarch-text-muted);
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.price-explainer-popover ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+}
+
+.price-explainer-popover li {
+  font-size: 0.875rem;
+  color: var(--monarch-text-dark);
+  padding: 0.25rem 0;
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.price-explainer-popover li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--monarch-orange);
+}
+
+.price-explainer-popover .tip {
+  font-style: italic;
+  font-size: 0.8125rem;
+  color: var(--monarch-text-muted);
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--monarch-border);
+  margin-top: 0.75rem;
+}
+
+/* ============================================================================
+   Ideas Board Animations
+   ============================================================================ */
+
+/* Idea bubble pop-in animation */
+@keyframes ideaPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  70% {
+    transform: scale(1.05) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.idea-pop-in {
+  animation: ideaPopIn 0.4s var(--ease-out-smooth) forwards;
+}
+
+/* Upvote bounce animation */
+@keyframes upvoteBounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+.upvote-bounce {
+  animation: upvoteBounce 0.3s ease-out;
+}
+
+/* Vote counter roll animation */
+@keyframes voteCountRoll {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.vote-count-roll {
+  animation: voteCountRoll 0.3s ease-out forwards;
+}
+
+/* Dev cycle stage slide animation */
+@keyframes stageSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes stageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.stage-slide-out {
+  animation: stageSlideOut 0.3s ease-in forwards;
+}
+
+.stage-slide-in {
+  animation: stageSlideIn 0.3s ease-out forwards;
+}
+
+/* Typewriter cursor blink */
+@keyframes cursorBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.typewriter-cursor {
+  animation: cursorBlink 0.8s step-end infinite;
+}
+
+/* Idea bubble exit animation */
+@keyframes ideaPopOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+}
+
+.idea-pop-out {
+  animation: ideaPopOut 0.3s ease-in forwards;
+}
+
+/* Ship celebration animation */
+@keyframes shipCelebrate {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.15) rotate(-3deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(3deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.ship-celebrate {
+  animation: shipCelebrate 0.5s ease-out;
+}
+
+/* Progress bar fill animation */
+@keyframes progressFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.progress-fill {
+  animation: progressFill 1.5s ease-out forwards;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .idea-pop-in,
+  .idea-pop-out,
+  .upvote-bounce,
+  .vote-count-roll,
+  .stage-slide-out,
+  .stage-slide-in,
+  .ship-celebrate,
+  .progress-fill {
+    animation: none;
+  }
+
+  .typewriter-cursor {
+    animation: none;
+    opacity: 1;
   }
 }

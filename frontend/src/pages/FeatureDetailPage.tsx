@@ -8,6 +8,8 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { DocsLayout, BenefitsList } from '../components/marketing';
 import { Icons, ChevronLeftIcon, ChevronRightIcon } from '../components/icons';
+import { ContributorList } from '../components/ui/ContributorList';
+import { useContributors } from '../hooks/useContributors';
 import { getFeatureById } from '../data/features';
 
 function StatusBadge({ status }: { status: 'available' | 'coming-soon' | 'beta' }) {
@@ -35,6 +37,7 @@ function StatusBadge({ status }: { status: 'available' | 'coming-soon' | 'beta' 
 export function FeatureDetailPage() {
   const { featureId } = useParams<{ featureId: string }>();
   const feature = featureId ? getFeatureById(featureId) : undefined;
+  const contributorData = useContributors(featureId ?? '');
 
   // 404 for unknown features
   if (!feature) {
@@ -43,6 +46,9 @@ export function FeatureDetailPage() {
 
   const IconComponent = Icons[feature.icon];
   const isAvailable = feature.status === 'available';
+  const hasContributors =
+    contributorData &&
+    (contributorData.ideator || contributorData.contributors.length > 0);
 
   return (
     <DocsLayout>
@@ -99,6 +105,17 @@ export function FeatureDetailPage() {
               <p className="text-lg text-[var(--monarch-text)] mb-6">
                 {feature.description}
               </p>
+
+              {/* Contributors */}
+              {hasContributors && (
+                <div className="mb-6 p-4 rounded-lg bg-[var(--monarch-bg-page)] border border-[var(--monarch-border)]">
+                  <ContributorList
+                    ideator={contributorData?.ideator}
+                    contributors={contributorData?.contributors ?? []}
+                    variant="detailed"
+                  />
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex flex-wrap items-center gap-4">

@@ -57,6 +57,12 @@ export interface FeatureDefinition {
 
   /** Screenshots for detail page */
   screenshots?: Screenshot[];
+
+  /** GitHub issue number that originated this feature (for ideator attribution) */
+  originIssue?: number;
+
+  /** Directories/file patterns for auto-detecting contributors from git history */
+  sourcePaths?: string[];
 }
 
 /**
@@ -67,9 +73,9 @@ export const FEATURES: FeatureDefinition[] = [
   {
     id: 'recurring',
     name: 'Recurring Expenses',
-    tagline: 'Never miss a bill again',
+    tagline: 'Never be caught off guard by a bill again',
     description:
-      'Automatically track and manage recurring expenses with smart category allocation. Eclosion calculates monthly savings targets for annual, semi-annual, and quarterly expenses so you\'re always prepared when bills come due.',
+      'Automatically calculates monthly savings for annual, quarterly, and semi-annual expenses. Combine small subscriptions into a single "rollup" category.',
     icon: 'CalendarRecurring',
     status: 'available',
     benefits: [
@@ -100,6 +106,14 @@ export const FEATURES: FeatureDefinition[] = [
     ],
     demoPath: '/demo/recurring',
     appPath: '/recurring',
+    // TODO: Set originIssue to the GitHub issue that originated this feature
+    sourcePaths: [
+      'frontend/src/components/tabs/RecurringTab.tsx',
+      'frontend/src/components/recurring/',
+      'frontend/src/components/RollupZone.tsx',
+      'frontend/src/components/wizards/',
+      'backend/recurring/',
+    ],
   },
   {
     id: 'linked-goals',
@@ -136,6 +150,42 @@ export const FEATURES: FeatureDefinition[] = [
       },
     ],
     appPath: '/linked-goals',
+  },
+  {
+    id: 'leaderboard',
+    name: 'Leaderboard',
+    tagline: 'Friendly competition with people you trust',
+    description:
+      'Compete with friends and family on a shared spending category. A fair scoring system factors in income so everyone can play. Daily, weekly, and monthly leaderboards keep things interesting.',
+    icon: 'Trophy',
+    status: 'coming-soon',
+    benefits: [
+      {
+        icon: 'Shield',
+        title: 'Privacy by Design',
+        description:
+          'P2P encryption means you only share your score—never your transactions, balances, or other financial data.',
+      },
+      {
+        icon: 'Users',
+        title: 'Fair Scoring',
+        description:
+          'Income-adjusted scoring levels the playing field so everyone can compete meaningfully.',
+      },
+      {
+        icon: 'Trophy',
+        title: 'Multiple Timeframes',
+        description:
+          'Daily, weekly, and monthly leaderboards let you compete at whatever pace works for your group.',
+      },
+      {
+        icon: 'X',
+        title: 'Leave Anytime',
+        description:
+          'Stop sharing whenever you want—like sharing Apple Health data, you stay in control.',
+      },
+    ],
+    appPath: '/leaderboard',
   },
 ];
 

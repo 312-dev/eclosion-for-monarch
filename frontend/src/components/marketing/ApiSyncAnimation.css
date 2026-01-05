@@ -1,0 +1,114 @@
+/**
+ * API Sync Animation Styles
+ *
+ * Bidirectional arrow animation showing two-way API sync.
+ * Respects prefers-reduced-motion for accessibility.
+ */
+
+.api-sync-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px;
+  height: 100%;
+  min-height: 120px;
+}
+
+/* Icons row */
+.api-icons-row {
+  display: flex;
+  align-items: center;
+}
+
+/* Endpoint icons */
+.api-endpoint-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.api-endpoint-eclosion {
+  background: rgba(249, 115, 22, 0.15);
+}
+
+.api-endpoint-monarch {
+  background: rgba(45, 212, 191, 0.15);
+}
+
+/* Animated flow lines container */
+.api-lines-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 60px;
+  margin: 0 -6px;
+}
+
+.api-line {
+  height: 2px;
+  background-size: 10px 2px;
+  background-repeat: repeat-x;
+  mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+}
+
+/* Labels row */
+.api-labels-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 180px;
+}
+
+.api-endpoint-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--monarch-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Outgoing line (orange, flows right) */
+.api-line-out {
+  background-image: linear-gradient(to right, #f97316 60%, transparent 60%);
+  animation: flow-right 2s linear infinite;
+}
+
+/* Incoming line (teal, flows left) */
+.api-line-in {
+  background-image: linear-gradient(to right, #2dd4bf 60%, transparent 60%);
+  animation: flow-left 2s linear infinite;
+}
+
+/* Keyframes for flowing dashes */
+@keyframes flow-right {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 10px 0;
+  }
+}
+
+@keyframes flow-left {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: -10px 0;
+  }
+}
+
+/* Accessibility: Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .api-line-out,
+  .api-line-in {
+    animation: none;
+  }
+}

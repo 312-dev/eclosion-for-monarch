@@ -55,3 +55,11 @@ export {
 export { useApiClient } from './useApiClient';
 
 export { useRecurringItemActions } from './useRecurringItemActions';
+
+export {
+  useContributors,
+  useAllContributors,
+  useUniqueContributors,
+  type Contributor,
+  type FeatureContributors,
+} from './useContributors';

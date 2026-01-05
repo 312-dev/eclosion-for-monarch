@@ -1,0 +1,18 @@
+{
+  "name": "contributors-gen",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Generate contributor attribution data from GitHub",
+  "scripts": {
+    "generate": "tsx index.ts"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

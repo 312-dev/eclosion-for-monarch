@@ -81,6 +81,13 @@ import {
   Gift,
   HeartHandshake,
   HelpCircle,
+  Server,
+  Monitor,
+  Globe,
+  Bird,
+  Rocket,
+  Trophy,
+  Lightbulb,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -167,6 +174,13 @@ export const HourglassIcon = Hourglass;
 export const RotateIcon = RotateCw;
 export const GiftIcon = Gift;
 export const HeartHandshakeIcon = HeartHandshake;
+export const ServerIcon = Server;
+export const MonitorIcon = Monitor;
+export const GlobeIcon = Globe;
+export const BirdIcon = Bird;
+export const RocketIcon = Rocket;
+export const TrophyIcon = Trophy;
+export const LightbulbIcon = Lightbulb;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -306,6 +320,39 @@ export function RedditIcon({
   );
 }
 
+/** Cocoon icon (deployment/hosting) */
+export function CocoonIcon({
+  size = 24,
+  color = 'currentColor',
+  className,
+  ...rest
+}: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...rest}
+    >
+      {/* Main cocoon body - elongated oval */}
+      <ellipse cx="12" cy="12" rx="5" ry="8" />
+      {/* Silk wrapping lines */}
+      <path d="M7.5 8c2.5 1 6.5 1 9 0" />
+      <path d="M7 12c2.5 1.2 7.5 1.2 10 0" />
+      <path d="M7.5 16c2.5 1 6.5 1 9 0" />
+      {/* Attachment point at top */}
+      <path d="M12 4v-2" />
+      <path d="M10 2h4" />
+    </svg>
+  );
+}
+
 /**
  * Monarch butterfly icon (app logo)
  *
@@ -331,6 +378,66 @@ export function MonarchIcon({
         opacity="0.3"
       />
       <path d="M12 2C8.5 2 5.5 4 4 7l8 5-8 5c1.5 3 4.5 5 8 5s6.5-2 8-5l-8-5 8-5c-1.5-3-4.5-5-8-5zm0 2c2.5 0 4.5 1.5 5.5 3.5L12 11 6.5 7.5C7.5 5.5 9.5 4 12 4zm0 16c-2.5 0-4.5-1.5-5.5-3.5L12 13l5.5 3.5c-1 2-3 3.5-5.5 3.5z" />
+    </svg>
+  );
+}
+
+/** Butterfly emerging from cocoon icon (eclosion) */
+export function ButterflyEmergingIcon({
+  size = 24,
+  color = 'currentColor',
+  className,
+  ...rest
+}: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...rest}
+    >
+      {/* Cocoon shell at bottom - cracked open */}
+      <path
+        d="M8 22c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5"
+        fill={color}
+        fillOpacity="0.15"
+      />
+      <path d="M7 20c1-1.5 2.5-2 5-2s4 .5 5 2" />
+      {/* Butterfly body emerging */}
+      <path d="M12 18V9" strokeWidth="2" />
+      {/* Left wing */}
+      <path
+        d="M12 11C9 9 5 8 3 10c-1.5 1.5-1 4 1.5 5.5S9 17 12 14"
+        fill={color}
+        fillOpacity="0.2"
+      />
+      {/* Right wing */}
+      <path
+        d="M12 11c3-2 7-3 9-1 1.5 1.5 1 4-1.5 5.5S15 17 12 14"
+        fill={color}
+        fillOpacity="0.2"
+      />
+      {/* Upper left wing */}
+      <path
+        d="M12 9C9 7 5 5 3 7c-1.5 1.5-.5 4 2 5s5.5.5 7-2"
+        fill={color}
+        fillOpacity="0.3"
+      />
+      {/* Upper right wing */}
+      <path
+        d="M12 9c3-2 7-4 9-2 1.5 1.5.5 4-2 5s-5.5.5-7-2"
+        fill={color}
+        fillOpacity="0.3"
+      />
+      {/* Antennae */}
+      <path d="M10.5 7.5C9 5.5 8 4 7 4" />
+      <path d="M13.5 7.5c1.5-2 2.5-3.5 3.5-3.5" />
     </svg>
   );
 }
@@ -442,9 +549,18 @@ export const Icons = {
   Rotate: RotateIcon,
   Gift: GiftIcon,
   HeartHandshake: HeartHandshakeIcon,
+  Server: ServerIcon,
+  Monitor: MonitorIcon,
+  Globe: GlobeIcon,
+  Lightbulb: LightbulbIcon,
 
   // Brand
   GitHub: GitHubIcon,
   Reddit: RedditIcon,
   Monarch: MonarchIcon,
+  Cocoon: CocoonIcon,
+  ButterflyEmerging: ButterflyEmergingIcon,
+  Bird: BirdIcon,
+  Rocket: RocketIcon,
+  Trophy: TrophyIcon,
 };
