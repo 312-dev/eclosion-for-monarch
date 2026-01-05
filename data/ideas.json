@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-01-05T06:41:29.980Z",
+  "generatedAt": "2026-01-05T06:49:04.780Z",
   "votesThreshold": 500,
-  "totalIdeas": 14,
-  "openCount": 14,
+  "totalIdeas": 12,
+  "openCount": 12,
   "closedCount": 0,
   "ideas": [
     {
@@ -172,34 +172,6 @@
       "closedReason": null,
       "closedAt": null,
       "source": "productboard"
-    },
-    {
-      "id": "github-39",
-      "title": "Associate 2 transactions together",
-      "description": "2,776\nTransactions\nView on Monarch's Roadmap",
-      "votes": 0,
-      "category": "Community",
-      "productboardUrl": null,
-      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/39",
-      "discussionNumber": 39,
-      "status": "open",
-      "closedReason": null,
-      "closedAt": null,
-      "source": "github"
-    },
-    {
-      "id": "github-53",
-      "title": "Notes field on categories or merchants",
-      "description": "688\nDashboard & System Wide\nView on Monarch's Roadmap",
-      "votes": 0,
-      "category": "Community",
-      "productboardUrl": null,
-      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/53",
-      "discussionNumber": 53,
-      "status": "open",
-      "closedReason": null,
-      "closedAt": null,
-      "source": "github"
     }
   ]
 }
