@@ -413,6 +413,12 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
           source: 'productboard',
         };
       }
+      // Clean up orphaned github-XX entry if it exists for this discussion
+      const githubKey = `github-${disc.number}`;
+      if (state.trackedIdeas[githubKey]) {
+        console.log(`  Removing orphaned ${githubKey} (now tracked as ProductBoard idea)`);
+        delete state.trackedIdeas[githubKey];
+      }
       continue;
     }
     if (state.trackedIdeas[idea.id]?.discussionNumber) continue;
@@ -435,6 +441,12 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
       // Add to the map so we don't create a duplicate
       existingByPbId.set(idea.id, matchingDisc);
       matchedDiscussionIds.add(matchingDisc.id);
+      // Clean up orphaned github-XX entry if it exists
+      const githubKey = `github-${matchingDisc.number}`;
+      if (state.trackedIdeas[githubKey]) {
+        console.log(`  Removing orphaned ${githubKey} (now tracked as ProductBoard idea)`);
+        delete state.trackedIdeas[githubKey];
+      }
     }
   }
 
