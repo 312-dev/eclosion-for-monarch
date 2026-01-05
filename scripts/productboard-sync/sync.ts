@@ -394,9 +394,31 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
   console.log('\nChecking for manually-created discussions to import...');
   const matchedDiscussionIds = new Set<string>();
   for (const idea of ideas) {
-    // Skip if already tracked by ProductBoard ID
+    // If discussion exists by ProductBoard ID, ensure state entry exists
     if (existingByPbId.has(idea.id)) {
-      matchedDiscussionIds.add(existingByPbId.get(idea.id)!.id);
+      const disc = existingByPbId.get(idea.id)!;
+      matchedDiscussionIds.add(disc.id);
+      // Ensure state entry exists (fixes bug where state wasn't populated)
+      if (!state.trackedIdeas[idea.id]) {
+        console.log(`  Importing existing discussion #${disc.number} for "${idea.title}"`);
+        state.trackedIdeas[idea.id] = {
+          discussionId: disc.id,
+          discussionNumber: disc.number,
+          status: disc.closed ? 'closed' : 'open',
+          lastVoteCount: idea.votes,
+          lastProductBoardStatus: idea.status,
+          githubVotes: disc.thumbsUpCount,
+          closedReason: getClosedReason(disc),
+          closedAt: disc.closedAt ?? undefined,
+          source: 'productboard',
+        };
+      }
+      // Clean up orphaned github-XX entry if it exists for this discussion
+      const githubKey = `github-${disc.number}`;
+      if (state.trackedIdeas[githubKey]) {
+        console.log(`  Removing orphaned ${githubKey} (now tracked as ProductBoard idea)`);
+        delete state.trackedIdeas[githubKey];
+      }
       continue;
     }
     if (state.trackedIdeas[idea.id]?.discussionNumber) continue;
@@ -419,6 +441,12 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
       // Add to the map so we don't create a duplicate
       existingByPbId.set(idea.id, matchingDisc);
       matchedDiscussionIds.add(matchingDisc.id);
+      // Clean up orphaned github-XX entry if it exists
+      const githubKey = `github-${matchingDisc.number}`;
+      if (state.trackedIdeas[githubKey]) {
+        console.log(`  Removing orphaned ${githubKey} (now tracked as ProductBoard idea)`);
+        delete state.trackedIdeas[githubKey];
+      }
     }
   }
 
@@ -551,6 +579,25 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
         console.log(`    Closed discussion #${existing.number}`);
       } catch (error) {
         console.error(`    Failed to close discussion:`, error);
+      }
+    }
+  }
+
+  // Final cleanup: remove any github-XX entries that have a ProductBoard entry for the same discussion
+  // This catches orphans from ideas that were filtered out by AI or dropped below vote threshold
+  console.log('\nCleaning up orphaned github-XX entries...');
+  const pbDiscussionNumbers = new Set<number>();
+  for (const [key, tracked] of Object.entries(state.trackedIdeas)) {
+    if (!key.startsWith('github-') && tracked.discussionNumber) {
+      pbDiscussionNumbers.add(tracked.discussionNumber);
+    }
+  }
+  for (const key of Object.keys(state.trackedIdeas)) {
+    if (key.startsWith('github-')) {
+      const discNumber = Number.parseInt(key.replace('github-', ''), 10);
+      if (pbDiscussionNumbers.has(discNumber)) {
+        console.log(`  Removing orphaned ${key} (ProductBoard entry exists for discussion #${discNumber})`);
+        delete state.trackedIdeas[key];
       }
     }
   }
