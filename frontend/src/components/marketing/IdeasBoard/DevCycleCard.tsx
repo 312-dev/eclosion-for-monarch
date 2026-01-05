@@ -162,6 +162,11 @@ export function DevCycleCard({ idea, stage, reducedMotion }: DevCycleCardProps) 
         </span>
       </div>
 
+      {/* Demo disclaimer */}
+      <span className="absolute -top-2 right-3 px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--monarch-bg-page)] text-[var(--monarch-text-muted)] border border-[var(--monarch-border)]">
+        Demo
+      </span>
+
       {/* User info */}
       <div className={`flex items-center gap-3 mt-3 mb-3 ${contentAnimationClass}`}>
         <img

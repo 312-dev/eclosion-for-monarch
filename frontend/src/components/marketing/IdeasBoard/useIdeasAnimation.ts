@@ -65,7 +65,7 @@ const FAKE_USERNAMES = [
 
 // Animation configuration
 const STACK_SIZE = 3;               // Always show 3 stacked ideas
-const DROP_IN_DELAY = 800;          // Time between each idea dropping in
+const DROP_IN_DELAY = 1500;         // Time between each idea dropping in (1.5s each)
 const VOTE_ANIMATION_DURATION = 3000; // Total time for vote count animation (ms)
 const VOTE_FRAME_INTERVAL = 16;     // ~60fps for smooth counting
 const RESET_FADE_DURATION = 600;    // Fade out duration before reset
