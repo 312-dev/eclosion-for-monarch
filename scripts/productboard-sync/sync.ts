@@ -412,9 +412,25 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
   console.log('\nChecking for manually-created discussions to import...');
   const matchedDiscussionIds = new Set<string>();
   for (const idea of ideas) {
-    // Skip if already tracked by ProductBoard ID
+    // If discussion exists by ProductBoard ID, ensure state entry exists
     if (existingByPbId.has(idea.id)) {
-      matchedDiscussionIds.add(existingByPbId.get(idea.id)!.id);
+      const disc = existingByPbId.get(idea.id)!;
+      matchedDiscussionIds.add(disc.id);
+      // Ensure state entry exists (fixes bug where state wasn't populated)
+      if (!state.trackedIdeas[idea.id]) {
+        console.log(`  Importing existing discussion #${disc.number} for "${idea.title}"`);
+        state.trackedIdeas[idea.id] = {
+          discussionId: disc.id,
+          discussionNumber: disc.number,
+          status: disc.closed ? 'closed' : 'open',
+          lastVoteCount: idea.votes,
+          lastProductBoardStatus: idea.status,
+          githubVotes: disc.thumbsUpCount,
+          closedReason: getClosedReason(disc),
+          closedAt: disc.closedAt ?? undefined,
+          source: 'productboard',
+        };
+      }
       continue;
     }
     if (state.trackedIdeas[idea.id]?.discussionNumber) continue;
