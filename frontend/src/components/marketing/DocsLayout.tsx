@@ -190,7 +190,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             </div>
 
             {/* Links */}
-            <div className="flex items-center gap-4 text-sm text-[var(--monarch-text-muted)]">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-[var(--monarch-text-muted)]">
               <button
                 type="button"
                 onClick={() => setShowIdeasModal(true)}
@@ -198,7 +198,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
               >
                 Roadmap
               </button>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <a
                 href="https://github.com/graysoncadams/eclosion-for-monarch"
                 target="_blank"
@@ -208,7 +208,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                 <GitHubIcon size={16} />
                 GitHub
               </a>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>
                 Built for{' '}
                 <a
@@ -220,7 +220,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   Monarch Money
                 </a>
               </span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <MarketingVersionIndicator />
             </div>
           </div>

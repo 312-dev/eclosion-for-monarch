@@ -19,7 +19,7 @@ import {
 } from '../components/marketing';
 import { GetStartedModal } from '../components/ui/GetStartedModal';
 import { FEATURES } from '../data/features';
-import { BirdIcon, CocoonIcon, RocketIcon } from '../components/icons';
+import { CocoonIcon, ButterflyIcon, CloudSunIcon } from '../components/icons';
 
 interface HowItWorksStepProps {
   readonly icon: React.ComponentType<{ size?: number; className?: string }>;
@@ -85,7 +85,6 @@ export function LandingPage() {
       {/* Hero Section */}
       <Hero
         onGetStarted={() => setShowGetStartedModal(true)}
-        onSeeItInAction={scrollToTransformation}
       />
 
       {/* Frustration Validation Section */}
@@ -152,7 +151,7 @@ export function LandingPage() {
             </HowItWorksStep>
 
             <HowItWorksStep
-              icon={BirdIcon}
+              icon={ButterflyIcon}
               iconBg="#8B5CF615"
               iconColor="text-violet-500"
               accentColor="#8B5CF6"
@@ -163,7 +162,7 @@ export function LandingPage() {
             </HowItWorksStep>
 
             <HowItWorksStep
-              icon={RocketIcon}
+              icon={CloudSunIcon}
               iconBg="#F59E0B15"
               iconColor="text-amber-500"
               accentColor="#F59E0B"

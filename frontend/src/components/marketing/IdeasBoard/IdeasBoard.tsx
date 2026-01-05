@@ -36,6 +36,8 @@ export function IdeasBoard() {
     devCycleStage,
     isUpvoting,
     voteAccumulationCount,
+    developers,
+    devProgress,
     prefersReducedMotion,
     pause,
     resume,
@@ -149,7 +151,7 @@ export function IdeasBoard() {
       >
         {/* Stacking phase: Show ideas dropping in one at a time */}
         {(animationPhase === 'stacking' || animationPhase === 'accumulating-votes') && (
-          <div className="relative h-[160px]">
+          <div className="relative h-[160px] px-2 -mx-2">
             {stackedIdeas.slice(0, visibleStackCount).map((idea, index) => (
               <IdeaBubble
                 key={idea.id}
@@ -166,13 +168,49 @@ export function IdeasBoard() {
           </div>
         )}
 
+        {/* Morphing phase: Smooth transition from voting card to dev card */}
+        {animationPhase === 'morphing-to-dev' && featuredIdea && (
+          <div className="relative h-[160px] px-2 -mx-2">
+            {/* Show bottom cards fading out */}
+            {stackedIdeas.slice(0, visibleStackCount - 1).map((idea, index) => (
+              <IdeaBubble
+                key={idea.id}
+                idea={idea}
+                isUpvoting={false}
+                reducedMotion={prefersReducedMotion}
+                isStacked
+                stackPosition={index}
+                isFeatured={false}
+                isTopCard={false}
+                isMorphingOut
+              />
+            ))}
+            {/* Top card morphs into dev card with pop animation */}
+            <IdeaBubble
+              key={featuredIdea.id}
+              idea={featuredIdea}
+              isUpvoting={false}
+              voteBonus={voteAccumulationCount}
+              reducedMotion={prefersReducedMotion}
+              isStacked
+              stackPosition={visibleStackCount - 1}
+              isFeatured={false}
+              isTopCard
+              isMorphingToDev
+            />
+          </div>
+        )}
+
         {/* Dev cycle: Show the featured idea going through the pipeline */}
-        {animationPhase === 'dev-cycle' && featuredIdea && (
-          <div className="transition-opacity duration-300">
+        {/* Also show during 'resetting' so the card fades out with the container */}
+        {(animationPhase === 'dev-cycle' || animationPhase === 'resetting') && featuredIdea && (
+          <div className="dev-card-enter">
             <DevCycleCard
               idea={featuredIdea}
               stage={devCycleStage}
               reducedMotion={prefersReducedMotion}
+              developers={developers}
+              devProgress={devProgress}
             />
           </div>
         )}

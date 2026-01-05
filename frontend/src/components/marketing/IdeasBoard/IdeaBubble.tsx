@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { ThumbsUp } from 'lucide-react';
 import type { PublicIdea } from '../../../types/ideas';
 import { getUsernameForIdea, getAvatarSeedForIdea } from './useIdeasAnimation';
+import { IdeatorAvatar } from '../../ui/IdeatorAvatar';
 
 interface IdeaBubbleProps {
   readonly idea: PublicIdea;
@@ -20,6 +21,8 @@ interface IdeaBubbleProps {
   readonly isStacked?: boolean;       // Whether this is part of a stack
   readonly isFeatured?: boolean;      // The featured idea (lands level)
   readonly isTopCard?: boolean;       // Whether this is the top card (shows shadow)
+  readonly isMorphingToDev?: boolean; // Morphing into dev cycle card with pop animation
+  readonly isMorphingOut?: boolean;   // Fading out during morph transition
 }
 
 /** Generate a simple avatar using DiceBear API */
@@ -39,16 +42,32 @@ function getStackRotation(position: number, ideaId: string): number {
   return positionAngle + hashOffset;
 }
 
-/** Get offset for stacked cards - visible stacking effect */
+/** Get offset for stacked cards - no y offset, cards stack directly */
 function getStackOffset(position: number, ideaId: string): { x: number; y: number } {
   const hash = ideaId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   // Horizontal scatter based on hash + position
-  const xBase = ((hash % 30) - 15);
-  const xPosition = position === 0 ? -8 : position === 1 ? 6 : 0;
+  const xBase = ((hash % 20) - 10);
+  const xPosition = position === 0 ? -6 : position === 1 ? 4 : 0;
   return {
     x: xBase + xPosition,
-    y: position * -8, // Stack upward with more spacing
+    y: 0, // No y offset - cards stack directly on top
   };
+}
+
+/** Get animation class for stacked cards - alternates left/right based on position */
+function getAnimationClass(
+  stackPosition: number,
+  isExiting: boolean,
+  reducedMotion: boolean,
+  isMorphingToDev: boolean,
+  isMorphingOut: boolean
+): string {
+  if (reducedMotion) return '';
+  if (isMorphingToDev) return 'idea-morph-to-dev';
+  if (isMorphingOut) return 'idea-morph-out';
+  if (isExiting) return 'idea-pop-out';
+  // Even positions enter from left, odd from right
+  return stackPosition % 2 === 0 ? 'idea-pop-in-left' : 'idea-pop-in-right';
 }
 
 export function IdeaBubble({
@@ -61,6 +80,8 @@ export function IdeaBubble({
   isStacked = false,
   isFeatured = false,
   isTopCard = false,
+  isMorphingToDev = false,
+  isMorphingOut = false,
 }: IdeaBubbleProps) {
   // _isUpvoting available for future use (continuous animation state)
   const [displayedVotes, setDisplayedVotes] = useState(idea.votes);
@@ -94,11 +115,7 @@ export function IdeaBubble({
   const rotation = isStacked && !isFeatured ? getStackRotation(stackPosition, idea.id) : 0;
   const offset = isStacked && !isFeatured ? getStackOffset(stackPosition, idea.id) : { x: 0, y: 0 };
 
-  const animationClass = reducedMotion
-    ? ''
-    : isExiting
-      ? 'idea-pop-out'
-      : 'idea-pop-in';
+  const animationClass = getAnimationClass(stackPosition, !!isExiting, !!reducedMotion, isMorphingToDev, isMorphingOut);
 
   const stackStyle = {
     transform: `rotate(${rotation}deg) translate(${offset.x}px, ${offset.y}px)`,
@@ -106,8 +123,8 @@ export function IdeaBubble({
     transition: isFeatured ? 'transform 0.4s ease-out' : undefined,
   };
 
-  // Only show shadow on top card or non-stacked cards
-  const shadowClass = isTopCard || !isStacked ? 'shadow-lg' : '';
+  // Top card gets a more prominent shadow to emphasize it landing on the stack
+  const shadowClass = isTopCard || !isStacked ? 'shadow-xl' : 'shadow-sm';
 
   return (
     <div
@@ -118,12 +135,7 @@ export function IdeaBubble({
     >
       {/* User info */}
       <div className="flex items-center gap-3 mb-3">
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-8 w-8 rounded-full bg-[var(--monarch-bg-page)]"
-          aria-hidden="true"
-        />
+        <IdeatorAvatar avatarUrl={avatarUrl} username={username} size="md" />
         <span className="text-sm font-medium text-[var(--monarch-text-dark)]">{username}</span>
       </div>
 

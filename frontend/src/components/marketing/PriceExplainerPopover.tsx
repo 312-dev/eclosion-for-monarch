@@ -18,21 +18,51 @@ interface PriceExplainerPopoverProps {
 interface PopoverPosition {
   top: number;
   left: number;
+  transform: string;
 }
 
 export function PriceExplainerPopover({ children }: Readonly<PriceExplainerPopoverProps>) {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0 });
+  const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0, transform: 'translateX(-50%)' });
   const popoverRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Calculate position when opening
+  // Calculate position when opening, keeping popover within viewport
   const updatePosition = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      const popoverWidth = 280; // Approximate width for mobile
+      const padding = 16; // Padding from viewport edges
+      const viewportWidth = window.innerWidth;
+
+      // Calculate center position
+      const centerX = rect.left + rect.width / 2;
+
+      // Check if centering would overflow on mobile
+      const wouldOverflowRight = centerX + popoverWidth / 2 > viewportWidth - padding;
+      const wouldOverflowLeft = centerX - popoverWidth / 2 < padding;
+
+      let left: number;
+      let transform: string;
+
+      if (wouldOverflowRight) {
+        // Align to right edge of viewport with padding
+        left = viewportWidth - padding;
+        transform = 'translateX(-100%)';
+      } else if (wouldOverflowLeft) {
+        // Align to left edge of viewport with padding
+        left = padding;
+        transform = 'translateX(0)';
+      } else {
+        // Center under trigger
+        left = centerX + window.scrollX;
+        transform = 'translateX(-50%)';
+      }
+
       setPosition({
         top: rect.bottom + window.scrollY + 8,
-        left: rect.left + rect.width / 2 + window.scrollX,
+        left,
+        transform,
       });
     }
   }, []);
@@ -109,7 +139,7 @@ export function PriceExplainerPopover({ children }: Readonly<PriceExplainerPopov
               position: 'absolute',
               top: position.top,
               left: position.left,
-              transform: 'translateX(-50%)',
+              transform: position.transform,
             }}
           >
           <h3>&ldquo;Wait, I thought this was free?&rdquo;</h3>

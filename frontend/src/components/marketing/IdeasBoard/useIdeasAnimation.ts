@@ -20,8 +20,16 @@ import type { PublicIdea, DevCycleStage } from '../../../types/ideas';
 export type AnimationPhase =
   | 'stacking'           // Drop in ideas one at a time
   | 'accumulating-votes' // Vote count ticks up on top idea
+  | 'morphing-to-dev'    // Smooth transition from voting card to dev card
   | 'dev-cycle'          // Ship the top idea
   | 'resetting';         // Fade out before next cycle
+
+/** Developer contributor info */
+export interface DeveloperContributor {
+  id: number;
+  seed: number;
+  username: string;
+}
 
 interface AnimationState {
   animationPhase: AnimationPhase;
@@ -31,6 +39,8 @@ interface AnimationState {
   voteAccumulationCount: number; // Current animated vote count
   targetVotes: number;           // Random odd number < 500
   cycleKey: number;              // Increments each cycle to trigger re-shuffle
+  developers: DeveloperContributor[]; // Developers contributing during in-progress
+  devProgress: number;           // Progress 0-100 controlled by developer contributions
 }
 
 interface UseIdeasAnimationReturn {
@@ -44,6 +54,10 @@ interface UseIdeasAnimationReturn {
   devCycleStage: DevCycleStage;
   isUpvoting: boolean;
   voteAccumulationCount: number;
+  /** Developers contributing during in-progress phase (up to 5) */
+  developers: DeveloperContributor[];
+  /** Progress 0-100, accelerates as more developers join */
+  devProgress: number;
   isPaused: boolean;
   prefersReducedMotion: boolean;
   pause: () => void;
@@ -63,14 +77,32 @@ const FAKE_USERNAMES = [
   'GoalGetter',
 ];
 
+const DEVELOPER_USERNAMES = [
+  'CodeCrafter',
+  'BugSquasher',
+  'FeatureSmith',
+  'DevDynamo',
+  'ShipItSam',
+  'ReactRocket',
+  'TypeScriptTitan',
+  'APIArchitect',
+  'FullStackFiona',
+  'CommitKing',
+];
+
 // Animation configuration
 const STACK_SIZE = 3;               // Always show 3 stacked ideas
 const DROP_IN_DELAY = 1500;         // Time between each idea dropping in (1.5s each)
+const VOTE_START_DELAY = 2500;      // Pause before votes start accumulating (2.5s)
 const VOTE_ANIMATION_DURATION = 3000; // Total time for vote count animation (ms)
 const VOTE_FRAME_INTERVAL = 16;     // ~60fps for smooth counting
 const RESET_FADE_DURATION = 600;    // Fade out duration before reset
 const SHIPPED_DISPLAY_DURATION = 10000; // How long to show shipped state before reset (10 seconds)
-const IN_PROGRESS_DURATION = 2500;  // How long the in-progress phase lasts
+const MORPH_DURATION = 600;         // Duration of morph animation from voting to dev card
+const MAX_DEVELOPERS = 5;           // Maximum developers that can contribute
+const DEV_APPEAR_INTERVAL_INITIAL = 1200; // Initial interval between developer appearances (slower start)
+const DEV_APPEAR_INTERVAL_MIN = 400;      // Minimum interval (faster as more devs join)
+const PROGRESS_UPDATE_INTERVAL = 50;      // How often to update progress (ms)
 
 /** Generate a random odd number between min and max (inclusive) */
 function getRandomOddNumber(min: number, max: number): number {
@@ -95,6 +127,22 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+/** Generate a random developer contributor */
+function generateRandomDeveloper(id: number, usedSeeds: Set<number>): DeveloperContributor {
+  let seed: number;
+  do {
+    seed = Math.floor(Math.random() * 10000);
+  } while (usedSeeds.has(seed));
+  usedSeeds.add(seed);
+
+  const usernameIndex = Math.floor(Math.random() * DEVELOPER_USERNAMES.length);
+  return {
+    id,
+    seed,
+    username: DEVELOPER_USERNAMES[usernameIndex] ?? 'Developer',
+  };
+}
+
 /** Get a deterministic username based on idea ID */
 export function getUsernameForIdea(ideaId: string): string {
   const hash = ideaId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -117,11 +165,16 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
     voteAccumulationCount: 0,
     targetVotes: 0,
     cycleKey: 0,
+    developers: [],
+    devProgress: 0,
   });
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const voteAnimationRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const voteStartTimeRef = useRef<number>(0);
+  const devAnimationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressAnimationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const usedSeedsRef = useRef<Set<number>>(new Set());
 
   const openIdeas = useMemo(
     () => ideas.filter((idea) => idea.status === 'open'),
@@ -159,6 +212,82 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
     }
   }, []);
 
+  // Cleanup for developer and progress animations
+  const clearDevAnimations = useCallback(() => {
+    if (devAnimationRef.current) {
+      clearTimeout(devAnimationRef.current);
+      devAnimationRef.current = null;
+    }
+    if (progressAnimationRef.current) {
+      clearInterval(progressAnimationRef.current);
+      progressAnimationRef.current = null;
+    }
+  }, []);
+
+  // Add a new developer and schedule the next one with accelerating interval
+  const scheduleNextDeveloper = useCallback((currentCount: number) => {
+    if (currentCount >= MAX_DEVELOPERS || isPaused || prefersReducedMotion) {
+      return;
+    }
+
+    // Calculate interval - gets faster as more developers join
+    const progressRatio = currentCount / MAX_DEVELOPERS;
+    const interval = DEV_APPEAR_INTERVAL_INITIAL -
+      (DEV_APPEAR_INTERVAL_INITIAL - DEV_APPEAR_INTERVAL_MIN) * progressRatio;
+
+    devAnimationRef.current = setTimeout(() => {
+      const newDev = generateRandomDeveloper(currentCount, usedSeedsRef.current);
+      setState((s) => ({
+        ...s,
+        developers: [...s.developers, newDev],
+      }));
+      scheduleNextDeveloper(currentCount + 1);
+    }, interval);
+  }, [isPaused, prefersReducedMotion]);
+
+  // Start the progress animation based on developer count
+  const startProgressAnimation = useCallback(() => {
+    if (progressAnimationRef.current || isPaused || prefersReducedMotion) return;
+
+    const startTime = Date.now();
+    // Base duration when 1 dev, faster when more devs
+    const getTargetDuration = (devCount: number) => {
+      // 1 dev = 12s, 5 devs = 6s (minimum)
+      const baseDuration = 12000;
+      const minDuration = 6000;
+      const speedMultiplier = Math.max(1, devCount);
+      return Math.max(minDuration, baseDuration / speedMultiplier);
+    };
+
+    progressAnimationRef.current = setInterval(() => {
+      setState((s) => {
+        const devCount = s.developers.length;
+        if (devCount === 0) return s;
+
+        const elapsed = Date.now() - startTime;
+        const targetDuration = getTargetDuration(devCount);
+
+        // Use ease-in curve for accelerating feel
+        const rawProgress = Math.min(elapsed / targetDuration, 1);
+        const easedProgress = easeInQuad(rawProgress);
+        const newProgress = Math.min(Math.floor(easedProgress * 100), 100);
+
+        if (newProgress >= 100) {
+          clearInterval(progressAnimationRef.current!);
+          progressAnimationRef.current = null;
+          // Transition to shipped
+          return {
+            ...s,
+            devProgress: 100,
+            devCycleStage: 'shipped',
+          };
+        }
+
+        return { ...s, devProgress: newProgress };
+      });
+    }, PROGRESS_UPDATE_INTERVAL);
+  }, [isPaused, prefersReducedMotion]);
+
   const scheduleNext = useCallback(
     (delay: number, callback: () => void) => {
       clearCurrentTimeout();
@@ -190,7 +319,7 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
       } else {
         // All 3 stacked, start vote accumulation on the top idea
         const newTargetVotes = getRandomOddNumber(100, 499);
-        scheduleNext(500, () => {
+        scheduleNext(VOTE_START_DELAY, () => {
           setState((s) => ({
             ...s,
             animationPhase: 'accumulating-votes',
@@ -222,30 +351,50 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
           if (progress >= 1) {
             clearInterval(voteAnimationRef.current!);
             voteAnimationRef.current = null;
-            // Transition to dev cycle
+            // Transition to morphing phase (smooth transition to dev card)
             timeoutRef.current = setTimeout(() => {
               setState((s) => ({
                 ...s,
-                animationPhase: 'dev-cycle',
-                devCycleStage: 'idea',
+                animationPhase: 'morphing-to-dev',
                 isUpvoting: false,
               }));
-            }, 600);
+            }, 400);
           }
         }, VOTE_FRAME_INTERVAL);
       }
     }
 
-    // Phase 3: Dev cycle (In Progress → Shipped) - skip 'idea' stage
+    // Phase 2.5: Morphing from voting card to dev card
+    if (animationPhase === 'morphing-to-dev') {
+      // After morph animation completes, start dev cycle with in-progress
+      scheduleNext(MORPH_DURATION, () => {
+        usedSeedsRef.current.clear(); // Reset used seeds for new developers
+        setState((s) => ({
+          ...s,
+          animationPhase: 'dev-cycle',
+          devCycleStage: 'in-progress',
+          developers: [],
+          devProgress: 0,
+        }));
+      });
+    }
+
+    // Phase 3: Dev cycle - developers join and progress accelerates
     if (animationPhase === 'dev-cycle') {
-      if (devCycleStage === 'idea') {
-        // Immediately transition to in-progress (skip idea stage)
-        setState((s) => ({ ...s, devCycleStage: 'in-progress' }));
-      } else if (devCycleStage === 'in-progress') {
-        scheduleNext(IN_PROGRESS_DURATION, () => {
-          setState((s) => ({ ...s, devCycleStage: 'shipped' }));
-        });
+      if (devCycleStage === 'in-progress') {
+        // Start adding developers if we haven't yet
+        if (state.developers.length === 0 && !devAnimationRef.current) {
+          // Add first developer immediately
+          const firstDev = generateRandomDeveloper(0, usedSeedsRef.current);
+          setState((s) => ({ ...s, developers: [firstDev] }));
+          // Schedule subsequent developers
+          scheduleNextDeveloper(1);
+          // Start progress animation
+          startProgressAnimation();
+        }
       } else if (devCycleStage === 'shipped') {
+        // Clean up dev animations
+        clearDevAnimations();
         // Celebrate longer (10 seconds), then start reset
         scheduleNext(SHIPPED_DISPLAY_DURATION, () => {
           setState((s) => ({ ...s, animationPhase: 'resetting' }));
@@ -255,8 +404,10 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
 
     // Phase 4: Reset - fade out and prepare new cycle
     if (animationPhase === 'resetting') {
-      clearVoteAnimation(); // Clean up any lingering vote animation
+      clearVoteAnimation();
+      clearDevAnimations();
       scheduleNext(RESET_FADE_DURATION, () => {
+        usedSeedsRef.current.clear();
         setState((s) => ({
           ...s,
           animationPhase: 'stacking',
@@ -264,6 +415,8 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
           devCycleStage: 'idea',
           voteAccumulationCount: 0,
           targetVotes: 0,
+          developers: [],
+          devProgress: 0,
           cycleKey: s.cycleKey + 1, // Trigger new shuffle
         }));
       });
@@ -273,7 +426,7 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
       clearCurrentTimeout();
       // Only clear vote animation on unmount, not on every re-render
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally exclude voteAccumulationCount to prevent killing the interval
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally exclude voteAccumulationCount and developers.length to prevent killing intervals
   }, [
     state.animationPhase,
     state.stackCount,
@@ -285,13 +438,17 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
     scheduleNext,
     clearCurrentTimeout,
     clearVoteAnimation,
+    clearDevAnimations,
+    scheduleNextDeveloper,
+    startProgressAnimation,
   ]);
 
   const pause = useCallback(() => {
     setIsPaused(true);
     clearCurrentTimeout();
     clearVoteAnimation();
-  }, [clearCurrentTimeout, clearVoteAnimation]);
+    clearDevAnimations();
+  }, [clearCurrentTimeout, clearVoteAnimation, clearDevAnimations]);
 
   const resume = useCallback(() => {
     setIsPaused(false);
@@ -305,6 +462,8 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
     devCycleStage: state.devCycleStage,
     isUpvoting: state.isUpvoting,
     voteAccumulationCount: state.voteAccumulationCount,
+    developers: state.developers,
+    devProgress: state.devProgress,
     isPaused,
     prefersReducedMotion,
     pause,

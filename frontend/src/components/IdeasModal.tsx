@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ThumbsUp, ExternalLink, Search, X, AtSign } from 'lucide-react';
+import { IdeatorAvatar } from './ui/IdeatorAvatar';
+import { getUsernameForIdea, getAvatarSeedForIdea } from './marketing/IdeasBoard/useIdeasAnimation';
 
 /** Public idea from the ideas.json export */
 interface PublicIdea {
@@ -207,11 +209,26 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
   );
 }
 
+/** Generate a simple avatar using DiceBear API */
+function getAvatarUrl(seed: number): string {
+  return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}&backgroundColor=f3f4f6`;
+}
+
 function IdeaCard({ idea }: { idea: PublicIdea }) {
+  const username = getUsernameForIdea(idea.id);
+  const avatarSeed = getAvatarSeedForIdea(idea.id);
+  const avatarUrl = getAvatarUrl(avatarSeed);
+
   return (
     <div
       className="p-4 rounded-lg border border-monarch-border bg-monarch-bg-page transition-colors hover:border-monarch-orange/30"
     >
+      {/* User info */}
+      <div className="flex items-center gap-2 mb-3">
+        <IdeatorAvatar avatarUrl={avatarUrl} username={username} size="sm" />
+        <span className="text-sm font-medium text-monarch-text-dark">{username}</span>
+      </div>
+
       <div className="flex items-start gap-3">
         {/* Vote count - links to discussion for voting */}
         <a

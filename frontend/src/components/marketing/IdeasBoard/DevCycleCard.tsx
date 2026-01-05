@@ -3,17 +3,23 @@
  *
  * Visualizes the development cycle: Idea → In Progress → Shipped
  * Shows animated transitions between stages with progress bar.
+ * During in-progress, shows developer avatars joining and accelerating progress.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Lightbulb, Code, Rocket, Check } from 'lucide-react';
 import type { PublicIdea, DevCycleStage } from '../../../types/ideas';
 import { getUsernameForIdea, getAvatarSeedForIdea } from './useIdeasAnimation';
+import type { DeveloperContributor } from './useIdeasAnimation';
 
 interface DevCycleCardProps {
   readonly idea: PublicIdea;
   readonly stage: DevCycleStage;
   readonly reducedMotion?: boolean;
+  /** Developers contributing during in-progress phase */
+  readonly developers?: DeveloperContributor[];
+  /** Progress 0-100, controlled by parent based on developer count */
+  readonly devProgress?: number;
 }
 
 /** Get a simple avatar using DiceBear API */
@@ -45,25 +51,9 @@ const STAGE_CONFIG = {
   },
 } as const;
 
-// Animation duration for progress bar (matches IN_PROGRESS_DURATION in useIdeasAnimation)
-const PROGRESS_ANIMATION_DURATION = 2500;
-
-/** Variable-speed easing: slow-fast-slow pattern */
-function variableSpeedEasing(t: number): number {
-  // Custom easing that slows down, speeds up, then slows down again
-  // Using a combination of sin waves for organic feel
-  const slowStart = Math.sin(t * Math.PI * 0.5) * 0.3;
-  const fastMiddle = t * 0.5;
-  const slowEnd = Math.sin(t * Math.PI * 0.5) * 0.2;
-  return Math.min(1, slowStart + fastMiddle + slowEnd);
-}
-
-export function DevCycleCard({ idea, stage, reducedMotion }: DevCycleCardProps) {
+export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devProgress = 0 }: DevCycleCardProps) {
   const [animatingStage, setAnimatingStage] = useState<DevCycleStage>(stage);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [animatedProgress, setAnimatedProgress] = useState(0);
-  const progressAnimationRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressStartTimeRef = useRef<number>(0);
 
   const username = getUsernameForIdea(idea.id);
   const avatarSeed = getAvatarSeedForIdea(idea.id);
@@ -72,45 +62,8 @@ export function DevCycleCard({ idea, stage, reducedMotion }: DevCycleCardProps) 
   const config = STAGE_CONFIG[animatingStage];
   const Icon = config.icon;
 
-  // Animate progress bar during in-progress stage
-  useEffect(() => {
-    if (animatingStage === 'in-progress' && !reducedMotion) {
-      progressStartTimeRef.current = Date.now();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync for animation reset
-      setAnimatedProgress(0);
-
-      progressAnimationRef.current = setInterval(() => {
-        const elapsed = Date.now() - progressStartTimeRef.current;
-        const linearProgress = Math.min(elapsed / PROGRESS_ANIMATION_DURATION, 1);
-        const easedProgress = variableSpeedEasing(linearProgress);
-
-        setAnimatedProgress(Math.floor(easedProgress * 100));
-
-        if (linearProgress >= 1) {
-          if (progressAnimationRef.current) {
-            clearInterval(progressAnimationRef.current);
-            progressAnimationRef.current = null;
-          }
-        }
-      }, 16); // ~60fps
-
-      return () => {
-        if (progressAnimationRef.current) {
-          clearInterval(progressAnimationRef.current);
-          progressAnimationRef.current = null;
-        }
-      };
-    } else if (animatingStage === 'shipped') {
-      setAnimatedProgress(100);
-    }
-  }, [animatingStage, reducedMotion]);
-
-  // Get display progress based on stage
-  const displayProgress = animatingStage === 'in-progress'
-    ? animatedProgress
-    : animatingStage === 'shipped'
-      ? 100
-      : 0;
+  // Get display progress - use devProgress for in-progress, 100 for shipped
+  const displayProgress = animatingStage === 'shipped' ? 100 : devProgress;
 
   // Handle stage transitions - intentional sync for animation state
   useEffect(() => {
@@ -185,14 +138,42 @@ export function DevCycleCard({ idea, stage, reducedMotion }: DevCycleCardProps) 
         {idea.title}
       </h3>
 
-      {/* Progress bar - animated during in-progress, static otherwise */}
+      {/* Developers row - shows during in-progress */}
+      {animatingStage === 'in-progress' && developers.length > 0 && (
+        <div className={`mb-3 ${contentAnimationClass}`}>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-[var(--monarch-text-muted)]">Developers</span>
+            <div className="flex -space-x-2">
+              {developers.map((dev, index) => (
+                <img
+                  key={dev.id}
+                  src={getAvatarUrl(dev.seed)}
+                  alt={dev.username}
+                  title={dev.username}
+                  className="h-6 w-6 rounded-full border-2 border-[var(--monarch-bg-card)] bg-[var(--monarch-bg-page)] dev-avatar-pop-in"
+                  style={{
+                    animationDelay: reducedMotion ? '0ms' : `${index * 50}ms`,
+                    zIndex: developers.length - index,
+                  }}
+                />
+              ))}
+            </div>
+            {developers.length > 0 && (
+              <span className="text-xs text-[var(--monarch-text-muted)] ml-1">
+                {developers.length === 1 ? '1 contributor' : `${developers.length} contributors`}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Progress bar - smooth transition based on devProgress */}
       <div className="h-2 rounded-full bg-[var(--monarch-bg-page)] overflow-hidden">
         <div
-          className="h-full rounded-full"
+          className="h-full rounded-full transition-all duration-100 ease-out"
           style={{
             backgroundColor: config.bgColor,
             width: `${displayProgress}%`,
-            transition: animatingStage === 'shipped' ? 'width 300ms ease-out' : 'none',
           }}
         />
       </div>

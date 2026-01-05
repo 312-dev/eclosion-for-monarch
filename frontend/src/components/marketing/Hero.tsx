@@ -13,10 +13,10 @@ import { IdeasBoard } from './IdeasBoard';
 
 interface HeroProps {
   readonly onGetStarted?: () => void;
-  readonly onSeeItInAction?: () => void;
+  readonly demoHref?: string;
 }
 
-export function Hero({ onGetStarted, onSeeItInAction }: HeroProps) {
+export function Hero({ onGetStarted, demoHref = '/demo' }: HeroProps) {
   return (
     <section className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-6 py-16 md:py-24 bg-[var(--monarch-bg-card)]">
       {/* Branding side */}
@@ -39,32 +39,33 @@ export function Hero({ onGetStarted, onSeeItInAction }: HeroProps) {
           Eclosion
         </h1>
 
-        {/* Evolution tagline */}
+        {/* Tagline */}
         <p className="text-xl sm:text-2xl text-[var(--monarch-orange)] font-medium mb-3">
-          Community-refined. Ready to fly.
+          Helping Monarch spread its wings
         </p>
 
-        {/* Subtitle - proven features positioning */}
+        {/* Subtitle - community positioning */}
         <p className="text-lg sm:text-xl text-[var(--monarch-text)] mb-8 max-w-xl mx-auto lg:mx-0">
-          New budgeting features that have proven themselves.
+          Built by budgeters, for budgeters.
         </p>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-          <button
-            type="button"
-            onClick={onSeeItInAction}
+          <a
+            href={demoHref}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[var(--monarch-orange)] text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg shadow-[var(--monarch-orange)]/20"
           >
-            See It In Action
+            Explore Demo
             <ChevronRightIcon size={20} color="white" />
-          </button>
+          </a>
           <button
             type="button"
             onClick={onGetStarted}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-[var(--monarch-orange)]/10 transition-colors"
           >
-            Get Started Free
+            Start Here
           </button>
         </div>
       </div>

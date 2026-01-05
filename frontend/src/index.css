@@ -2065,13 +2065,21 @@ input[type="radio"] {
 
 /* Price explainer popover */
 .price-explainer-popover {
-  max-width: 400px;
+  width: calc(100vw - 32px);
+  max-width: 320px;
   padding: 1.25rem;
   background: var(--monarch-bg-card);
   border: 1px solid var(--monarch-border);
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   z-index: var(--z-index-popover);
+}
+
+@media (min-width: 640px) {
+  .price-explainer-popover {
+    width: auto;
+    max-width: 400px;
+  }
 }
 
 .price-explainer-popover h3 {
@@ -2122,27 +2130,127 @@ input[type="radio"] {
    Ideas Board Animations
    ============================================================================ */
 
-/* Idea bubble pop-in animation */
-@keyframes ideaPopIn {
+/* Idea bubble pop-in from left */
+@keyframes ideaPopInLeft {
   0% {
     opacity: 0;
-    transform: translateY(-60px) rotate(-8deg);
+    transform: translateX(-120px) rotate(-12deg);
   }
   60% {
     opacity: 1;
-    transform: translateY(5px) rotate(2deg);
+    transform: translateX(8px) rotate(2deg);
   }
   80% {
-    transform: translateY(-3px) rotate(-1deg);
+    transform: translateX(-4px) rotate(-1deg);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) rotate(0deg);
+    transform: translateX(0) rotate(0deg);
   }
 }
 
-.idea-pop-in {
-  animation: ideaPopIn 0.5s var(--ease-out-smooth) forwards;
+/* Idea bubble pop-in from right */
+@keyframes ideaPopInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(120px) rotate(12deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-8px) rotate(-2deg);
+  }
+  80% {
+    transform: translateX(4px) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+.idea-pop-in-left {
+  animation: ideaPopInLeft 0.5s var(--ease-out-smooth) forwards;
+}
+
+.idea-pop-in-right {
+  animation: ideaPopInRight 0.5s var(--ease-out-smooth) forwards;
+}
+
+/* Idea card morph-to-dev animation - poppy scale + glow */
+@keyframes ideaMorphToDev {
+  0% {
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  30% {
+    transform: scale(1.08) rotate(0deg);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+  }
+  60% {
+    transform: scale(0.95) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.idea-morph-to-dev {
+  animation: ideaMorphToDev 0.6s var(--ease-out-smooth) forwards;
+  border-color: var(--monarch-info) !important;
+}
+
+/* Bottom cards fade out during morph */
+@keyframes ideaMorphOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+.idea-morph-out {
+  animation: ideaMorphOut 0.4s ease-out forwards;
+}
+
+/* Developer avatar pop-in animation */
+@keyframes devAvatarPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) translateY(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dev-avatar-pop-in {
+  animation: devAvatarPopIn 0.35s var(--ease-out-smooth) forwards;
+  animation-fill-mode: both;
+}
+
+/* Dev card entrance animation */
+@keyframes devCardEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dev-card-enter {
+  animation: devCardEnter 0.3s ease-out forwards;
 }
 
 /* Upvote bounce animation */
@@ -2277,8 +2385,13 @@ input[type="radio"] {
 
 /* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .idea-pop-in,
+  .idea-pop-in-left,
+  .idea-pop-in-right,
   .idea-pop-out,
+  .idea-morph-to-dev,
+  .idea-morph-out,
+  .dev-avatar-pop-in,
+  .dev-card-enter,
   .upvote-bounce,
   .vote-count-roll,
   .stage-slide-out,

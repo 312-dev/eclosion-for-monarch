@@ -116,9 +116,17 @@ jobs:
 
       - name: Merge builds
         run: |
+          # Save React app's key files that must not be overwritten
+          cp frontend/dist/index.html /tmp/react-index.html
+          cp frontend/dist/_redirects /tmp/react-redirects
+
           # Copy Docusaurus build contents into frontend/dist
           # Docusaurus already builds to /docs path, so we copy to root
           cp -r docusaurus/build/* frontend/dist/
+
+          # Restore React app's index.html and _redirects (they serve the SPA)
+          cp /tmp/react-index.html frontend/dist/index.html
+          cp /tmp/react-redirects frontend/dist/_redirects
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

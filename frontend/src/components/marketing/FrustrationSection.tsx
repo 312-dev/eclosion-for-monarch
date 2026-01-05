@@ -5,13 +5,14 @@
  * Validates user frustrations before showing the solution.
  */
 
+import { Calculator } from 'lucide-react';
 import { FrustrationCard } from './FrustrationCard';
-import { AlertCircleIcon, ChevronDownIcon, RepeatIcon, TrendDownIcon } from '../icons';
+import { ChevronDownIcon, SearchAlertIcon, WaypointsIcon } from '../icons';
 
 const FRUSTRATIONS = [
   {
     id: 'surprise-bill',
-    icon: AlertCircleIcon,
+    icon: SearchAlertIcon,
     iconColor: 'text-rose-500',
     iconBg: '#F4363615',
     title: 'The Surprise Bill',
@@ -20,7 +21,7 @@ const FRUSTRATIONS = [
   },
   {
     id: 'subscription-sprawl',
-    icon: RepeatIcon,
+    icon: WaypointsIcon,
     iconColor: 'text-violet-500',
     iconBg: '#8B5CF615',
     title: 'The Subscription Sprawl',
@@ -29,7 +30,7 @@ const FRUSTRATIONS = [
   },
   {
     id: 'math-problem',
-    icon: TrendDownIcon,
+    icon: Calculator,
     iconColor: 'text-amber-500',
     iconBg: '#F59E0B15',
     title: 'The Math Problem',
@@ -74,7 +75,7 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
         <button
           type="button"
           onClick={onShowSolution}
-          className="px-8 py-3 bg-white border border-[var(--monarch-border)] rounded-full text-lg font-medium text-[var(--monarch-text-dark)] shadow-sm flex items-center gap-2 hover:border-[var(--monarch-orange)] hover:shadow-md transition-all cursor-pointer"
+          className="px-8 py-3 bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] rounded-full text-lg font-medium text-[var(--monarch-text-dark)] shadow-sm flex items-center gap-2 hover:border-[var(--monarch-orange)] hover:shadow-md transition-all cursor-pointer"
         >
           There&apos;s a better way
           <ChevronDownIcon size={20} className="animate-bounce-down" />
