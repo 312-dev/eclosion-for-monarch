@@ -46,7 +46,8 @@ concurrency:
 
 jobs:
   # ============================================================================
-  # Detect which files changed - skip scans if no security-relevant files
+  # Detect which files changed - skip most scans if no security-relevant files
+  # Note: CodeQL always runs (required by Code Scanning ruleset)
   # ============================================================================
   changes:
     runs-on: ubuntu-latest
@@ -102,8 +103,7 @@ jobs:
   # ============================================================================
   codeql:
     name: CodeQL (${{ matrix.language }})
-    needs: changes
-    if: needs.changes.outputs.security_relevant == 'true'
+    # Always run CodeQL - required by Code Scanning ruleset even for data-only changes
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -384,16 +384,24 @@ jobs:
           echo "DAST: ${{ needs.dast.result }}"
           echo ""
 
-          # If no security-relevant files changed, all scans were skipped - that's OK
+          # CodeQL always runs (required by Code Scanning ruleset)
+          if [ "${{ needs.codeql.result }}" = "failure" ] || [ "${{ needs.codeql.result }}" = "cancelled" ]; then
+            echo "::error::CodeQL scan failed"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=CodeQL scan failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # If no security-relevant files changed, other scans were skipped - that's OK
           if [ "${{ needs.changes.outputs.security_relevant }}" != "true" ]; then
-            echo "✅ No security-relevant files changed - scans skipped"
+            echo "✅ CodeQL passed, other scans skipped (no security-relevant files)"
             echo "result=success" >> $GITHUB_OUTPUT
-            echo "description=No security-relevant files changed" >> $GITHUB_OUTPUT
+            echo "description=CodeQL passed, no code changes to scan" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # DAST is allowed to be skipped (fork PRs)
-          results="${{ needs.codeql.result }} ${{ needs.dependency-scan.result }} ${{ needs.container-scan.result }}"
+          # Check other scans (DAST is allowed to be skipped for fork PRs)
+          results="${{ needs.dependency-scan.result }} ${{ needs.container-scan.result }}"
           dast_result="${{ needs.dast.result }}"
 
           if echo "$results" | grep -qE '(failure|cancelled)'; then
