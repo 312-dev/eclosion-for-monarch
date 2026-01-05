@@ -3,10 +3,11 @@
  *
  * Displays recurring item information in a card layout optimized
  * for narrow viewports. Uses the same sub-components as RecurringRow.
+ * Memoized to prevent unnecessary re-renders when parent list updates.
  */
 
-import { useState, useRef, useEffect } from 'react';
-import type { RecurringItem, ItemStatus } from '../../types';
+import { memo, useState, useRef, useEffect } from 'react';
+import type { RecurringItem } from '../../types';
 import { formatDateRelative } from '../../utils';
 import { RecurringItemHeader } from './RecurringItemHeader';
 import { RecurringItemCost } from './RecurringItemCost';
@@ -14,6 +15,7 @@ import { RecurringItemBudget } from './RecurringItemBudget';
 import { RecurringItemStatus } from './RecurringItemStatus';
 import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
+import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
 
 interface RecurringCardProps {
   readonly item: RecurringItem;
@@ -29,7 +31,7 @@ interface RecurringCardProps {
   readonly highlightId?: string | null;
 }
 
-export function RecurringCard({
+export const RecurringCard = memo(function RecurringCard({
   item,
   onToggle,
   onAllocate,
@@ -42,16 +44,21 @@ export function RecurringCard({
   onLinkCategory,
   highlightId,
 }: RecurringCardProps) {
-  const [isToggling, setIsToggling] = useState(false);
-  const [isAllocating, setIsAllocating] = useState(false);
-  const [isRecreating, setIsRecreating] = useState(false);
-  const [isAddingToRollup, setIsAddingToRollup] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Async action hooks for loading states
+  const toggleAction = useAsyncAction();
+  const allocateAction = useAsyncAction();
+  const recreateAction = useAsyncAction();
+  const addToRollupAction = useAsyncAction();
+  const refreshAction = useAsyncAction();
+
   const cardRef = useRef<HTMLElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
 
+  // Handle highlight when this card becomes the highlighted one
+  // The synchronous setState is intentional - we need immediate visual feedback
   useEffect(() => {
     if (highlightId === item.id && cardRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: highlight animation requires immediate state update
       setIsHighlighted(true);
       const timer = setTimeout(() => setIsHighlighted(false), UI.HIGHLIGHT.SHORT);
       return () => clearTimeout(timer);
@@ -59,45 +66,14 @@ export function RecurringCard({
   }, [highlightId, item.id]);
 
   const progressPercent = Math.min(item.progress_percent, 100);
-
-  // Calculate display status
-  let displayStatus: ItemStatus = item.status;
-  const targetRounded = Math.ceil(item.frozen_monthly_target);
-  const budgetRounded = Math.ceil(item.planned_budget);
-  const balanceRounded = Math.round(item.current_balance);
-  const amountRounded = Math.round(item.amount);
-
-  if (item.is_enabled && item.frozen_monthly_target > 0) {
-    if (budgetRounded > targetRounded) {
-      displayStatus = 'ahead';
-    } else if (budgetRounded >= targetRounded) {
-      displayStatus = balanceRounded >= amountRounded ? 'funded' : 'on_track';
-    } else {
-      displayStatus = 'behind';
-    }
-  } else if (item.is_enabled && balanceRounded >= amountRounded) {
-    displayStatus = 'funded';
-  }
-
+  const displayStatus = useItemDisplayStatus(item);
   const { date, relative } = formatDateRelative(item.next_due_date);
 
-  const handleToggle = async () => {
-    setIsToggling(true);
-    try {
-      await onToggle(item.id, !item.is_enabled);
-    } finally {
-      setIsToggling(false);
-    }
-  };
+  const handleToggle = () =>
+    toggleAction.execute(() => onToggle(item.id, !item.is_enabled));
 
-  const handleRecreate = async () => {
-    setIsRecreating(true);
-    try {
-      await onRecreate(item.id);
-    } finally {
-      setIsRecreating(false);
-    }
-  };
+  const handleRecreate = () =>
+    recreateAction.execute(() => onRecreate(item.id));
 
   const handleChangeGroup = async (groupId: string, groupName: string) => {
     await onChangeGroup(item.id, groupId, groupName);
@@ -107,41 +83,24 @@ export function RecurringCard({
     await onEmojiChange(item.id, emoji);
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await onRefreshItem(item.id);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  const handleRefresh = () =>
+    refreshAction.execute(() => onRefreshItem(item.id));
 
   const handleNameChange = async (name: string) => {
     await onNameChange(item.id, name);
   };
 
-  const handleAddToRollup = async () => {
+  const handleAddToRollup = () => {
     if (!onAddToRollup) return;
-    setIsAddingToRollup(true);
-    try {
-      await onAddToRollup(item.id);
-    } finally {
-      setIsAddingToRollup(false);
-    }
+    return addToRollupAction.execute(() => onAddToRollup(item.id));
   };
 
-  const handleAllocate = async (amount: number) => {
-    setIsAllocating(true);
-    try {
-      await onAllocate(item.id, amount);
-    } finally {
-      setIsAllocating(false);
-    }
-  };
+  const handleAllocate = (amount: number) =>
+    allocateAction.execute(() => onAllocate(item.id, amount));
 
-  const handleAllocateNeeded = async () => {
+  const handleAllocateNeeded = () => {
     if (item.amount_needed_now <= 0) return;
-    await handleAllocate(item.amount_needed_now);
+    return handleAllocate(item.amount_needed_now);
   };
 
   const contentOpacity = item.is_enabled ? '' : 'opacity-50';
@@ -165,7 +124,7 @@ export function RecurringCard({
             onEmojiChange={handleEmojiChange}
             onNameChange={handleNameChange}
             onChangeGroup={handleChangeGroup}
-            isToggling={isToggling}
+            isToggling={toggleAction.loading}
             contentOpacity={contentOpacity}
           />
         </div>
@@ -177,10 +136,10 @@ export function RecurringCard({
             onRecreate={handleRecreate}
             onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
             onRefresh={handleRefresh}
-            isToggling={isToggling}
-            isRecreating={isRecreating}
-            isAddingToRollup={isAddingToRollup}
-            isRefreshing={isRefreshing}
+            isToggling={toggleAction.loading}
+            isRecreating={recreateAction.loading}
+            isAddingToRollup={addToRollupAction.loading}
+            isRefreshing={refreshAction.loading}
           />
         )}
       </div>
@@ -197,7 +156,7 @@ export function RecurringCard({
           item={item}
           displayStatus={displayStatus}
           onAllocate={handleAllocateNeeded}
-          isAllocating={isAllocating}
+          isAllocating={allocateAction.loading}
         />
       </div>
 
@@ -215,10 +174,10 @@ export function RecurringCard({
           <RecurringItemBudget
             item={item}
             onAllocate={handleAllocate}
-            isAllocating={isAllocating}
+            isAllocating={allocateAction.loading}
           />
         </div>
       </div>
     </article>
   );
-}
+});

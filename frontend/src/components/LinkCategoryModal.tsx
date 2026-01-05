@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { UnmappedCategory, RecurringItem } from '../types';
 import { getUnmappedCategories, linkToCategory } from '../api/client';
 import { useToast } from '../context/ToastContext';
@@ -93,36 +93,40 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
     }
   };
 
-  // Group categories by group_id while preserving budget order
-  const groupedCategories = categories.reduce((acc, cat) => {
-    const groupId = cat.group_id || 'uncategorized';
-    if (!acc[groupId]) {
-      acc[groupId] = {
-        groupId,
-        groupName: cat.group_name || 'Uncategorized',
-        groupOrder: cat.group_order,
-        categories: [],
-      };
-    }
-    acc[groupId].categories.push(cat);
-    return acc;
-  }, {} as Record<string, { groupId: string; groupName: string; groupOrder: number; categories: UnmappedCategory[] }>);
+  // Group and filter categories with memoization to prevent recalculation on every render
+  const filteredGroups = useMemo(() => {
+    // Group categories by group_id while preserving budget order
+    const grouped = categories.reduce((acc, cat) => {
+      const groupId = cat.group_id || 'uncategorized';
+      if (!acc[groupId]) {
+        acc[groupId] = {
+          groupId,
+          groupName: cat.group_name || 'Uncategorized',
+          groupOrder: cat.group_order,
+          categories: [],
+        };
+      }
+      acc[groupId].categories.push(cat);
+      return acc;
+    }, {} as Record<string, { groupId: string; groupName: string; groupOrder: number; categories: UnmappedCategory[] }>);
 
-  // Convert to array and sort by group_order (budget sheet order)
-  const sortedGroups = Object.values(groupedCategories)
-    .sort((a, b) => a.groupOrder - b.groupOrder);
+    // Convert to array and sort by group_order (budget sheet order)
+    const sorted = Object.values(grouped)
+      .sort((a, b) => a.groupOrder - b.groupOrder);
 
-  // Filter by search query (keep reserved categories but they'll be shown as disabled)
-  const filteredGroups = sortedGroups
-    .map(group => ({
-      ...group,
-      categories: group.categories
-        .filter(cat =>
-          cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          group.groupName.toLowerCase().includes(searchQuery.toLowerCase())
-        ),
-    }))
-    .filter(group => group.categories.length > 0);
+    // Filter by search query (keep reserved categories but they'll be shown as disabled)
+    const searchLower = searchQuery.toLowerCase();
+    return sorted
+      .map(group => ({
+        ...group,
+        categories: group.categories
+          .filter(cat =>
+            cat.name.toLowerCase().includes(searchLower) ||
+            group.groupName.toLowerCase().includes(searchLower)
+          ),
+      }))
+      .filter(group => group.categories.length > 0);
+  }, [categories, searchQuery]);
 
   const selectedCategoryInfo = categories.find(c => c.id === selectedCategory);
 

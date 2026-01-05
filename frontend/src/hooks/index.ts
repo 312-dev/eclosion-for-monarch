@@ -44,3 +44,12 @@ export { useDebounce } from './useDebounce';
 export { useMediaQuery, breakpoints } from './useMediaQuery';
 
 export { usePrevious } from './usePrevious';
+
+export { useAsyncAction, type UseAsyncActionReturn } from './useAsyncAction';
+
+export {
+  useItemDisplayStatus,
+  calculateItemDisplayStatus,
+} from './useItemDisplayStatus';
+
+export { useApiClient } from './useApiClient';

@@ -1,6 +1,5 @@
 # Eclosion for Monarch - Your budgeting, evolved.
 # A toolkit for Monarch Money that automates recurring expense tracking.
-import html
 import json
 import os
 import re
@@ -196,33 +195,6 @@ def _sanitize_api_result(result: dict, generic_error: str = "Operation failed.")
             sanitized[f"{key}_count"] = len(result[key])
 
     return sanitized
-
-
-def _sanitize_response_xss(data: dict | list | str | None) -> dict | list | str | None:
-    """
-    Sanitize response data to prevent reflected XSS.
-
-    Recursively applies html.escape() to all string values in the response.
-    This ensures user-controlled data cannot be used for XSS attacks even if
-    the JSON response is somehow rendered as HTML.
-
-    CodeQL recognizes html.escape() as a proper XSS sanitization barrier.
-    """
-    if data is None:
-        return None
-    if isinstance(data, bool):
-        # Must check bool before int since bool is subclass of int
-        return data
-    if isinstance(data, int | float):
-        return data
-    if isinstance(data, str):
-        return html.escape(data)
-    if isinstance(data, list):
-        return [_sanitize_response_xss(item) for item in data]
-    if isinstance(data, dict):
-        return {key: _sanitize_response_xss(value) for key, value in data.items()}
-    # For any other type, convert to string and escape
-    return html.escape(str(data))
 
 
 def _audit_log(event: str, success: bool, details: str = ""):
@@ -791,7 +763,7 @@ async def set_config():
         raise ValidationError("Missing 'group_id' or 'group_name' in request body.")
 
     result = await sync_service.configure(group_id, group_name)
-    return _sanitize_response_xss(result)
+    return result
 
 
 @app.route("/recurring/groups", methods=["GET"])
@@ -817,7 +789,7 @@ async def toggle_item():
         raise ValidationError("Missing 'recurring_id'")
 
     result = await sync_service.toggle_item(recurring_id, enabled, item_data, initial_budget)
-    return _sanitize_response_xss(result)
+    return result
 
 
 @app.route("/recurring/settings", methods=["GET"])
@@ -1071,7 +1043,7 @@ async def change_category_group():
         raise ValidationError("Missing 'recurring_id' or 'group_id'")
 
     result = await sync_service.change_category_group(recurring_id, new_group_id, new_group_name)
-    return _sanitize_response_xss(result)
+    return result
 
 
 # ---- CATEGORY LINKING ENDPOINTS ----
@@ -1099,7 +1071,7 @@ async def link_category():
         raise ValidationError("Missing 'recurring_id' or 'category_id'")
 
     result = await sync_service.link_to_category(recurring_id, category_id, sync_name)
-    return _sanitize_response_xss(result)
+    return result
 
 
 @app.route("/recurring/clear-category-cache", methods=["POST"])
@@ -1200,7 +1172,7 @@ async def update_category_emoji():
         raise ValidationError("Missing 'recurring_id'")
 
     result = await sync_service.update_category_emoji(recurring_id, emoji)
-    return _sanitize_response_xss(result)
+    return result
 
 
 @app.route("/recurring/rollup/emoji", methods=["POST"])
@@ -1235,7 +1207,7 @@ async def update_category_name():
         raise ValidationError("Missing 'recurring_id' or 'name'")
 
     result = await sync_service.update_category_name(recurring_id, name)
-    return _sanitize_response_xss(result)
+    return result
 
 
 # ---- UNINSTALL ENDPOINTS ----

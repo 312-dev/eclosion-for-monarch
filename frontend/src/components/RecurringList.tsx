@@ -7,12 +7,10 @@
 
 import { useState, useCallback, useMemo, Fragment } from 'react';
 import type { RecurringItem } from '../types';
-import * as api from '../api/client';
-import * as demoApi from '../api/demoClient';
 import { LinkCategoryModal } from './LinkCategoryModal';
 import { Tooltip } from './ui/Tooltip';
 import { useToast } from '../context/ToastContext';
-import { useDemo } from '../context/DemoContext';
+import { useApiClient } from '../hooks';
 import { formatCurrency, formatFrequency, formatErrorMessage, FREQUENCY_ORDER } from '../utils';
 import { Filter, Inbox, Eye, EyeOff } from 'lucide-react';
 import { RecurringRow, RecurringListHeader, RecurringCard } from './recurring';
@@ -31,8 +29,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [hideDisabled, setHideDisabled] = useState(false);
   const toast = useToast();
-  const isDemo = useDemo();
-  const client = isDemo ? demoApi : api;
+  const client = useApiClient();
 
   const enabledCount = items.filter(item => item.is_enabled).length;
   const disabledCount = items.length - enabledCount;

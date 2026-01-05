@@ -58,7 +58,7 @@ export function Hero({ onGetStarted }: HeroProps) {
           <button
             type="button"
             onClick={onGetStarted}
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-[var(--monarch-orange)] hover:bg-opacity-10 transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-(--monarch-orange)/10 transition-colors"
           >
             Get Started
           </button>
