@@ -98,9 +98,9 @@ export const RecurringCard = memo(function RecurringCard({
   const handleAllocate = (amount: number) =>
     allocateAction.execute(() => onAllocate(item.id, amount));
 
-  const handleAllocateNeeded = () => {
+  const handleAllocateNeeded = async (): Promise<void> => {
     if (item.amount_needed_now <= 0) return;
-    return handleAllocate(item.amount_needed_now);
+    await handleAllocate(item.amount_needed_now);
   };
 
   const contentOpacity = item.is_enabled ? '' : 'opacity-50';
