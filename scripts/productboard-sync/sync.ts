@@ -583,6 +583,25 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
     }
   }
 
+  // Final cleanup: remove any github-XX entries that have a ProductBoard entry for the same discussion
+  // This catches orphans from ideas that were filtered out by AI or dropped below vote threshold
+  console.log('\nCleaning up orphaned github-XX entries...');
+  const pbDiscussionNumbers = new Set<number>();
+  for (const [key, tracked] of Object.entries(state.trackedIdeas)) {
+    if (!key.startsWith('github-') && tracked.discussionNumber) {
+      pbDiscussionNumbers.add(tracked.discussionNumber);
+    }
+  }
+  for (const key of Object.keys(state.trackedIdeas)) {
+    if (key.startsWith('github-')) {
+      const discNumber = Number.parseInt(key.replace('github-', ''), 10);
+      if (pbDiscussionNumbers.has(discNumber)) {
+        console.log(`  Removing orphaned ${key} (ProductBoard entry exists for discussion #${discNumber})`);
+        delete state.trackedIdeas[key];
+      }
+    }
+  }
+
   // Update state
   state.lastSync = new Date().toISOString();
   saveState(state);
