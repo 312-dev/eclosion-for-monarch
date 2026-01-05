@@ -7,6 +7,12 @@ Brief description of changes and motivation.
 - Change 1
 - Change 2
 
+---
+
+> **Note:** Copilot will automatically review this PR against project standards defined in [copilot-instructions.md](.github/copilot-instructions.md). Address any flagged issues before requesting human review.
+
+---
+
 ## Type of Change
 
 - [ ] Bug fix (non-breaking change that fixes an issue)

@@ -9,6 +9,7 @@ Thank you for your interest in contributing to Eclosion! This guide will help yo
 - [Branching Strategy](#branching-strategy)
 - [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
+  - [GitHub Actions Workflow Standards](#github-actions-workflow-standards)
 - [Release Process](#release-process)
 - [Code Style](#code-style)
 - [Testing](#testing)
@@ -237,6 +238,153 @@ The following secrets are required for CI/CD workflows:
 
 > **Note**: PRs created using `GITHUB_TOKEN` don't trigger other workflows (GitHub's recursive workflow prevention). Workflows that create PRs with auto-merge use `CI_TRIGGER_PAT` to ensure CI runs.
 
+### GitHub Actions Workflow Standards
+
+When contributing workflow changes, follow these patterns:
+
+#### Token Usage
+
+| Token | Use For | NOT For |
+|-------|---------|---------|
+| `GITHUB_TOKEN` | Most operations, posting commit statuses | Creating releases that need to trigger other workflows |
+| `CI_TRIGGER_PAT` | Creating releases/PRs that must trigger downstream workflows | Regular operations |
+
+`GITHUB_TOKEN` pushes and PR creations won't trigger `on: push` or `on: pull_request` events in other workflows (GitHub's infinite loop prevention). However, `gh workflow run` with `GITHUB_TOKEN` **does** work for triggering `workflow_dispatch`.
+
+#### workflow_dispatch + Commit Status Pattern
+
+When workflows are triggered via `workflow_dispatch` (not `pull_request`), their check runs don't automatically appear on PRs. To fix this, pass the commit SHA and post a status:
+
+```yaml
+# Caller workflow
+- name: Trigger CI
+  run: |
+    HEAD_SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/$BRANCH --jq '.object.sha')
+    gh workflow run ci.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
+
+# Target workflow (ci.yml)
+on:
+  workflow_dispatch:
+    inputs:
+      head_sha:
+        description: 'Commit SHA to post status to'
+        required: false
+        type: string
+
+jobs:
+  ci:
+    steps:
+      - name: Run checks
+        id: check
+        run: |
+          # ... run checks ...
+          echo "result=success" >> $GITHUB_OUTPUT
+
+      - name: Post commit status
+        if: github.event_name == 'workflow_dispatch' && inputs.head_sha && always()
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ inputs.head_sha }} \
+            -f state="${{ steps.check.outputs.result }}" \
+            -f context="CI Status"
+```
+
+#### Required Job Settings
+
+All jobs must include:
+
+```yaml
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # Required - prevents hanging jobs
+```
+
+Recommended timeouts by job type:
+
+| Job Type | Timeout |
+|----------|---------|
+| Simple checks (branch validation, status posting) | 5 min |
+| Build/test jobs | 10-15 min |
+| Security scans, DAST | 15-20 min |
+| Docker multi-arch builds | 30 min |
+
+#### Error Logging
+
+Never log full API responses (may contain tokens):
+
+```yaml
+# BAD - exposes secrets
+echo "API Response: $RESPONSE"
+
+# GOOD - log only error info
+ERROR=$(echo "$RESPONSE" | jq -r '.error.message // "Unknown error"')
+echo "API Error: $ERROR"
+```
+
+#### Action Versions
+
+Pin actions to specific versions, not branches:
+
+```yaml
+# BAD
+uses: some-org/some-action@master
+
+# GOOD
+uses: some-org/some-action@v1.2.3
+```
+
+#### Centralized Trigger Pattern
+
+When multiple jobs in a workflow may push commits, use a dedicated trigger job at the end:
+
+```yaml
+# BAD - Each job triggers CI, causing duplicates
+generate-summary:
+  steps:
+    - run: git push
+    - run: gh workflow run ci.yml  # First trigger
+
+generate-docs:
+  needs: generate-summary
+  steps:
+    - run: git push
+    - run: gh workflow run ci.yml  # Duplicate trigger!
+
+# GOOD - Single trigger after all commits
+generate-summary:
+  steps:
+    - run: git push
+    # No trigger here
+
+generate-docs:
+  needs: generate-summary
+  steps:
+    - run: git push
+    # No trigger here
+
+trigger-checks:
+  needs: [generate-summary, generate-docs]
+  if: always()
+  steps:
+    - run: |
+        HEAD_SHA=$(gh api .../git/ref/heads/$BRANCH --jq '.object.sha')
+        gh workflow run ci.yml -f head_sha="$HEAD_SHA"  # Single trigger with final SHA
+```
+
+#### Keeping Reusable Workflows Generic
+
+Workflows called via `workflow_call` should remain generic and reusable:
+
+```yaml
+# BAD - Release-specific logic in a reusable workflow
+# generate-docs.yml
+- run: gh workflow run require-develop.yml  # This is release.yml's concern
+
+# GOOD - Keep it generic, let the caller handle orchestration
+# generate-docs.yml just generates docs
+# release.yml handles the trigger orchestration
+```
+
 ## Release Process
 
 ### Versioning
@@ -344,6 +492,33 @@ When `develop` is merged to `main`:
    - GitHub release is created
    - Production deployment triggers
    - Docker image is published
+
+### Release PR Pipeline
+
+When release-please creates a PR, several automated jobs run sequentially to enhance the PR:
+
+```
+release-please creates PR (GITHUB_TOKEN)
+       │
+       ▼
+generate-summary ─── Adds AI changelog summary (may push)
+       │
+       ▼
+generate-docs ─── Updates user documentation (may push)
+       │
+       ▼
+trigger-checks ─── Dispatches CI/Security/require-develop ONCE
+       │              with final HEAD SHA
+       ▼
+auto-merge ─── Sets up auto-merge (if no docs review needed)
+```
+
+**Key design principles:**
+
+1. **Single trigger point** — CI/Security are triggered exactly once by `trigger-checks` after all commits are done
+2. **Final SHA** — The trigger uses the HEAD SHA after all jobs have potentially pushed commits
+3. **No loops** — All pushes use `GITHUB_TOKEN` which doesn't trigger `on:push` events
+4. **Reusable workflows** — `generate-docs.yml` stays generic with no release-specific logic
 
 ## Code Style
 

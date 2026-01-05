@@ -94,7 +94,7 @@ export function formatFrequencyShort(freq: string): string {
 export interface RelativeDateResult {
   /** Formatted date string (e.g., "Jan 15" or "Jan 15 '25") */
   date: string;
-  /** Relative time string (e.g., "in 5 days", "Tomorrow") */
+  /** Relative time string in shorthand (e.g., "in 5d", "Tomorrow", "3d ago") */
   relative: string;
 }
 
@@ -125,14 +125,27 @@ export function formatDateRelative(dateStr: string): RelativeDateResult {
     relative = 'Today';
   } else if (diffDays === 1) {
     relative = 'Tomorrow';
+  } else if (diffDays === -1) {
+    relative = '1d ago';
   } else if (diffDays < 0) {
-    relative = `${Math.abs(diffDays)} days ago`;
+    const absDays = Math.abs(diffDays);
+    if (absDays < 30) {
+      relative = `${absDays}d ago`;
+    } else if (absDays < 365) {
+      const months = Math.round(absDays / 30);
+      relative = `${months}mo ago`;
+    } else {
+      const years = Math.round(absDays / 365);
+      relative = `${years}y ago`;
+    }
   } else if (diffDays <= 30) {
-    relative = `in ${diffDays} days`;
-  } else {
-    // Calculate months for longer durations
+    relative = `in ${diffDays}d`;
+  } else if (diffDays <= 365) {
     const months = Math.round(diffDays / 30);
-    relative = months === 1 ? 'in 1 month' : `in ${months} months`;
+    relative = `in ${months}mo`;
+  } else {
+    const years = Math.round(diffDays / 365);
+    relative = `in ${years}y`;
   }
 
   return { date: formatted, relative };

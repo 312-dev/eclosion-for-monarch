@@ -20,6 +20,7 @@ jobs:
   check-source:
     name: Require develop branch
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Get head commit for workflow_dispatch
         if: github.event_name == 'workflow_dispatch'
@@ -27,7 +28,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/${{ inputs.pr_branch }} --jq '.object.sha')
+          SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/${{ inputs.pr_branch }} --jq '.object.sha' 2>/dev/null || echo "")
+          if [ -z "$SHA" ]; then
+            echo "::error::Failed to get SHA for branch ${{ inputs.pr_branch }}"
+            exit 1
+          fi
           echo "sha=$SHA" >> $GITHUB_OUTPUT
           echo "Head commit: $SHA"
 
@@ -72,7 +77,7 @@ jobs:
 
       # For workflow_dispatch, post status to the PR's head commit
       - name: Post commit status
-        if: github.event_name == 'workflow_dispatch' && always()
+        if: github.event_name == 'workflow_dispatch' && steps.get-sha.outputs.sha && always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

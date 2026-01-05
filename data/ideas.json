@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-01-04T22:49:59.667Z",
+  "votesThreshold": 500,
+  "totalIdeas": 1,
+  "openCount": 1,
+  "closedCount": 0,
+  "ideas": [
+    {
+      "id": "cf1f8240-67ae-4b18-a966-0d669813f07a",
+      "title": "customize columns in main transactions view",
+      "description": "to show additional info like account or notes etc\n",
+      "votes": 0,
+      "category": "Transactions",
+      "productboardUrl": "https://portal.productboard.com/3qsdvcsy5aq69hhkycf4dtpi/c/125-customize-columns-in-main-transactions-view",
+      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/44",
+      "discussionNumber": 44,
+      "status": "open",
+      "closedReason": null,
+      "closedAt": null
+    }
+  ]
+}

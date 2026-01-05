@@ -11,6 +11,7 @@ jobs:
   check-branch-name:
     name: Check branch name
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Validate branch name
         run: |

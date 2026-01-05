@@ -10,7 +10,7 @@ Please be respectful and constructive in all interactions. Contributors of all e
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.11+
 - Node.js 20+
 - Docker (optional, for containerized development)
 
@@ -60,22 +60,32 @@ Copy `.env.example` to `.env` and configure:
 
 ### Branch Naming
 
-Use descriptive branch names:
-- `feature/add-dark-mode` - New features
-- `fix/login-validation` - Bug fixes
-- `docs/update-readme` - Documentation
-- `refactor/api-cleanup` - Code refactoring
+Branch names **must** use one of these prefixes (enforced by CI):
+
+| Prefix | Use for | Example |
+|--------|---------|---------|
+| `feature/` | New features, enhancements | `feature/add-dark-mode` |
+| `update/` | Fixes, refactors, docs, chores | `update/fix-login-bug` |
+
+PRs with other branch name prefixes will be blocked.
 
 ### Commit Messages
 
-Write clear, concise commit messages:
-- Use present tense ("Add feature" not "Added feature")
-- Use imperative mood ("Fix bug" not "Fixes bug")
-- Reference issues when applicable ("Fix #123")
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning and changelog generation.
+
+| Type | Description | Version Bump |
+|------|-------------|--------------|
+| `feat:` | New feature | Minor (1.1.0 → 1.2.0) |
+| `fix:` | Bug fix | Patch (1.1.0 → 1.1.1) |
+| `docs:` | Documentation only | None |
+| `refactor:` | Code refactoring | None |
+| `chore:` | Maintenance tasks | None |
+
+Breaking changes (`feat!:` or `BREAKING CHANGE:` footer) trigger a major bump.
 
 Example:
 ```
-Add category emoji customization
+feat: add category emoji customization
 
 - Add emoji picker component to category settings
 - Store emoji preference in state manager
@@ -83,6 +93,8 @@ Add category emoji customization
 
 Closes #45
 ```
+
+See [CONTRIBUTING.md](https://github.com/GraysonCAdams/eclosion-for-monarch/blob/main/CONTRIBUTING.md) for full commit guidelines.
 
 ## Pull Request Process
 
@@ -109,10 +121,14 @@ This repository uses Git Flow. All changes go through the `develop` branch befor
 
 ### PR Requirements
 
-- All CI checks must pass
-- Changes must be reviewed by a maintainer
-- Update documentation if applicable
-- Add tests for new functionality (when test infrastructure exists)
+| Target Branch | CI Checks | Security Scans | Code Review |
+|---------------|-----------|----------------|-------------|
+| `develop` | Run | Run (visible) | None required |
+| `main` | Must pass | Must pass | 1 approval |
+
+> **Note**: PRs directly to `main` will be blocked. Always target `develop` first.
+
+For full CI/CD documentation including workflow standards, see [CONTRIBUTING.md](https://github.com/GraysonCAdams/eclosion-for-monarch/blob/main/CONTRIBUTING.md#github-actions-workflow-standards).
 
 ## Code Style
 

@@ -1,15 +1,17 @@
 /**
- * WizardNavigation - Navigation component for wizard flows
+ * WizardNavigation - Navigation buttons for wizard steps
  */
 
-interface WizardNavigationProps {
+export interface WizardNavigationProps {
   readonly onBack: () => void;
   readonly onNext: () => void;
-  readonly onSkip: () => void;
+  readonly onSkip?: (() => void) | undefined;
   readonly canGoBack: boolean;
   readonly canProceed: boolean;
   readonly isLastStep: boolean;
   readonly isSaving: boolean;
+  readonly nextLabel?: string | undefined;
+  readonly showSkip?: boolean | undefined;
 }
 
 export function WizardNavigation({
@@ -20,20 +22,17 @@ export function WizardNavigation({
   canProceed,
   isLastStep,
   isSaving,
+  nextLabel,
+  showSkip = true,
 }: WizardNavigationProps) {
+  const getButtonLabel = () => {
+    if (isSaving) return 'Setting up...';
+    if (nextLabel) return nextLabel;
+    return isLastStep ? 'Get Started' : 'Continue';
+  };
+
   return (
     <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--monarch-border)' }}>
-      <div className="flex justify-center mb-4">
-        <button
-          onClick={onSkip}
-          disabled={isSaving}
-          className="text-sm px-4 py-1 rounded transition-colors hover:underline disabled:opacity-50"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
-          Skip setup
-        </button>
-      </div>
-
       <div className="flex gap-3">
         {canGoBack && (
           <button
@@ -57,9 +56,22 @@ export function WizardNavigation({
             backgroundColor: !canProceed || isSaving ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
           }}
         >
-          {isSaving ? 'Setting up...' : isLastStep ? 'Get Started' : 'Continue'}
+          {getButtonLabel()}
         </button>
       </div>
+
+      {showSkip && onSkip && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={onSkip}
+            disabled={isSaving}
+            className="text-sm px-4 py-1 rounded transition-colors hover:underline disabled:opacity-50"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            Skip setup
+          </button>
+        </div>
+      )}
     </div>
   );
 }
