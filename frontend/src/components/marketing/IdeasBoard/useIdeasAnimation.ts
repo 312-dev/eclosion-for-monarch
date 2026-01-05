@@ -93,6 +93,8 @@ const DEVELOPER_USERNAMES = [
 // Animation configuration
 const STACK_SIZE = 3;               // Always show 3 stacked ideas
 const DROP_IN_DELAY = 1500;         // Time between each idea dropping in (1.5s each)
+const DROP_IN_DELAY_INITIAL = 3500; // Extra time for first two ideas (1.5s + 2s)
+const POST_RESET_DELAY = 100;       // Minimal delay after reset to restart animation immediately
 const VOTE_START_DELAY = 2500;      // Pause before votes start accumulating (2.5s)
 const VOTE_ANIMATION_DURATION = 3000; // Total time for vote count animation (ms)
 const VOTE_FRAME_INTERVAL = 16;     // ~60fps for smooth counting
@@ -143,15 +145,35 @@ function generateRandomDeveloper(id: number, usedSeeds: Set<number>): DeveloperC
   };
 }
 
-/** Get a deterministic username based on idea ID */
-export function getUsernameForIdea(ideaId: string): string {
-  const hash = ideaId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+/** Generate a deterministic hash from a string */
+function hashString(str: string): number {
+  return str.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+}
+
+/** Get username for an idea - uses real author if available, falls back to synthetic */
+export function getUsernameForIdea(idea: PublicIdea): string {
+  if (idea.author?.username) {
+    return idea.author.username;
+  }
+  const hash = hashString(idea.id);
   return FAKE_USERNAMES[hash % FAKE_USERNAMES.length] ?? 'BudgetFan';
 }
 
-/** Get a deterministic avatar seed for generating consistent avatars */
-export function getAvatarSeedForIdea(ideaId: string): number {
-  return ideaId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+/** Get avatar URL for an idea - uses real author if available, falls back to DiceBear */
+export function getAvatarUrlForIdea(idea: PublicIdea): string {
+  if (idea.author?.avatarUrl) {
+    return idea.author.avatarUrl;
+  }
+  const seed = hashString(idea.id);
+  return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}&backgroundColor=f3f4f6`;
+}
+
+/**
+ * @deprecated Use getAvatarUrlForIdea instead
+ * Get a deterministic avatar seed for generating consistent avatars
+ */
+export function getAvatarSeedForIdea(idea: PublicIdea): number {
+  return hashString(idea.id);
 }
 
 export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn {
@@ -310,7 +332,15 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
     if (animationPhase === 'stacking') {
       if (stackCount < STACK_SIZE) {
         // Drop in the next idea
-        scheduleNext(DROP_IN_DELAY, () => {
+        // After reset (cycleKey > 0), start immediately; otherwise use initial delay for first two
+        const isPostReset = state.cycleKey > 0;
+        let delay = DROP_IN_DELAY;
+        if (isPostReset && stackCount === 0) {
+          delay = POST_RESET_DELAY;
+        } else if (stackCount < 2) {
+          delay = DROP_IN_DELAY_INITIAL;
+        }
+        scheduleNext(delay, () => {
           setState((s) => ({
             ...s,
             stackCount: s.stackCount + 1,

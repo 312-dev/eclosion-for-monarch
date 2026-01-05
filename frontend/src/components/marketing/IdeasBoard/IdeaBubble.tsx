@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import { ThumbsUp } from 'lucide-react';
 import type { PublicIdea } from '../../../types/ideas';
-import { getUsernameForIdea, getAvatarSeedForIdea } from './useIdeasAnimation';
+import { getUsernameForIdea, getAvatarUrlForIdea } from './useIdeasAnimation';
 import { IdeatorAvatar } from '../../ui/IdeatorAvatar';
 
 interface IdeaBubbleProps {
@@ -23,11 +23,6 @@ interface IdeaBubbleProps {
   readonly isTopCard?: boolean;       // Whether this is the top card (shows shadow)
   readonly isMorphingToDev?: boolean; // Morphing into dev cycle card with pop animation
   readonly isMorphingOut?: boolean;   // Fading out during morph transition
-}
-
-/** Generate a simple avatar using DiceBear API */
-function getAvatarUrl(seed: number): string {
-  return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}&backgroundColor=f3f4f6`;
 }
 
 /** Get rotation angle for stacked cards - dramatic angles for visual impact */
@@ -88,9 +83,8 @@ export function IdeaBubble({
   const [showVoteAnimation, setShowVoteAnimation] = useState(false);
   const [lastVoteBonus, setLastVoteBonus] = useState(voteBonus);
 
-  const username = getUsernameForIdea(idea.id);
-  const avatarSeed = getAvatarSeedForIdea(idea.id);
-  const avatarUrl = getAvatarUrl(avatarSeed);
+  const username = getUsernameForIdea(idea);
+  const avatarUrl = getAvatarUrlForIdea(idea);
 
   // Handle vote accumulation animation
   useEffect(() => {

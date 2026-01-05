@@ -9,8 +9,9 @@
 import { useState, useEffect } from 'react';
 import { Lightbulb, Code, Rocket, Check } from 'lucide-react';
 import type { PublicIdea, DevCycleStage } from '../../../types/ideas';
-import { getUsernameForIdea, getAvatarSeedForIdea } from './useIdeasAnimation';
+import { getUsernameForIdea, getAvatarUrlForIdea } from './useIdeasAnimation';
 import type { DeveloperContributor } from './useIdeasAnimation';
+import { IdeatorAvatar } from '../../ui/IdeatorAvatar';
 
 interface DevCycleCardProps {
   readonly idea: PublicIdea;
@@ -22,8 +23,8 @@ interface DevCycleCardProps {
   readonly devProgress?: number;
 }
 
-/** Get a simple avatar using DiceBear API */
-function getAvatarUrl(seed: number): string {
+/** Get a simple avatar using DiceBear API (for developer contributors) */
+function getDeveloperAvatarUrl(seed: number): string {
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}&backgroundColor=f3f4f6`;
 }
 
@@ -55,9 +56,8 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
   const [animatingStage, setAnimatingStage] = useState<DevCycleStage>(stage);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const username = getUsernameForIdea(idea.id);
-  const avatarSeed = getAvatarSeedForIdea(idea.id);
-  const avatarUrl = getAvatarUrl(avatarSeed);
+  const username = getUsernameForIdea(idea);
+  const avatarUrl = getAvatarUrlForIdea(idea);
 
   const config = STAGE_CONFIG[animatingStage];
   const Icon = config.icon;
@@ -122,12 +122,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
 
       {/* User info */}
       <div className={`flex items-center gap-3 mt-3 mb-3 ${contentAnimationClass}`}>
-        <img
-          src={avatarUrl}
-          alt=""
-          className="h-8 w-8 rounded-full bg-[var(--monarch-bg-page)]"
-          aria-hidden="true"
-        />
+        <IdeatorAvatar avatarUrl={avatarUrl} username={username} size="md" />
         <span className="text-sm font-medium text-[var(--monarch-text-dark)]">{username}</span>
       </div>
 
@@ -147,7 +142,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
               {developers.map((dev, index) => (
                 <img
                   key={dev.id}
-                  src={getAvatarUrl(dev.seed)}
+                  src={getDeveloperAvatarUrl(dev.seed)}
                   alt={dev.username}
                   title={dev.username}
                   className="h-6 w-6 rounded-full border-2 border-[var(--monarch-bg-card)] bg-[var(--monarch-bg-page)] dev-avatar-pop-in"

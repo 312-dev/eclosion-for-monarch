@@ -405,7 +405,7 @@ export function ButterflyIcon({
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 115"
+      viewBox="5 12 90 90"
       fill={color}
       className={className}
       {...rest}

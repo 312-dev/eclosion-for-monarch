@@ -62,7 +62,7 @@ export function WhyEclosionSection() {
         </div>
 
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 auto-rows-[140px]">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 md:auto-rows-[140px]">
           {/* Real Integration - Large hero card */}
           <BentoCard
             className="md:col-span-4 md:row-span-2"
@@ -90,7 +90,7 @@ export function WhyEclosionSection() {
                     and keep your budget in sync — all automatically.
                   </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-[var(--monarch-text-muted)]">
+                <div className="flex items-center gap-2 text-sm text-[var(--monarch-text-muted)] mt-4">
                   <span className="px-2 py-1 rounded-full bg-[var(--monarch-bg-page)]">
                     Two-way sync
                   </span>
@@ -133,7 +133,7 @@ export function WhyEclosionSection() {
               href="https://github.com/monarchmoney/eclosion"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
+              className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80 mt-4"
               style={{ color: '#a78bfa' }}
             >
               <GitHubIcon size={18} />

@@ -1,32 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ThumbsUp, ExternalLink, Search, X, AtSign } from 'lucide-react';
 import { IdeatorAvatar } from './ui/IdeatorAvatar';
-import { getUsernameForIdea, getAvatarSeedForIdea } from './marketing/IdeasBoard/useIdeasAnimation';
-
-/** Public idea from the ideas.json export */
-interface PublicIdea {
-  id: string;
-  title: string;
-  description: string;
-  votes: number;
-  category: string;
-  productboardUrl: string | null;
-  discussionUrl: string | null;
-  discussionNumber: number | null;
-  status: 'open' | 'closed';
-  closedReason: 'monarch-committed' | 'eclosion-shipped' | null;
-  closedAt: string | null;
-  source: 'productboard' | 'github';
-}
-
-interface IdeasData {
-  generatedAt: string;
-  votesThreshold: number;
-  totalIdeas: number;
-  openCount: number;
-  closedCount: number;
-  ideas: PublicIdea[];
-}
+import { getUsernameForIdea, getAvatarUrlForIdea } from './marketing/IdeasBoard/useIdeasAnimation';
+import type { PublicIdea, IdeasData } from '../types/ideas';
 
 interface IdeasModalProps {
   isOpen: boolean;
@@ -209,15 +185,9 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
   );
 }
 
-/** Generate a simple avatar using DiceBear API */
-function getAvatarUrl(seed: number): string {
-  return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}&backgroundColor=f3f4f6`;
-}
-
 function IdeaCard({ idea }: { idea: PublicIdea }) {
-  const username = getUsernameForIdea(idea.id);
-  const avatarSeed = getAvatarSeedForIdea(idea.id);
-  const avatarUrl = getAvatarUrl(avatarSeed);
+  const username = getUsernameForIdea(idea);
+  const avatarUrl = getAvatarUrlForIdea(idea);
 
   return (
     <div

@@ -106,6 +106,12 @@ async function getCategoryId(): Promise<string> {
 /** Label used to mark ideas shipped by Eclosion */
 const ECLOSION_SHIPPED_LABEL = 'eclosion-shipped';
 
+/** Author info from GitHub Discussion */
+export interface DiscussionAuthor {
+  username: string;
+  avatarUrl: string;
+}
+
 /** Structure returned from getExistingDiscussions */
 export interface ExistingDiscussion {
   id: string;
@@ -116,6 +122,7 @@ export interface ExistingDiscussion {
   closedAt: string | null;
   thumbsUpCount: number;
   labels: string[];
+  author: DiscussionAuthor | null;
 }
 
 /**
@@ -137,6 +144,10 @@ async function getExistingDiscussions(): Promise<ExistingDiscussion[]> {
             closedAt
             category {
               name
+            }
+            author {
+              login
+              avatarUrl
             }
             reactions(content: THUMBS_UP) {
               totalCount
@@ -165,6 +176,7 @@ async function getExistingDiscussions(): Promise<ExistingDiscussion[]> {
             closed: boolean;
             closedAt: string | null;
             category: { name: string };
+            author: { login: string; avatarUrl: string } | null;
             reactions: { totalCount: number };
             labels: { nodes: Array<{ name: string }> };
           }>;
@@ -186,6 +198,7 @@ async function getExistingDiscussions(): Promise<ExistingDiscussion[]> {
       closedAt: d.closedAt,
       thumbsUpCount: d.reactions.totalCount,
       labels: d.labels.nodes.map((l) => l.name),
+      author: d.author ? { username: d.author.login, avatarUrl: d.author.avatarUrl } : null,
     }));
 }
 
@@ -429,7 +442,11 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
           closedReason: getClosedReason(disc),
           closedAt: disc.closedAt ?? undefined,
           source: 'productboard',
+          author: disc.author ?? undefined,
         };
+      } else if (disc.author && !state.trackedIdeas[idea.id].author) {
+        // Backfill author info if missing
+        state.trackedIdeas[idea.id].author = disc.author;
       }
       // Clean up orphaned github-XX entry if it exists for this discussion
       const githubKey = `github-${disc.number}`;
@@ -455,6 +472,7 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
         closedReason: getClosedReason(matchingDisc),
         closedAt: matchingDisc.closedAt ?? undefined,
         source: 'productboard',
+        author: matchingDisc.author ?? undefined,
       };
       // Add to the map so we don't create a duplicate
       existingByPbId.set(idea.id, matchingDisc);
@@ -499,6 +517,7 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
       title: disc.title,
       description: extractDescription(disc.body),
       category: 'Community',
+      author: disc.author ?? undefined,
     };
   }
 

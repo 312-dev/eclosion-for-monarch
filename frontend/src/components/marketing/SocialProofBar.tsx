@@ -5,17 +5,51 @@
  * Shows GitHub stars, self-hosted badge, and privacy message.
  */
 
+import { useEffect, useRef, useState } from 'react';
 import { GitHubIcon, ShieldCheckIcon, ServerIcon } from '../icons';
 
 export function SocialProofBar() {
+  const [count, setCount] = useState(1);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const statRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (hasAnimated) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !hasAnimated) {
+          setHasAnimated(true);
+          let current = 1;
+          const interval = setInterval(() => {
+            current += 3;
+            if (current >= 100) {
+              setCount(100);
+              clearInterval(interval);
+            } else {
+              setCount(current);
+            }
+          }, 15);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (statRef.current) {
+      observer.observe(statRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasAnimated]);
+
   return (
     <section className="px-4 sm:px-6 py-8 bg-[var(--monarch-bg-page)] border-y border-[var(--monarch-border)]">
       <div className="max-w-4xl mx-auto">
         <div className="social-proof-bar">
           {/* Open source */}
-          <div className="social-proof-stat">
+          <div className="social-proof-stat" ref={statRef}>
             <GitHubIcon size={18} />
-            <span>100% open source</span>
+            <span>{count}% open source</span>
           </div>
 
           {/* Self-hosted */}

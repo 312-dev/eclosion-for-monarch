@@ -51,22 +51,22 @@ export function Hero({ onGetStarted, demoHref = '/demo' }: HeroProps) {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+          <button
+            type="button"
+            onClick={onGetStarted}
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[var(--monarch-orange)] text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg shadow-[var(--monarch-orange)]/20"
+          >
+            Start Here
+            <ChevronRightIcon size={20} color="white" />
+          </button>
           <a
             href={demoHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[var(--monarch-orange)] text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg shadow-[var(--monarch-orange)]/20"
-          >
-            Explore Demo
-            <ChevronRightIcon size={20} color="white" />
-          </a>
-          <button
-            type="button"
-            onClick={onGetStarted}
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-[var(--monarch-orange)]/10 transition-colors"
           >
-            Start Here
-          </button>
+            Explore Demo
+          </a>
         </div>
       </div>
 

@@ -47,6 +47,12 @@ export type ClosedReason = 'monarch-committed' | 'eclosion-shipped';
 /** Where the idea originated from */
 export type IdeaSource = 'productboard' | 'github';
 
+/** Author info from GitHub Discussion */
+export interface IdeaAuthor {
+  username: string;
+  avatarUrl: string;
+}
+
 export interface TrackedIdea {
   /** GitHub Discussion node ID */
   discussionId: string;
@@ -72,6 +78,8 @@ export interface TrackedIdea {
   description?: string;
   /** Category (for GitHub-only ideas) */
   category?: string;
+  /** Author info from GitHub Discussion */
+  author?: IdeaAuthor;
 }
 
 /**

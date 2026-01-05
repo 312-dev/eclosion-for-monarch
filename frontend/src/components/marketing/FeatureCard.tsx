@@ -8,6 +8,7 @@
 import { Link } from 'react-router-dom';
 import { Icons, ChevronRightIcon, UsersIcon } from '../icons';
 import { ContributorAvatar } from '../ui/ContributorAvatar';
+import { IdeatorAvatar } from '../ui/IdeatorAvatar';
 import { Tooltip } from '../ui/Tooltip';
 import { useContributors } from '../../hooks/useContributors';
 import type { FeatureDefinition } from '../../data/features';
@@ -68,11 +69,10 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
                 aria-label={`Ideated by ${contributorData.ideator.username}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img
-                  src={contributorData.ideator.avatarUrl}
-                  alt={`@${contributorData.ideator.username}`}
-                  className="w-7 h-7 rounded-full border border-[var(--monarch-border)]"
-                  loading="lazy"
+                <IdeatorAvatar
+                  avatarUrl={contributorData.ideator.avatarUrl}
+                  username={contributorData.ideator.username}
+                  size="md"
                 />
               </a>
             </Tooltip>

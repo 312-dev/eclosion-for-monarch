@@ -5,6 +5,12 @@
  * Used by IdeasModal, IdeasBoard, and the ideas API.
  */
 
+/** Author info from GitHub Discussion */
+export interface IdeaAuthor {
+  username: string;
+  avatarUrl: string;
+}
+
 /** Public idea from the ideas.json export */
 export interface PublicIdea {
   id: string;
@@ -19,6 +25,7 @@ export interface PublicIdea {
   closedReason: 'monarch-committed' | 'eclosion-shipped' | null;
   closedAt: string | null;
   source: 'productboard' | 'github';
+  author: IdeaAuthor | null;
 }
 
 /** Full ideas data response from the API */

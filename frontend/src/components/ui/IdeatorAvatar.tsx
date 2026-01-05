@@ -22,15 +22,15 @@ export interface IdeatorAvatarProps {
 const SIZE_CLASSES = {
   sm: {
     avatar: 'h-6 w-6',
-    badge: 'h-3 w-3',
-    icon: 'h-2 w-2',
-    badgePosition: '-bottom-0.5 -right-0.5',
+    badge: 'h-2.5 w-2.5',
+    icon: 'h-1.5 w-1.5',
+    badgePosition: '-bottom-0 -right-0',
   },
   md: {
     avatar: 'h-8 w-8',
-    badge: 'h-4 w-4',
-    icon: 'h-2.5 w-2.5',
-    badgePosition: '-bottom-0.5 -right-0.5',
+    badge: 'h-3 w-3',
+    icon: 'h-2 w-2',
+    badgePosition: '-bottom-0 -right-0',
   },
 };
 

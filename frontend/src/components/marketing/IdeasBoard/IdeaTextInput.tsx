@@ -118,6 +118,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
   const handleFocus = () => {
     setIsFocused(true);
     clearTypewriter();
+    setDisplayedPlaceholder('');
     onFocus?.();
   };
 

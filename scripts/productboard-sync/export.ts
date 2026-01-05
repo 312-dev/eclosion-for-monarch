@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ProductBoardIdea, TrackedIdea, SyncState, ClosedReason, IdeaSource } from './types.js';
+import type { ProductBoardIdea, TrackedIdea, SyncState, ClosedReason, IdeaSource, IdeaAuthor } from './types.js';
 import { CONFIG } from './types.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +33,7 @@ export interface PublicIdea {
   closedReason: ClosedReason | null;
   closedAt: string | null;
   source: IdeaSource; // 'productboard' or 'github'
+  author: IdeaAuthor | null; // GitHub Discussion author (null if unknown)
 }
 
 interface ExportedData {
@@ -102,6 +103,7 @@ function toPublicIdeasFromProductBoard(
         closedReason: tracked.closedReason ?? null,
         closedAt: tracked.closedAt ?? null,
         source: 'productboard' as const,
+        author: tracked.author ?? null,
       };
     });
 }
@@ -128,6 +130,7 @@ function toPublicIdeasFromGitHub(
       closedReason: tracked.closedReason ?? null,
       closedAt: tracked.closedAt ?? null,
       source: 'github' as const,
+      author: tracked.author ?? null,
     }));
 }
 
