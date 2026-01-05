@@ -1,0 +1,22 @@
+# Trivy Security Scanner Configuration
+# https://aquasecurity.github.io/trivy/latest/docs/references/configuration/config-file/
+
+severity:
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+
+# Only report vulnerabilities with fixes available
+ignore-unfixed: true
+
+# Scan settings
+scan:
+  # Skip scanning dev dependencies in package-lock.json
+  skip-dirs:
+    - node_modules
+    - .git
+
+# Vulnerability settings
+vulnerability:
+  # Ignore vulnerabilities older than this (optional, commented out)
+  # ignore-published-before: 2020-01-01

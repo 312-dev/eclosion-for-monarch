@@ -31,6 +31,7 @@ on:
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -96,17 +97,6 @@ jobs:
           fi
           git push
           echo "pushed=true" >> $GITHUB_OUTPUT
-
-      # Trigger CI/Security workflows since GITHUB_TOKEN pushes don't trigger them
-      - name: Trigger required workflows
-        if: steps.commit.outputs.pushed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          BRANCH="${{ inputs.branch }}"
-          gh workflow run ci.yml --ref "$BRANCH"
-          gh workflow run security.yml --ref "$BRANCH"
-          echo "Triggered CI and Security workflows on $BRANCH"
 
       - name: No changes summary
         if: steps.diff.outputs.has_changes != 'true' && !inputs.force

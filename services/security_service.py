@@ -10,11 +10,13 @@ Manages security event logging and retrieval:
 
 import csv
 import io
+import ipaddress
 import json
 import logging
 import sqlite3
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -388,12 +390,33 @@ class SecurityService:
         except Exception as e:
             logger.error("Failed to clear security events: %s", e)
 
+    def _sanitize_csv_value(self, value: str | None) -> str:
+        """
+        Sanitize a value for CSV export to prevent XSS and CSV injection.
+
+        - Escapes HTML entities to prevent XSS if CSV is viewed as HTML
+        - Removes control characters that could cause issues
+        - Prefixes with single quote if value starts with formula characters
+        """
+        import html
+
+        if value is None:
+            return ""
+        # Convert to string and escape HTML entities
+        safe_value = html.escape(str(value))
+        # Remove control characters (CR, LF, Tab can cause issues in some CSV readers)
+        safe_value = safe_value.replace("\r", " ").replace("\n", " ").replace("\t", " ")
+        # Prevent CSV formula injection (values starting with =, +, -, @, |, %)
+        if safe_value and safe_value[0] in "=+-@|%":
+            safe_value = "'" + safe_value
+        return safe_value
+
     def export_events_csv(self) -> str:
         """
         Export all security events as CSV.
 
         Returns:
-            CSV string of all events
+            CSV string of all events with sanitized values
         """
         try:
             events = self.get_events(limit=10000, offset=0)
@@ -414,18 +437,18 @@ class SecurityService:
                 ]
             )
 
-            # Data rows
+            # Data rows with sanitized values
             for event in events:
                 writer.writerow(
                     [
                         event.id,
-                        event.event_type,
+                        self._sanitize_csv_value(event.event_type),
                         "Yes" if event.success else "No",
-                        event.timestamp,
-                        event.ip_address or "",
-                        event.country or "",
-                        event.city or "",
-                        event.details or "",
+                        self._sanitize_csv_value(event.timestamp),
+                        self._sanitize_csv_value(event.ip_address),
+                        self._sanitize_csv_value(event.country),
+                        self._sanitize_csv_value(event.city),
+                        self._sanitize_csv_value(event.details),
                     ]
                 )
 
@@ -445,10 +468,16 @@ class SecurityService:
         Returns:
             Tuple of (country, city) or (None, None) on failure
         """
-        # Skip private/local IPs
-        if not ip_address or ip_address in ("127.0.0.1", "localhost", "::1"):
+        # Validate IP address format to prevent SSRF
+        if not ip_address:
             return None, None
-        if ip_address.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.")):
+        try:
+            parsed_ip = ipaddress.ip_address(ip_address)
+        except ValueError:
+            return None, None
+
+        # Skip private/local/reserved IPs
+        if parsed_ip.is_private or parsed_ip.is_loopback or parsed_ip.is_reserved:
             return None, None
 
         # Check cache first
@@ -458,7 +487,9 @@ class SecurityService:
 
         # Fetch from ip-api.com (free tier: 45 requests/minute)
         try:
-            url = f"http://ip-api.com/json/{ip_address}?fields=status,country,city"
+            # Use quote() to URL-encode the IP for SSRF prevention (CodeQL recognizes this)
+            safe_ip = urllib.parse.quote(str(parsed_ip), safe="")
+            url = f"http://ip-api.com/json/{safe_ip}?fields=status,country,city"
             req = urllib.request.Request(url, headers={"User-Agent": "Eclosion/1.0"})
             with urllib.request.urlopen(req, timeout=5) as response:
                 data = json.loads(response.read().decode())
@@ -468,7 +499,9 @@ class SecurityService:
                     self._cache_geolocation(ip_address, country, city)
                     return country, city
         except Exception as e:
-            logger.warning("Geolocation lookup failed for %s: %s", ip_address, e)
+            # Sanitize error message to prevent log injection using replace() chains
+            sanitized_error = str(e).replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+            logger.warning("Geolocation lookup failed for %s: %s", parsed_ip, sanitized_error)
 
         return None, None
 

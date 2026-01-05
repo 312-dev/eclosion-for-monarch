@@ -137,7 +137,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
             <Tooltip content={
               <>
                 <div className="font-medium">Excludes Untracked</div>
-                <div className="text-zinc-400 text-xs mt-1">{formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} in categories not linked to recurring items</div>
+                <div className="text-monarch-text-muted text-xs mt-1">{formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} in categories not linked to recurring items</div>
               </>
             }>
               <span className="cursor-help text-monarch-warning">

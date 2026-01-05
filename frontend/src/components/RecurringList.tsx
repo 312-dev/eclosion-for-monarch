@@ -7,17 +7,17 @@
 
 import { useState, useCallback, useMemo, Fragment } from 'react';
 import type { RecurringItem } from '../types';
-import * as api from '../api/client';
-import * as demoApi from '../api/demoClient';
 import { LinkCategoryModal } from './LinkCategoryModal';
-import { Tooltip } from './ui/Tooltip';
-import { useToast } from '../context/ToastContext';
-import { useDemo } from '../context/DemoContext';
-import { formatCurrency, formatFrequency, formatErrorMessage, FREQUENCY_ORDER } from '../utils';
-import { Filter, Inbox, Eye, EyeOff } from 'lucide-react';
-import { RecurringRow, RecurringListHeader } from './recurring';
+import { formatFrequency, FREQUENCY_ORDER } from '../utils';
+import { Filter, Inbox } from 'lucide-react';
+import {
+  RecurringRow,
+  RecurringListHeader,
+  RecurringCard,
+  RecurringListSectionHeader,
+} from './recurring';
 import type { SortField, SortDirection } from './recurring';
-import { UI } from '../constants';
+import { useRecurringItemActions } from '../hooks';
 
 interface RecurringListProps {
   readonly items: RecurringItem[];
@@ -27,106 +27,27 @@ interface RecurringListProps {
 export function RecurringList({ items, onRefresh }: RecurringListProps) {
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [linkModalItem, setLinkModalItem] = useState<RecurringItem | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [hideDisabled, setHideDisabled] = useState(false);
-  const toast = useToast();
-  const isDemo = useDemo();
-  const client = isDemo ? demoApi : api;
+
+  const {
+    highlightId,
+    linkModalItem,
+    handleToggleItem,
+    handleAllocateItem,
+    handleRecreateItem,
+    handleChangeGroupItem,
+    handleAddToRollupItem,
+    handleEmojiChangeItem,
+    handleRefreshItem,
+    handleNameChangeItem,
+    handleLinkCategory,
+    handleLinkSuccess,
+    closeLinkModal,
+  } = useRecurringItemActions(onRefresh);
 
   const enabledCount = items.filter(item => item.is_enabled).length;
   const disabledCount = items.length - enabledCount;
   const filteredItems = hideDisabled ? items.filter(item => item.is_enabled) : items;
-
-  const handleToggleItem = useCallback(async (id: string, enabled: boolean) => {
-    try {
-      await client.toggleItemTracking(id, enabled);
-      setHighlightId(id);
-      onRefresh();
-      toast.success(enabled ? 'Tracking enabled' : 'Tracking disabled');
-      setTimeout(() => setHighlightId(null), UI.HIGHLIGHT.ROW);
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to toggle tracking'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleAllocateItem = useCallback(async (id: string, amount: number) => {
-    try {
-      await client.allocateFunds(id, amount);
-      onRefresh();
-      toast.success(amount > 0 ? `${formatCurrency(amount, { maximumFractionDigits: 0 })} allocated` : `${formatCurrency(Math.abs(amount), { maximumFractionDigits: 0 })} removed`);
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to allocate funds'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleRecreateItem = useCallback(async (id: string) => {
-    try {
-      await client.recreateCategory(id);
-      onRefresh();
-      toast.success('Category recreated');
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to recreate category'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleChangeGroupItem = useCallback(async (id: string, groupId: string, groupName: string) => {
-    try {
-      await client.changeCategoryGroup(id, groupId, groupName);
-      onRefresh();
-      toast.success(`Moved to ${groupName}`);
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to change group'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleAddToRollupItem = useCallback(async (id: string) => {
-    try {
-      await client.addToRollup(id);
-      onRefresh();
-      toast.success('Added to rollup');
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to add to rollup'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleEmojiChangeItem = useCallback(async (id: string, emoji: string) => {
-    try {
-      await client.updateCategoryEmoji(id, emoji);
-      onRefresh();
-      toast.success('Emoji updated');
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update emoji'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleRefreshItem = useCallback(async (id: string) => {
-    try {
-      await client.refreshItem(id);
-      onRefresh();
-      toast.success('Target recalculated');
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to recalculate target'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleNameChangeItem = useCallback(async (id: string, name: string) => {
-    try {
-      await client.updateCategoryName(id, name);
-      onRefresh();
-      toast.success('Name updated');
-    } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update name'));
-    }
-  }, [client, onRefresh, toast]);
-
-  const handleLinkCategory = useCallback((item: RecurringItem) => {
-    setLinkModalItem(item);
-  }, []);
-
-  const handleLinkSuccess = useCallback(() => {
-    onRefresh();
-  }, [onRefresh]);
 
   const handleSort = useCallback((field: SortField) => {
     if (sortField === field) {
@@ -197,7 +118,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
   if (filteredItems.length === 0) {
     return (
       <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
-        <SectionHeader
+        <RecurringListSectionHeader
           enabledCount={enabledCount}
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
@@ -219,14 +140,42 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
   return (
     <div>
       <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
-        <SectionHeader
+        <RecurringListSectionHeader
           enabledCount={enabledCount}
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
           onToggleHide={() => setHideDisabled(!hideDisabled)}
         />
 
-        <table className="w-full animate-fade-in">
+        {/* Mobile: Card Layout */}
+        <div className="recurring-cards">
+          {sortedFrequencies.map((frequency, index) => (
+            <Fragment key={frequency}>
+              <div className={`recurring-cards-group-header ${index === 0 ? 'mt-0!' : ''}`}>
+                {formatFrequency(frequency)}
+              </div>
+              {sortItems(groupedItems[frequency] ?? []).map((item) => (
+                <RecurringCard
+                  key={item.id}
+                  item={item}
+                  onToggle={handleToggleItem}
+                  onAllocate={handleAllocateItem}
+                  onRecreate={handleRecreateItem}
+                  onChangeGroup={handleChangeGroupItem}
+                  onAddToRollup={handleAddToRollupItem}
+                  onEmojiChange={handleEmojiChangeItem}
+                  onRefreshItem={handleRefreshItem}
+                  onNameChange={handleNameChangeItem}
+                  onLinkCategory={handleLinkCategory}
+                  highlightId={highlightId}
+                />
+              ))}
+            </Fragment>
+          ))}
+        </div>
+
+        {/* Desktop: Table Layout */}
+        <table className="recurring-table animate-fade-in">
           <RecurringListHeader
             sortField={sortField}
             sortDirection={sortDirection}
@@ -270,50 +219,10 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
         <LinkCategoryModal
           item={linkModalItem}
           isOpen={true}
-          onClose={() => setLinkModalItem(null)}
+          onClose={closeLinkModal}
           onSuccess={handleLinkSuccess}
         />
       )}
-    </div>
-  );
-}
-
-// Section header component
-interface SectionHeaderProps {
-  enabledCount: number;
-  disabledCount: number;
-  hideDisabled: boolean;
-  onToggleHide: () => void;
-}
-
-function SectionHeader({ enabledCount, disabledCount, hideDisabled, onToggleHide }: Readonly<SectionHeaderProps>) {
-  return (
-    <div className="px-5 py-4 flex items-center justify-between bg-monarch-bg-card border-b border-monarch-border">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-monarch-text-dark">
-            Dedicated Categories
-          </span>
-          <span className="text-xs text-monarch-text-muted">
-            ({enabledCount})
-          </span>
-        </div>
-        <span className="text-sm text-monarch-text-light">
-          Larger recurring transactions that get their own budget category for better tracking
-        </span>
-      </div>
-      <div className="flex items-center gap-4">
-        {disabledCount > 0 && (
-          <Tooltip content={hideDisabled ? `Show ${disabledCount} untracked` : `Hide ${disabledCount} untracked`}>
-            <button
-              onClick={onToggleHide}
-              className="p-1.5 rounded-md transition-colors text-monarch-text-muted hover:bg-monarch-bg-elevated"
-            >
-              {hideDisabled ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </Tooltip>
-        )}
-      </div>
     </div>
   );
 }

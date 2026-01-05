@@ -47,6 +47,7 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Use environment protection for releases (requires approval)
     environment: ${{ (github.event_name == 'release' && 'beta') || (github.event_name == 'workflow_call' && inputs.environment) || (github.event_name == 'workflow_dispatch' && inputs.environment) || null }}
     permissions:

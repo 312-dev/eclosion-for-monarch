@@ -21,6 +21,7 @@ jobs:
   check-branch:
     name: Check Branch
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Require develop branch
         run: |
@@ -54,6 +55,7 @@ jobs:
   create-beta:
     name: Create Beta Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: security
     permissions:
       contents: write

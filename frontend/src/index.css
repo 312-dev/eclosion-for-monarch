@@ -1839,3 +1839,46 @@ input[type="radio"] {
 .tooltip-enter {
   animation: tooltipEnter var(--animation-fast) var(--ease-out-smooth) forwards;
 }
+
+/* ============================================================================
+   Recurring List Responsive Layout
+   ============================================================================ */
+
+/* Mobile: Show cards, hide table */
+.recurring-table {
+  display: none;
+}
+
+.recurring-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+/* Frequency group header for card layout */
+.recurring-cards-group-header {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--monarch-text-muted);
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+}
+
+.recurring-cards-group-header:first-child {
+  margin-top: 0;
+}
+
+/* Desktop: Show table, hide cards */
+@media (min-width: 768px) {
+  .recurring-table {
+    display: table;
+    width: 100%;
+  }
+
+  .recurring-cards {
+    display: none;
+  }
+}

@@ -20,7 +20,7 @@ export function LeftToBudgetBadge({ data }: LeftToBudgetBadgeProps) {
   const isPositive = data.ready_to_assign >= 0;
 
   return (
-    <Tooltip content={<>Estimate only.<br /><span className="text-zinc-400">Refer to Monarch for exact amount.</span></>}>
+    <Tooltip content={<>Estimate only.<br /><span className="text-monarch-text-muted">Refer to Monarch for exact amount.</span></>}>
       <a
         href="https://app.monarch.com/plan"
         target="_blank"

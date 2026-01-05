@@ -5,7 +5,13 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  # Allow manual trigger for PRs created by GITHUB_TOKEN (e.g., release-please)
   workflow_dispatch:
+    inputs:
+      head_sha:
+        description: 'Commit SHA to post status to (for PR association)'
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,6 +21,7 @@ jobs:
   # Detect which files changed
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
@@ -48,6 +55,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -82,6 +90,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -115,6 +124,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -133,15 +143,33 @@ jobs:
   ci:
     name: CI Status
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [frontend, backend, docs]
     if: always()
     steps:
       - name: Check CI results
+        id: check
         run: |
           results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docs.result }}"
           echo "Job results: $results"
           if echo "$results" | grep -qE '(failure|cancelled)'; then
             echo "::error::One or more CI jobs failed or were cancelled"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=One or more CI jobs failed" >> $GITHUB_OUTPUT
             exit 1
           fi
           echo "All CI checks passed or were skipped"
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "description=All CI checks passed" >> $GITHUB_OUTPUT
+
+      # For workflow_dispatch, post status to the commit so it appears on PRs
+      - name: Post commit status
+        if: github.event_name == 'workflow_dispatch' && inputs.head_sha && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ inputs.head_sha }} \
+            -f state="${{ steps.check.outputs.result || 'success' }}" \
+            -f context="CI Status" \
+            -f description="${{ steps.check.outputs.description || 'CI checks passed' }}"
+          echo "Posted CI Status to commit ${{ inputs.head_sha }}"

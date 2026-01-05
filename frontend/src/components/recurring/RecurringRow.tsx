@@ -1,32 +1,21 @@
 /**
  * RecurringRow - Individual row component for recurring items
+ *
+ * Memoized to prevent unnecessary re-renders when parent list updates.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import type { RecurringItem, ItemStatus } from '../../types';
-import { EmojiPicker } from '../EmojiPicker';
+import { memo, useState, useRef, useEffect } from 'react';
+import type { RecurringItem } from '../../types';
 import { Tooltip } from '../ui/Tooltip';
-import { MerchantIcon } from '../ui';
-import {
-  formatCurrency,
-  formatFrequencyShort,
-  formatDateRelative,
-  getStatusLabel,
-  getStatusStyles,
-} from '../../utils';
-import { WarningIcon, LinkedCategoryIcon } from './RecurringListIcons';
-import { CategoryGroupDropdown } from './CategoryGroupDropdown';
+import { formatDateRelative } from '../../utils';
+import { RecurringItemHeader } from './RecurringItemHeader';
+import { RecurringItemCost } from './RecurringItemCost';
+import { RecurringItemBudget } from './RecurringItemBudget';
+import { RecurringItemStatus } from './RecurringItemStatus';
 import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
-import {
-  SpinnerIcon,
-  WarningFilledIcon,
-  CheckFilledIcon,
-  BlockedIcon,
-  TrendUpIcon,
-  TrendDownIcon,
-  ArrowUpIcon,
-} from '../icons';
+import { SpinnerIcon, ArrowUpIcon } from '../icons';
+import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
 
 interface RecurringRowProps {
   readonly item: RecurringItem;
@@ -42,117 +31,49 @@ interface RecurringRowProps {
   readonly highlightId?: string | null;
 }
 
-export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeGroup, onAddToRollup, onEmojiChange, onRefreshItem, onNameChange, onLinkCategory, highlightId }: RecurringRowProps) {
-  const [isToggling, setIsToggling] = useState(false);
+export const RecurringRow = memo(function RecurringRow({
+  item,
+  onToggle,
+  onAllocate,
+  onRecreate,
+  onChangeGroup,
+  onAddToRollup,
+  onEmojiChange,
+  onRefreshItem,
+  onNameChange,
+  onLinkCategory,
+  highlightId,
+}: RecurringRowProps) {
+  // Async action hooks for loading states
+  const toggleAction = useAsyncAction();
+  const allocateAction = useAsyncAction();
+  const recreateAction = useAsyncAction();
+  const addToRollupAction = useAsyncAction();
+  const refreshAction = useAsyncAction();
+
   const rowRef = useRef<HTMLTableRowElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(item.name);
-  const [isUpdatingName, setIsUpdatingName] = useState(false);
-  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Handle highlight when this row is the highlighted one
+  // Handle highlight when this row becomes the highlighted one
+  // The synchronous setState is intentional - we need immediate visual feedback
   useEffect(() => {
     if (highlightId === item.id && rowRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: highlight animation requires immediate state update
       setIsHighlighted(true);
       const timer = setTimeout(() => setIsHighlighted(false), UI.HIGHLIGHT.SHORT);
       return () => clearTimeout(timer);
     }
   }, [highlightId, item.id]);
 
-  const [isAllocating, setIsAllocating] = useState(false);
-  const [isRecreating, setIsRecreating] = useState(false);
-  const [isAddingToRollup, setIsAddingToRollup] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showAllocateConfirm, setShowAllocateConfirm] = useState(false);
-  const [budgetInput, setBudgetInput] = useState(Math.ceil(item.planned_budget).toString());
-
-  // Keep budgetInput in sync with item.planned_budget (rounded up to nearest dollar)
-  useEffect(() => {
-    setBudgetInput(Math.ceil(item.planned_budget).toString());
-  }, [item.planned_budget]);
-
-  // Keep nameValue in sync with item.name
-  useEffect(() => {
-    setNameValue(item.name);
-  }, [item.name]);
-
-  // Focus name input when editing starts
-  useEffect(() => {
-    if (isEditingName && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
-    }
-  }, [isEditingName]);
-
-  const handleNameSubmit = async () => {
-    const trimmedName = nameValue.trim();
-    if (trimmedName && trimmedName !== item.name) {
-      setIsUpdatingName(true);
-      try {
-        await onNameChange(item.id, trimmedName);
-      } catch {
-        setNameValue(item.name);
-      } finally {
-        setIsUpdatingName(false);
-        setIsEditingName(false);
-      }
-    } else {
-      setNameValue(item.name);
-      setIsEditingName(false);
-    }
-  };
-
-  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      (e.target as HTMLInputElement).blur();
-    } else if (e.key === 'Escape') {
-      setNameValue(item.name);
-      setIsEditingName(false);
-    }
-  };
-
   const progressPercent = Math.min(item.progress_percent, 100);
-
-  // Override status based on what user has budgeted vs what's needed
-  // Use Math.ceil for both to match what the UI displays
-  let displayStatus: ItemStatus = item.status;
-  const targetRounded = Math.ceil(item.frozen_monthly_target);
-  const budgetRounded = Math.ceil(item.planned_budget);
-  // Round balance and amount consistently for funded check (matches display formatting)
-  const balanceRounded = Math.round(item.current_balance);
-  const amountRounded = Math.round(item.amount);
-  if (item.is_enabled && item.frozen_monthly_target > 0) {
-    if (budgetRounded > targetRounded) {
-      displayStatus = 'ahead';
-    } else if (budgetRounded >= targetRounded) {
-      displayStatus = balanceRounded >= amountRounded ? 'funded' : 'on_track';
-    } else {
-      displayStatus = 'behind';
-    }
-  } else if (item.is_enabled && balanceRounded >= amountRounded) {
-    displayStatus = 'funded';
-  }
-
+  const displayStatus = useItemDisplayStatus(item);
   const { date, relative } = formatDateRelative(item.next_due_date);
 
-  const handleToggle = async () => {
-    setIsToggling(true);
-    try {
-      await onToggle(item.id, !item.is_enabled);
-    } finally {
-      setIsToggling(false);
-    }
-  };
+  const handleToggle = () =>
+    toggleAction.execute(() => onToggle(item.id, !item.is_enabled));
 
-  const handleRecreate = async () => {
-    setIsRecreating(true);
-    try {
-      await onRecreate(item.id);
-    } finally {
-      setIsRecreating(false);
-    }
-  };
+  const handleRecreate = () =>
+    recreateAction.execute(() => onRecreate(item.id));
 
   const handleChangeGroup = async (groupId: string, groupName: string) => {
     await onChangeGroup(item.id, groupId, groupName);
@@ -162,68 +83,28 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
     await onEmojiChange(item.id, emoji);
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await onRefreshItem(item.id);
-    } finally {
-      setIsRefreshing(false);
-    }
+  const handleRefresh = () =>
+    refreshAction.execute(() => onRefreshItem(item.id));
+
+  const handleNameChange = async (name: string) => {
+    await onNameChange(item.id, name);
   };
 
-  const handleAddToRollup = async () => {
+  const handleAddToRollup = () => {
     if (!onAddToRollup) return;
-    setIsAddingToRollup(true);
-    try {
-      await onAddToRollup(item.id);
-    } finally {
-      setIsAddingToRollup(false);
-    }
+    return addToRollupAction.execute(() => onAddToRollup(item.id));
   };
 
-  const handleAllocate = async () => {
+  const handleAllocate = (amount: number) =>
+    allocateAction.execute(() => onAllocate(item.id, amount));
+
+  const handleAllocateNeeded = async (): Promise<void> => {
     if (item.amount_needed_now <= 0) return;
-    setIsAllocating(true);
-    try {
-      await onAllocate(item.id, item.amount_needed_now);
-      setShowAllocateConfirm(false);
-    } finally {
-      setIsAllocating(false);
-    }
-  };
-
-  const handleBudgetSubmit = async () => {
-    const parsedAmount = Number.parseFloat(budgetInput);
-    if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
-      setBudgetInput(Math.ceil(item.planned_budget).toString());
-      return;
-    }
-    // Round up to nearest dollar
-    const newAmount = Math.ceil(parsedAmount);
-    setBudgetInput(newAmount.toString());
-    const diff = newAmount - item.planned_budget;
-    if (Math.abs(diff) > 0.01) {
-      setIsAllocating(true);
-      try {
-        await onAllocate(item.id, diff);
-      } finally {
-        setIsAllocating(false);
-      }
-    }
-  };
-
-  const handleBudgetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      (e.target as HTMLInputElement).blur();
-    } else if (e.key === 'Escape') {
-      setBudgetInput(Math.ceil(item.planned_budget).toString());
-      (e.target as HTMLInputElement).blur();
-    }
+    await handleAllocate(item.amount_needed_now);
   };
 
   const contentOpacity = item.is_enabled ? '' : 'opacity-50';
   const rowPadding = item.is_enabled ? 'py-4' : 'py-1.5';
-  const isCritical = item.is_enabled && item.status === 'critical' && item.amount_needed_now > 0;
 
   return (
     <tr
@@ -231,115 +112,15 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
       className={`group transition-all duration-300 border-b border-monarch-border ${isHighlighted ? 'animate-highlight bg-monarch-orange-light' : 'bg-monarch-bg-card hover:bg-monarch-bg-hover'}`}
     >
       <td className={`${rowPadding} pl-5 pr-2 max-w-40`}>
-        <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
-            <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="md" />
-            <Tooltip
-              content={
-                item.is_enabled
-                  ? item.category_missing
-                    ? 'Category missing - click to disable'
-                    : 'Click to disable tracking'
-                  : 'Click to enable tracking'
-              }
-            >
-              <button
-                onClick={handleToggle}
-                disabled={isToggling}
-                className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50 bg-monarch-bg-card border border-monarch-border shadow-sm"
-              >
-                {isToggling ? (
-                  <SpinnerIcon size={12} color="var(--monarch-orange)" strokeWidth={2.5} />
-                ) : item.is_enabled ? (
-                  item.category_missing ? (
-                    <WarningFilledIcon size={12} color="var(--monarch-warning)" />
-                  ) : (
-                    <CheckFilledIcon size={12} color="var(--monarch-success)" />
-                  )
-                ) : (
-                  <BlockedIcon size={12} color="var(--monarch-text-muted)" strokeWidth={2.5} />
-                )}
-              </button>
-            </Tooltip>
-          </div>
-          <div className={`flex flex-col min-w-0 ${contentOpacity}`}>
-            <div className="flex items-center gap-1">
-              {isEditingName ? (
-                <input
-                  ref={nameInputRef}
-                  type="text"
-                  value={nameValue}
-                  onChange={(e) => setNameValue(e.target.value)}
-                  onBlur={handleNameSubmit}
-                  onKeyDown={handleNameKeyDown}
-                  disabled={isUpdatingName}
-                  className="font-medium px-1 py-0.5 rounded text-sm text-monarch-text-dark bg-monarch-bg-card border border-monarch-orange outline-none min-w-30"
-                />
-              ) : (
-                <>
-                  {item.is_enabled && (
-                    <EmojiPicker
-                      currentEmoji={item.emoji || '🔄'}
-                      onSelect={handleEmojiChange}
-                      disabled={item.category_missing}
-                    />
-                  )}
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark"
-                    onDoubleClick={() => item.is_enabled && !item.category_missing && setIsEditingName(true)}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && item.is_enabled && !item.category_missing) {
-                        setIsEditingName(true);
-                      }
-                    }}
-                    title={item.is_enabled && !item.category_missing ? "Double-click to rename" : undefined}
-                  >
-                    {item.name}
-                  </span>
-                </>
-              )}
-              {item.is_enabled && item.category_id && !item.category_missing && (
-                <Tooltip content="View linked category in Monarch">
-                  <a
-                    href={`https://app.monarchmoney.com/categories/${item.category_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="shrink-0 hover:opacity-70 transition-opacity text-monarch-text-light"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <LinkedCategoryIcon />
-                  </a>
-                </Tooltip>
-              )}
-              {item.is_stale && (
-                <Tooltip content={
-                  <>
-                    <div className="font-medium">Possibly Stale</div>
-                    <div className="text-zinc-400 text-xs mt-1">Last charge was missed or off from expected date</div>
-                  </>
-                }>
-                  <span className="cursor-help">
-                    <WarningIcon />
-                  </span>
-                </Tooltip>
-              )}
-            </div>
-            {item.category_group_name && (
-              <div className="text-sm truncate text-monarch-text-light">
-                {item.is_enabled && !item.category_missing ? (
-                  <CategoryGroupDropdown
-                    currentGroupName={item.category_group_name}
-                    onChangeGroup={handleChangeGroup}
-                  />
-                ) : (
-                  item.category_group_name
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <RecurringItemHeader
+          item={item}
+          onToggle={handleToggle}
+          onEmojiChange={handleEmojiChange}
+          onNameChange={handleNameChange}
+          onChangeGroup={handleChangeGroup}
+          isToggling={toggleAction.loading}
+          contentOpacity={contentOpacity}
+        />
       </td>
       <td className={`${rowPadding} px-4 w-28 ${contentOpacity}`}>
         <div className="text-monarch-text-dark">{date}</div>
@@ -350,138 +131,27 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
         )}
       </td>
       <td className={`${rowPadding} px-4 text-right w-40 ${contentOpacity}`}>
-        <div className="flex items-center justify-end gap-1">
-          {item.frozen_monthly_target > item.ideal_monthly_rate && (item.is_enabled || item.frozen_monthly_target > 0) && (
-            <Tooltip content={
-              item.is_enabled ? (
-                <>
-                  <div className="font-medium">Catching Up</div>
-                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                  <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
-                </>
-              ) : (
-                <>
-                  <div className="font-medium">Higher Than Usual</div>
-                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                  <div className="text-zinc-400 text-xs mt-1">Extra needed to catch up • After {date}</div>
-                </>
-              )
-            }>
-              <span className={item.is_enabled ? 'cursor-pointer hover:opacity-70' : 'cursor-help'} style={{ color: item.is_enabled ? 'var(--monarch-error)' : 'var(--monarch-text-muted)' }}>
-                <TrendUpIcon size={12} strokeWidth={2.5} />
-              </span>
-            </Tooltip>
-          )}
-          {item.frozen_monthly_target < item.ideal_monthly_rate && (item.is_enabled || item.frozen_monthly_target > 0) && (
-            <Tooltip content={
-              item.is_enabled ? (
-                <>
-                  <div className="font-medium">Ahead of Schedule</div>
-                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                  <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
-                </>
-              ) : (
-                <>
-                  <div className="font-medium">Lower Than Usual</div>
-                  <div className="text-zinc-300">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                  <div className="text-zinc-400 text-xs mt-1">After {date} payment</div>
-                </>
-              )
-            }>
-              <span className={item.is_enabled ? 'cursor-pointer hover:opacity-70' : 'cursor-help'} style={{ color: item.is_enabled ? 'var(--monarch-success)' : 'var(--monarch-text-muted)' }}>
-                <TrendDownIcon size={12} strokeWidth={2.5} />
-              </span>
-            </Tooltip>
-          )}
-          <span className="font-medium text-monarch-text-dark">
-            {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo
-          </span>
-        </div>
-        <div className="text-xs mt-0.5 text-monarch-text-light">
-          {formatCurrency(item.amount, { maximumFractionDigits: 0 })} {formatFrequencyShort(item.frequency)}
-        </div>
-        {item.is_enabled && (
-          <>
-            <Tooltip content={
-              <>
-                <div className="font-medium">{formatCurrency(item.current_balance, { maximumFractionDigits: 0 })} of {formatCurrency(item.amount, { maximumFractionDigits: 0 })}</div>
-                <div className="text-zinc-400 text-xs mt-1">Resets {formatFrequencyShort(item.frequency)} after payment</div>
-              </>
-            }>
-              <div className="w-full rounded-full h-1.5 mt-1.5 cursor-help bg-monarch-border">
-                <div
-                  className="h-1.5 rounded-full transition-all"
-                  style={{ width: `${progressPercent}%`, backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color }}
-                />
-              </div>
-            </Tooltip>
-            <div className="text-xs mt-0.5 text-monarch-text-light">
-              {formatCurrency(Math.max(0, item.amount - item.current_balance), { maximumFractionDigits: 0 })} to go
-            </div>
-          </>
-        )}
+        <RecurringItemCost
+          item={item}
+          displayStatus={displayStatus}
+          progressPercent={progressPercent}
+          date={date}
+        />
       </td>
       <td className={`${rowPadding} px-4 text-right w-28 ${contentOpacity}`}>
-        {item.is_enabled ? (
-          <div className="flex justify-end">
-            <div className="relative">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 font-medium text-monarch-text-dark">
-                $
-              </span>
-              <input
-                type="number"
-                value={budgetInput}
-                onChange={(e) => setBudgetInput(e.target.value)}
-                onKeyDown={handleBudgetKeyDown}
-                onBlur={handleBudgetSubmit}
-                onFocus={(e) => e.target.select()}
-                className="w-24 pl-6 pr-2 py-1 text-right rounded font-medium text-monarch-text-dark bg-monarch-bg-card border border-monarch-border font-inherit"
-              />
-            </div>
-          </div>
-        ) : (
-          <span className="font-medium text-monarch-text-muted">
-            {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}
-          </span>
-        )}
+        <RecurringItemBudget
+          item={item}
+          onAllocate={handleAllocate}
+          isAllocating={allocateAction.loading}
+        />
       </td>
       <td className={`${rowPadding} px-5 text-center w-24`}>
-        {isCritical && !showAllocateConfirm ? (
-          <Tooltip content="Click to allocate funds">
-            <button
-              onClick={() => setShowAllocateConfirm(true)}
-              className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer bg-monarch-error-bg text-monarch-error"
-            >
-              Off Track
-            </button>
-          </Tooltip>
-        ) : isCritical && showAllocateConfirm ? (
-          <div className="flex items-center gap-1 justify-center">
-            <button
-              onClick={handleAllocate}
-              disabled={isAllocating}
-              className="px-2 py-1 text-xs font-medium rounded text-white disabled:opacity-50 transition-colors bg-monarch-success"
-            >
-              {isAllocating ? '...' : 'Allocate'}
-            </button>
-            <button
-              onClick={() => setShowAllocateConfirm(false)}
-              className="px-2 py-1 text-xs font-medium rounded transition-colors bg-monarch-bg-page text-monarch-text-dark"
-            >
-              ✕
-            </button>
-          </div>
-        ) : (
-          <span
-            className="inline-flex px-2.5 py-1 text-xs font-medium rounded-full"
-            style={{
-              backgroundColor: getStatusStyles(displayStatus, item.is_enabled).bg,
-              color: getStatusStyles(displayStatus, item.is_enabled).color,
-            }}
-          >
-            {getStatusLabel(displayStatus, item.is_enabled)}
-          </span>
-        )}
+        <RecurringItemStatus
+          item={item}
+          displayStatus={displayStatus}
+          onAllocate={handleAllocateNeeded}
+          isAllocating={allocateAction.loading}
+        />
       </td>
       <td className={`${rowPadding} px-3 w-12`}>
         {item.is_enabled ? (
@@ -492,20 +162,20 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
             onRecreate={handleRecreate}
             onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
             onRefresh={handleRefresh}
-            isToggling={isToggling}
-            isRecreating={isRecreating}
-            isAddingToRollup={isAddingToRollup}
-            isRefreshing={isRefreshing}
+            isToggling={toggleAction.loading}
+            isRecreating={recreateAction.loading}
+            isAddingToRollup={addToRollupAction.loading}
+            isRefreshing={refreshAction.loading}
           />
         ) : (
           onAddToRollup && (
             <Tooltip content="Add to rollover">
               <button
                 onClick={handleAddToRollup}
-                disabled={isAddingToRollup}
+                disabled={addToRollupAction.loading}
                 className="w-7 h-7 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 hover:bg-black/10 disabled:opacity-50"
               >
-                {isAddingToRollup ? (
+                {addToRollupAction.loading ? (
                   <SpinnerIcon size={16} color="var(--monarch-orange)" />
                 ) : (
                   <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
@@ -517,4 +187,4 @@ export function RecurringRow({ item, onToggle, onAllocate, onRecreate, onChangeG
       </td>
     </tr>
   );
-}
+});
