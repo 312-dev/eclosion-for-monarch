@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-05T06:37:08.745Z",
+  "generatedAt": "2026-01-05T06:41:29.980Z",
   "votesThreshold": 500,
   "totalIdeas": 14,
   "openCount": 14,
@@ -146,6 +146,20 @@
       "source": "productboard"
     },
     {
+      "id": "cf1f8240-67ae-4b18-a966-0d669813f07a",
+      "title": "customize columns in main transactions view",
+      "description": "to show additional info like account or notes etc\n",
+      "votes": 0,
+      "category": "Transactions",
+      "productboardUrl": "https://portal.productboard.com/3qsdvcsy5aq69hhkycf4dtpi/c/125-customize-columns-in-main-transactions-view",
+      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/44",
+      "discussionNumber": 44,
+      "status": "open",
+      "closedReason": null,
+      "closedAt": null,
+      "source": "productboard"
+    },
+    {
       "id": "fab954de-53e1-4b64-b704-7b5f97a988b7",
       "title": "Print or PDF reports",
       "description": "Nicely formatted exports of what you see in Monarch\\.\n",
@@ -182,20 +196,6 @@
       "productboardUrl": null,
       "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/53",
       "discussionNumber": 53,
-      "status": "open",
-      "closedReason": null,
-      "closedAt": null,
-      "source": "github"
-    },
-    {
-      "id": "github-44",
-      "title": "customize columns in main transactions view",
-      "description": "704\nTransactions\nView on Monarch's Roadmap",
-      "votes": 0,
-      "category": "Community",
-      "productboardUrl": null,
-      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/44",
-      "discussionNumber": 44,
       "status": "open",
       "closedReason": null,
       "closedAt": null,
