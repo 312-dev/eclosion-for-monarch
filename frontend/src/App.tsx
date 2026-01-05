@@ -212,6 +212,28 @@ function AppRouter() {
     // Docusaurus paths (/docs/*) - force full page reload to serve static HTML
     // This handles the edge case where React Router intercepts a /docs navigation
     if (location.pathname.startsWith('/docs')) {
+      const isLocalhost = globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1';
+      if (isLocalhost) {
+        // Show helpful message on localhost since Docusaurus runs on a separate port
+        return (
+          <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+            <div className="text-center max-w-md">
+              <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
+                Docs not available here
+              </h1>
+              <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
+                In development, Docusaurus runs on a separate port. Start it with:
+              </p>
+              <code className="block p-3 rounded-lg text-sm mb-4" style={{ backgroundColor: 'var(--monarch-bg-card)', color: 'var(--monarch-text)' }}>
+                cd docusaurus && npm start
+              </code>
+              <a href="/" className="text-sm" style={{ color: 'var(--monarch-orange)' }}>
+                ← Back to home
+              </a>
+            </div>
+          </div>
+        );
+      }
       globalThis.location.replace(location.pathname + location.search + location.hash);
       return null;
     }

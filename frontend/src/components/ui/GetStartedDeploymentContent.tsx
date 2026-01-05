@@ -2,28 +2,46 @@
  * GetStartedDeploymentContent - Deployment options for the GetStarted modal
  */
 
-import { ExternalLinkIcon } from '../icons';
+import type { ReactNode } from 'react';
+import { ExternalLinkIcon, ZapIcon, CheckIcon, GitHubIcon, GiftIcon } from '../icons';
+
+/** Visual checkmark/cross for feature comparison */
+function FeatureValue({ positive, children }: Readonly<{ positive: boolean; children: ReactNode }>) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-sm"
+      style={{ color: positive ? 'var(--monarch-green)' : 'var(--monarch-text-muted)' }}
+    >
+      {positive && <CheckIcon size={14} />}
+      {children}
+    </span>
+  );
+}
 
 /** Feature row for deployment comparison */
 function FeatureRow({
   label,
   quickSetup,
-  selfHosted
+  quickSetupPositive = true,
+  selfHosted,
+  selfHostedPositive = true
 }: Readonly<{
   label: string;
   quickSetup: string;
+  quickSetupPositive?: boolean;
   selfHosted: string;
+  selfHostedPositive?: boolean;
 }>) {
   return (
     <tr className="border-b border-(--monarch-border)">
-      <td className="py-3 pr-4 text-sm font-medium text-(--monarch-text-dark)">
+      <td className="py-2 pr-4 text-sm font-medium text-(--monarch-text-dark)">
         {label}
       </td>
-      <td className="py-3 px-4 text-sm text-(--monarch-text) text-center">
-        {quickSetup}
+      <td className="py-2 px-4 text-center">
+        <FeatureValue positive={quickSetupPositive}>{quickSetup}</FeatureValue>
       </td>
-      <td className="py-3 pl-4 text-sm text-(--monarch-text) text-center">
-        {selfHosted}
+      <td className="py-2 pl-4 text-center">
+        <FeatureValue positive={selfHostedPositive}>{selfHosted}</FeatureValue>
       </td>
     </tr>
   );
@@ -31,72 +49,85 @@ function FeatureRow({
 
 export function GetStartedDeploymentContent() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Promo Banner - Inline */}
+      <div
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+        style={{ backgroundColor: 'var(--monarch-orange-bg, rgba(255, 107, 0, 0.08))' }}
+      >
+        <GiftIcon size={16} color="var(--monarch-orange)" className="shrink-0" />
+        <span style={{ color: 'var(--monarch-text-dark)' }}>
+          <strong>$20 free credits</strong>
+          <span style={{ color: 'var(--monarch-text-muted)' }}> — covers ~4 months of hosting</span>
+        </span>
+      </div>
+
       {/* Comparison Table */}
       <table className="w-full">
         <thead>
           <tr className="border-b-2 border-(--monarch-border)">
-            <th className="py-3 pr-4 text-left text-xs font-medium uppercase tracking-wide text-(--monarch-text-muted)">
+            <th className="py-2 pr-4 text-left text-xs font-medium uppercase tracking-wide text-(--monarch-text-muted)">
               &nbsp;
             </th>
-            <th className="py-3 px-4 text-center">
-              <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-(--monarch-orange)/10 text-(--monarch-orange) text-xs font-semibold">
+            <th className="py-2 px-4 text-center">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ backgroundColor: 'var(--monarch-orange)', color: 'white' }}>
+                <ZapIcon size={10} />
                 Recommended
               </div>
-              <div className="mt-1 text-base font-semibold text-(--monarch-text-dark)">Quick Setup</div>
-              <div className="text-lg font-bold text-(--monarch-text-dark)">~$5/mo</div>
+              <div className="mt-1 text-sm font-semibold text-(--monarch-text-dark)">Quick Setup</div>
+              <div className="text-xs text-(--monarch-text-muted)">~$5/mo</div>
             </th>
-            <th className="py-3 pl-4 text-center">
-              <div className="h-6" /> {/* Spacer to align with badge */}
-              <div className="mt-1 text-base font-semibold text-(--monarch-text-dark)">Advanced</div>
-              <div className="text-lg font-bold text-(--monarch-text-dark)">Free</div>
+            <th className="py-2 pl-4 text-center">
+              <div className="h-5" /> {/* Spacer to align with badge */}
+              <div className="mt-1 text-sm font-semibold text-(--monarch-text-dark)">Self-Hosted</div>
+              <div className="text-xs text-(--monarch-text-muted)">Free</div>
             </th>
           </tr>
         </thead>
         <tbody>
-          <FeatureRow label="Getting started" quickSetup="One click" selfHosted="Multiple steps" />
-          <FeatureRow label="Updates" quickSetup="One click" selfHosted="Manual" />
-          <FeatureRow label="Secure connection" quickSetup="Included" selfHosted="You set it up" />
-          <FeatureRow label="Technical knowledge" quickSetup="None" selfHosted="Required" />
-          <FeatureRow label="Your data" quickSetup="Always saved" selfHosted="You manage it" />
-          <FeatureRow label="Customization" quickSetup="Standard" selfHosted="Full control" />
+          <FeatureRow label="Getting started" quickSetup="One click" selfHosted="Multiple steps" selfHostedPositive={false} />
+          <FeatureRow label="Updates" quickSetup="Automatic" selfHosted="Manual" selfHostedPositive={false} />
+          <FeatureRow label="HTTPS included" quickSetup="Yes" selfHosted="You configure" selfHostedPositive={false} />
+          <FeatureRow label="Technical knowledge" quickSetup="None needed" selfHosted="Required" selfHostedPositive={false} />
+          <FeatureRow label="Customization" quickSetup="Standard" quickSetupPositive={false} selfHosted="Full control" />
         </tbody>
       </table>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <a
           href="https://railway.app/template/eclosion"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-lg bg-(--monarch-orange) text-white hover:opacity-90 transition-colors"
+          className="group flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-lg text-white transition-all hover:scale-[1.01] hover:shadow-md"
+          style={{ backgroundColor: 'var(--monarch-orange)' }}
         >
-          <span className="flex items-center gap-2 font-semibold">
-            Set Up Eclosion
-            <ExternalLinkIcon size={16} />
+          <span className="flex items-center gap-1.5 text-sm font-semibold">
+            <ZapIcon size={16} />
+            Deploy to Railway
+            <ExternalLinkIcon size={14} className="opacity-70" />
           </span>
-          <span className="text-xs opacity-80">Hosted on Railway</span>
+          <span className="text-xs opacity-80">One-click setup</span>
         </a>
         <a
           href="https://github.com/GraysonCAdams/eclosion-for-monarch/wiki"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-lg border-2 border-(--monarch-border) text-(--monarch-text-dark) hover:bg-(--monarch-bg-page) transition-colors"
+          className="group flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-lg border transition-all hover:scale-[1.01]"
+          style={{
+            borderColor: 'var(--monarch-border)',
+            color: 'var(--monarch-text-dark)',
+            backgroundColor: 'transparent',
+          }}
         >
-          <span className="flex items-center gap-2 font-semibold">
-            I&apos;ll Set It Up Myself
-            <ExternalLinkIcon size={16} />
+          <span className="flex items-center gap-1.5 text-sm font-semibold">
+            <GitHubIcon size={16} />
+            Self-Host Guide
+            <ExternalLinkIcon size={14} className="opacity-50" />
           </span>
-          <span className="text-xs text-(--monarch-text-muted)">For technical users</span>
+          <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>Docker setup</span>
         </a>
       </div>
-
-      {/* Footer note */}
-      <p className="text-xs text-center text-(--monarch-text-muted)">
-        Both options have the same features. Railway offers $5 in free credits to get started.
-        <br />
-        Your login is encrypted and stored only on your server — no one else can access it.
-      </p>
     </div>
   );
 }

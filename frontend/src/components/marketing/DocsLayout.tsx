@@ -5,10 +5,14 @@
  * Provides header with branding, navigation, theme toggle, and footer.
  */
 
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GitHubIcon, MoonIcon, SunIcon } from '../icons';
 import { AppIcon } from '../wizards/SetupWizardIcons';
 import { useTheme } from '../../context/ThemeContext';
+import { IdeasModal } from '../IdeasModal';
+import { Portal } from '../Portal';
+import { MarketingVersionIndicator } from './MarketingVersionIndicator';
 
 interface DocsLayoutProps {
   children: React.ReactNode;
@@ -57,6 +61,7 @@ function NavLink({
 
 export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
   const { theme, setTheme } = useTheme();
+  const [showIdeasModal, setShowIdeasModal] = useState(false);
 
   const handleToggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -72,20 +77,30 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2.5">
-              <AppIcon size={32} />
-              <span
-                className="text-xl font-bold text-[var(--monarch-text-dark)]"
-                style={{ fontFamily: "'Unbounded', sans-serif" }}
-              >
-                Eclosion
-              </span>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link to="/" className="flex items-center gap-2.5">
+                <AppIcon size={32} />
+                <span
+                  className="text-xl font-bold text-[var(--monarch-text-dark)]"
+                  style={{ fontFamily: "'Unbounded', sans-serif" }}
+                >
+                  Eclosion
+                </span>
+              </Link>
+              <MarketingVersionIndicator />
+            </div>
 
             {/* Navigation */}
             {!minimal && (
               <nav className="hidden md:flex items-center gap-8">
                 <NavLink to="/features">Features</NavLink>
+                <button
+                  type="button"
+                  onClick={() => setShowIdeasModal(true)}
+                  className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors"
+                >
+                  Roadmap
+                </button>
                 <a
                   href="/docs"
                   className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors"
@@ -107,9 +122,16 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
-              {/* User Guide & Self-Hosting Links (shown on landing page) */}
+              {/* User Guide, Roadmap & Self-Hosting Links (shown on landing page) */}
               {minimal && (
                 <>
+                  <button
+                    type="button"
+                    onClick={() => setShowIdeasModal(true)}
+                    className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
+                  >
+                    Roadmap
+                  </button>
                   <a
                     href="/docs"
                     className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
@@ -168,7 +190,15 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             </div>
 
             {/* Links */}
-            <div className="flex items-center gap-6 text-sm text-[var(--monarch-text-muted)]">
+            <div className="flex items-center gap-4 text-sm text-[var(--monarch-text-muted)]">
+              <button
+                type="button"
+                onClick={() => setShowIdeasModal(true)}
+                className="hover:text-[var(--monarch-text-dark)] transition-colors"
+              >
+                Roadmap
+              </button>
+              <span>•</span>
               <a
                 href="https://github.com/graysoncadams/eclosion-for-monarch"
                 target="_blank"
@@ -190,6 +220,8 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   Monarch Money
                 </a>
               </span>
+              <span>•</span>
+              <MarketingVersionIndicator />
             </div>
           </div>
 
@@ -221,6 +253,11 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
           </div>
         </div>
       </footer>
+
+      {/* Ideas/Roadmap Modal */}
+      <Portal>
+        <IdeasModal isOpen={showIdeasModal} onClose={() => setShowIdeasModal(false)} />
+      </Portal>
     </div>
   );
 }
