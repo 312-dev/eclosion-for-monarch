@@ -81,10 +81,10 @@ jobs:
           cp scripts/productboard-sync/state.json /tmp/state.json
           cp data/ideas.json /tmp/ideas.json
 
-          # Switch to main branch
+          # Switch to main branch (force to discard local changes since we saved them)
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           git fetch origin main
-          git checkout main
+          git checkout -f main
 
           # Restore the generated files
           cp /tmp/state.json scripts/productboard-sync/state.json
