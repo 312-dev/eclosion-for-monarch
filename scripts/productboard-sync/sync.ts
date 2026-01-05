@@ -455,6 +455,12 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
   for (const disc of existingDiscussions) {
     // Skip if already matched to a ProductBoard idea
     if (matchedDiscussionIds.has(disc.id)) continue;
+    // Skip discussions with ProductBoard IDs that weren't in the filtered list
+    // (these are PB ideas the AI determined aren't feasible for Eclosion)
+    const pbIdInBody = extractProductBoardId(disc.body);
+    if (pbIdInBody) {
+      continue; // Has PB ID but wasn't matched = not feasible, skip entirely
+    }
     // Skip if already in state (use discussion number as key for GitHub-only ideas)
     const githubKey = `github-${disc.number}`;
     if (state.trackedIdeas[githubKey]) {
