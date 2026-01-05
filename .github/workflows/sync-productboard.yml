@@ -76,6 +76,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Save the generated files (workflow may run on develop, but PR targets main)
+          cp scripts/productboard-sync/state.json /tmp/state.json
+          cp data/ideas.json /tmp/ideas.json
+
+          # Switch to main branch to create PR from there (avoids merge conflicts)
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git fetch origin main
+          git checkout -f main
+
+          # Create branch with proper naming convention (update/ prefix)
+          BRANCH="update/productboard-sync-$(date +%Y%m%d)"
+
+          # Check if branch already exists remotely and delete it
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git push origin --delete "$BRANCH" || true
+          fi
+
+          # Create branch from main
+          git checkout -b "$BRANCH"
+
+          # Restore the generated files
+          cp /tmp/state.json scripts/productboard-sync/state.json
+          cp /tmp/ideas.json data/ideas.json
+
           # Check if there are changes to commit
           git add scripts/productboard-sync/state.json data/ideas.json
           if git diff --staged --quiet; then
@@ -83,19 +107,8 @@ jobs:
             exit 0
           fi
 
-          # Create branch with proper naming convention (update/ prefix)
-          BRANCH="update/productboard-sync-$(date +%Y%m%d)"
-
-          # Check if branch already exists remotely and delete it
-          git fetch origin
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git push origin --delete "$BRANCH" || true
-          fi
-
-          # Create and push the branch
-          git checkout -b "$BRANCH"
+          # Commit and push
           git commit -m "chore: update productboard sync state and ideas data"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           git push -u origin "$BRANCH"
 
           # Create PR
