@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-01-04T22:49:59.667Z",
+  "generatedAt": "2026-01-05T04:36:03.078Z",
   "votesThreshold": 500,
-  "totalIdeas": 1,
-  "openCount": 1,
+  "totalIdeas": 3,
+  "openCount": 3,
   "closedCount": 0,
   "ideas": [
     {
@@ -16,7 +16,36 @@
       "discussionNumber": 44,
       "status": "open",
       "closedReason": null,
-      "closedAt": null
+      "closedAt": null,
+      "source": "productboard"
+    },
+    {
+      "id": "github-39",
+      "title": "Associate 2 transactions together",
+      "description": "2,776\nTransactions\nView on Monarch's Roadmap",
+      "votes": 0,
+      "category": "Community",
+      "productboardUrl": null,
+      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/39",
+      "discussionNumber": 39,
+      "status": "open",
+      "closedReason": null,
+      "closedAt": null,
+      "source": "github"
+    },
+    {
+      "id": "github-31",
+      "title": "Budget income by paycheck, year or quarter (not just monthly)",
+      "description": "1,318\nPlan Budget & Forecast\nView on Monarch's Roadmap",
+      "votes": 0,
+      "category": "Community",
+      "productboardUrl": null,
+      "discussionUrl": "https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/31",
+      "discussionNumber": 31,
+      "status": "open",
+      "closedReason": null,
+      "closedAt": null,
+      "source": "github"
     }
   ]
 }
