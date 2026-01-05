@@ -1,5 +1,5 @@
 {
-  "lastSync": "2026-01-05T05:56:40.762Z",
+  "lastSync": "2026-01-05T06:14:55.811Z",
   "trackedIdeas": {
     "cf1f8240-67ae-4b18-a966-0d669813f07a": {
       "discussionId": "D_kwDOQyteiM4AjgiZ",
@@ -29,6 +29,127 @@
       "source": "github",
       "title": "Budget income by paycheck, year or quarter (not just monthly)",
       "description": "1,318\nPlan Budget & Forecast\nView on Monarch's Roadmap",
+      "category": "Community"
+    },
+    "0baf9e8a-6b1b-47c7-98f8-fb67accb1dac": {
+      "discussionId": "D_kwDOQyteiM4Ajgau",
+      "discussionNumber": 31,
+      "status": "open",
+      "lastVoteCount": 1322,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "279c6321-b841-4ee7-a427-bdf395eb9e92": {
+      "discussionId": "D_kwDOQyteiM4Ajgav",
+      "discussionNumber": 32,
+      "status": "open",
+      "lastVoteCount": 1043,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "3014fbc4-7592-41ea-b654-b284d8c638e9": {
+      "discussionId": "D_kwDOQyteiM4Ajgaw",
+      "discussionNumber": 33,
+      "status": "open",
+      "lastVoteCount": 2360,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "5cb19f83-5649-4a9a-a1a9-65374c86c363": {
+      "discussionId": "D_kwDOQyteiM4Ajgax",
+      "discussionNumber": 34,
+      "status": "open",
+      "lastVoteCount": 1194,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "7b0666eb-b9cb-4a20-88db-70dac016a7b7": {
+      "discussionId": "D_kwDOQyteiM4Ajgay",
+      "discussionNumber": 35,
+      "status": "open",
+      "lastVoteCount": 1043,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "94f907ae-f461-4ce7-a251-25b6e32eff51": {
+      "discussionId": "D_kwDOQyteiM4Ajgaz",
+      "discussionNumber": 36,
+      "status": "open",
+      "lastVoteCount": 1196,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "a8b7d4a6-9f9a-4938-b8eb-8dab3bc6345a": {
+      "discussionId": "D_kwDOQyteiM4Ajga0",
+      "discussionNumber": 37,
+      "status": "open",
+      "lastVoteCount": 592,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "a98cc77b-79f4-4d58-98dd-13da6945475d": {
+      "discussionId": "D_kwDOQyteiM4Ajga1",
+      "discussionNumber": 38,
+      "status": "open",
+      "lastVoteCount": 812,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "b7498c70-03f9-4d64-9394-424e9a0bd1fd": {
+      "discussionId": "D_kwDOQyteiM4Ajga3",
+      "discussionNumber": 40,
+      "status": "open",
+      "lastVoteCount": 1180,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "c34ff79b-2e01-411b-8674-595146535789": {
+      "discussionId": "D_kwDOQyteiM4Ajga4",
+      "discussionNumber": 41,
+      "status": "open",
+      "lastVoteCount": 521,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "fab954de-53e1-4b64-b704-7b5f97a988b7": {
+      "discussionId": "D_kwDOQyteiM4Ajga5",
+      "discussionNumber": 42,
+      "status": "open",
+      "lastVoteCount": 1190,
+      "lastProductBoardStatus": "idea",
+      "githubVotes": 0,
+      "source": "productboard"
+    },
+    "github-53": {
+      "discussionId": "D_kwDOQyteiM4Ajgs1",
+      "discussionNumber": 53,
+      "status": "open",
+      "lastVoteCount": 0,
+      "githubVotes": 0,
+      "source": "github",
+      "title": "Notes field on categories or merchants",
+      "description": "688\nDashboard & System Wide\nView on Monarch's Roadmap",
+      "category": "Community"
+    },
+    "github-44": {
+      "discussionId": "D_kwDOQyteiM4AjgiZ",
+      "discussionNumber": 44,
+      "status": "open",
+      "lastVoteCount": 0,
+      "githubVotes": 0,
+      "source": "github",
+      "title": "customize columns in main transactions view",
+      "description": "704\nTransactions\nView on Monarch's Roadmap",
       "category": "Community"
     }
   }
