@@ -10,8 +10,10 @@ Manages security event logging and retrieval:
 
 import csv
 import io
+import ipaddress
 import json
 import logging
+import re
 import sqlite3
 import threading
 import urllib.error
@@ -445,10 +447,16 @@ class SecurityService:
         Returns:
             Tuple of (country, city) or (None, None) on failure
         """
-        # Skip private/local IPs
-        if not ip_address or ip_address in ("127.0.0.1", "localhost", "::1"):
+        # Validate IP address format to prevent SSRF
+        if not ip_address:
             return None, None
-        if ip_address.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.")):
+        try:
+            parsed_ip = ipaddress.ip_address(ip_address)
+        except ValueError:
+            return None, None
+
+        # Skip private/local/reserved IPs
+        if parsed_ip.is_private or parsed_ip.is_loopback or parsed_ip.is_reserved:
             return None, None
 
         # Check cache first
@@ -458,7 +466,7 @@ class SecurityService:
 
         # Fetch from ip-api.com (free tier: 45 requests/minute)
         try:
-            url = f"http://ip-api.com/json/{ip_address}?fields=status,country,city"
+            url = f"http://ip-api.com/json/{parsed_ip}?fields=status,country,city"
             req = urllib.request.Request(url, headers={"User-Agent": "Eclosion/1.0"})
             with urllib.request.urlopen(req, timeout=5) as response:
                 data = json.loads(response.read().decode())
@@ -468,7 +476,9 @@ class SecurityService:
                     self._cache_geolocation(ip_address, country, city)
                     return country, city
         except Exception as e:
-            logger.warning("Geolocation lookup failed for %s: %s", ip_address, e)
+            # Sanitize error message to prevent log injection
+            sanitized_error = re.sub(r"[\r\n]", " ", str(e))
+            logger.warning("Geolocation lookup failed for %s: %s", parsed_ip, sanitized_error)
 
         return None, None
 

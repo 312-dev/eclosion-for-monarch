@@ -8,10 +8,8 @@
 import { useState, useRef } from 'react';
 import { Upload, X, AlertTriangle, Check, FileJson } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDemo } from '../context/DemoContext';
 import { useToast } from '../context/ToastContext';
-import * as api from '../api/client';
-import * as demoApi from '../api/demoClient';
+import { useApiClient } from '../hooks';
 import type { EclosionExport, ImportPreview } from '../types';
 
 interface ImportSettingsModalProps {
@@ -29,10 +27,9 @@ export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProp
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isDemo = useDemo();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const client = isDemo ? demoApi : api;
+  const client = useApiClient();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];

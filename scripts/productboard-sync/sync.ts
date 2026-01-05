@@ -353,7 +353,7 @@ function extractDescription(body: string): string {
   const cleaned = body
     .replaceAll(/\*\*[^*]+\*\*:?\s*/g, '') // Remove bold labels
     .replaceAll(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Convert links to text
-    .replaceAll(/<!--[^>]+-->/g, '') // Remove HTML comments
+    .replaceAll(/<!--[\s\S]*?-->/g, '') // Remove HTML comments (non-greedy, handles > inside)
     .replaceAll(/^#+\s+.+$/gm, '') // Remove headers
     .replaceAll(/^-+$/gm, '') // Remove horizontal rules
     .replaceAll(/^\s*[-*]\s+/gm, '') // Remove list markers
