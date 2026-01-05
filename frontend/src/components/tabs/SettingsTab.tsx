@@ -21,12 +21,10 @@ import { UpdateModal } from '../UpdateModal';
 import { VersionBadge } from '../VersionBadge';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme, type Theme } from '../../context/ThemeContext';
-import * as api from '../../api/client';
-import * as demoApi from '../../api/demoClient';
 import type { DashboardData, AutoSyncStatus, CategoryGroup, VersionInfo } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { useDemo } from '../../context/DemoContext';
-import { usePageTitle } from '../../hooks';
+import { usePageTitle, useApiClient } from '../../hooks';
 import { getLandingPage, setLandingPage } from '../../App';
 import { RecurringIcon } from '../wizards/WizardComponents';
 import { UI } from '../../constants';
@@ -104,7 +102,7 @@ export function SettingsTab() {
   }, []);
 
   // Get the appropriate client based on demo mode
-  const client = isDemo ? demoApi : api;
+  const client = useApiClient();
 
   const fetchVersionInfo = async () => {
     try {
