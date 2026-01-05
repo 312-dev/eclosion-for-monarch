@@ -50,7 +50,7 @@ jobs:
             exit 0
           fi
 
-          if [[ "$HEAD_REF" =~ ^chore/productboard-sync- ]]; then
+          if [[ "$HEAD_REF" =~ ^update/productboard-sync- ]]; then
             echo "✅ ProductBoard sync branch - automated data update"
             echo "result=success" >> $GITHUB_OUTPUT
             echo "description=ProductBoard sync branch - automated data update" >> $GITHUB_OUTPUT
