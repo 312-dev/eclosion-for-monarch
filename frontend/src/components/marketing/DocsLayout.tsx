@@ -13,6 +13,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { IdeasModal } from '../IdeasModal';
 import { Portal } from '../Portal';
 import { MarketingVersionIndicator } from './MarketingVersionIndicator';
+import { useLandingContent } from '../../hooks';
 
 interface DocsLayoutProps {
   children: React.ReactNode;
@@ -60,6 +61,7 @@ function NavLink({
 }
 
 export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
+  const { isCoderMode } = useLandingContent();
   const { theme, setTheme } = useTheme();
   const [showIdeasModal, setShowIdeasModal] = useState(false);
 
@@ -108,15 +110,19 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   User Guide
                 </a>
                 <NavLink to="/demo">Demo</NavLink>
-                <NavLink
-                  to="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
-                  external
-                >
-                  Self-Hosting
-                </NavLink>
-                <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
-                  GitHub
-                </NavLink>
+                {isCoderMode && (
+                  <>
+                    <NavLink
+                      to="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
+                      external
+                    >
+                      Self-Hosting
+                    </NavLink>
+                    <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
+                      GitHub
+                    </NavLink>
+                  </>
+                )}
               </nav>
             )}
 
@@ -138,14 +144,16 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   >
                     User Guide
                   </a>
-                  <a
-                    href="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
-                  >
-                    Self-Hosting
-                  </a>
+                  {isCoderMode && (
+                    <a
+                      href="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors mr-2"
+                    >
+                      Self-Hosting
+                    </a>
+                  )}
                 </>
               )}
 
@@ -160,15 +168,17 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
               </button>
 
               {/* GitHub Link (mobile) */}
-              <a
-                href="https://github.com/graysoncadams/eclosion-for-monarch"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center w-10 h-10 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-text-dark)] hover:bg-[var(--monarch-bg-hover)] transition-colors md:hidden"
-                aria-label="View on GitHub"
-              >
-                <GitHubIcon size={20} />
-              </a>
+              {isCoderMode && (
+                <a
+                  href="https://github.com/graysoncadams/eclosion-for-monarch"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-10 h-10 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-text-dark)] hover:bg-[var(--monarch-bg-hover)] transition-colors md:hidden"
+                  aria-label="View on GitHub"
+                >
+                  <GitHubIcon size={20} />
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -198,16 +208,20 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
               >
                 Roadmap
               </button>
-              <span className="hidden sm:inline">•</span>
-              <a
-                href="https://github.com/graysoncadams/eclosion-for-monarch"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 hover:text-[var(--monarch-text-dark)] transition-colors"
-              >
-                <GitHubIcon size={16} />
-                GitHub
-              </a>
+              {isCoderMode && (
+                <>
+                  <span className="hidden sm:inline">•</span>
+                  <a
+                    href="https://github.com/graysoncadams/eclosion-for-monarch"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 hover:text-[var(--monarch-text-dark)] transition-colors"
+                  >
+                    <GitHubIcon size={16} />
+                    GitHub
+                  </a>
+                </>
+              )}
               <span className="hidden sm:inline">•</span>
               <span>
                 Built for{' '}

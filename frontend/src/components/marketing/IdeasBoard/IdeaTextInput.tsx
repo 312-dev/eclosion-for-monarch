@@ -8,6 +8,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
 import { IDEAS_BOARD } from '../../../constants';
+import { useIdeaInputSafe } from '../../../context';
+import { useLandingContent } from '../../../hooks';
 
 interface IdeaTextInputProps {
   readonly onFocus?: () => void;
@@ -34,6 +36,7 @@ function buildDiscussionUrl(ideaText: string): string {
 }
 
 export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputProps) {
+  const { getContent } = useLandingContent();
   const [inputValue, setInputValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState('');
@@ -43,6 +46,19 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
 
   const inputRef = useRef<HTMLInputElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Coordinate with bottom input (CustomProblemCard)
+  const ideaInput = useIdeaInputSafe();
+  const isHidden = ideaInput?.isBottomInputVisible ?? false;
+
+  // Transfer content to bottom input when this one hides
+  useEffect(() => {
+    if (isHidden && inputValue.trim()) {
+      ideaInput?.setTransferredContent(inputValue);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync for content transfer
+      setInputValue('');
+    }
+  }, [isHidden, inputValue, ideaInput]);
 
   // promptIndex is always valid (0 to length-1), so we can safely assert non-null
   const currentPrompt = PLACEHOLDER_PROMPTS[promptIndex % PLACEHOLDER_PROMPTS.length] as string;
@@ -145,8 +161,13 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
 
   const showCursor = !isFocused && !inputValue && !reducedMotion;
 
+  // Don't render if hidden (after fade-out completes)
+  if (isHidden) {
+    return null;
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="relative">
+    <form onSubmit={handleSubmit} className="relative transition-opacity duration-300">
       <div className="relative">
         <input
           ref={inputRef}
@@ -162,7 +183,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
         {/* Custom placeholder with typewriter effect */}
         {!inputValue && (
           <div
-            className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-[var(--monarch-text-muted)]"
+            className="absolute left-4 right-12 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-[var(--monarch-text-muted)] truncate"
             aria-hidden="true"
           >
             {displayedPlaceholder}
@@ -175,7 +196,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
           type="submit"
           disabled={!inputValue.trim()}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--monarch-orange)]/10 text-[var(--monarch-orange)]"
-          aria-label="Submit idea to GitHub Discussions"
+          aria-label={getContent('ideaSubmission', 'submitAriaLabel')}
         >
           <Send className="h-4 w-4" />
         </button>
@@ -183,7 +204,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
 
       {/* Helper text */}
       <p className="mt-2 text-xs text-[var(--monarch-text-muted)] text-center">
-        Opens GitHub Discussions in a new tab
+        {getContent('ideaSubmission', 'helperText')}
       </p>
     </form>
   );

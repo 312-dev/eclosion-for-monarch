@@ -13,3 +13,7 @@ export {
   type AuthActions,
   type AuthContextValue,
 } from './AuthContext';
+
+export { IdeaInputProvider, useIdeaInput, useIdeaInputSafe } from './IdeaInputContext';
+
+export { CoderModeProvider, useCoderMode, useCoderModeSafe } from './CoderModeContext';

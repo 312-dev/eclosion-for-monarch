@@ -14,6 +14,7 @@ import {
   GitHubIcon,
 } from '../icons';
 import { ApiSyncAnimation } from './ApiSyncAnimation';
+import { useLandingContent } from '../../hooks';
 
 function BentoCard({
   children,
@@ -45,6 +46,8 @@ function BentoCard({
 }
 
 export function WhyEclosionSection() {
+  const { getContent, isCoderMode } = useLandingContent();
+
   return (
     <section className="px-4 sm:px-6 py-20 bg-[var(--monarch-bg-card)]">
       <div className="max-w-5xl mx-auto">
@@ -126,19 +129,21 @@ export function WhyEclosionSection() {
                 Community-Powered
               </h3>
               <p className="text-sm text-[var(--monarch-text)] leading-relaxed">
-                Open source means your idea could ship next week.
+                {getContent('whyEclosion', 'communityDescription')}
               </p>
             </div>
-            <a
-              href="https://github.com/monarchmoney/eclosion"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80 mt-4"
-              style={{ color: '#a78bfa' }}
-            >
-              <GitHubIcon size={18} />
-              View on GitHub
-            </a>
+            {isCoderMode && (
+              <a
+                href="https://github.com/monarchmoney/eclosion"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80 mt-4"
+                style={{ color: '#a78bfa' }}
+              >
+                <GitHubIcon size={18} />
+                View on GitHub
+              </a>
+            )}
           </BentoCard>
 
           {/* Fully Yours - Wide card */}
@@ -158,8 +163,7 @@ export function WhyEclosionSection() {
                 Fully Yours
               </h3>
               <p className="text-sm text-[var(--monarch-text)]">
-                Self-hosted. Your credentials stay encrypted on your server. No
-                one else can access them. Ever.
+                {getContent('whyEclosion', 'fullyYoursDescription')}
               </p>
             </div>
           </BentoCard>

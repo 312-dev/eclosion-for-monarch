@@ -63,3 +63,5 @@ export {
   type Contributor,
   type FeatureContributors,
 } from './useContributors';
+
+export { useLandingContent } from './useLandingContent';

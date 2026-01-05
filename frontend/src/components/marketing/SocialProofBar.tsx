@@ -7,8 +7,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { GitHubIcon, ShieldCheckIcon, ServerIcon } from '../icons';
+import { useLandingContent } from '../../hooks';
 
 export function SocialProofBar() {
+  const { getContent } = useLandingContent();
   const [count, setCount] = useState(1);
   const [hasAnimated, setHasAnimated] = useState(false);
   const statRef = useRef<HTMLDivElement>(null);
@@ -22,14 +24,14 @@ export function SocialProofBar() {
           setHasAnimated(true);
           let current = 1;
           const interval = setInterval(() => {
-            current += 3;
+            current += 1;
             if (current >= 100) {
               setCount(100);
               clearInterval(interval);
             } else {
               setCount(current);
             }
-          }, 15);
+          }, 20);
         }
       },
       { threshold: 0.5 }
@@ -49,7 +51,7 @@ export function SocialProofBar() {
           {/* Open source */}
           <div className="social-proof-stat" ref={statRef}>
             <GitHubIcon size={18} />
-            <span>{count}% open source</span>
+            <span>{count}{getContent('socialProof', 'openSource')}</span>
           </div>
 
           {/* Self-hosted */}

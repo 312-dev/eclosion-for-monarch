@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { useLandingContent } from '../../hooks';
 
 interface PriceExplainerPopoverProps {
   readonly children: ReactNode;
@@ -22,6 +23,7 @@ interface PopoverPosition {
 }
 
 export function PriceExplainerPopover({ children }: Readonly<PriceExplainerPopoverProps>) {
+  const { getContent } = useLandingContent();
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<PopoverPosition>({ top: 0, left: 0, transform: 'translateX(-50%)' });
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -150,8 +152,7 @@ export function PriceExplainerPopover({ children }: Readonly<PriceExplainerPopov
           </p>
 
           <p>
-            <strong>Already technical?</strong> Self-host on your own hardware
-            for $0.
+            {getContent('priceExplainer', 'technicalOption')}
           </p>
 
           <p>

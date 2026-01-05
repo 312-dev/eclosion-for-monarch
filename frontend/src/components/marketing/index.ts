@@ -28,3 +28,6 @@ export { WhyEclosionSection } from './WhyEclosionSection';
 
 // Ideas Board components
 export { IdeasBoard } from './IdeasBoard';
+
+// Coder mode toggle
+export { CoderModeToggle } from './CoderModeToggle';
