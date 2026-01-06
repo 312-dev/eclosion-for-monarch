@@ -47,7 +47,7 @@ export function FrustrationCard({
 
   return (
     <article
-      className={`frustration-card ${animationClass} ${isDismissing ? 'frustration-swipe-away' : ''}`}
+      className={`frustration-card frustration-card-single ${animationClass} ${isDismissing ? 'frustration-swipe-away' : ''}`}
     >
       <div className="flex items-center gap-3 mb-3">
         <div
@@ -68,7 +68,7 @@ export function FrustrationCard({
           <button
             type="button"
             onClick={() => setSelected('yes')}
-            className="px-4 py-1.5 text-sm font-medium rounded-full transition-colors bg-[var(--monarch-bg-page)] text-[var(--monarch-text-muted)] hover:bg-[var(--monarch-bg-hover)] hover:text-[var(--monarch-text-dark)]"
+            className="px-4 py-1.5 text-sm font-medium rounded-full transition-colors bg-teal-500/10 text-teal-300/80 hover:bg-teal-500/20 hover:text-teal-200"
           >
             {yesText}
           </button>
@@ -81,7 +81,7 @@ export function FrustrationCard({
           <button
             type="button"
             onClick={handleDismiss}
-            className="px-4 py-1.5 text-sm font-medium rounded-full transition-colors bg-[var(--monarch-bg-page)] text-[var(--monarch-text-muted)] hover:bg-[var(--monarch-bg-hover)] hover:text-[var(--monarch-text-dark)]"
+            className="px-4 py-1.5 text-sm font-medium rounded-full transition-colors bg-rose-500/10 text-rose-300/80 hover:bg-rose-500/20 hover:text-rose-200"
           >
             {noText}
           </button>

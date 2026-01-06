@@ -7,9 +7,16 @@
  * Stacked layout on mobile: branding top, IdeasBoard below.
  */
 
-import { ChevronRightIcon } from '../icons';
+import {
+  ChevronRightIcon,
+  WindowsIcon,
+  AppleIcon,
+  LinuxIcon,
+  GlobeIcon,
+} from '../icons';
 import { AppIcon } from '../wizards/SetupWizardIcons';
 import { IdeasBoard } from './IdeasBoard';
+import { CoderModeToggle } from './CoderModeToggle';
 
 interface HeroProps {
   readonly onGetStarted?: () => void;
@@ -67,6 +74,54 @@ export function Hero({ onGetStarted, demoHref = '/demo' }: HeroProps) {
           >
             Explore Demo
           </a>
+        </div>
+
+        {/* Platform Icons */}
+        <div className="flex items-center justify-center lg:justify-start gap-4 mt-6">
+          <span className="text-sm text-[var(--monarch-text-muted)]">
+            Available for:
+          </span>
+          <div className="flex items-center gap-3">
+            <a
+              href="/download?platform=windows"
+              aria-label="Download for Windows"
+              className="p-2 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)] hover:bg-[var(--monarch-bg-hover)] transition-colors"
+            >
+              <WindowsIcon size={22} />
+            </a>
+            <a
+              href="/download?platform=macos"
+              aria-label="Download for macOS"
+              className="p-2 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)] hover:bg-[var(--monarch-bg-hover)] transition-colors"
+            >
+              <AppleIcon size={22} />
+            </a>
+            <a
+              href="/download?platform=linux"
+              aria-label="Download for Linux"
+              className="p-2 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)] hover:bg-[var(--monarch-bg-hover)] transition-colors"
+            >
+              <LinuxIcon size={22} />
+            </a>
+            <span className="w-px h-5 bg-[var(--monarch-border)]" />
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                onGetStarted?.();
+              }}
+              aria-label="Cloud hosted (24/7)"
+              className="p-2 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)] hover:bg-[var(--monarch-bg-hover)] transition-colors"
+              title="24/7 Cloud Hosted"
+            >
+              <GlobeIcon size={22} />
+            </a>
+          </div>
+        </div>
+
+        {/* Coder Mode Toggle */}
+        <div className="mt-6 flex justify-center lg:justify-start">
+          <CoderModeToggle />
         </div>
       </div>
 

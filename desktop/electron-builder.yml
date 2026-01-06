@@ -1,0 +1,119 @@
+appId: com.eclosion.desktop
+productName: Eclosion
+copyright: Copyright (c) 2024-2025
+
+# Build directories
+directories:
+  output: release
+  buildResources: assets
+
+# Files to include in the app
+files:
+  - dist/**/*
+  - "!node_modules/**/*"
+
+# Extra resources (not in asar)
+extraResources:
+  # Frontend build
+  - from: ../frontend/dist
+    to: frontend
+    filter:
+      - "**/*"
+  # Python backend executable
+  - from: pyinstaller/dist/eclosion-backend
+    to: backend
+    filter:
+      - "**/*"
+
+# Publish to GitHub Releases
+publish:
+  provider: github
+  owner: graysoncadams
+  repo: eclosion-for-monarch
+  releaseType: release
+
+# macOS configuration
+mac:
+  category: public.app-category.finance
+  target:
+    - dmg
+    - zip
+  icon: assets/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: entitlements.mac.plist
+  entitlementsInherit: entitlements.mac.plist
+  darkModeSupport: true
+
+# macOS code signing
+afterSign: notarize.js
+
+# DMG configuration
+dmg:
+  sign: false
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+
+# Windows configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+  publisherName: Eclosion
+
+# NSIS installer configuration
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Eclosion
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  differentialPackage: true
+
+# Linux configuration
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Finance
+  icon: assets/icon.png
+  maintainer: grayson@eclosion.app
+  vendor: Eclosion
+  synopsis: Recurring expense tracker for Monarch Money
+  description: A self-hosted toolkit that expands what's possible with Monarch Money
+
+# AppImage configuration
+appImage:
+  artifactName: ${productName}-${version}.${ext}
+
+# Debian package configuration
+deb:
+  depends:
+    - gconf2
+    - gconf-service
+    - libnotify4
+    - libappindicator1
+    - libxtst6
+    - libnss3
+
+# Auto-update configuration
+# electron-updater will look for these manifest files
+# latest.yml (Windows), latest-mac.yml (macOS), latest-linux.yml (Linux)

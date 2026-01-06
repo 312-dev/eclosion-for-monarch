@@ -16,7 +16,6 @@ import {
   SocialProofBar,
   PriceExplainerPopover,
   WhyEclosionSection,
-  CoderModeToggle,
 } from '../components/marketing';
 import { GetStartedModal } from '../components/ui/GetStartedModal';
 import { IdeaInputProvider, CoderModeProvider } from '../context';
@@ -88,11 +87,6 @@ export function LandingPage() {
         <DocsLayout>
           {/* Hero Section */}
           <Hero onGetStarted={() => setShowGetStartedModal(true)} />
-
-          {/* Coder Mode Toggle */}
-          <div className="bg-(--monarch-bg-card) border-b border-(--monarch-border)">
-            <CoderModeToggle />
-          </div>
 
           {/* Frustration Validation Section */}
           <FrustrationSection onShowSolution={scrollToTransformation} />

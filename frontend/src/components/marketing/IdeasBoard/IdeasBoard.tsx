@@ -140,101 +140,105 @@ export function IdeasBoard() {
 
   return (
     <section
-      className="w-full max-w-sm mx-auto space-y-4"
+      className="w-full max-w-sm mx-auto"
       aria-label="Community ideas board"
     >
-      {/* Main animation area */}
-      <div
-        className={`min-h-[180px] relative transition-opacity duration-500 ${
-          isResetting ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        {/* Stacking phase: Show ideas dropping in one at a time */}
-        {(animationPhase === 'stacking' || animationPhase === 'accumulating-votes') && (
-          <div className="relative h-[160px] px-2 -mx-2">
-            {stackedIdeas.slice(0, visibleStackCount).map((idea, index) => (
-              <IdeaBubble
-                key={idea.id}
-                idea={idea}
-                isUpvoting={isUpvoting && index === visibleStackCount - 1}
-                voteBonus={index === visibleStackCount - 1 ? voteAccumulationCount : 0}
-                reducedMotion={prefersReducedMotion}
-                isStacked
-                stackPosition={index}
-                isFeatured={false}
-                isTopCard={index === visibleStackCount - 1}
-              />
-            ))}
-          </div>
-        )}
+      {/* Container with subtle border for visual separation */}
+      <div className="rounded-2xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-elevated)]/30 p-4 space-y-4">
+        {/* Main animation area - pt-5 accommodates badges positioned above cards (-top-3 = 12px) */}
+        <div
+          className={`min-h-[180px] pt-5 relative transition-opacity duration-500 ${
+            isResetting ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          {/* Stacking phase: Show ideas dropping in one at a time */}
+          {(animationPhase === 'stacking' || animationPhase === 'accumulating-votes') && (
+            <div className="relative h-[160px] pt-1">
+              {stackedIdeas.slice(0, visibleStackCount).map((idea, index) => (
+                <IdeaBubble
+                  key={idea.id}
+                  idea={idea}
+                  isUpvoting={isUpvoting && index === visibleStackCount - 1}
+                  voteBonus={index === visibleStackCount - 1 ? voteAccumulationCount : 0}
+                  reducedMotion={prefersReducedMotion}
+                  isStacked
+                  stackPosition={index}
+                  isFeatured={false}
+                  isTopCard={index === visibleStackCount - 1}
+                />
+              ))}
+            </div>
+          )}
 
-        {/* Morphing phase: Smooth transition from voting card to dev card */}
-        {animationPhase === 'morphing-to-dev' && featuredIdea && (
-          <div className="relative h-[160px] px-2 -mx-2">
-            {/* Show bottom cards fading out */}
-            {stackedIdeas.slice(0, visibleStackCount - 1).map((idea, index) => (
+          {/* Morphing phase: Smooth transition from voting card to dev card */}
+          {animationPhase === 'morphing-to-dev' && featuredIdea && (
+            <div className="relative h-[160px] pt-1">
+              {/* Show bottom cards fading out */}
+              {stackedIdeas.slice(0, visibleStackCount - 1).map((idea, index) => (
+                <IdeaBubble
+                  key={idea.id}
+                  idea={idea}
+                  isUpvoting={false}
+                  reducedMotion={prefersReducedMotion}
+                  isStacked
+                  stackPosition={index}
+                  isFeatured={false}
+                  isTopCard={false}
+                  isMorphingOut
+                />
+              ))}
+              {/* Top card morphs into dev card with pop animation */}
               <IdeaBubble
-                key={idea.id}
-                idea={idea}
+                key={featuredIdea.id}
+                idea={featuredIdea}
                 isUpvoting={false}
+                voteBonus={voteAccumulationCount}
                 reducedMotion={prefersReducedMotion}
                 isStacked
-                stackPosition={index}
+                stackPosition={visibleStackCount - 1}
                 isFeatured={false}
-                isTopCard={false}
-                isMorphingOut
+                isTopCard
+                isMorphingToDev
               />
-            ))}
-            {/* Top card morphs into dev card with pop animation */}
-            <IdeaBubble
-              key={featuredIdea.id}
-              idea={featuredIdea}
-              isUpvoting={false}
-              voteBonus={voteAccumulationCount}
-              reducedMotion={prefersReducedMotion}
-              isStacked
-              stackPosition={visibleStackCount - 1}
-              isFeatured={false}
-              isTopCard
-              isMorphingToDev
-            />
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Dev cycle: Show the featured idea going through the pipeline */}
-        {/* Also show during 'resetting' so the card fades out with the container */}
-        {(animationPhase === 'dev-cycle' || animationPhase === 'resetting') && featuredIdea && (
-          <div className="dev-card-enter">
-            <DevCycleCard
-              idea={featuredIdea}
-              stage={devCycleStage}
-              reducedMotion={prefersReducedMotion}
-              developers={developers}
-              devProgress={devProgress}
-            />
-          </div>
-        )}
+          {/* Dev cycle: Show the featured idea going through the pipeline */}
+          {/* Also show during 'resetting' so the card fades out with the container */}
+          {/* No entrance animation - IdeaBubble already morphed into this appearance */}
+          {(animationPhase === 'dev-cycle' || animationPhase === 'resetting') && featuredIdea && (
+            <div className="pt-1">
+              <DevCycleCard
+                idea={featuredIdea}
+                stage={devCycleStage}
+                reducedMotion={prefersReducedMotion}
+                developers={developers}
+                devProgress={devProgress}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Stats bar */}
+        <div className="flex items-center justify-center gap-4 text-xs text-[var(--monarch-text-muted)]">
+          <span className="flex items-center gap-1">
+            <span className="font-semibold text-[var(--monarch-text-dark)]">{openIdeas.length}</span>
+            open ideas
+          </span>
+          <span className="w-1 h-1 rounded-full bg-[var(--monarch-border)]" />
+          <span className="flex items-center gap-1">
+            <span className="font-semibold text-[var(--monarch-success)]">{shippedCount}</span>
+            shipped
+          </span>
+        </div>
+
+        {/* Input area */}
+        <IdeaTextInput
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          reducedMotion={prefersReducedMotion}
+        />
       </div>
-
-      {/* Stats bar */}
-      <div className="flex items-center justify-center gap-4 text-xs text-[var(--monarch-text-muted)]">
-        <span className="flex items-center gap-1">
-          <span className="font-semibold text-[var(--monarch-text-dark)]">{openIdeas.length}</span>
-          open ideas
-        </span>
-        <span className="w-1 h-1 rounded-full bg-[var(--monarch-border)]" />
-        <span className="flex items-center gap-1">
-          <span className="font-semibold text-[var(--monarch-success)]">{shippedCount}</span>
-          shipped
-        </span>
-      </div>
-
-      {/* Input area */}
-      <IdeaTextInput
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
-        reducedMotion={prefersReducedMotion}
-      />
     </section>
   );
 }

@@ -26,6 +26,7 @@ Please be respectful and constructive in all interactions. Contributors of all e
 - Python 3.11+
 - Node.js 20+
 - Docker (optional, for containerized development)
+- PyInstaller (for desktop builds)
 
 ### Development Setup
 
@@ -62,6 +63,25 @@ Please be respectful and constructive in all interactions. Contributors of all e
    ```bash
    docker compose up --build
    ```
+
+5. **Desktop development** (optional)
+   ```bash
+   cd desktop
+   npm install
+
+   # Development mode (requires backend running separately)
+   npm run dev
+
+   # Build for your platform
+   npm run dist:mac     # macOS
+   npm run dist:win     # Windows
+   npm run dist:linux   # Linux
+   ```
+
+   The desktop app bundles the Python backend via PyInstaller. For development:
+   - Run `python app.py` for the backend
+   - Run `cd frontend && npm run dev` for the frontend
+   - Run `cd desktop && npm run dev` to test the Electron shell
 
 ### Environment Variables
 
@@ -235,6 +255,18 @@ The following secrets are required for CI/CD workflows:
 | `MODELS_TOKEN` | Access GitHub Models API for AI features | GitHub Models access |
 | `CLOUDFLARE_API_TOKEN` | Deploy to Cloudflare Pages | Cloudflare API token |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | — |
+
+**Desktop Signing (macOS only - optional):**
+
+| Secret | Purpose |
+|--------|---------|
+| `APPLE_CERTIFICATE` | Base64-encoded Developer ID certificate (.p12) |
+| `APPLE_CERTIFICATE_PASSWORD` | Password for the certificate |
+| `APPLE_ID` | Apple ID email for notarization |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password from appleid.apple.com |
+| `APPLE_TEAM_ID` | Apple Developer Team ID |
+
+> **Note**: macOS code signing is optional. Without these secrets, the app builds but won't be notarized (users may need to right-click → Open on first launch).
 
 > **Note**: PRs created using `GITHUB_TOKEN` don't trigger other workflows (GitHub's recursive workflow prevention). Workflows that create PRs with auto-merge use `CI_TRIGGER_PAT` to ensure CI runs.
 
@@ -419,6 +451,7 @@ This project uses two versioning schemes:
                       ▼
 ┌─────────────────────────────────────────────────────────┐
 │        MANUAL: Run "Create Beta Release" workflow       │
+│  → Runs security scan (HIGH+ blocks)                    │
 │  → Reads version from package.json (e.g., 1.1.0)        │
 │  → Creates tag: v1.1.0-beta.20260104.1                  │
 │  → Creates GitHub pre-release                           │
@@ -429,6 +462,7 @@ This project uses two versioning schemes:
 │              AUTOMATIC: prereleased event               │
 │  → Deploys to beta.eclosion.app                         │
 │  → Builds Docker image with beta tag                    │
+│  → Builds desktop apps for all platforms                │
 └─────────────────────────────────────────────────────────┘
                       │
                       │ (when ready for production)
@@ -453,6 +487,7 @@ This project uses two versioning schemes:
 │  → GitHub release created (e.g., v1.2.0)                │
 │  → Production deployment triggered                      │
 │  → Docker image published                               │
+│  → Desktop apps built and attached to release           │
 │  → Future betas use new version as base                 │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -473,6 +508,7 @@ The workflow automatically:
 - Creates a GitHub pre-release with auto-generated notes
 - Triggers deployment to beta.eclosion.app
 - Builds and publishes a Docker image
+- Builds desktop apps for macOS (universal), Windows, and Linux
 
 > **Security Gate**: Beta releases run the full security scan suite against the develop branch. Any HIGH or CRITICAL vulnerabilities will block the release. DAST is skipped for faster execution.
 
@@ -597,6 +633,22 @@ npm run test:ui
 npm run test:coverage
 ```
 
+### Desktop Tests
+
+```bash
+cd desktop
+
+# Run unit tests
+npm test
+
+# Run with watch mode
+npm run test:watch
+
+# Lint and type check
+npm run lint
+npm run type-check
+```
+
 ## Architecture Overview
 
 ### Backend Structure
@@ -626,6 +678,52 @@ frontend/src/
   test/             # Test utilities and setup
   types/            # TypeScript type definitions
   utils/            # Utility functions
+```
+
+### Desktop Structure
+
+```
+desktop/
+  src/
+    main/           # Electron main process
+      index.ts      # Entry point
+      backend.ts    # Python subprocess management
+      window.ts     # BrowserWindow lifecycle
+      tray.ts       # System tray integration
+      autostart.ts  # Auto-launch on login
+      updater.ts    # Auto-update via GitHub Releases
+      ipc.ts        # IPC handlers for renderer
+    preload/
+      index.ts      # Secure context bridge
+  scripts/
+    build-backend.js    # PyInstaller wrapper
+    generate-icons.js   # Icon generation from SVG
+    package-all.js      # Full build orchestration
+  pyinstaller/
+    eclosion.spec       # PyInstaller configuration
+  assets/               # App icons (icns, ico, png)
+  electron-builder.yml  # Cross-platform build config
+```
+
+**Desktop Architecture:**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Electron                          │
+│  ┌─────────────────┐    ┌─────────────────────────┐ │
+│  │   Main Process  │    │    Renderer (React)     │ │
+│  │  - Spawn Python │    │    - Served locally     │ │
+│  │  - System tray  │◄──►│    - API calls to       │ │
+│  │  - Auto-update  │    │      localhost:PORT     │ │
+│  └────────┬────────┘    └─────────────────────────┘ │
+│           │                                          │
+│           ▼                                          │
+│  ┌─────────────────┐                                │
+│  │ Python Backend  │  (PyInstaller executable)      │
+│  │  - Flask API    │                                │
+│  │  - APScheduler  │                                │
+│  └─────────────────┘                                │
+└─────────────────────────────────────────────────────┘
 ```
 
 ### Key Patterns

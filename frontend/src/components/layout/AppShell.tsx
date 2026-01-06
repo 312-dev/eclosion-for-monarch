@@ -19,6 +19,8 @@ import { APP_TOUR_STEPS, appTourStyles } from './appShellTour';
 import { SyncButton } from '../SyncButton';
 import { SecurityInfo } from '../SecurityInfo';
 import { UpdateBanner } from '../UpdateBanner';
+import { UpdateReadyBanner } from '../update';
+import { WhatsNewModal } from '../WhatsNewModal';
 import { VersionIndicator } from '../VersionIndicator';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { SecurityAlertBanner } from '../SecurityAlertBanner';
@@ -104,8 +106,9 @@ export function AppShell() {
     >
       <TourController isOpen={showTour} onClose={() => setShowTour(false)} />
       <div className="app-layout" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
-        {/* Update notification banner */}
+        {/* Update notification banners */}
         <UpdateBanner />
+        <UpdateReadyBanner />
 
         {/* Skip to main content link for keyboard users */}
         <a href="#main-content" className="skip-link">
@@ -155,6 +158,9 @@ export function AppShell() {
           isOpen={showSecurityInfo}
           onClose={() => setShowSecurityInfo(false)}
         />
+
+        {/* What's New modal - shows on first open after upgrade */}
+        <WhatsNewModal />
 
         {/* Main Layout: Sidebar + Content + Stats */}
         <div className="app-body">

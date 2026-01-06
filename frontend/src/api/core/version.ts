@@ -15,6 +15,7 @@ export interface Release {
   is_prerelease: boolean;
   html_url: string;
   is_current: boolean;
+  release_notes?: string;
 }
 
 export interface ReleasesResponse {

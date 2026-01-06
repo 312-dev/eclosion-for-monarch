@@ -21,7 +21,7 @@ export interface ModalProps {
   /** Handler to close the modal */
   onClose: () => void;
   /** Modal title */
-  title: string;
+  title: ReactNode;
   /** Optional description below title */
   description?: string;
   /** Modal content */

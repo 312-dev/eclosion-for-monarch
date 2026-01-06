@@ -1,0 +1,421 @@
+name: Build Desktop App
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version number for the release'
+        required: true
+        type: string
+      upload_to_release:
+        description: 'Upload artifacts to GitHub Release'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      APPLE_CERTIFICATE:
+        required: false
+      APPLE_CERTIFICATE_PASSWORD:
+        required: false
+      APPLE_ID:
+        required: false
+      APPLE_APP_SPECIFIC_PASSWORD:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+        default: '1.0.0'
+      upload_to_release:
+        description: 'Upload to GitHub Release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # Build Python Backend for macOS (both architectures)
+  # =========================================================================
+  build-backend-mac:
+    strategy:
+      matrix:
+        include:
+          - runner: macos-13
+            arch: x64
+          - runner: macos-14
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build backend with PyInstaller
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-mac-${{ matrix.arch }}
+          path: desktop/pyinstaller/dist/eclosion-backend
+          retention-days: 1
+
+  # =========================================================================
+  # Build Python Backend for Windows
+  # =========================================================================
+  build-backend-win:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build backend with PyInstaller
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-win-x64
+          path: desktop/pyinstaller/dist/eclosion-backend
+          retention-days: 1
+
+  # =========================================================================
+  # Build Python Backend for Linux
+  # =========================================================================
+  build-backend-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build backend with PyInstaller
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-linux-x64
+          path: desktop/pyinstaller/dist/eclosion-backend
+          retention-days: 1
+
+  # =========================================================================
+  # Create macOS Universal Binary and Package
+  # =========================================================================
+  package-mac:
+    needs: build-backend-mac
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Download backend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: backend-mac-*
+          path: backend-artifacts
+
+      - name: Create universal binary
+        run: |
+          mkdir -p desktop/pyinstaller/dist/eclosion-backend
+
+          # Copy ARM64 backend as base
+          cp -R backend-artifacts/backend-mac-arm64/* desktop/pyinstaller/dist/eclosion-backend/
+
+          # Create universal binary using lipo for the main executable
+          lipo -create \
+            backend-artifacts/backend-mac-x64/eclosion-backend \
+            backend-artifacts/backend-mac-arm64/eclosion-backend \
+            -output desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+
+          # Make executable
+          chmod +x desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+
+          echo "Universal binary created:"
+          file desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+
+      - name: Import Code Signing Certificate
+        if: env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          rm certificate.p12
+
+      - name: Package for macOS
+        working-directory: desktop
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac --publish never
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eclosion-macos
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+            desktop/release/latest-mac.yml
+          retention-days: 7
+
+  # =========================================================================
+  # Package for Windows
+  # =========================================================================
+  package-win:
+    needs: build-backend-win
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-win-x64
+          path: desktop/pyinstaller/dist/eclosion-backend
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+
+      - name: Package for Windows
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish never
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eclosion-windows
+          path: |
+            desktop/release/*.exe
+            desktop/release/latest.yml
+          retention-days: 7
+
+  # =========================================================================
+  # Package for Linux
+  # =========================================================================
+  package-linux:
+    needs: build-backend-linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-linux-x64
+          path: desktop/pyinstaller/dist/eclosion-backend
+
+      - name: Make backend executable
+        run: chmod +x desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+
+      - name: Package for Linux
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux --publish never
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eclosion-linux
+          path: |
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+            desktop/release/latest-linux.yml
+          retention-days: 7
+
+  # =========================================================================
+  # Upload to GitHub Release
+  # =========================================================================
+  upload-release:
+    if: inputs.upload_to_release
+    needs: [package-mac, package-win, package-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: eclosion-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: |
+          echo "Artifacts to upload:"
+          find artifacts -type f -exec ls -lh {} \;
+
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="v${VERSION}"
+
+          echo "Uploading desktop artifacts to release ${TAG}..."
+
+          # Upload each file
+          for file in artifacts/*; do
+            if [ -f "$file" ]; then
+              echo "Uploading: $file"
+              gh release upload "$TAG" "$file" --clobber || echo "Failed to upload $file"
+            fi
+          done
+
+          echo "Upload complete!"
+
+  # =========================================================================
+  # Summary
+  # =========================================================================
+  summary:
+    needs: [package-mac, package-win, package-linux]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Desktop Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS (Universal) | ${{ needs.package-mac.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows (x64) | ${{ needs.package-win.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux (x64) | ${{ needs.package-linux.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Version: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY

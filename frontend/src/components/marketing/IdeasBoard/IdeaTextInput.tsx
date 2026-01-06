@@ -176,7 +176,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
           onChange={(e) => setInputValue(e.target.value)}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="w-full px-4 py-3 pr-12 rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] text-[var(--monarch-text-dark)] text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-[var(--monarch-orange)]/50 focus:border-[var(--monarch-orange)] transition-all"
+          className="w-full px-4 py-3 pr-12 rounded-xl border border-[var(--monarch-text-muted)]/20 bg-[var(--monarch-bg-elevated)] text-[var(--monarch-text-dark)] text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-[var(--monarch-orange)]/50 focus:border-[var(--monarch-orange)] transition-all"
           aria-label="Share your idea"
         />
 

@@ -21,6 +21,7 @@ import { UnlockPage } from './pages/UnlockPage';
 import { LandingPage } from './pages/LandingPage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { FeatureDetailPage } from './pages/FeatureDetailPage';
+import { DownloadPage } from './pages/DownloadPage';
 import { DashboardTab } from './components/tabs/DashboardTab';
 import { RecurringTab } from './components/tabs/RecurringTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
@@ -170,6 +171,7 @@ function AppRouter() {
 
   const isDemo = location.pathname.startsWith('/demo');
   const isLanding = location.pathname === '/';
+  const isDownload = location.pathname === '/download';
   const isFeatures =
     location.pathname === '/features' ||
     location.pathname.startsWith('/features/');
@@ -195,6 +197,16 @@ function AppRouter() {
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/features/:featureId" element={<FeatureDetailPage />} />
           </Routes>
+        </>
+      );
+    }
+
+    // Download page
+    if (isDownload) {
+      return (
+        <>
+          <BetaBanner />
+          <DownloadPage />
         </>
       );
     }

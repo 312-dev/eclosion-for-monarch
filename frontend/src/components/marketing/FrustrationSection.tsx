@@ -12,6 +12,7 @@ import { Calculator } from 'lucide-react';
 import { FrustrationCard } from './FrustrationCard';
 import { CustomProblemCard } from './CustomProblemCard';
 import { ChevronDownIcon, SearchAlertIcon, WaypointsIcon } from '../icons';
+import { useIdeaInputSafe } from '../../context';
 
 const FRUSTRATIONS = [
   {
@@ -81,6 +82,15 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
 
   const visibleFrustrations = FRUSTRATIONS.filter((f) => !dismissedIds.has(f.id));
   const showCustomProblemCard = visibleFrustrations.length <= 2;
+  const isStageMode = visibleFrustrations.length === 0;
+
+  // Coordinate with IdeasBoard input via context
+  const ideaInput = useIdeaInputSafe();
+
+  // Signal when the bottom input becomes visible
+  useEffect(() => {
+    ideaInput?.setBottomInputVisible(showCustomProblemCard);
+  }, [showCustomProblemCard, ideaInput]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -191,19 +201,25 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
   return (
     <section
       ref={sectionRef}
-      className="relative px-4 sm:px-6 pt-16 pb-20 bg-[var(--monarch-bg-page)]"
+      className="relative px-4 sm:px-6 pt-16 pb-20 bg-[var(--monarch-bg-page)] overflow-x-clip overflow-y-visible"
     >
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <h2
-          className="text-2xl sm:text-3xl font-bold text-[var(--monarch-text-dark)] text-center mb-10"
+          className="text-2xl sm:text-3xl font-bold text-[var(--monarch-text-dark)] text-center mb-10 transition-opacity duration-300"
           style={{ fontFamily: "'Unbounded', sans-serif" }}
         >
-          Sound familiar<span className="question-mark-pulse">?</span>
+          {isStageMode ? (
+            'The stage is yours...'
+          ) : (
+            <>
+              Sound familiar<span className="question-mark-pulse">?</span>
+            </>
+          )}
         </h2>
 
-        {/* Cards grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Cards container - uses flex for animatable width transitions */}
+        <div className="flex flex-wrap gap-4">
           {FRUSTRATIONS.map((frustration, index) => {
             if (dismissedIds.has(frustration.id)) return null;
             return (
@@ -222,7 +238,12 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
               />
             );
           })}
-          {showCustomProblemCard && <CustomProblemCard animationClass="frustration-landed" />}
+          {showCustomProblemCard && (
+            <CustomProblemCard
+              animationClass="frustration-landed"
+              colSpan={(3 - visibleFrustrations.length) as 1 | 2 | 3}
+            />
+          )}
         </div>
       </div>
 
@@ -233,7 +254,7 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
           onClick={onShowSolution}
           className="px-8 py-3 bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] rounded-full text-lg font-medium text-[var(--monarch-text-dark)] shadow-sm flex items-center gap-2 hover:border-[var(--monarch-orange)] hover:shadow-md transition-all cursor-pointer"
         >
-          There&apos;s a better way
+          {isStageMode ? 'In the meantime' : "There's a better way"}
           <ChevronDownIcon size={20} className="animate-bounce-down" />
         </button>
       </div>

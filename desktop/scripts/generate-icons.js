@@ -1,0 +1,211 @@
+#!/usr/bin/env node
+/**
+ * Icon Generation Script
+ *
+ * Generates all required icon formats for the desktop app from the source SVG.
+ * Run this script before packaging to create platform-specific icons.
+ *
+ * Source: frontend/public/icons/icon-512.svg
+ * Output: desktop/assets/
+ *
+ * Dependencies: sharp, png-to-ico
+ */
+
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
+const { execSync } = require('child_process');
+
+const projectRoot = path.resolve(__dirname, '../..');
+const desktopDir = path.resolve(__dirname, '..');
+const assetsDir = path.join(desktopDir, 'assets');
+const trayDir = path.join(assetsDir, 'tray');
+
+// Source SVG
+const sourceSvg = path.join(projectRoot, 'frontend/public/icons/icon-512.svg');
+
+// Icon sizes needed
+const ICON_SIZES = {
+  // macOS iconset sizes (all required for .icns)
+  macosIconset: [16, 32, 64, 128, 256, 512, 1024],
+  // Windows ICO sizes
+  windowsIco: [16, 24, 32, 48, 64, 128, 256],
+  // Linux PNG
+  linux: 512,
+  // Tray icons
+  tray: [16, 22, 32],
+};
+
+/**
+ * Ensure directories exist
+ */
+function ensureDirectories() {
+  fs.mkdirSync(assetsDir, { recursive: true });
+  fs.mkdirSync(trayDir, { recursive: true });
+}
+
+/**
+ * Generate PNG from SVG at specified size
+ */
+async function generatePng(outputPath, size) {
+  await sharp(sourceSvg)
+    .resize(size, size)
+    .png()
+    .toFile(outputPath);
+  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size})`);
+}
+
+/**
+ * Generate macOS .icns file
+ * Requires macOS with iconutil command
+ */
+async function generateMacIcon() {
+  console.log('\n📱 Generating macOS icon...');
+
+  const iconsetDir = path.join(assetsDir, 'icon.iconset');
+  fs.mkdirSync(iconsetDir, { recursive: true });
+
+  // Generate all required sizes for iconset
+  const sizes = [16, 32, 128, 256, 512];
+  for (const size of sizes) {
+    // Regular size
+    await generatePng(path.join(iconsetDir, `icon_${size}x${size}.png`), size);
+    // @2x size (retina)
+    await generatePng(path.join(iconsetDir, `icon_${size}x${size}@2x.png`), size * 2);
+  }
+
+  // Convert iconset to icns using iconutil (macOS only)
+  if (process.platform === 'darwin') {
+    const icnsPath = path.join(assetsDir, 'icon.icns');
+    try {
+      execSync(`iconutil -c icns "${iconsetDir}" -o "${icnsPath}"`, { stdio: 'pipe' });
+      console.log(`  ✓ Generated icon.icns`);
+    } catch (error) {
+      console.error('  ✗ Failed to generate icon.icns:', error.message);
+    }
+  } else {
+    console.log('  ⚠ Skipping .icns generation (requires macOS)');
+    console.log('    The iconset folder has been created for manual conversion');
+  }
+
+  // Clean up iconset directory if icns was created
+  const icnsPath = path.join(assetsDir, 'icon.icns');
+  if (fs.existsSync(icnsPath)) {
+    fs.rmSync(iconsetDir, { recursive: true });
+  }
+}
+
+/**
+ * Generate Windows .ico file
+ */
+async function generateWindowsIcon() {
+  console.log('\n🪟 Generating Windows icon...');
+
+  const pngToIco = require('png-to-ico');
+  const tempPngs = [];
+
+  // Generate PNGs at required sizes
+  for (const size of ICON_SIZES.windowsIco) {
+    const pngPath = path.join(assetsDir, `temp_${size}.png`);
+    await generatePng(pngPath, size);
+    tempPngs.push(pngPath);
+  }
+
+  // Convert to ICO
+  const icoPath = path.join(assetsDir, 'icon.ico');
+  const buf = await pngToIco(tempPngs);
+  fs.writeFileSync(icoPath, buf);
+  console.log(`  ✓ Generated icon.ico`);
+
+  // Clean up temp PNGs
+  for (const png of tempPngs) {
+    fs.unlinkSync(png);
+  }
+}
+
+/**
+ * Generate Linux PNG icon
+ */
+async function generateLinuxIcon() {
+  console.log('\n🐧 Generating Linux icon...');
+  await generatePng(path.join(assetsDir, 'icon.png'), ICON_SIZES.linux);
+}
+
+/**
+ * Generate tray icons
+ */
+async function generateTrayIcons() {
+  console.log('\n🔔 Generating tray icons...');
+
+  // macOS tray icons (template images - should be black/white)
+  // For simplicity, we'll use the regular icon; in production you might want
+  // a separate monochrome version for macOS template images
+  await generatePng(path.join(trayDir, 'iconTemplate.png'), 16);
+  await generatePng(path.join(trayDir, 'iconTemplate@2x.png'), 32);
+
+  // Windows/Linux tray icon
+  await generatePng(path.join(trayDir, 'tray.png'), 32);
+
+  // Windows tray ICO
+  const pngToIco = require('png-to-ico');
+  const trayPng16 = path.join(trayDir, 'temp_tray_16.png');
+  const trayPng32 = path.join(trayDir, 'temp_tray_32.png');
+
+  await generatePng(trayPng16, 16);
+  await generatePng(trayPng32, 32);
+
+  const buf = await pngToIco([trayPng16, trayPng32]);
+  fs.writeFileSync(path.join(trayDir, 'tray.ico'), buf);
+  console.log(`  ✓ Generated tray.ico`);
+
+  // Clean up temp files
+  fs.unlinkSync(trayPng16);
+  fs.unlinkSync(trayPng32);
+}
+
+/**
+ * Main function
+ */
+async function main() {
+  console.log('╔════════════════════════════════════════════════════════════════╗');
+  console.log('║               Eclosion Icon Generator                          ║');
+  console.log('╚════════════════════════════════════════════════════════════════╝');
+
+  // Check source exists
+  if (!fs.existsSync(sourceSvg)) {
+    console.error(`\n✗ Source SVG not found: ${sourceSvg}`);
+    process.exit(1);
+  }
+  console.log(`\nSource: ${sourceSvg}`);
+  console.log(`Output: ${assetsDir}`);
+
+  ensureDirectories();
+
+  try {
+    await generateLinuxIcon();
+    await generateWindowsIcon();
+    await generateMacIcon();
+    await generateTrayIcons();
+
+    console.log('\n╔════════════════════════════════════════════════════════════════╗');
+    console.log('║               Icon Generation Complete!                        ║');
+    console.log('╚════════════════════════════════════════════════════════════════╝');
+
+    // List generated files
+    console.log('\nGenerated files:');
+    const files = [
+      ...fs.readdirSync(assetsDir).filter(f => !fs.statSync(path.join(assetsDir, f)).isDirectory()),
+      ...fs.readdirSync(trayDir).map(f => `tray/${f}`),
+    ];
+    for (const file of files) {
+      if (!file.startsWith('.')) {
+        console.log(`  - ${file}`);
+      }
+    }
+  } catch (error) {
+    console.error('\n✗ Icon generation failed:', error.message);
+    process.exit(1);
+  }
+}
+
+main();

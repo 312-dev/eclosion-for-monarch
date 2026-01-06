@@ -1,0 +1,55 @@
+{
+  "name": "eclosion-desktop",
+  "version": "1.1.0",
+  "description": "Eclosion for Monarch - Desktop Application",
+  "main": "dist/main/index.js",
+  "author": {
+    "name": "Grayson Adams",
+    "email": "grayson@eclosion.app"
+  },
+  "license": "MIT",
+  "scripts": {
+    "dev": "npm run build:main && electron .",
+    "dev:watch": "node scripts/build-main.js --watch",
+    "build:main": "node scripts/build-main.js",
+    "build:frontend": "cd ../frontend && npm run build",
+    "build:backend": "node scripts/build-backend.js",
+    "build:icons": "node scripts/generate-icons.js",
+    "build:all": "npm run build:frontend && npm run build:backend && npm run build:main",
+    "pack": "npm run build:all && electron-builder --dir",
+    "dist": "npm run build:all && electron-builder",
+    "dist:mac": "npm run build:all && electron-builder --mac --universal",
+    "dist:mac:arm64": "npm run build:all && electron-builder --mac --arm64",
+    "dist:mac:x64": "npm run build:all && electron-builder --mac --x64",
+    "dist:win": "npm run build:all && electron-builder --win",
+    "dist:linux": "npm run build:all && electron-builder --linux",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.3.9",
+    "get-port": "^5.1.1"
+  },
+  "devDependencies": {
+    "@electron/notarize": "^2.5.0",
+    "@playwright/test": "^1.49.1",
+    "@types/auto-launch": "^5.0.5",
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/eslint-plugin": "^8.19.0",
+    "@typescript-eslint/parser": "^8.19.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.27.2",
+    "eslint": "^9.17.0",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.5",
+    "typescript": "~5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

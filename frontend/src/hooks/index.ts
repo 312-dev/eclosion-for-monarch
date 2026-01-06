@@ -65,3 +65,5 @@ export {
 } from './useContributors';
 
 export { useLandingContent } from './useLandingContent';
+
+export { useElectronUpdates } from './useElectronUpdates';

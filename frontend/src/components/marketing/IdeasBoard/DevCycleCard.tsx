@@ -98,7 +98,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
 
   return (
     <div
-      className={`relative rounded-xl border-2 bg-[var(--monarch-bg-card)] p-4 shadow-lg transition-colors duration-300 ${cardAnimationClass}`}
+      className={`relative rounded-xl border-2 bg-[var(--monarch-bg-elevated)] p-4 shadow-lg transition-colors duration-300 ${cardAnimationClass}`}
       style={{ borderColor: config.bgColor }}
       role="article"
       aria-label={`Development cycle: ${config.label}`}

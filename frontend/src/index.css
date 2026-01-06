@@ -2023,12 +2023,77 @@ input[type="radio"] {
   border: 1px solid var(--monarch-border);
   border-radius: 12px;
   padding: 1.25rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    width var(--animation-normal) ease-out,
+    flex var(--animation-normal) ease-out;
 }
 
 .frustration-card:hover {
   border-color: var(--monarch-orange);
   box-shadow: 0 4px 12px rgba(255, 105, 45, 0.08);
+}
+
+/* Responsive flex sizing for frustration cards */
+.frustration-card-single,
+.frustration-card-double,
+.frustration-card-full {
+  flex: 0 0 100%; /* Mobile: full width */
+}
+
+@media (min-width: 768px) {
+  /* Desktop: calculated widths based on 3-column grid with 1rem gaps */
+  .frustration-card-single {
+    flex: 0 0 calc((100% - 2rem) / 3);
+  }
+  .frustration-card-double {
+    flex: 0 0 calc((100% - 2rem) / 3 * 2 + 1rem);
+  }
+  .frustration-card-full {
+    flex: 0 0 100%;
+  }
+}
+
+/* Spotlight effect for solo CustomProblemCard */
+.spotlight-card {
+  position: relative;
+  animation: spotlightFadeIn var(--animation-normal) ease-out forwards;
+}
+
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: -40px -60px;
+  background: radial-gradient(
+    ellipse 50% 70% at 50% 30%,
+    rgba(255, 105, 45, 0.12) 0%,
+    rgba(255, 105, 45, 0.06) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+  animation: spotlightPulse 3s ease-in-out infinite;
+}
+
+@keyframes spotlightFadeIn {
+  from {
+    box-shadow: 0 4px 12px rgba(255, 105, 45, 0);
+  }
+  to {
+    box-shadow: 0 8px 32px rgba(255, 105, 45, 0.15);
+  }
+}
+
+@keyframes spotlightPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
 }
 
 /* Question mark pulse animation */
@@ -2377,41 +2442,41 @@ input[type="radio"] {
    Ideas Board Animations
    ============================================================================ */
 
-/* Idea bubble pop-in from left */
+/* Idea bubble pop-in from left - contained within parent bounds */
 @keyframes ideaPopInLeft {
   0% {
     opacity: 0;
-    transform: translateX(-120px) rotate(-12deg);
+    transform: translateX(-30px) rotate(-8deg) scale(0.95);
   }
   60% {
     opacity: 1;
-    transform: translateX(8px) rotate(2deg);
+    transform: translateX(6px) rotate(2deg) scale(1.02);
   }
   80% {
-    transform: translateX(-4px) rotate(-1deg);
+    transform: translateX(-3px) rotate(-1deg) scale(1);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
   }
 }
 
-/* Idea bubble pop-in from right */
+/* Idea bubble pop-in from right - contained within parent bounds */
 @keyframes ideaPopInRight {
   0% {
     opacity: 0;
-    transform: translateX(120px) rotate(12deg);
+    transform: translateX(30px) rotate(8deg) scale(0.95);
   }
   60% {
     opacity: 1;
-    transform: translateX(-8px) rotate(-2deg);
+    transform: translateX(-6px) rotate(-2deg) scale(1.02);
   }
   80% {
-    transform: translateX(4px) rotate(1deg);
+    transform: translateX(3px) rotate(1deg) scale(1);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
   }
 }
 
@@ -2445,6 +2510,7 @@ input[type="radio"] {
 .idea-morph-to-dev {
   animation: ideaMorphToDev 0.6s var(--ease-out-smooth) forwards;
   border-color: var(--monarch-info) !important;
+  border-width: 2px !important;
 }
 
 /* Bottom cards fade out during morph */
@@ -2461,6 +2527,51 @@ input[type="radio"] {
 
 .idea-morph-out {
   animation: ideaMorphOut 0.4s ease-out forwards;
+}
+
+/* Card fades out when a new card lands on top of it */
+@keyframes ideaStackedOn {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
+.idea-stacked-on {
+  animation: ideaStackedOn 0.4s ease-out forwards;
+}
+
+/* Morph element animations - for elements appearing/disappearing during card morph */
+@keyframes morphElementIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes morphElementOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.morph-element-in {
+  animation: morphElementIn 0.4s ease-out forwards;
+}
+
+.morph-element-out {
+  animation: morphElementOut 0.3s ease-out forwards;
 }
 
 /* Developer avatar pop-in animation */
@@ -2637,6 +2748,9 @@ input[type="radio"] {
   .idea-pop-out,
   .idea-morph-to-dev,
   .idea-morph-out,
+  .idea-stacked-on,
+  .morph-element-in,
+  .morph-element-out,
   .dev-avatar-pop-in,
   .dev-card-enter,
   .upvote-bounce,

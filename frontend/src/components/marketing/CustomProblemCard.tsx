@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
 import { IDEAS_BOARD } from '../../constants';
+import { useIdeaInputSafe } from '../../context';
 
 /**
  * CustomProblemCard
@@ -28,15 +29,23 @@ function buildDiscussionUrl(problemText: string): string {
   return `${GITHUB_DISCUSSIONS_URL}?${params.toString()}`;
 }
 
-// Base height for 2 lines of text (line-height ~20px + padding)
-const MIN_HEIGHT = 52;
+// Base height for 2 lines of text (line-height ~20px × 2 + py-3 padding 24px)
+const MIN_HEIGHT = 64;
 const MAX_HEIGHT = 200;
 
 interface CustomProblemCardProps {
   readonly animationClass?: string;
+  readonly colSpan?: 1 | 2 | 3;
 }
 
-export function CustomProblemCard({ animationClass = '' }: CustomProblemCardProps) {
+// CSS class names for responsive column spans
+const COL_SPAN_CLASSES = {
+  1: 'frustration-card-single',
+  2: 'frustration-card-double',
+  3: 'frustration-card-full',
+} as const;
+
+export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomProblemCardProps) {
   const [inputValue, setInputValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState('');
@@ -46,6 +55,19 @@ export function CustomProblemCard({ animationClass = '' }: CustomProblemCardProp
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Receive transferred content from the top input (IdeasBoard)
+  const ideaInput = useIdeaInputSafe();
+
+  useEffect(() => {
+    if (ideaInput?.transferredContent) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing transferred content from context to local state
+      setInputValue(ideaInput.transferredContent);
+      ideaInput.clearTransferredContent();
+      // Focus the textarea to show the user their content is here
+      textareaRef.current?.focus();
+    }
+  }, [ideaInput?.transferredContent, ideaInput]);
 
   const currentPrompt = PLACEHOLDER_PROMPTS[promptIndex % PLACEHOLDER_PROMPTS.length] as string;
 
@@ -145,8 +167,13 @@ export function CustomProblemCard({ animationClass = '' }: CustomProblemCardProp
 
   const showCursor = !isFocused && !inputValue;
 
+  const colSpanClass = COL_SPAN_CLASSES[colSpan];
+  const isFullWidth = colSpan === 3;
+
   return (
-    <article className={`frustration-card ${animationClass}`}>
+    <article
+      className={`frustration-card ${colSpanClass} ${animationClass} ${isFullWidth ? 'spotlight-card' : ''}`.trim()}
+    >
       <h3 className="text-lg font-semibold text-[var(--monarch-text-dark)] mb-3">
         Here&apos;s my problem...
       </h3>
@@ -173,7 +200,7 @@ export function CustomProblemCard({ animationClass = '' }: CustomProblemCardProp
           {/* Custom placeholder with typewriter effect */}
           {!inputValue && (
             <div
-              className="absolute left-4 top-3 pointer-events-none text-sm text-[var(--monarch-text-muted)]"
+              className="absolute left-4 right-12 top-3 pointer-events-none text-sm text-[var(--monarch-text-muted)]"
               aria-hidden="true"
             >
               {displayedPlaceholder}

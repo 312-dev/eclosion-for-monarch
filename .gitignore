@@ -60,3 +60,11 @@ scripts/productboard-sync/debug*.png
 
 # Static build output (copied from frontend/dist in Docker)
 /static/
+
+# Desktop app builds
+desktop/dist/
+desktop/release/
+desktop/pyinstaller/dist/
+desktop/pyinstaller/build/
+desktop/resources/frontend/
+desktop/resources/backend/

@@ -119,14 +119,19 @@ jobs:
           # Save React app's key files that must not be overwritten
           cp frontend/dist/index.html /tmp/react-index.html
           cp frontend/dist/_redirects /tmp/react-redirects
+          cp frontend/dist/404.html /tmp/react-404.html
 
           # Copy Docusaurus build contents into frontend/dist
           # Docusaurus already builds to /docs path, so we copy to root
           cp -r docusaurus/build/* frontend/dist/
 
-          # Restore React app's index.html and _redirects (they serve the SPA)
+          # Restore React app's SPA routing files
+          # - index.html: Main entry point for the SPA
+          # - _redirects: Cloudflare Pages routing rules
+          # - 404.html: SPA fallback that redirects to / and preserves the path
           cp /tmp/react-index.html frontend/dist/index.html
           cp /tmp/react-redirects frontend/dist/_redirects
+          cp /tmp/react-404.html frontend/dist/404.html
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

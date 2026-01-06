@@ -26,6 +26,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
       docs: ${{ steps.filter.outputs.docs }}
+      desktop: ${{ steps.filter.outputs.desktop }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -48,6 +49,8 @@ jobs:
               - 'docusaurus/**'
               - 'CONTRIBUTING.md'
               - 'SECURITY.md'
+            desktop:
+              - 'desktop/**'
 
   # Frontend checks
   frontend:
@@ -138,19 +141,52 @@ jobs:
           file-path: './README.md, ./CONTRIBUTING.md, ./SECURITY.md'
         continue-on-error: true  # Start as warning, tighten later
 
+  # Desktop checks
+  desktop:
+    name: Desktop
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Test
+        run: npm test
+        continue-on-error: true  # Tests may not exist yet
+
   # Final status check - always runs and reports aggregate result
   # Configure branch protection to require only this check
   ci:
     name: CI Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [frontend, backend, docs]
+    needs: [frontend, backend, docs, desktop]
     if: always()
     steps:
       - name: Check CI results
         id: check
         run: |
-          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docs.result }}"
+          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docs.result }} ${{ needs.desktop.result }}"
           echo "Job results: $results"
           if echo "$results" | grep -qE '(failure|cancelled)'; then
             echo "::error::One or more CI jobs failed or were cancelled"

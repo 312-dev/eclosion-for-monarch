@@ -5,8 +5,8 @@
  * Supports stacking effect with rotation and offset positioning.
  */
 
-import { useState, useEffect } from 'react';
-import { ThumbsUp } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ThumbsUp, Code } from 'lucide-react';
 import type { PublicIdea } from '../../../types/ideas';
 import { getUsernameForIdea, getAvatarUrlForIdea } from './useIdeasAnimation';
 import { IdeatorAvatar } from '../../ui/IdeatorAvatar';
@@ -82,9 +82,20 @@ export function IdeaBubble({
   const [displayedVotes, setDisplayedVotes] = useState(idea.votes);
   const [showVoteAnimation, setShowVoteAnimation] = useState(false);
   const [lastVoteBonus, setLastVoteBonus] = useState(voteBonus);
+  const [wasStackedOn, setWasStackedOn] = useState(false);
+  const wasTopCardRef = useRef(isTopCard);
 
   const username = getUsernameForIdea(idea);
   const avatarUrl = getAvatarUrlForIdea(idea);
+
+  // Detect when card transitions from top to stacked-on
+  useEffect(() => {
+    if (wasTopCardRef.current && !isTopCard && !reducedMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- detecting animation state transition
+      setWasStackedOn(true);
+    }
+    wasTopCardRef.current = isTopCard;
+  }, [isTopCard, reducedMotion]);
 
   // Handle vote accumulation animation
   useEffect(() => {
@@ -119,16 +130,37 @@ export function IdeaBubble({
 
   // Top card gets a more prominent shadow to emphasize it landing on the stack
   const shadowClass = isTopCard || !isStacked ? 'shadow-xl' : 'shadow-sm';
+  const stackedOnClass = wasStackedOn ? 'idea-stacked-on' : '';
 
   return (
     <div
-      className={`rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] p-4 ${shadowClass} ${animationClass} ${isStacked ? 'absolute left-0 right-0 top-0' : 'relative'}`}
+      className={`rounded-xl border border-[var(--monarch-text-muted)]/20 bg-[var(--monarch-bg-elevated)] p-4 ${shadowClass} ${animationClass} ${stackedOnClass} ${isStacked ? 'absolute left-0 right-0 top-0' : 'relative'}`}
       style={isStacked ? stackStyle : undefined}
       role="article"
       aria-label={`Idea from ${username}: ${idea.title}`}
     >
+      {/* Stage badge - appears during morph to match DevCycleCard */}
+      {isMorphingToDev && (
+        <div
+          className="absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-md morph-element-in"
+          style={{ backgroundColor: 'var(--monarch-info)' }}
+        >
+          <span className="flex items-center gap-1.5">
+            <Code className="h-3 w-3" />
+            In Progress
+          </span>
+        </div>
+      )}
+
+      {/* Demo badge - appears during morph to match DevCycleCard */}
+      {isMorphingToDev && (
+        <span className="absolute -top-2 right-3 px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--monarch-bg-page)] text-[var(--monarch-text-muted)] border border-[var(--monarch-border)] morph-element-in">
+          Demo
+        </span>
+      )}
+
       {/* User info */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className={`flex items-center gap-3 mb-3 ${isMorphingToDev ? 'mt-3' : ''}`}>
         <IdeatorAvatar avatarUrl={avatarUrl} username={username} size="md" />
         <span className="text-sm font-medium text-[var(--monarch-text-dark)]">{username}</span>
       </div>
@@ -138,8 +170,8 @@ export function IdeaBubble({
         {idea.title}
       </h3>
 
-      {/* Vote count */}
-      <div className="flex items-center gap-2">
+      {/* Vote count - fades out during morph */}
+      <div className={`flex items-center gap-2 ${isMorphingToDev ? 'morph-element-out' : ''}`}>
         <div
           className={`flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--monarch-bg-page)] ${
             showVoteAnimation && !reducedMotion ? 'upvote-bounce' : ''
@@ -170,6 +202,19 @@ export function IdeaBubble({
           {idea.category}
         </span>
       </div>
+
+      {/* Progress bar - appears during morph to match DevCycleCard */}
+      {isMorphingToDev && (
+        <div className="h-2 rounded-full bg-[var(--monarch-bg-page)] overflow-hidden mt-3 morph-element-in">
+          <div
+            className="h-full rounded-full"
+            style={{
+              backgroundColor: 'var(--monarch-info)',
+              width: '0%',
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -6,55 +6,42 @@
  */
 
 import { useCoderMode } from '../../context';
+import { Icons } from '../icons';
 
 export function CoderModeToggle() {
   const { isCoderMode, toggleCoderMode } = useCoderMode();
 
   return (
-    <div className="flex items-center justify-center gap-4 py-6">
-      {/* "Not a coder" label */}
-      <span
-        className={`text-sm font-medium transition-colors select-none ${
-          !isCoderMode
-            ? 'text-[var(--monarch-text-dark)]'
-            : 'text-[var(--monarch-text-muted)]'
-        }`}
-      >
-        Not a coder
-      </span>
-
-      {/* Toggle switch */}
+    <div className="inline-flex items-center gap-1 p-1 rounded-full bg-(--monarch-bg-page)/50 border border-(--monarch-border)">
+      {/* "Not a coder" option */}
       <button
         type="button"
-        role="switch"
-        aria-checked={isCoderMode}
-        aria-label={`Switch to ${isCoderMode ? 'non-coder' : 'coder'} mode`}
-        onClick={toggleCoderMode}
-        className="relative inline-flex h-8 w-14 items-center rounded-full toggle-switch"
-        style={{
-          backgroundColor: isCoderMode
-            ? 'var(--monarch-orange)'
-            : 'var(--monarch-border)',
-        }}
+        onClick={() => isCoderMode && toggleCoderMode()}
+        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all duration-200 ${
+          isCoderMode
+            ? 'text-(--monarch-text-muted) hover:text-(--monarch-text)'
+            : 'bg-(--monarch-border) text-(--monarch-text-dark)'
+        }`}
+        aria-pressed={!isCoderMode}
       >
-        <span
-          className="inline-block h-6 w-6 transform rounded-full bg-white shadow-sm toggle-knob"
-          style={{
-            transform: isCoderMode ? 'translateX(1.625rem)' : 'translateX(0.25rem)',
-          }}
-        />
+        <Icons.Smile className="w-4 h-4" />
+        <span>Not a coder</span>
       </button>
 
-      {/* "I'm a coder" label */}
-      <span
-        className={`text-sm font-medium transition-colors select-none ${
+      {/* "I'm a coder" option */}
+      <button
+        type="button"
+        onClick={() => !isCoderMode && toggleCoderMode()}
+        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all duration-200 ${
           isCoderMode
-            ? 'text-[var(--monarch-text-dark)]'
-            : 'text-[var(--monarch-text-muted)]'
+            ? 'bg-(--monarch-border) text-(--monarch-text-dark)'
+            : 'text-(--monarch-text-muted) hover:text-(--monarch-text)'
         }`}
+        aria-pressed={isCoderMode}
       >
-        I&apos;m a coder
-      </span>
+        <Icons.GitHub className="w-4 h-4" />
+        <span>I'm a coder</span>
+      </button>
     </div>
   );
 }
