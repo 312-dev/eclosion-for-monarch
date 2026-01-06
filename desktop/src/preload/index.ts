@@ -167,6 +167,41 @@ const electronAPI = {
     ipcRenderer.on('navigate', handler);
     return () => ipcRenderer.removeListener('navigate', handler);
   },
+
+  // =========================================================================
+  // Desktop Settings
+  // =========================================================================
+
+  /**
+   * Get desktop-specific settings (run in background, show in dock, auto-start).
+   */
+  getDesktopSettings: (): Promise<{
+    runInBackground: boolean;
+    showInDock: boolean;
+    autoStart: boolean;
+  }> => ipcRenderer.invoke('get-desktop-settings'),
+
+  /**
+   * Set whether to run in background when window is closed.
+   */
+  setRunInBackground: (enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('set-run-in-background', enabled),
+
+  /**
+   * Set dock visibility (macOS only).
+   */
+  setShowInDock: (enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('set-show-in-dock', enabled),
+
+  /**
+   * Get the state directory path.
+   */
+  getStateDir: (): Promise<string> => ipcRenderer.invoke('get-state-dir'),
+
+  /**
+   * Reveal the data folder in the system file manager.
+   */
+  revealDataFolder: (): Promise<void> => ipcRenderer.invoke('reveal-data-folder'),
 };
 
 // Expose the API to the renderer process

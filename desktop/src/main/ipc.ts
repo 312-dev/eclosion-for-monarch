@@ -4,7 +4,8 @@
  * Handles inter-process communication between main and renderer processes.
  */
 
-import { ipcMain, dialog, app } from 'electron';
+import { ipcMain, dialog, app, shell } from 'electron';
+import path from 'path';
 import { BackendManager } from './backend';
 import { getMainWindow } from './window';
 import {
@@ -18,6 +19,9 @@ import {
   setUpdateChannel,
   getUpdateChannel,
 } from './updater';
+import Store from 'electron-store';
+
+const store = new Store();
 
 /**
  * Setup all IPC handlers.
@@ -185,5 +189,80 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    */
   ipcMain.handle('is-desktop', () => {
     return true;
+  });
+
+  // =========================================================================
+  // Desktop Settings
+  // =========================================================================
+
+  /**
+   * Get desktop-specific settings.
+   */
+  ipcMain.handle('get-desktop-settings', async () => {
+    const autoStart = await isAutoStartEnabled();
+    return {
+      runInBackground: store.get('runInBackground', false) as boolean,
+      showInDock: store.get('showInDock', true) as boolean,
+      autoStart,
+    };
+  });
+
+  /**
+   * Set whether to run in background when window is closed.
+   */
+  ipcMain.handle('set-run-in-background', (_event, enabled: boolean) => {
+    store.set('runInBackground', enabled);
+    return enabled;
+  });
+
+  /**
+   * Set dock visibility (macOS only).
+   */
+  ipcMain.handle('set-show-in-dock', (_event, enabled: boolean) => {
+    if (process.platform === 'darwin') {
+      store.set('showInDock', enabled);
+      if (app.dock) {
+        if (enabled) {
+          app.dock.show();
+        } else {
+          app.dock.hide();
+        }
+      }
+    }
+    return enabled;
+  });
+
+  /**
+   * Get the state directory path.
+   */
+  ipcMain.handle('get-state-dir', () => {
+    const appName = 'Eclosion';
+    switch (process.platform) {
+      case 'darwin':
+        return path.join(app.getPath('home'), 'Library', 'Application Support', appName);
+      case 'win32':
+        return path.join(app.getPath('appData'), appName);
+      default:
+        return path.join(app.getPath('home'), '.config', appName.toLowerCase());
+    }
+  });
+
+  /**
+   * Reveal the data folder in the system file manager.
+   */
+  ipcMain.handle('reveal-data-folder', () => {
+    const appName = 'Eclosion';
+    let stateDir: string;
+    switch (process.platform) {
+      case 'darwin':
+        stateDir = path.join(app.getPath('home'), 'Library', 'Application Support', appName);
+        break;
+      case 'win32':
+        stateDir = path.join(app.getPath('appData'), appName);
+        break;
+      default:
+        stateDir = path.join(app.getPath('home'), '.config', appName.toLowerCase());
+    }
+    shell.openPath(stateDir);
   });
 }

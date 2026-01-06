@@ -106,17 +106,23 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     mainWindow?.show();
   });
 
-  // Handle close - minimize to tray instead of quitting
+  // Handle close - behavior depends on runInBackground setting
   mainWindow.on('close', (event) => {
-    if (!isQuitting) {
-      event.preventDefault();
-      mainWindow?.hide();
+    // Save window bounds regardless of close behavior
+    const currentBounds = mainWindow?.getBounds();
+    if (currentBounds) {
+      store.set('windowBounds', currentBounds);
+    }
 
-      // Save window bounds
-      const currentBounds = mainWindow?.getBounds();
-      if (currentBounds) {
-        store.set('windowBounds', currentBounds);
+    if (!isQuitting) {
+      const runInBackground = store.get('runInBackground', false) as boolean;
+      if (runInBackground) {
+        // Hide to tray instead of quitting
+        event.preventDefault();
+        mainWindow?.hide();
       }
+      // If runInBackground is false, allow the window to close normally
+      // which will trigger app quit via window-all-closed handler
     }
   });
 

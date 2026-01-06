@@ -62,6 +62,12 @@ export interface UpdateCheckResult {
   version?: string;
 }
 
+export interface DesktopSettings {
+  runInBackground: boolean;
+  showInDock: boolean;
+  autoStart: boolean;
+}
+
 export interface ElectronAPI {
   // Backend Communication
   getBackendPort: () => Promise<number>;
@@ -95,6 +101,13 @@ export interface ElectronAPI {
 
   // Navigation
   onNavigate: (callback: (path: string) => void) => () => void;
+
+  // Desktop Settings
+  getDesktopSettings: () => Promise<DesktopSettings>;
+  setRunInBackground: (enabled: boolean) => Promise<boolean>;
+  setShowInDock: (enabled: boolean) => Promise<boolean>;
+  getStateDir: () => Promise<string>;
+  revealDataFolder: () => Promise<void>;
 }
 
 declare global {

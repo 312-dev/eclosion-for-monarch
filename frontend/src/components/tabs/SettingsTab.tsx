@@ -31,6 +31,7 @@ import {
   RecurringResetModal,
   AutomationSection,
   UpdatesSection,
+  DesktopSection,
   AccountSection,
   SecuritySection,
   DemoModeSection,
@@ -166,6 +167,8 @@ export function SettingsTab() {
         versionInfo={versionInfo}
         onShowUpdateModal={() => setShowUpdateModal(true)}
       />
+
+      {isDesktop && <DesktopSection />}
 
       <AccountSection />
 

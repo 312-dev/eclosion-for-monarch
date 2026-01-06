@@ -76,7 +76,8 @@ export function updateTrayMenu(
 ): void {
   if (!tray) return;
 
-  const menuBarMode = store.get('menuBarMode', false) as boolean;
+  const runInBackground = store.get('runInBackground', false) as boolean;
+  const showInDock = store.get('showInDock', true) as boolean;
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -104,20 +105,28 @@ export function updateTrayMenu(
       },
     },
     { type: 'separator' },
+    {
+      label: 'Run in Background',
+      type: 'checkbox' as const,
+      checked: runInBackground,
+      click: (menuItem: Electron.MenuItem): void => {
+        store.set('runInBackground', menuItem.checked);
+      },
+    },
     ...(process.platform === 'darwin'
       ? [
           {
-            label: 'Menu Bar Mode',
+            label: 'Show in Dock',
             type: 'checkbox' as const,
-            checked: menuBarMode,
+            checked: showInDock,
             click: (menuItem: Electron.MenuItem): void => {
-              store.set('menuBarMode', menuItem.checked);
-              updateDockVisibility(menuItem.checked);
+              store.set('showInDock', menuItem.checked);
+              updateDockVisibility(!menuItem.checked);
             },
           },
-          { type: 'separator' as const },
         ]
       : []),
+    { type: 'separator' },
     {
       label: 'Quit Eclosion',
       click: (): void => {
@@ -148,8 +157,9 @@ function updateDockVisibility(menuBarMode: boolean): void {
  */
 export function initializeDockVisibility(): void {
   if (process.platform === 'darwin') {
-    const menuBarMode = store.get('menuBarMode', false) as boolean;
-    updateDockVisibility(menuBarMode);
+    // Use showInDock setting (default true = show dock)
+    const showInDock = store.get('showInDock', true) as boolean;
+    updateDockVisibility(!showInDock);
   }
 }
 
