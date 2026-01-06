@@ -174,19 +174,101 @@ jobs:
         run: npm test
         continue-on-error: true  # Tests may not exist yet
 
+  # Desktop build validation (runs on macOS to verify full build works)
+  desktop-build:
+    name: Desktop Build
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: macos-14
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build backend
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+
+      - name: Verify build outputs
+        run: |
+          echo "## Desktop Build Verification" >> $GITHUB_STEP_SUMMARY
+
+          # Check frontend build
+          if [ -d "frontend/dist" ]; then
+            echo "✅ Frontend build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend build missing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Check backend build
+          if [ -f "desktop/pyinstaller/dist/eclosion-backend/eclosion-backend" ]; then
+            echo "✅ Backend build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Backend build missing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Check Electron main process
+          if [ -f "desktop/dist/main/index.js" ]; then
+            echo "✅ Electron main process build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Electron main process build missing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All desktop build components verified." >> $GITHUB_STEP_SUMMARY
+
   # Final status check - always runs and reports aggregate result
   # Configure branch protection to require only this check
   ci:
     name: CI Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [frontend, backend, docs, desktop]
+    needs: [frontend, backend, docs, desktop, desktop-build]
     if: always()
     steps:
       - name: Check CI results
         id: check
         run: |
-          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docs.result }} ${{ needs.desktop.result }}"
+          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docs.result }} ${{ needs.desktop.result }} ${{ needs.desktop-build.result }}"
           echo "Job results: $results"
           if echo "$results" | grep -qE '(failure|cancelled)'; then
             echo "::error::One or more CI jobs failed or were cancelled"

@@ -157,8 +157,13 @@ function setupPowerMonitor(): void {
     console.log('System resumed from sleep');
 
     // Check if sync is needed after wake
-    if (backendManager.isRunning()) {
-      await backendManager.checkSyncNeeded();
+    try {
+      if (backendManager.isRunning()) {
+        await backendManager.checkSyncNeeded();
+      }
+    } catch (error) {
+      console.error('Resume handler error:', error);
+      debugLog(`Resume handler error: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
 
@@ -205,8 +210,15 @@ async function cleanup(): Promise<void> {
 // ============================================================================
 
 // App ready - initialize
-app.on('ready', () => {
-  initialize();
+app.on('ready', async () => {
+  try {
+    await initialize();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    debugLog(`FATAL: Initialization failed: ${errorMessage}`);
+    dialog.showErrorBox('Startup Failed', `Failed to start Eclosion: ${errorMessage}`);
+    app.exit(1);
+  }
 });
 
 // Handle window-all-closed
@@ -248,17 +260,30 @@ app.on('will-quit', () => {
 // Error Handling
 // ============================================================================
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+// Handle uncaught exceptions - exit gracefully to avoid corrupted state
+process.on('uncaughtException', async (error) => {
   console.error('Uncaught exception:', error);
+  debugLog(`CRASH: Uncaught exception: ${error.message}\n${error.stack || ''}`);
 
   dialog.showErrorBox(
-    'Unexpected Error',
-    `An unexpected error occurred: ${error.message}\n\nThe application will continue running.`
+    'Eclosion Crashed',
+    `An unexpected error occurred: ${error.message}\n\nThe application will restart.`
   );
+
+  // Attempt graceful cleanup and restart
+  try {
+    await cleanup();
+  } catch {
+    // Ignore cleanup errors
+  }
+
+  app.relaunch();
+  app.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason) => {
+  const errorMessage = reason instanceof Error ? reason.message : String(reason);
   console.error('Unhandled rejection:', reason);
+  debugLog(`WARNING: Unhandled promise rejection: ${errorMessage}`);
 });

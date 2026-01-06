@@ -8,16 +8,17 @@
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'node:fs';
-import { app } from 'electron';
+import { app, dialog } from 'electron';
 import getPort from 'get-port';
 
-// Debug logging to file (for packaged app debugging)
-const DEBUG_LOG = process.env.ECLOSION_DEBUG === '1';
+// Debug logging to file - always enabled for production diagnostics
 function debugLog(msg: string): void {
   console.log(msg);
-  if (DEBUG_LOG) {
-    const logPath = path.join(app.getPath('home'), 'eclosion-debug.log');
-    fs.appendFileSync(logPath, `${new Date().toISOString()} - ${msg}\n`);
+  const logPath = path.join(app.getPath('home'), 'eclosion-debug.log');
+  try {
+    fs.appendFileSync(logPath, `${new Date().toISOString()} - [Backend] ${msg}\n`);
+  } catch {
+    // Ignore write errors
   }
 }
 
@@ -172,12 +173,17 @@ export class BackendManager {
     // Attempt restart if within limits
     if (this.restartAttempts < this.maxRestarts) {
       this.restartAttempts++;
-      console.log(`Attempting backend restart (${this.restartAttempts}/${this.maxRestarts})`);
+      debugLog(`Attempting backend restart (${this.restartAttempts}/${this.maxRestarts})`);
       this.start().catch((err) => {
-        console.error('Failed to restart backend:', err);
+        debugLog(`Failed to restart backend: ${err instanceof Error ? err.message : String(err)}`);
       });
     } else {
-      console.error('Max restart attempts reached');
+      debugLog('Max restart attempts reached - showing error dialog');
+      dialog.showErrorBox(
+        'Backend Failed',
+        'The Eclosion backend failed to start after multiple attempts.\n\n' +
+          'Please check the logs at ~/eclosion-debug.log and restart the app.'
+      );
     }
   }
 

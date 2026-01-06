@@ -134,7 +134,7 @@ export function updateTrayMenu(
  * Update dock visibility on macOS based on menu bar mode.
  */
 function updateDockVisibility(menuBarMode: boolean): void {
-  if (process.platform === 'darwin') {
+  if (process.platform === 'darwin' && app.dock) {
     if (menuBarMode) {
       app.dock.hide();
     } else {

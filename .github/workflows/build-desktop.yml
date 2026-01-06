@@ -230,6 +230,55 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --mac --publish never
 
+      - name: Validate universal binary
+        run: |
+          echo "## Universal Binary Validation" >> $GITHUB_STEP_SUMMARY
+          BINARY_INFO=$(lipo -info desktop/pyinstaller/dist/eclosion-backend/eclosion-backend)
+          echo "Binary info: $BINARY_INFO"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$BINARY_INFO" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          if ! echo "$BINARY_INFO" | grep -q "x86_64"; then
+            echo "::error::Universal binary missing x86_64 architecture"
+            exit 1
+          fi
+          if ! echo "$BINARY_INFO" | grep -q "arm64"; then
+            echo "::error::Universal binary missing arm64 architecture"
+            exit 1
+          fi
+          echo "✅ Universal binary contains both x86_64 and arm64 architectures"
+
+      - name: Check binary sizes
+        id: sizes
+        run: |
+          echo "## macOS Artifact Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+
+          DMG_SIZE=0
+          ZIP_SIZE=0
+
+          for file in desktop/release/*.dmg desktop/release/*.zip; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat -f%z "$file")
+              SIZE_MB=$((SIZE / 1024 / 1024))
+              FILENAME=$(basename "$file")
+              echo "| $FILENAME | ${SIZE_MB}MB |" >> $GITHUB_STEP_SUMMARY
+
+              if [[ "$file" == *.dmg ]]; then
+                DMG_SIZE=$SIZE
+              fi
+            fi
+          done
+
+          echo "dmg_size=$DMG_SIZE" >> $GITHUB_OUTPUT
+
+          # Warn if DMG exceeds 300MB
+          if [ "$DMG_SIZE" -gt 314572800 ]; then
+            echo "::warning::macOS DMG size exceeds 300MB threshold (${SIZE_MB}MB)"
+          fi
+
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -238,7 +287,7 @@ jobs:
             desktop/release/*.dmg
             desktop/release/*.zip
             desktop/release/latest-mac.yml
-          retention-days: 7
+          retention-days: 30
 
   # =========================================================================
   # Package for Windows
@@ -288,6 +337,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --publish never
 
+      - name: Check binary sizes
+        shell: pwsh
+        run: |
+          echo "## Windows Artifact Sizes" >> $env:GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $env:GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $env:GITHUB_STEP_SUMMARY
+
+          Get-ChildItem -Path "desktop/release/*.exe" | ForEach-Object {
+            $sizeMB = [math]::Round($_.Length / 1MB, 2)
+            echo "| $($_.Name) | ${sizeMB}MB |" >> $env:GITHUB_STEP_SUMMARY
+
+            if ($_.Length -gt 314572800) {
+              echo "::warning::Windows installer size exceeds 300MB threshold (${sizeMB}MB)"
+            }
+          }
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -295,7 +360,7 @@ jobs:
           path: |
             desktop/release/*.exe
             desktop/release/latest.yml
-          retention-days: 7
+          retention-days: 30
 
   # =========================================================================
   # Package for Linux
@@ -348,6 +413,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --linux --publish never
 
+      - name: Check binary sizes
+        run: |
+          echo "## Linux Artifact Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+
+          for file in desktop/release/*.AppImage desktop/release/*.deb; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat --printf="%s" "$file")
+              SIZE_MB=$((SIZE / 1024 / 1024))
+              FILENAME=$(basename "$file")
+              echo "| $FILENAME | ${SIZE_MB}MB |" >> $GITHUB_STEP_SUMMARY
+
+              if [ "$SIZE" -gt 314572800 ]; then
+                echo "::warning::Linux artifact $FILENAME exceeds 300MB threshold (${SIZE_MB}MB)"
+              fi
+            fi
+          done
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -356,7 +440,7 @@ jobs:
             desktop/release/*.AppImage
             desktop/release/*.deb
             desktop/release/latest-linux.yml
-          retention-days: 7
+          retention-days: 30
 
   # =========================================================================
   # Upload to GitHub Release
