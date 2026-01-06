@@ -67,3 +67,9 @@ export {
 export { useLandingContent } from './useLandingContent';
 
 export { useElectronUpdates } from './useElectronUpdates';
+
+export { useIsBetaSite } from './useIsBetaSite';
+
+export { useMacOSElectron } from './useMacOSElectron';
+
+export { useElectronNavigation } from './useElectronNavigation';

@@ -62,7 +62,7 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
   return (
     <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 modal-backdrop" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 modal-backdrop" onClick={onClose} />
 
       {/* Modal */}
       <div className="relative w-full max-w-2xl mx-4 rounded-xl shadow-xl max-h-[85vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">

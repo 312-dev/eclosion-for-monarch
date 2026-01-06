@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { DashboardData, AutoSyncStatus, VersionInfo } from '../../types';
 import { useDemo } from '../../context/DemoContext';
 import { usePageTitle, useApiClient } from '../../hooks';
+import { isDesktopMode } from '../../utils/apiBase';
 import { UI } from '../../constants';
 import * as api from '../../api/client';
 import {
@@ -50,6 +51,7 @@ export function SettingsTab() {
   const [loading, setLoading] = useState(true);
   const { logout } = useAuth();
   const isDemo = useDemo();
+  const isDesktop = isDesktopMode();
   const recurringSettingsRef = useRef<HTMLElement>(null);
   const client = useApiClient();
 
@@ -165,11 +167,10 @@ export function SettingsTab() {
         onShowUpdateModal={() => setShowUpdateModal(true)}
       />
 
-      <CreditsSection />
-
       <AccountSection />
 
-      <SecuritySection />
+      {/* Hide security events on desktop - only relevant for web deployments */}
+      {!isDesktop && <SecuritySection />}
 
       {isDemo && <DemoModeSection />}
 
@@ -179,6 +180,8 @@ export function SettingsTab() {
         onShowResetModal={() => setShowResetModal(true)}
         onShowUninstallModal={() => setShowUninstallModal(true)}
       />
+
+      <CreditsSection />
 
       {/* Modals */}
       <ResetAppModal

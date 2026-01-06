@@ -2,7 +2,8 @@
  * Marketing Version Indicator
  *
  * Simplified version indicator for the marketing site.
- * Shows version + badge and opens a changelog modal using baked-in data.
+ * Shows BETA or STABLE badge based on the current site (beta.eclosion.app vs eclosion.app).
+ * Opens a changelog modal using baked-in data.
  * Unlike the app's VersionIndicator, this doesn't check for updates (no backend).
  */
 
@@ -10,14 +11,18 @@ import { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { ChangelogDisplay } from '../ChangelogDisplay';
 import { VersionBadge } from '../VersionBadge';
+import { useIsBetaSite } from '../../hooks';
 
 // Vite injects app version at build time
 declare const __APP_VERSION__: string;
 
 export function MarketingVersionIndicator() {
   const [showChangelog, setShowChangelog] = useState(false);
+  const isBetaSite = useIsBetaSite();
 
   const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+  // Use site-based detection: beta.eclosion.app shows BETA, eclosion.app shows STABLE
+  const channel = isBetaSite ? 'beta' : 'stable';
 
   return (
     <>
@@ -27,7 +32,7 @@ export function MarketingVersionIndicator() {
         className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md transition-colors hover:bg-[var(--monarch-bg-hover)]"
         title="View changelog"
       >
-        <VersionBadge version={version} channel={undefined} size="md" />
+        <VersionBadge version={version} channel={channel} size="md" />
       </button>
 
       <Modal

@@ -112,7 +112,7 @@ export function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {
         title="Get Started with Eclosion"
         description="Choose how you want to run your instance"
         maxWidth="lg"
-        closeOnBackdrop={false}
+        closeOnBackdrop={true}
       >
         <GetStartedDeploymentSelection
           selected={deploymentType}
@@ -130,7 +130,7 @@ export function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {
       title="Before You Get Started"
       description="Please read and acknowledge the following"
       maxWidth="lg"
-      closeOnBackdrop={false}
+      closeOnBackdrop={true}
       footer={
         <div className="flex gap-3">
           <button

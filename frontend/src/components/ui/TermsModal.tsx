@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { CheckIcon, WarningIcon, ExternalLinkIcon, ShieldIcon } from '../icons';
+import { isDesktopMode } from '../../utils/apiBase';
 
 const TERMS_ACCEPTED_KEY = 'eclosion-terms-accepted';
 
@@ -65,6 +66,7 @@ function StatusIndicator({ status, text }: { status: 'ok' | 'warning'; text: str
 
 export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
   const [acknowledged, setAcknowledged] = useState(false);
+  const isDesktop = isDesktopMode();
 
   const handleAccept = () => {
     setTermsAccepted();
@@ -82,9 +84,9 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           className="mt-1 w-4 h-4 accent-[var(--monarch-orange)]"
         />
         <span className="text-sm" style={{ color: 'var(--monarch-text)' }}>
-          I understand this is a self-hosted tool with no support, I accept responsibility for my
-          credentials and usage, and I acknowledge that using Monarch's API may not comply with
-          their Terms of Service.
+          {isDesktop
+            ? 'I understand this is an open-source tool with no support, I accept responsibility for my credentials and usage, and I acknowledge that using Monarch\'s API may not comply with their Terms of Service.'
+            : 'I understand this is a self-hosted tool with no support, I accept responsibility for my credentials and usage, and I acknowledge that using Monarch\'s API may not comply with their Terms of Service.'}
         </span>
       </label>
 
@@ -141,28 +143,41 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           </h3>
           <table className="w-full text-sm">
             <tbody>
-              <TableRow label="Hosting" value="You manage your own Railway/Docker instance" />
-              <TableRow label="Support" value="No customer support — this is a self-hosted tool" />
+              <TableRow label={isDesktop ? 'Storage' : 'Hosting'} value={isDesktop ? 'Data stored locally on your computer' : 'You manage your own Railway/Docker instance'} />
+              <TableRow label="Support" value={isDesktop ? 'No customer support — this is open-source software' : 'No customer support — this is a self-hosted tool'} />
               <TableRow label="Credentials" value="You secure and maintain your Monarch login" />
               <TableRow label="Compliance" value="You accept risks of using Monarch's API" isWarning />
             </tbody>
           </table>
         </section>
 
-        {/* Self-Managed Instance */}
+        {/* Self-Managed / Desktop App */}
         <section>
           <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
-            Self-Managed Instance
+            {isDesktop ? 'Desktop Application' : 'Self-Managed Instance'}
           </h3>
           <p className="text-sm mb-3" style={{ color: 'var(--monarch-text)' }}>
-            <strong>Eclosion is not a paid service with customer support.</strong> When you deploy
-            Eclosion, you're creating your own personal instance.
+            <strong>Eclosion is not a paid service with customer support.</strong>{' '}
+            {isDesktop
+              ? 'This is an open-source desktop application that runs entirely on your computer.'
+              : 'When you deploy Eclosion, you\'re creating your own personal instance.'}
           </p>
           <ul className="text-sm space-y-1.5 list-disc list-inside" style={{ color: 'var(--monarch-text)' }}>
-            <li>You're responsible for keeping your instance running</li>
-            <li>There's no support team to call if something breaks</li>
-            <li>Railway or Docker issues should be directed to those providers</li>
-            <li>Data backups and maintenance are your responsibility</li>
+            {isDesktop ? (
+              <>
+                <li>All data is stored locally on your computer</li>
+                <li>There's no support team to call if something breaks</li>
+                <li>Updates are your responsibility</li>
+                <li>Data backups are your responsibility</li>
+              </>
+            ) : (
+              <>
+                <li>You're responsible for keeping your instance running</li>
+                <li>There's no support team to call if something breaks</li>
+                <li>Railway or Docker issues should be directed to those providers</li>
+                <li>Data backups and maintenance are your responsibility</li>
+              </>
+            )}
           </ul>
         </section>
 
@@ -175,12 +190,13 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
             </h3>
           </div>
           <p className="text-sm mb-3" style={{ color: 'var(--monarch-text)' }}>
-            Your Monarch Money credentials are stored <strong>on your own server</strong>,
+            Your Monarch Money credentials are stored{' '}
+            <strong>{isDesktop ? 'locally on your computer' : 'on your own server'}</strong>,
             encrypted with a passphrase only you know.
           </p>
           <table className="w-full text-sm">
             <tbody>
-              <TableRow label="Storage" value="Credentials stored only on YOUR server" />
+              <TableRow label="Storage" value={isDesktop ? 'Credentials stored only on YOUR computer' : 'Credentials stored only on YOUR server'} />
               <TableRow label="Encryption" value="AES-256 encryption with your passphrase" />
               <TableRow label="Recovery" value="Lost passphrases cannot be recovered" isWarning />
               <TableRow label="Responsibility" value="You accept full responsibility for security" />

@@ -28,6 +28,7 @@ import { SettingsTab } from './components/tabs/SettingsTab';
 import { RateLimitError, AuthRequiredError } from './api/client';
 import { ErrorPage } from './components/ui/ErrorPage';
 import { useIsMarketingSite } from './hooks/useIsMarketingSite';
+import { useElectronNavigation } from './hooks/useElectronNavigation';
 import { BetaBanner } from './components/ui/BetaBanner';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
@@ -168,6 +169,9 @@ function GlobalDemoRoutes() {
 function AppRouter() {
   const location = useLocation();
   const isMarketingSite = useIsMarketingSite();
+
+  // Listen for navigation events from Electron main process (e.g., Settings menu)
+  useElectronNavigation();
 
   const isDemo = location.pathname.startsWith('/demo');
   const isLanding = location.pathname === '/';

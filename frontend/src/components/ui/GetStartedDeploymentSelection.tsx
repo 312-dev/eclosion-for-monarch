@@ -251,8 +251,8 @@ export function GetStartedDeploymentSelection({
 
       {/* Web-based section label */}
       <p
-        className="text-xs font-medium uppercase tracking-wider text-center"
-        style={{ color: 'var(--monarch-text-muted)' }}
+        className="text-xs font-medium uppercase tracking-wider text-center pb-1"
+        style={{ color: 'var(--monarch-text-dark)' }}
       >
         Web-based options
       </p>

@@ -185,6 +185,7 @@ jobs:
         run: npm run build
         env:
           VITE_DESKTOP_BUILD: 'true'
+          VITE_APP_VERSION: ${{ inputs.version }}
 
       - name: Install desktop dependencies
         working-directory: desktop
@@ -307,6 +308,7 @@ jobs:
         run: npm run build
         env:
           VITE_DESKTOP_BUILD: 'true'
+          VITE_APP_VERSION: ${{ inputs.version }}
 
       - name: Install desktop dependencies
         working-directory: desktop
@@ -385,6 +387,7 @@ jobs:
         run: npm run build
         env:
           VITE_DESKTOP_BUILD: 'true'
+          VITE_APP_VERSION: ${{ inputs.version }}
 
       - name: Install desktop dependencies
         working-directory: desktop

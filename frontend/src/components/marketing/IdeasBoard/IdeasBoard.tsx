@@ -9,7 +9,6 @@ import { useState, useEffect, useMemo } from 'react';
 import type { IdeasData, PublicIdea } from '../../../types/ideas';
 import { useIdeasAnimation } from './useIdeasAnimation';
 import { IdeaBubble } from './IdeaBubble';
-import { DevCycleCard } from './DevCycleCard';
 import { IdeaTextInput } from './IdeaTextInput';
 import { getAvailableFeatures } from '../../../data/features';
 
@@ -144,16 +143,17 @@ export function IdeasBoard() {
       aria-label="Community ideas board"
     >
       {/* Container with subtle border for visual separation */}
-      <div className="rounded-2xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-elevated)]/30 p-4 space-y-4">
-        {/* Main animation area - pt-5 accommodates badges positioned above cards (-top-3 = 12px) */}
+      <div className="rounded-2xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-page)] p-6 space-y-4">
+        {/* Main animation area - fixed height to prevent jarring jumps between phases */}
+        {/* Phase containers are absolute with top-5 to accommodate badges above cards */}
         <div
-          className={`min-h-[180px] pt-5 relative transition-opacity duration-500 ${
+          className={`h-55 relative transition-opacity duration-500 ${
             isResetting ? 'opacity-0' : 'opacity-100'
           }`}
         >
           {/* Stacking phase: Show ideas dropping in one at a time */}
           {(animationPhase === 'stacking' || animationPhase === 'accumulating-votes') && (
-            <div className="relative h-[160px] pt-1">
+            <div className="absolute inset-x-0 top-5 h-50 pt-1">
               {stackedIdeas.slice(0, visibleStackCount).map((idea, index) => (
                 <IdeaBubble
                   key={idea.id}
@@ -172,7 +172,7 @@ export function IdeasBoard() {
 
           {/* Morphing phase: Smooth transition from voting card to dev card */}
           {animationPhase === 'morphing-to-dev' && featuredIdea && (
-            <div className="relative h-[160px] pt-1">
+            <div className="absolute inset-x-0 top-5 h-50 pt-1">
               {/* Show bottom cards fading out */}
               {stackedIdeas.slice(0, visibleStackCount - 1).map((idea, index) => (
                 <IdeaBubble
@@ -205,13 +205,13 @@ export function IdeasBoard() {
 
           {/* Dev cycle: Show the featured idea going through the pipeline */}
           {/* Also show during 'resetting' so the card fades out with the container */}
-          {/* No entrance animation - IdeaBubble already morphed into this appearance */}
           {(animationPhase === 'dev-cycle' || animationPhase === 'resetting') && featuredIdea && (
-            <div className="pt-1">
-              <DevCycleCard
+            <div className="absolute inset-x-0 top-5 h-50 pt-1">
+              <IdeaBubble
                 idea={featuredIdea}
-                stage={devCycleStage}
+                isUpvoting={false}
                 reducedMotion={prefersReducedMotion}
+                devCycleStage={devCycleStage}
                 developers={developers}
                 devProgress={devProgress}
               />

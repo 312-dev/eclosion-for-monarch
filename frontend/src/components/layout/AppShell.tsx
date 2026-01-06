@@ -30,7 +30,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils';
+import { isDesktopMode } from '../../utils/apiBase';
 import { AppIcon, TourController } from '../wizards/WizardComponents';
+import { useMacOSElectron } from '../../hooks';
 
 export function AppShell() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -39,9 +41,11 @@ export function AppShell() {
   const location = useLocation();
   const { logout } = useAuth();
   const isDemo = useDemo();
+  const isDesktop = isDesktopMode();
   const toast = useToast();
   const { data, isLoading, error, refetch } = useDashboardQuery();
   const syncMutation = useSyncMutation();
+  const isMacOSElectron = useMacOSElectron();
 
   // Demo-aware path prefix
   const pathPrefix = isDemo ? '/demo' : '';
@@ -117,7 +121,7 @@ export function AppShell() {
 
         {/* App Header */}
         <header className="app-header" role="banner">
-          <div className="app-header-content relative">
+          <div className="app-header-content relative" style={isMacOSElectron ? { paddingLeft: '80px' } : undefined}>
             <div className="app-brand">
               <Link to={`${pathPrefix}/`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to home">
                 <AppIcon size={32} />
@@ -140,15 +144,18 @@ export function AppShell() {
                 lastSync={data.last_sync}
                 compact
               />
-              <button
-                type="button"
-                onClick={() => setShowSecurityInfo(true)}
-                className="app-header-btn hidden sm:flex"
-                style={{ color: 'var(--monarch-text-muted)' }}
-                aria-label="View security information"
-              >
-                <ShieldCheck className="app-header-icon" aria-hidden="true" />
-              </button>
+              {/* Hide security info button on desktop - only relevant for web deployments */}
+              {!isDesktop && (
+                <button
+                  type="button"
+                  onClick={() => setShowSecurityInfo(true)}
+                  className="app-header-btn hidden sm:flex"
+                  style={{ color: 'var(--monarch-text-muted)' }}
+                  aria-label="View security information"
+                >
+                  <ShieldCheck className="app-header-icon" aria-hidden="true" />
+                </button>
+              )}
               <HelpDropdown hasTour={hasTour} onStartTour={() => setShowTour(true)} />
             </div>
           </div>
@@ -169,8 +176,8 @@ export function AppShell() {
 
           {/* Main content wrapper */}
           <div className="app-content-wrapper">
-            {/* Security Alert Banner - shown if failed login attempts detected */}
-            <SecurityAlertBanner />
+            {/* Security Alert Banner - shown if failed login attempts detected (hidden on desktop) */}
+            {!isDesktop && <SecurityAlertBanner />}
 
             {/* Notices - announced to screen readers */}
             {data.notices && data.notices.length > 0 && (

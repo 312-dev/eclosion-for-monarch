@@ -13,34 +13,13 @@
  * - localhost (development)
  */
 
-import { useMemo } from 'react';
 import { Icons } from '../icons';
+import { useIsBetaSite } from '../../hooks';
 
 const STABLE_URL = 'https://eclosion.app';
 
-/**
- * Check if current site is a beta/preview environment
- */
-function useIsBeta(): boolean {
-  return useMemo(() => {
-    const hostname = globalThis.location.hostname;
-
-    // Exact match for beta subdomain
-    if (hostname === 'beta.eclosion.app') {
-      return true;
-    }
-
-    // Cloudflare Pages preview URLs (*.eclosion.pages.dev)
-    if (hostname.endsWith('.pages.dev')) {
-      return true;
-    }
-
-    return false;
-  }, []);
-}
-
 export function BetaBanner() {
-  const isBeta = useIsBeta();
+  const isBeta = useIsBetaSite();
 
   if (!isBeta) {
     return null;

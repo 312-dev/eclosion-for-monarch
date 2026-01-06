@@ -8,6 +8,25 @@ import { Menu, app, shell } from 'electron';
 import { getMainWindow, showWindow } from './window';
 
 /**
+ * Check if the current app version is a beta build.
+ * Beta versions contain "beta" in their version string (e.g., "1.1.0-beta.20260104.1").
+ */
+function isBetaBuild(): boolean {
+  return app.getVersion().toLowerCase().includes('beta');
+}
+
+/**
+ * Get the documentation URL based on whether this is a beta or stable build.
+ * - Beta builds link to beta.eclosion.app/docs (no version path, shows current docs)
+ * - Stable builds link to eclosion.app/docs (versioned docs site)
+ */
+function getDocsUrl(): string {
+  return isBetaBuild()
+    ? 'https://beta.eclosion.app/docs'
+    : 'https://eclosion.app/docs';
+}
+
+/**
  * Create and set the application menu.
  */
 export function createAppMenu(): void {
@@ -125,7 +144,7 @@ export function createAppMenu(): void {
         {
           label: 'Documentation',
           click: async (): Promise<void> => {
-            await shell.openExternal('https://eclosion.app/docs');
+            await shell.openExternal(getDocsUrl());
           },
         },
         {

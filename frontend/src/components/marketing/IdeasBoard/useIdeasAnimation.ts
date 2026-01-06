@@ -181,7 +181,7 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
   const [isPaused, setIsPaused] = useState(false);
   const [state, setState] = useState<AnimationState>({
     animationPhase: 'stacking',
-    stackCount: 0,
+    stackCount: 1, // Start with one card already visible (no drop-in animation)
     devCycleStage: 'idea',
     isUpvoting: false,
     voteAccumulationCount: 0,
@@ -441,7 +441,7 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
         setState((s) => ({
           ...s,
           animationPhase: 'stacking',
-          stackCount: 0,
+          stackCount: 1, // Start with one card already visible (randomized via cycleKey shuffle)
           devCycleStage: 'idea',
           voteAccumulationCount: 0,
           targetVotes: 0,
