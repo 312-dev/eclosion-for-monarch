@@ -315,7 +315,8 @@ def _get_trusted_host() -> str | None:
 
 def _enforce_https():
     """Redirect HTTP to HTTPS in production. Returns redirect response or None."""
-    if request.is_secure or app.debug:
+    # Skip HTTPS redirect for secure requests, debug mode, or desktop app (localhost only)
+    if request.is_secure or app.debug or config.is_desktop_environment():
         return None
     if request.headers.get("X-Forwarded-Proto", "http") == "http":
         # Get a validated/trusted host for the redirect
