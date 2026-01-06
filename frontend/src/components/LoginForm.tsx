@@ -91,7 +91,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         <div className="flex flex-col items-center">
           {/* Eclosion branding */}
           <div className="flex items-center gap-3 mb-6">
-            <img src="/icons/icon-192.svg" alt="Eclosion" className="w-12 h-12" />
+            <img src={`${import.meta.env.BASE_URL}icons/icon-192.svg`} alt="Eclosion" className="w-12 h-12" />
             <span className="text-3xl" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600, color: 'var(--monarch-text-dark)' }}>
               Eclosion
             </span>

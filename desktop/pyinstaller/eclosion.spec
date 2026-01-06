@@ -5,6 +5,7 @@ Bundles the Flask application and all dependencies into a single executable.
 """
 import sys
 from pathlib import Path
+import certifi
 
 # Project root (parent of desktop/)
 project_root = Path(SPECPATH).parent.parent
@@ -13,6 +14,8 @@ project_root = Path(SPECPATH).parent.parent
 datas = [
     # Include version file
     (str(project_root / 'version.txt'), '.'),
+    # Include SSL certificates for HTTPS connections (required for PyInstaller bundles)
+    (certifi.where(), 'certifi'),
 ]
 
 # Check for state migrations directory
@@ -50,6 +53,7 @@ a = Analysis(
         'dotenv',
         'pyotp',
         'cachetools',
+        'certifi',
 
         # Monarch Money client dependencies
         'aiohttp',
@@ -68,7 +72,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[str(Path(SPECPATH) / 'hook-ssl-certs.py')],
     excludes=[
         # Exclude unnecessary modules to reduce size
         'tkinter',
