@@ -3,6 +3,16 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { initializeApi } from './api/core/fetchApi'
+import { isDesktopMode } from './utils/apiBase'
+
+// Register service worker (web only, not desktop)
+if ('serviceWorker' in navigator && !isDesktopMode()) {
+  globalThis.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.error('SW registration failed:', error);
+    });
+  });
+}
 
 // Handle SPA redirect from 404.html fallback
 // When Cloudflare Pages can't match a route, 404.html redirects to / while

@@ -20,40 +20,10 @@
     <link rel="manifest" href="./manifest.json" />
 
     <!-- Theme initialization (prevents flash of wrong theme) -->
-    <script>
-      (function() {
-        const stored = localStorage.getItem('eclosion-theme-preference');
-        let theme = 'light';
-        if (stored === 'dark') {
-          theme = 'dark';
-        } else if (!stored || stored === 'system') {
-          if (globalThis.matchMedia && globalThis.matchMedia('(prefers-color-scheme: dark)').matches) {
-            theme = 'dark';
-          }
-        }
-        document.documentElement.classList.add(theme);
-        document.documentElement.dataset.theme = theme;
-      })();
-    </script>
-
+    <script src="./theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-
-    <!-- Service Worker Registration (web only, not desktop) -->
-    <script>
-      if ('serviceWorker' in navigator && !globalThis.electron) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('SW registered:', registration.scope);
-            })
-            .catch((error) => {
-              console.log('SW registration failed:', error);
-            });
-        });
-      }
-    </script>
   </body>
 </html>
