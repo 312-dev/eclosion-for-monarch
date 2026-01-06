@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { initializeApi } from './api/core/fetchApi'
 
 // Handle SPA redirect from 404.html fallback
 // When Cloudflare Pages can't match a route, 404.html redirects to / while
@@ -19,8 +20,12 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
+// Initialize API for desktop mode (fetches backend port from Electron)
+// This must complete before rendering to ensure API calls work
+await initializeApi();
+
 createRoot(rootElement).render(
   <StrictMode>
     <App />
   </StrictMode>,
-)
+);
