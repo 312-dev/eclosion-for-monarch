@@ -2,6 +2,9 @@ appId: com.eclosion.desktop
 productName: Eclosion
 copyright: Copyright (c) 2024-2025
 
+# Project metadata (required for deb packages)
+homepage: https://eclosion.app
+
 # Build directories
 directories:
   output: release
