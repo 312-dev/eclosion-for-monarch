@@ -168,8 +168,10 @@ const changelog = loadChangelog();
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
-  // Base path for deployment (root for Cloudflare Pages with custom domain)
-  base: '/',
+  // Base path for deployment
+  // - '/' for web (Cloudflare Pages with custom domain)
+  // - './' for desktop (Electron needs relative paths for file:// protocol)
+  base: process.env.VITE_DESKTOP_BUILD === 'true' ? './' : '/',
 
   plugins: [
     // MDX plugin must come before React plugin
