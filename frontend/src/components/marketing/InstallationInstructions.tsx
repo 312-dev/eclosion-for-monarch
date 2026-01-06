@@ -21,20 +21,55 @@ export function InstallationInstructions() {
         <ol className="text-sm text-[var(--monarch-text)] space-y-2 list-decimal list-inside">
           <li>Open the downloaded .dmg file</li>
           <li>Drag Eclosion to your Applications folder</li>
-          <li>
-            <strong>First launch:</strong> If you see "App is damaged" or
-            "cannot be opened", go to{' '}
-            <span className="font-mono text-xs bg-[var(--monarch-bg-hover)] px-1.5 py-0.5 rounded">
-              System Settings → Privacy & Security
-            </span>
-          </li>
-          <li>
-            Scroll down and click{' '}
-            <span className="font-mono text-xs bg-[var(--monarch-bg-hover)] px-1.5 py-0.5 rounded">
-              Open Anyway
-            </span>
-          </li>
+          <li>Launch Eclosion from Applications</li>
         </ol>
+
+        {/* Gatekeeper warning */}
+        <div className="mt-4 p-3 rounded-md bg-[var(--monarch-bg-hover)] border border-[var(--monarch-border)]">
+          <p className="text-sm font-medium text-[var(--monarch-text-dark)] mb-2">
+            If you see "App is damaged" or "cannot be opened"
+          </p>
+          <p className="text-xs text-[var(--monarch-text-muted)] mb-3">
+            This happens because the app isn't signed with an Apple Developer certificate yet. Use one of these methods:
+          </p>
+
+          <div className="space-y-3">
+            {/* Method 1: Terminal */}
+            <div>
+              <p className="text-xs font-medium text-[var(--monarch-text)] mb-1">
+                Option 1: Terminal command (recommended)
+              </p>
+              <code className="block text-xs bg-[var(--monarch-bg-page)] px-2 py-1.5 rounded font-mono text-[var(--monarch-text)]">
+                xattr -cr /Applications/Eclosion.app
+              </code>
+              <p className="text-xs text-[var(--monarch-text-muted)] mt-1">
+                Then launch the app normally.
+              </p>
+            </div>
+
+            {/* Method 2: System Settings */}
+            <div>
+              <p className="text-xs font-medium text-[var(--monarch-text)] mb-1">
+                Option 2: System Settings
+              </p>
+              <ol className="text-xs text-[var(--monarch-text-muted)] space-y-1 list-decimal list-inside">
+                <li>
+                  Go to{' '}
+                  <span className="font-mono bg-[var(--monarch-bg-page)] px-1 py-0.5 rounded">
+                    System Settings → Privacy & Security
+                  </span>
+                </li>
+                <li>Scroll down to find the blocked app message</li>
+                <li>
+                  Click{' '}
+                  <span className="font-mono bg-[var(--monarch-bg-page)] px-1 py-0.5 rounded">
+                    Open Anyway
+                  </span>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Windows */}

@@ -101,6 +101,70 @@ jobs:
           echo "- **Sequence:** $SEQ" >> $GITHUB_STEP_SUMMARY
           echo "- **Tag:** $TAG" >> $GITHUB_STEP_SUMMARY
 
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Find the last stable release tag (vX.Y.Z without -beta)
+          LAST_STABLE=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v beta | head -1)
+
+          if [ -z "$LAST_STABLE" ]; then
+            echo "No previous stable release found, using first commit"
+            LAST_STABLE=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "Generating notes since $LAST_STABLE"
+
+          # Get commits since last stable release
+          COMMITS=$(git log "$LAST_STABLE"..HEAD --pretty=format:"- %s" --no-merges | head -30)
+
+          # Categorize commits by conventional commit type
+          FEATURES=$(echo "$COMMITS" | grep -E "^- feat" | sed 's/^- feat[:(]/- /' | sed 's/):/:/') || true
+          FIXES=$(echo "$COMMITS" | grep -E "^- fix" | sed 's/^- fix[:(]/- /' | sed 's/):/:/') || true
+
+          # Build release notes file to avoid escaping issues
+          cat > /tmp/release-notes.md << 'NOTESEOF'
+          ## What's New in This Beta
+
+          This is a pre-release build from the `develop` branch for testing new features before stable release.
+
+          NOTESEOF
+
+          if [ -n "$FEATURES" ]; then
+            echo "### Features" >> /tmp/release-notes.md
+            echo "$FEATURES" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if [ -n "$FIXES" ]; then
+            echo "### Bug Fixes" >> /tmp/release-notes.md
+            echo "$FIXES" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          # Add installation notes
+          cat >> /tmp/release-notes.md << INSTALLEOF
+          ---
+
+          ### Installation Notes
+
+          **macOS users:** If you see "App is damaged" when opening, run this in Terminal:
+          \`\`\`
+          xattr -cr /Applications/Eclosion.app
+          \`\`\`
+
+          **Windows users:** Click "More info" → "Run anyway" if SmartScreen appears.
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_STABLE}...${{ steps.version.outputs.tag }}
+          INSTALLEOF
+
+          # Remove leading whitespace from heredoc indentation
+          sed -i 's/^          //' /tmp/release-notes.md
+
+          echo "Generated release notes:"
+          cat /tmp/release-notes.md
+
       - name: Create pre-release
         env:
           # Use PAT instead of GITHUB_TOKEN so the release triggers downstream workflows
@@ -110,8 +174,8 @@ jobs:
           gh release create ${{ steps.version.outputs.tag }} \
             --target develop \
             --prerelease \
-            --generate-notes \
-            --title "${{ steps.version.outputs.tag }}"
+            --title "${{ steps.version.outputs.tag }}" \
+            --notes-file /tmp/release-notes.md
 
           echo "### Release Created" >> $GITHUB_STEP_SUMMARY
           echo "Pre-release [${{ steps.version.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}) created successfully." >> $GITHUB_STEP_SUMMARY
