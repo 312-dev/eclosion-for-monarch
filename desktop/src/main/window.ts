@@ -21,8 +21,8 @@ function setupCSP(): void {
         'Content-Security-Policy': [
           [
             "default-src 'self'",
-            // Allow inline scripts via SHA hashes for theme init, SPA redirect, and SW registration
-            "script-src 'self' 'sha256-2KsydFQ+B492A0JKVNB1c+YZ3ymrHBpmmy6cRREG2IE=' 'sha256-eJSdVMyWaXEdtp0N3iqBShT2gRKf8MiwtAbR2TrSEcI=' 'sha256-x+l2y5hfoJcQtzhqtR+/5uoLhM5VHKIPgbPhXRL6gKs='",
+            // Allow inline scripts via SHA hashes for theme init and SW registration
+            "script-src 'self' 'sha256-qnzM0uuYBS6SxRalfxr0q60uFYuzFRKeOZf1JBnSdT0=' 'sha256-/NnjYuZyblHSUSM/NTXQIrz5I/wjK2a27UhFYKXdsj4='",
             "style-src 'self' 'unsafe-inline'", // Tailwind uses inline styles
             "img-src 'self' data: https:",
             "font-src 'self' data:",

@@ -36,26 +36,14 @@
       })();
     </script>
 
-    <!-- SPA redirect handler for GitHub Pages -->
-    <script>
-      (function() {
-        // Check if we were redirected from 404.html
-        var redirect = sessionStorage.getItem('spa-redirect');
-        if (redirect) {
-          sessionStorage.removeItem('spa-redirect');
-          // Use replaceState to update the URL without reloading
-          history.replaceState(null, '', redirect);
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration (web only, not desktop) -->
     <script>
-      if ('serviceWorker' in navigator) {
+      if ('serviceWorker' in navigator && !globalThis.electron) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then((registration) => {
