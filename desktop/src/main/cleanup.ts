@@ -172,7 +172,7 @@ export function factoryReset(): CleanupResult {
 export async function showFactoryResetDialog(): Promise<{ confirmed: boolean; result?: CleanupResult }> {
   const mainWindow = await import('./window').then((m) => m.getMainWindow());
 
-  const response = await dialog.showMessageBox(mainWindow ?? undefined, {
+  const confirmOptions: Electron.MessageBoxOptions = {
     type: 'warning',
     buttons: ['Cancel', 'Reset All Data'],
     defaultId: 0,
@@ -188,7 +188,11 @@ export async function showFactoryResetDialog(): Promise<{ confirmed: boolean; re
       '• Desktop preferences\n\n' +
       'You will need to sign in again after restarting the app.\n\n' +
       'This action cannot be undone.',
-  });
+  };
+
+  const response = mainWindow
+    ? await dialog.showMessageBox(mainWindow, confirmOptions)
+    : await dialog.showMessageBox(confirmOptions);
 
   if (response.response !== 1) {
     return { confirmed: false };
@@ -197,19 +201,29 @@ export async function showFactoryResetDialog(): Promise<{ confirmed: boolean; re
   const result = factoryReset();
 
   if (result.success) {
-    await dialog.showMessageBox(mainWindow ?? undefined, {
+    const successOptions: Electron.MessageBoxOptions = {
       type: 'info',
       title: 'Reset Complete',
       message: 'All data has been reset.',
       detail: 'Please restart Eclosion to complete the reset.',
-    });
+    };
+    if (mainWindow) {
+      await dialog.showMessageBox(mainWindow, successOptions);
+    } else {
+      await dialog.showMessageBox(successOptions);
+    }
   } else {
-    await dialog.showMessageBox(mainWindow ?? undefined, {
+    const errorOptions: Electron.MessageBoxOptions = {
       type: 'warning',
       title: 'Reset Partially Complete',
       message: 'Some files could not be deleted.',
       detail: `Errors:\n${result.errors.join('\n')}`,
-    });
+    };
+    if (mainWindow) {
+      await dialog.showMessageBox(mainWindow, errorOptions);
+    } else {
+      await dialog.showMessageBox(errorOptions);
+    }
   }
 
   return { confirmed: true, result };

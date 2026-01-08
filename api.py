@@ -6,6 +6,7 @@ import re
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 from urllib.parse import quote, urlparse
 
 from dotenv import load_dotenv
@@ -1586,8 +1587,8 @@ def _parse_changelog() -> list[dict]:
     section_pattern = r"^### (Added|Changed|Deprecated|Removed|Fixed|Security)$"
     summary_pattern = r"^> (.+)$"
 
-    current_version = None
-    current_section = None
+    current_version: dict[str, Any] | None = None
+    current_section: str | None = None
     expecting_summary = False
 
     for line in content.split("\n"):
