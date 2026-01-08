@@ -134,6 +134,7 @@ class SyncService:
             "auto_sync_new": state.auto_sync_new,
             "auto_track_threshold": state.auto_track_threshold,
             "auto_update_targets": state.auto_update_targets,
+            "auto_categorize_enabled": state.auto_categorize_enabled,
         }
 
     async def toggle_item(
@@ -251,6 +252,16 @@ class SyncService:
         """Set whether to auto-update category targets when recurring amounts change."""
         self.state_manager.set_auto_update_targets(auto_update)
         return {"success": True, "auto_update_targets": auto_update}
+
+    def set_auto_categorize(self, enabled: bool) -> dict[str, Any]:
+        """Set whether to auto-categorize new transactions to tracking categories."""
+        self.state_manager.set_auto_categorize_enabled(enabled)
+        return {"success": True, "auto_categorize_enabled": enabled}
+
+    def set_show_category_group(self, show: bool) -> dict[str, Any]:
+        """Set whether to show category group names under item names."""
+        self.state_manager.set_show_category_group(show)
+        return {"success": True, "show_category_group": show}
 
     async def get_ready_to_assign(self) -> dict[str, Any]:
         """Get ready to assign (unbudgeted) amount."""
@@ -627,21 +638,21 @@ class SyncService:
 
         state = self.state_manager.load()
 
-        # Rate limit: prevent syncing more than once every 30 minutes
+        # Rate limit: prevent syncing more than once every 5 minutes
         if state.last_sync:
             from datetime import datetime
 
             last_sync_time = datetime.fromisoformat(state.last_sync)
             now = datetime.now()
             diff_seconds = (now - last_sync_time).total_seconds()
-            min_interval = 30 * 60  # 30 minutes in seconds
+            min_interval = 5 * 60  # 5 minutes in seconds
             if diff_seconds < min_interval:
                 remaining = int(min_interval - diff_seconds)
                 remaining_mins = remaining // 60
                 from core.exceptions import RateLimitError
 
                 raise RateLimitError(
-                    f"Eclosion limits syncs to once every 30 minutes. Please wait {remaining_mins} more minute(s).",
+                    f"Eclosion limits syncs to once every 5 minutes. Please wait {remaining_mins} more minute(s).",
                     retry_after=remaining,
                 )
 
@@ -746,7 +757,22 @@ class SyncService:
         except Exception as e:
             logger.warning(f"[SYNC] Failed to fetch user profile: {e}")
 
-        # Step 5: Mark sync complete
+        # Step 5: Auto-categorize new transactions (if enabled)
+        auto_categorize_result = None
+        if state.auto_categorize_enabled:
+            try:
+                from services.transaction_categorizer import TransactionCategorizerService
+
+                categorizer = TransactionCategorizerService(self.state_manager)
+                auto_categorize_result = await categorizer.auto_categorize_new_transactions()
+                logger.info(
+                    f"[SYNC] Auto-categorized {auto_categorize_result.get('categorized_count', 0)} transactions"
+                )
+            except Exception as e:
+                logger.warning(f"[SYNC] Auto-categorize failed: {e}")
+                auto_categorize_result = {"error": str(e)}
+
+        # Step 6: Mark sync complete
         self.state_manager.mark_sync_complete()
 
         results: dict[str, Any] = {
@@ -760,6 +786,10 @@ class SyncService:
             "recurring_count": len(recurring_items),
             "sync_time": datetime.now().isoformat(),
         }
+
+        # Include auto-categorize results if the feature ran
+        if auto_categorize_result:
+            results["auto_categorize"] = auto_categorize_result
 
         return results
 
@@ -1426,6 +1456,8 @@ class SyncService:
                 "auto_sync_new": state.auto_sync_new,
                 "auto_track_threshold": state.auto_track_threshold,
                 "auto_update_targets": state.auto_update_targets,
+                "auto_categorize_enabled": state.auto_categorize_enabled,
+                "show_category_group": state.show_category_group,
                 "user_first_name": state.user_first_name,
             },
             "last_sync": state.last_sync,

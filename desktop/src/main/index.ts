@@ -6,32 +6,21 @@
  */
 
 import { app, dialog, powerMonitor } from 'electron';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+
+// Initialize Sentry as early as possible (before other imports that might crash)
+import { initSentry, captureException, addBreadcrumb, isSentryEnabled } from './sentry';
+initSentry();
+
 import { BackendManager } from './backend';
+import { debugLog, initLogSession, getLogDir } from './logger';
 
-// Debug logging to file
-const debugLogPath = path.join(app.getPath('home'), 'eclosion-debug.log');
-function debugLog(msg: string): void {
-  const timestamp = new Date().toISOString();
-  const line = `${timestamp} - ${msg}\n`;
-  console.log(msg);
-  try {
-    fs.appendFileSync(debugLogPath, line);
-  } catch {
-    // Ignore write errors
-  }
-}
-
-// Initialize debug log
-try {
-  fs.writeFileSync(debugLogPath, `=== Eclosion Debug Log Started ===\n`);
-  debugLog(`App starting...`);
-  debugLog(`app.getPath('home'): ${app.getPath('home')}`);
-  debugLog(`process.resourcesPath: ${process.resourcesPath}`);
-} catch (e) {
-  console.error('Failed to initialize debug log:', e);
-}
+// Initialize log session
+initLogSession();
+debugLog('App starting...');
+debugLog(`Sentry: ${isSentryEnabled() ? 'enabled' : 'disabled'}`);
+debugLog(`Log directory: ${getLogDir()}`);
+debugLog(`app.getPath('home'): ${app.getPath('home')}`);
+debugLog(`process.resourcesPath: ${process.resourcesPath}`);
 import {
   createWindow,
   getMainWindow,
@@ -44,10 +33,20 @@ import {
   destroyTray,
   initializeDockVisibility,
   showNotification,
+  updateHealthStatus,
 } from './tray';
 import { setupIpcHandlers } from './ipc';
 import { initializeUpdater, scheduleUpdateChecks } from './updater';
 import { createAppMenu } from './menu';
+import { initializeHotkeys, unregisterAllHotkeys } from './hotkeys';
+import {
+  registerDeepLinkProtocol,
+  setupDeepLinkHandlers,
+  handleInitialDeepLink,
+  getDeepLinkFromArgs,
+  handleDeepLink,
+} from './deeplinks';
+import { recordMilestone, finalizeStartupMetrics } from './startup-metrics';
 
 // Single instance lock - prevent multiple instances
 debugLog('Requesting single instance lock...');
@@ -58,8 +57,8 @@ if (!gotTheLock) {
   debugLog('Another instance is already running - quitting');
   app.quit();
 } else {
-  // Handle second instance - focus existing window
-  app.on('second-instance', () => {
+  // Handle second instance - focus existing window and handle deep links
+  app.on('second-instance', (_event, commandLine) => {
     const mainWindow = getMainWindow();
     if (mainWindow) {
       if (mainWindow.isMinimized()) {
@@ -67,6 +66,13 @@ if (!gotTheLock) {
       }
       mainWindow.show();
       mainWindow.focus();
+    }
+
+    // Check if opened via deep link
+    const deepLink = getDeepLinkFromArgs(commandLine);
+    if (deepLink) {
+      debugLog(`Second instance deep link: ${deepLink}`);
+      void handleDeepLink(deepLink);
     }
   });
 }
@@ -84,7 +90,12 @@ async function initialize(): Promise<void> {
   debugLog(`Platform: ${process.platform}`);
   debugLog(`Arch: ${process.arch}`);
 
+  addBreadcrumb({ category: 'lifecycle', message: 'App initializing' });
+
   try {
+    // Register deep link protocol (eclosion://)
+    registerDeepLinkProtocol();
+
     // Initialize backend manager
     debugLog('Creating BackendManager...');
     backendManager = new BackendManager();
@@ -102,7 +113,9 @@ async function initialize(): Promise<void> {
 
     // Start Python backend
     debugLog('Starting backend...');
+    recordMilestone('backendStarting');
     await backendManager.start();
+    recordMilestone('backendStarted');
     debugLog(`Backend started on port ${backendManager.getPort()}`);
 
     // Initialize dock visibility (macOS menu bar mode)
@@ -111,6 +124,7 @@ async function initialize(): Promise<void> {
     // Create main window
     console.log('Creating main window...');
     await createWindow(backendManager.getPort());
+    recordMilestone('windowCreated');
 
     // Create application menu (adds Settings to macOS app menu)
     createAppMenu();
@@ -119,12 +133,26 @@ async function initialize(): Promise<void> {
     console.log('Creating system tray...');
     createTray(handleSyncClick);
 
+    // Initialize global hotkeys
+    initializeHotkeys(handleSyncClick);
+
+    // Setup deep link handlers (for eclosion:// URLs)
+    setupDeepLinkHandlers(handleSyncClick);
+
     // Setup power monitor for sleep/wake handling
     setupPowerMonitor();
 
     // Schedule periodic update checks
     updateCheckInterval = scheduleUpdateChecks(6); // Check every 6 hours
 
+    // Handle deep link if app was opened via eclosion:// URL
+    handleInitialDeepLink();
+
+    // Record startup metrics
+    recordMilestone('initialized');
+    finalizeStartupMetrics(app.getVersion());
+
+    addBreadcrumb({ category: 'lifecycle', message: 'App initialized successfully' });
     console.log('Initialization complete');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -143,10 +171,13 @@ async function initialize(): Promise<void> {
  * Handle sync button click from tray menu.
  */
 async function handleSyncClick(): Promise<void> {
+  addBreadcrumb({ category: 'sync', message: 'Manual sync triggered' });
   const result = await backendManager.triggerSync();
   if (result.success) {
+    const syncTime = new Date().toLocaleTimeString();
     showNotification('Sync Complete', 'Your recurring expenses are up to date.');
-    updateTrayMenu(handleSyncClick, `Last sync: ${new Date().toLocaleTimeString()}`);
+    updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+    updateHealthStatus(true, syncTime);
   } else {
     showNotification('Sync Failed', result.error || 'Please check your connection and try again.');
   }
@@ -159,11 +190,24 @@ function setupPowerMonitor(): void {
   // Handle system resume from sleep
   powerMonitor.on('resume', async () => {
     console.log('System resumed from sleep');
+    addBreadcrumb({ category: 'lifecycle', message: 'System resumed from sleep' });
 
     // Check if sync is needed after wake
     try {
       if (backendManager.isRunning()) {
-        await backendManager.checkSyncNeeded();
+        const result = await backendManager.checkSyncNeeded();
+
+        // Show feedback if a sync was triggered
+        if (result.synced) {
+          if (result.success) {
+            const syncTime = new Date().toLocaleTimeString();
+            showNotification('Synced After Wake', 'Your recurring expenses are up to date.');
+            updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+            updateHealthStatus(true, syncTime);
+          } else {
+            showNotification('Sync Failed', result.error || 'Automatic sync after wake failed.');
+          }
+        }
       }
     } catch (error) {
       console.error('Resume handler error:', error);
@@ -198,6 +242,9 @@ async function cleanup(): Promise<void> {
     updateCheckInterval = null;
   }
 
+  // Unregister global hotkeys
+  unregisterAllHotkeys();
+
   // Destroy tray
   destroyTray();
 
@@ -215,6 +262,7 @@ async function cleanup(): Promise<void> {
 
 // App ready - initialize
 app.on('ready', async () => {
+  recordMilestone('appReady');
   try {
     await initialize();
   } catch (error) {
@@ -269,6 +317,9 @@ process.on('uncaughtException', async (error) => {
   console.error('Uncaught exception:', error);
   debugLog(`CRASH: Uncaught exception: ${error.message}\n${error.stack || ''}`);
 
+  // Report to Sentry before crashing
+  captureException(error, { fatal: true });
+
   dialog.showErrorBox(
     'Eclosion Crashed',
     `An unexpected error occurred: ${error.message}\n\nThe application will restart.`
@@ -290,4 +341,9 @@ process.on('unhandledRejection', (reason) => {
   const errorMessage = reason instanceof Error ? reason.message : String(reason);
   console.error('Unhandled rejection:', reason);
   debugLog(`WARNING: Unhandled promise rejection: ${errorMessage}`);
+
+  // Report to Sentry
+  if (reason instanceof Error) {
+    captureException(reason);
+  }
 });

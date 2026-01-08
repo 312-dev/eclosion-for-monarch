@@ -60,13 +60,17 @@ export function MockupRecurringItem({ item }: MockupRecurringItemProps) {
         </div>
       </div>
 
-      {/* Amount and monthly */}
-      <div className="text-right">
-        <div className="font-semibold text-[var(--monarch-text-dark)]">
-          ${item.amount.toLocaleString()}
+      {/* Budget / Target input style */}
+      <div className="flex flex-col items-end">
+        <div className="flex items-center whitespace-nowrap rounded bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] px-2 py-1">
+          <span className="font-medium text-[var(--monarch-text-dark)]">$</span>
+          <span className="w-10 text-right font-medium text-[var(--monarch-text-dark)]">
+            {item.budget}
+          </span>
+          <span className="text-[var(--monarch-text-muted)] ml-1">/ {item.target}</span>
         </div>
-        <div className="text-sm text-[var(--monarch-text-muted)]">
-          ${item.monthly.toFixed(2)}/mo
+        <div className="text-xs text-[var(--monarch-text-light)] text-right mt-0.5">
+          ${item.amount.toLocaleString()}/yr
         </div>
       </div>
 

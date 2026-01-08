@@ -11,6 +11,7 @@ import { SearchableSelect } from '../SearchableSelect';
 import { useToast } from '../../context/ToastContext';
 import { useDemo } from '../../context/DemoContext';
 import { useApiClient } from '../../hooks';
+import { useInvalidateDashboard } from '../../api/queries';
 import { RecurringToolHeader } from './RecurringToolHeader';
 import { SettingsRow } from './SettingsRow';
 import { ToggleSwitch } from './ToggleSwitch';
@@ -33,6 +34,7 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
     const toast = useToast();
     const isDemo = useDemo();
     const client = useApiClient();
+    const invalidateDashboard = useInvalidateDashboard();
 
     const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
     const [loadingGroups, setLoadingGroups] = useState(false);
@@ -40,6 +42,8 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
     const [savingAutoTrack, setSavingAutoTrack] = useState(false);
     const [savingThreshold, setSavingThreshold] = useState(false);
     const [savingAutoUpdateTargets, setSavingAutoUpdateTargets] = useState(false);
+    const [savingAutoCategorize, setSavingAutoCategorize] = useState(false);
+    const [savingShowCategoryGroup, setSavingShowCategoryGroup] = useState(false);
 
     // Calculate recurring tool info
     const isConfigured = dashboardData?.config?.target_group_id != null;
@@ -120,6 +124,35 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
       }
     };
 
+    const handleAutoCategorizeChange = async () => {
+      const newValue = !(dashboardData?.config.auto_categorize_enabled ?? false);
+      setSavingAutoCategorize(true);
+      try {
+        await client.updateSettings({ auto_categorize_enabled: newValue });
+        await onRefreshDashboard();
+        toast.success(newValue ? 'Auto-categorization enabled' : 'Auto-categorization disabled');
+      } catch {
+        toast.error('Failed to update setting');
+      } finally {
+        setSavingAutoCategorize(false);
+      }
+    };
+
+    const handleShowCategoryGroupChange = async () => {
+      const newValue = !(dashboardData?.config.show_category_group ?? true);
+      setSavingShowCategoryGroup(true);
+      try {
+        await client.updateSettings({ show_category_group: newValue });
+        invalidateDashboard(); // Invalidate React Query cache for other tabs
+        await onRefreshDashboard();
+        toast.success(newValue ? 'Category groups shown' : 'Category groups hidden');
+      } catch {
+        toast.error('Failed to update setting');
+      } finally {
+        setSavingShowCategoryGroup(false);
+      }
+    };
+
     const getCategoryGroupOptions = () => {
       if (categoryGroups.length > 0) {
         return categoryGroups.map((group) => ({
@@ -138,6 +171,8 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
 
     const autoSyncEnabled = dashboardData?.config.auto_sync_new ?? false;
     const autoUpdateEnabled = dashboardData?.config.auto_update_targets ?? false;
+    const autoCategorizeEnabled = dashboardData?.config.auto_categorize_enabled ?? false;
+    const showCategoryGroupEnabled = dashboardData?.config.show_category_group ?? true;
 
     return (
       <section ref={ref} id="recurring" className="mb-8">
@@ -217,13 +252,39 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
                   <SettingsRow
                     label="Auto-update category targets"
                     description="Update targets when recurring amounts change"
-                    isLast
                   >
                     <ToggleSwitch
                       checked={autoUpdateEnabled}
                       onChange={handleAutoUpdateTargetsChange}
                       disabled={savingAutoUpdateTargets}
                       ariaLabel={autoUpdateEnabled ? 'Disable auto-update targets' : 'Enable auto-update targets'}
+                    />
+                  </SettingsRow>
+
+                  {/* Auto-categorize transactions */}
+                  <SettingsRow
+                    label="Auto-categorize transactions"
+                    description="Categorize new recurring transactions to tracking categories"
+                  >
+                    <ToggleSwitch
+                      checked={autoCategorizeEnabled}
+                      onChange={handleAutoCategorizeChange}
+                      disabled={savingAutoCategorize}
+                      ariaLabel={autoCategorizeEnabled ? 'Disable auto-categorize' : 'Enable auto-categorize'}
+                    />
+                  </SettingsRow>
+
+                  {/* Show category group */}
+                  <SettingsRow
+                    label="Show category group"
+                    description="Display category group name under each item"
+                    isLast
+                  >
+                    <ToggleSwitch
+                      checked={showCategoryGroupEnabled}
+                      onChange={handleShowCategoryGroupChange}
+                      disabled={savingShowCategoryGroup}
+                      ariaLabel={showCategoryGroupEnabled ? 'Hide category groups' : 'Show category groups'}
                     />
                   </SettingsRow>
                 </div>

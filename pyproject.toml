@@ -65,6 +65,9 @@ exclude = [
     "*.egg-info",
     ".pytest_cache",
     ".mypy_cache",
+    "desktop",
+    "docusaurus",
+    "scripts",
 ]
 
 [tool.ruff.lint]
@@ -121,6 +124,12 @@ warn_redundant_casts = true
 check_untyped_defs = true
 disallow_untyped_defs = false  # Start permissive, tighten later
 ignore_missing_imports = true
+exclude = [
+    "^desktop/",
+    "^docusaurus/",
+    "^scripts/",
+    "^frontend/",
+]
 
 [[tool.mypy.overrides]]
 module = "tests.*"

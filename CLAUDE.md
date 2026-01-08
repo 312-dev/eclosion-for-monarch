@@ -172,6 +172,71 @@ The animation system is defined in `index.css` with CSS variables matching `cons
 - `transition-fast`, `transition-normal`, `transition-slow` - Duration utilities
 - `transition-colors-fast`, `transition-transform-fast` - Property-specific
 
+### Currency Rounding
+
+**Monarch Money doesn't support cents, so we round to whole dollars.**
+
+Rounding rules (also documented in `constants/index.ts`):
+
+| Context | Method | Reason |
+|---------|--------|--------|
+| Monthly targets | `Math.ceil()` | Round UP to ensure enough is saved |
+| Balance comparisons | `Math.round()` | Standard rounding for display |
+| Currency display | `maximumFractionDigits: 0` | No cents shown |
+
+```typescript
+// Backend (Python)
+ideal_monthly_rate = math.ceil(target_amount / frequency_months)
+frozen_target = math.ceil(shortfall / months_remaining)
+
+// Frontend (TypeScript)
+const targetRounded = Math.ceil(item.frozen_monthly_target);
+const balanceRounded = Math.round(item.current_balance);
+formatCurrency(amount, { maximumFractionDigits: 0 })
+```
+
+Example: If a $100 yearly expense calculates to $8.33/month, we round UP to $9/month to ensure the user saves enough ($108 total, providing a small buffer).
+
+### Status Badge Calculation
+
+**Status badges indicate whether users are on track with their savings.**
+
+The status is determined by comparing the user's **budget** (what they're allocating monthly) against the **effective target** (what they need to allocate).
+
+**Key concept: Effective Target**
+
+The effective target varies based on expense frequency:
+
+| Frequency | When Funded | Effective Target | Reason |
+|-----------|-------------|------------------|--------|
+| Monthly (≤1 mo) | Balance ≥ Amount | frozen_monthly_target | Next month's bill is coming |
+| Infrequent (>1 mo) | Balance ≥ Amount | $0 | Done saving until reset |
+
+**Status Logic (in `useItemDisplayStatus.ts`):**
+
+```typescript
+// For monthly expenses: always use the target
+// For yearly/quarterly: target becomes $0 when funded
+const effectiveTarget = (isFunded && frequency_months > 1) ? 0 : target;
+
+if (budget > effectiveTarget) return 'ahead';
+if (budget >= effectiveTarget) return isFunded ? 'funded' : 'on_track';
+if (trajectoryReachesGoal) return 'ahead';
+return 'behind';
+```
+
+**Examples:**
+
+| Expense | Balance | Budget | Target | Status | Why |
+|---------|---------|--------|--------|--------|-----|
+| $600/yr | $300 | $75 | $50 | Ahead | Budgeting more than needed |
+| $600/yr | $600 | $50 | $0 | Ahead | Still budgeting when funded |
+| $600/yr | $600 | $0 | $0 | Funded | Done saving, correct behavior |
+| $80/mo | $80 | $80 | $80 | Funded | On track for next month |
+| $80/mo | $80 | $50 | $80 | Behind | Won't have enough next month |
+
+See `frontend/src/hooks/useItemDisplayStatus.ts` for full implementation with detailed comments.
+
 ### Error Handling
 
 **Use standardized error utilities.**
@@ -315,6 +380,30 @@ export function useNewFeatureMutation() {
   });
 }
 ```
+
+### Calculation Parity
+
+**Demo mode must use the same calculation logic as the main app.**
+
+When demo mode calculates values like status, progress, or targets, it must import and use the same functions that the real API mode uses. Do not reimplement calculation logic in demo files.
+
+| Calculation | Shared Function | Location |
+|-------------|-----------------|----------|
+| Item status | `calculateItemDisplayStatus()` | `hooks/useItemDisplayStatus.ts` |
+| Rollup status | `calculateDisplayStatus()` | `utils/status.ts` |
+| Frozen target | `calculateFrozenTarget()` | `api/demo/demoItems.ts` (mirrors backend) |
+
+```typescript
+// BAD - Reimplementing status logic in demo
+const newStatus = totalSaved >= item.amount ? 'funded' :
+                 progress >= 80 ? 'on_track' : 'behind';
+
+// GOOD - Import and use shared function
+import { calculateItemDisplayStatus } from '../../hooks/useItemDisplayStatus';
+const newStatus = calculateItemDisplayStatus(updatedItem);
+```
+
+The `calculateFrozenTarget` function in demo code mirrors the backend Python logic in `services/frozen_target_calculator.py`. If the backend logic changes, the demo function must be updated to match.
 
 ### Key Files
 

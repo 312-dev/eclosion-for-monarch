@@ -145,4 +145,16 @@ export const DOC_MAPPINGS: DocMapping[] = [
     parentFeature: 'recurring',
     sidebarPosition: 4,
   },
+  {
+    topic: 'status-badges',
+    sourceFiles: [
+      'frontend/src/hooks/useItemDisplayStatus.ts',
+      'frontend/src/components/recurring/RecurringItemStatus.tsx',
+    ],
+    outputFile: 'docusaurus/docs/recurring/status-badges.mdx',
+    feature: 'recurring',
+    userFlow: 'main-dashboard',
+    parentFeature: 'recurring',
+    sidebarPosition: 5,
+  },
 ];

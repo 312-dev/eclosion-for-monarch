@@ -4,13 +4,29 @@
  * Displays contributor attribution for Eclosion features as simple bullet points.
  */
 
-import { Heart } from 'lucide-react';
+import { Heart, Package } from 'lucide-react';
 import {
   useAllContributors,
   useUniqueContributors,
   type FeatureContributors,
 } from '../../hooks/useContributors';
 import { FEATURES, type FeatureDefinition } from '../../data/features';
+
+interface OpenSourceProject {
+  name: string;
+  description: string;
+  url: string;
+  note?: string;
+}
+
+const OPEN_SOURCE_PROJECTS: OpenSourceProject[] = [
+  {
+    name: 'monarchmoney',
+    description: 'Python library for the Monarch Money API',
+    url: 'https://github.com/GraysonCAdams/monarchmoney',
+    note: 'using our own fork',
+  },
+];
 
 interface FeatureWithCredits extends FeatureDefinition {
   credits: FeatureContributors;
@@ -38,7 +54,7 @@ export function CreditsSection() {
   }
 
   return (
-    <section className="mb-8">
+    <section className="my-8">
       <h2
         className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
         style={{ color: 'var(--monarch-text-muted)' }}
@@ -46,15 +62,22 @@ export function CreditsSection() {
         <Heart size={12} />
         Credits
       </h2>
-      <div className="px-1">
-        <p
-          className="text-sm mb-3"
+      <div
+        className="rounded-xl p-4"
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+        }}
+      >
+        {/* Contributors */}
+        <h3
+          className="text-xs font-medium uppercase tracking-wide mb-2"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
-          Eclosion is built by the community. Thank you to everyone who has
-          contributed ideas and code.
-        </p>
-        <ul className="space-y-1.5 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+          Contributors
+        </h3>
+        <ul className="space-y-1.5 text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
           {featuresWithCredits.map((feature) => {
             const parts: string[] = [];
             if (feature.credits.ideator) {
@@ -71,6 +94,35 @@ export function CreditsSection() {
               </li>
             );
           })}
+        </ul>
+
+        {/* Open Source */}
+        <h3
+          className="text-xs font-medium uppercase tracking-wide mb-2 flex items-center gap-1.5"
+          style={{ color: 'var(--monarch-text-muted)' }}
+        >
+          <Package size={10} />
+          Open Source
+        </h3>
+        <ul className="space-y-1.5 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+          {OPEN_SOURCE_PROJECTS.map((project) => (
+            <li key={project.name}>
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+                style={{ color: 'var(--monarch-text-dark)' }}
+              >
+                {project.name}
+              </a>
+              {' — '}
+              {project.description}
+              {project.note && (
+                <span style={{ color: 'var(--monarch-text-muted)' }}> ({project.note})</span>
+              )}
+            </li>
+          ))}
         </ul>
       </div>
     </section>

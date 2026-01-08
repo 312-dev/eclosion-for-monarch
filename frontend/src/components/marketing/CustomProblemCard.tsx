@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send } from 'lucide-react';
 import { IDEAS_BOARD } from '../../constants';
 import { useIdeaInputSafe } from '../../context';
+import { useLandingContent } from '../../hooks';
 
 /**
  * CustomProblemCard
@@ -29,8 +30,8 @@ function buildDiscussionUrl(problemText: string): string {
   return `${GITHUB_DISCUSSIONS_URL}?${params.toString()}`;
 }
 
-// Base height for 2 lines of text (line-height ~20px × 2 + py-3 padding 24px)
-const MIN_HEIGHT = 64;
+// Base height for 3 lines of text (line-height ~20px × 3 + py-3 padding 24px)
+const MIN_HEIGHT = 84;
 const MAX_HEIGHT = 200;
 
 interface CustomProblemCardProps {
@@ -46,6 +47,7 @@ const COL_SPAN_CLASSES = {
 } as const;
 
 export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomProblemCardProps) {
+  const { getContent } = useLandingContent();
   const [inputValue, setInputValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [displayedPlaceholder, setDisplayedPlaceholder] = useState('');
@@ -191,7 +193,7 @@ export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomPr
             onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            rows={2}
+            rows={3}
             className="w-full px-4 py-3 pr-12 rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-page)] text-[var(--monarch-text-dark)] text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-[var(--monarch-orange)]/50 focus:border-[var(--monarch-orange)] transition-all resize-none overflow-hidden"
             style={{ minHeight: MIN_HEIGHT, maxHeight: MAX_HEIGHT }}
             aria-label="Describe your problem"
@@ -220,7 +222,7 @@ export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomPr
         </div>
 
         <p className="mt-2 text-xs text-[var(--monarch-text-muted)]">
-          Press Enter to share on GitHub Discussions
+          {getContent('customProblem', 'helperText')}
         </p>
       </form>
     </article>

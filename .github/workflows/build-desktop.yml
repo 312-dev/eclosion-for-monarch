@@ -49,6 +49,8 @@ jobs:
         include:
           - runner: macos-15
             arch: arm64
+          - runner: macos-13
+            arch: x64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
@@ -112,10 +114,17 @@ jobs:
           retention-days: 1
 
   # =========================================================================
-  # Build Python Backend for Linux
+  # Build Python Backend for Linux (x64 and ARM64)
   # =========================================================================
   build-backend-linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -140,16 +149,25 @@ jobs:
       - name: Upload backend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: backend-linux-x64
+          name: backend-linux-${{ matrix.arch }}
           path: desktop/pyinstaller/dist/eclosion-backend
           retention-days: 1
 
   # =========================================================================
-  # Package for macOS (ARM64 - works on Intel Macs via Rosetta 2)
+  # Package for macOS (ARM64 and x64)
   # =========================================================================
   package-mac:
     needs: build-backend-mac
-    runs-on: macos-15
+    strategy:
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            backend_artifact: backend-mac-arm64
+          - runner: macos-13
+            arch: x64
+            backend_artifact: backend-mac-x64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -167,7 +185,7 @@ jobs:
       - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
-          name: backend-mac-arm64
+          name: ${{ matrix.backend_artifact }}
           path: desktop/pyinstaller/dist/eclosion-backend
 
       - name: Prepare backend
@@ -216,27 +234,21 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --mac --arm64 --publish never
+        run: npx electron-builder --mac --${{ matrix.arch }} --publish never
 
       - name: Validate backend binary
         run: |
-          echo "## macOS Backend Binary Validation" >> $GITHUB_STEP_SUMMARY
+          echo "## macOS Backend Binary Validation (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
           BINARY_INFO=$(file desktop/pyinstaller/dist/eclosion-backend/eclosion-backend)
           echo "Binary info: $BINARY_INFO"
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "$BINARY_INFO" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-          if ! echo "$BINARY_INFO" | grep -q "arm64"; then
-            echo "::error::Backend binary missing arm64 architecture"
-            exit 1
-          fi
-          echo "✅ Backend binary is arm64 (runs on Intel Macs via Rosetta 2)"
-
       - name: Check binary sizes
         id: sizes
         run: |
-          echo "## macOS Artifact Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "## macOS Artifact Sizes (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
           echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|------|------|" >> $GITHUB_STEP_SUMMARY
 
@@ -263,14 +275,27 @@ jobs:
             echo "::warning::macOS DMG size exceeds 300MB threshold (${SIZE_MB}MB)"
           fi
 
+      - name: Generate SHA256 checksums
+        run: |
+          cd desktop/release
+          echo "Generating SHA256 checksums for macOS (${{ matrix.arch }})..."
+          for file in *.dmg *.zip; do
+            if [ -f "$file" ]; then
+              shasum -a 256 "$file" >> checksums-macos-${{ matrix.arch }}.txt
+              echo "Generated checksum for $file"
+            fi
+          done
+          cat checksums-macos-${{ matrix.arch }}.txt
+
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eclosion-macos
+          name: eclosion-macos-${{ matrix.arch }}
           path: |
             desktop/release/*.dmg
             desktop/release/*.zip
             desktop/release/latest-mac.yml
+            desktop/release/checksums-macos-${{ matrix.arch }}.txt
           retention-days: 30
 
   # =========================================================================
@@ -340,6 +365,19 @@ jobs:
             }
           }
 
+      - name: Generate SHA256 checksums
+        shell: pwsh
+        run: |
+          Set-Location desktop/release
+          Write-Host "Generating SHA256 checksums for Windows..."
+          $checksumFile = "checksums-windows.txt"
+          Get-ChildItem -Path "*.exe" | ForEach-Object {
+            $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File -Append -FilePath $checksumFile -Encoding utf8
+            Write-Host "Generated checksum for $($_.Name)"
+          }
+          Get-Content $checksumFile
+
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -347,14 +385,24 @@ jobs:
           path: |
             desktop/release/*.exe
             desktop/release/latest.yml
+            desktop/release/checksums-windows.txt
           retention-days: 30
 
   # =========================================================================
-  # Package for Linux
+  # Package for Linux (x64 and ARM64)
   # =========================================================================
   package-linux:
     needs: build-backend-linux
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x64
+            backend_artifact: backend-linux-x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            backend_artifact: backend-linux-arm64
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -372,7 +420,7 @@ jobs:
       - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
-          name: backend-linux-x64
+          name: ${{ matrix.backend_artifact }}
           path: desktop/pyinstaller/dist/eclosion-backend
 
       - name: Make backend executable
@@ -401,15 +449,15 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --linux --publish never
+        run: npx electron-builder --linux --${{ matrix.arch }} --publish never
 
       - name: Check binary sizes
         run: |
-          echo "## Linux Artifact Sizes" >> $GITHUB_STEP_SUMMARY
+          echo "## Linux Artifact Sizes (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
           echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|------|------|" >> $GITHUB_STEP_SUMMARY
 
-          for file in desktop/release/*.AppImage desktop/release/*.deb; do
+          for file in desktop/release/*.AppImage desktop/release/*.deb desktop/release/*.rpm; do
             if [ -f "$file" ]; then
               SIZE=$(stat --printf="%s" "$file")
               SIZE_MB=$((SIZE / 1024 / 1024))
@@ -422,14 +470,28 @@ jobs:
             fi
           done
 
+      - name: Generate SHA256 checksums
+        run: |
+          cd desktop/release
+          echo "Generating SHA256 checksums for Linux (${{ matrix.arch }})..."
+          for file in *.AppImage *.deb *.rpm; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" >> checksums-linux-${{ matrix.arch }}.txt
+              echo "Generated checksum for $file"
+            fi
+          done
+          cat checksums-linux-${{ matrix.arch }}.txt
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: eclosion-linux
+          name: eclosion-linux-${{ matrix.arch }}
           path: |
             desktop/release/*.AppImage
             desktop/release/*.deb
+            desktop/release/*.rpm
             desktop/release/latest-linux.yml
+            desktop/release/checksums-linux-${{ matrix.arch }}.txt
           retention-days: 30
 
   # =========================================================================
@@ -452,6 +514,16 @@ jobs:
         run: |
           echo "Artifacts to upload:"
           find artifacts -type f -exec ls -lh {} \;
+
+      - name: Combine checksums
+        run: |
+          echo "Combining all checksum files into SHA256SUMS.txt..."
+          # Combine all checksum files, removing duplicates and sorting
+          cat artifacts/checksums-*.txt 2>/dev/null | sort -k2 | uniq > artifacts/SHA256SUMS.txt || true
+          echo "Combined checksums:"
+          cat artifacts/SHA256SUMS.txt
+          # Remove individual checksum files (we only upload the combined file)
+          rm -f artifacts/checksums-*.txt
 
       - name: Upload to Release
         env:
@@ -488,8 +560,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS (ARM64) | ${{ needs.package-mac.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS (ARM64 + x64) | ${{ needs.package-mac.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Windows (x64) | ${{ needs.package-win.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux (x64) | ${{ needs.package-linux.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux (x64 + ARM64) | ${{ needs.package-linux.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Version: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY

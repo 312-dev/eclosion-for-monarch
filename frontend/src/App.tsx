@@ -6,6 +6,7 @@
  * - Demo: LocalStorage-based data, no auth required
  */
 
+import { useEffect } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from './components/ui/Tooltip';
@@ -32,6 +33,29 @@ import { useElectronNavigation } from './hooks/useElectronNavigation';
 import { BetaBanner } from './components/ui/BetaBanner';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
+
+/**
+ * Scrolls to top on route changes, unless there's a hash anchor
+ */
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    // If there's a hash, let the browser handle scrolling to the element
+    if (hash) {
+      const element = document.getElementById(hash.slice(1));
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
+
+    // Otherwise scroll to top
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
+
+  return null;
+}
 
 export function getLandingPage(): string {
   const stored = localStorage.getItem(LANDING_PAGE_KEY);
@@ -287,6 +311,7 @@ export default function App() {
         <ToastProvider>
           <TooltipProvider>
             <Router>
+              <ScrollToTop />
               <DemoProvider>
                 <AppRouter />
               </DemoProvider>

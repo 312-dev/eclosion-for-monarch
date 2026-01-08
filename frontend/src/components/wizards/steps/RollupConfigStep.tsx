@@ -15,6 +15,8 @@ interface RollupConfigStepProps {
   readonly onSyncNameChange: (sync: boolean) => void;
   readonly loading: boolean;
   readonly groupName: string;
+  readonly autoCategorizeEnabled: boolean;
+  readonly onAutoCategorizeChange: (enabled: boolean) => void;
 }
 
 export function RollupConfigStep({
@@ -27,6 +29,8 @@ export function RollupConfigStep({
   onSyncNameChange,
   loading,
   groupName,
+  autoCategorizeEnabled,
+  onAutoCategorizeChange,
 }: RollupConfigStepProps) {
   // Group categories by group_name for dropdown
   const groupedCategories = categories.reduce((acc, cat) => {
@@ -163,9 +167,52 @@ export function RollupConfigStep({
         </div>
       )}
 
-      <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+      <p className="text-sm mb-6" style={{ color: 'var(--monarch-text-muted)' }}>
         You can configure which items go into the rollup from the dashboard after setup.
       </p>
+
+      {/* Auto-categorize option */}
+      <div
+        className="rounded-lg p-4 text-left mb-4"
+        style={{
+          backgroundColor: 'var(--monarch-bg-page)',
+          border: '1px solid var(--monarch-border)',
+        }}
+      >
+        <label htmlFor="auto-categorize-checkbox" className="flex items-start gap-3 cursor-pointer">
+          <input
+            id="auto-categorize-checkbox"
+            type="checkbox"
+            checked={autoCategorizeEnabled}
+            onChange={(e) => onAutoCategorizeChange(e.target.checked)}
+            className="mt-1"
+            style={{ accentColor: 'var(--monarch-orange)' }}
+            aria-describedby="auto-categorize-description"
+          />
+          <div>
+            <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+              Auto-categorize new transactions
+            </span>
+            <p id="auto-categorize-description" className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              Automatically categorize new recurring transactions to their tracking categories during sync
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* Advisory text about past transactions */}
+      <div
+        className="rounded-lg p-3 text-left text-sm"
+        style={{
+          backgroundColor: 'rgba(59, 130, 246, 0.08)',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          color: 'var(--monarch-text-muted)',
+        }}
+      >
+        <strong style={{ color: 'var(--monarch-text-dark)' }}>For historical accuracy:</strong>{' '}
+        You can manually re-categorize past transactions to their tracking categories in Monarch&apos;s
+        Transactions view. This helps ensure your reports accurately reflect spending over time.
+      </div>
     </div>
   );
 }

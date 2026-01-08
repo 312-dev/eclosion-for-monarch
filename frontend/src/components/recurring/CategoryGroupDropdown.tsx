@@ -11,7 +11,7 @@
 
 import React, { useState, useRef, useCallback, useEffect, useId } from 'react';
 import type { CategoryGroup } from '../../types';
-import { getCategoryGroups } from '../../api/client';
+import { useCategoryGroupsQuery } from '../../api/queries/dashboardQueries';
 import { useClickOutside } from '../../hooks';
 import { Tooltip } from '../ui/Tooltip';
 import { SpinnerIcon, ChevronDownIcon } from '../icons';
@@ -24,8 +24,6 @@ interface CategoryGroupDropdownProps {
 
 export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disabled }: CategoryGroupDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [groups, setGroups] = useState<CategoryGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -34,20 +32,13 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
   const menuId = useId();
   const triggerId = useId();
 
+  const { data: groups = [], isLoading } = useCategoryGroupsQuery();
+
   useClickOutside([dropdownRef], () => setIsOpen(false), isOpen);
 
-  const handleOpen = async () => {
+  const handleOpen = () => {
     if (disabled || isChanging) return;
     setIsOpen(!isOpen);
-    if (!isOpen && groups.length === 0) {
-      setIsLoading(true);
-      try {
-        const data = await getCategoryGroups();
-        setGroups(data);
-      } finally {
-        setIsLoading(false);
-      }
-    }
   };
 
   const handleSelect = async (group: CategoryGroup) => {
@@ -162,7 +153,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
           aria-labelledby={triggerId}
           aria-activedescendant={focusedIndex >= 0 ? `${menuId}-option-${focusedIndex}` : undefined}
           onKeyDown={handleKeyDown}
-          className="absolute left-0 top-6 z-dropdown py-1 rounded-lg shadow-lg text-sm max-h-64 overflow-y-auto dropdown-menu"
+          className="absolute left-0 top-6 z-popover py-1 rounded-lg shadow-lg text-sm max-h-64 overflow-y-auto dropdown-menu"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
             border: '1px solid var(--monarch-border)',

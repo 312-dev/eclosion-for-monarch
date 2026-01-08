@@ -46,13 +46,16 @@ export const FREQUENCY_LABELS: Record<string, string> = {
  * Short frequency labels for compact display.
  */
 export const FREQUENCY_SHORT_LABELS: Record<string, string> = {
-  weekly: 'weekly',
-  every_two_weeks: 'biweekly',
-  twice_a_month: '2x/mo',
-  monthly: 'monthly',
-  quarterly: 'quarterly',
-  semiyearly: 'semiannually',
-  yearly: 'annually',
+  weekly: ' every week',
+  every_two_weeks: ' every 2 wks',
+  twice_a_month: ' 2x/mo',
+  monthly: ' every month',
+  quarterly: ' every 3 mo',
+  semiyearly: ' every 6 mo',
+  'semi-annual': ' every 6 mo',
+  semiannual: ' every 6 mo',
+  yearly: ' every year',
+  annual: ' every year',
 };
 
 /**
@@ -126,26 +129,32 @@ export function formatDateRelative(dateStr: string): RelativeDateResult {
   } else if (diffDays === 1) {
     relative = 'Tomorrow';
   } else if (diffDays === -1) {
-    relative = '1d ago';
+    relative = '1 day ago';
   } else if (diffDays < 0) {
     const absDays = Math.abs(diffDays);
-    if (absDays < 30) {
-      relative = `${absDays}d ago`;
+    if (absDays < 7) {
+      relative = `${absDays} days ago`;
+    } else if (absDays < 30) {
+      const weeks = Math.round(absDays / 7);
+      relative = weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
     } else if (absDays < 365) {
       const months = Math.round(absDays / 30);
-      relative = `${months}mo ago`;
+      relative = months === 1 ? '1 month ago' : `${months} months ago`;
     } else {
       const years = Math.round(absDays / 365);
-      relative = `${years}y ago`;
+      relative = years === 1 ? '1 year ago' : `${years} years ago`;
     }
-  } else if (diffDays <= 30) {
-    relative = `in ${diffDays}d`;
-  } else if (diffDays <= 365) {
+  } else if (diffDays < 7) {
+    relative = `in ${diffDays} days`;
+  } else if (diffDays < 30) {
+    const weeks = Math.round(diffDays / 7);
+    relative = weeks === 1 ? 'in 1 week' : `in ${weeks} weeks`;
+  } else if (diffDays < 365) {
     const months = Math.round(diffDays / 30);
-    relative = `in ${months}mo`;
+    relative = months === 1 ? 'in 1 month' : `in ${months} months`;
   } else {
     const years = Math.round(diffDays / 365);
-    relative = `in ${years}y`;
+    relative = years === 1 ? 'in 1 year' : `in ${years} years`;
   }
 
   return { date: formatted, relative };

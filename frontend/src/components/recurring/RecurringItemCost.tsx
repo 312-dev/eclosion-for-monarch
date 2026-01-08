@@ -1,55 +1,51 @@
 /**
- * RecurringItemCost - Cost display with trend indicators and progress
+ * RecurringItemCost - Target display with trend indicators
  *
- * Shows monthly target, frequency text, progress bar, and "to go" amount.
+ * Shows monthly target and frequency text with trend indicators.
  * Supports compact mode for mobile card layout.
  */
 
-import type { RecurringItem, ItemStatus } from '../../types';
+import type { RecurringItem } from '../../types';
 import { Tooltip } from '../ui/Tooltip';
-import {
-  formatCurrency,
-  formatFrequencyShort,
-  getStatusStyles,
-} from '../../utils';
+import { formatCurrency, formatFrequencyShort } from '../../utils';
 import { TrendUpIcon, TrendDownIcon } from '../icons';
 
 interface RecurringItemCostProps {
   readonly item: RecurringItem;
-  readonly displayStatus: ItemStatus;
-  readonly progressPercent: number;
-  readonly date: string;
   readonly compact?: boolean;
 }
 
 export function RecurringItemCost({
   item,
-  displayStatus,
-  progressPercent,
-  date,
   compact = false,
 }: RecurringItemCostProps) {
-  const showTrendUp = item.frozen_monthly_target > item.ideal_monthly_rate &&
+  // Show red indicator when target exceeds current budget (underfunded)
+  const showTrendUp = item.frozen_monthly_target > item.planned_budget &&
     (item.is_enabled || item.frozen_monthly_target > 0);
-  const showTrendDown = item.frozen_monthly_target < item.ideal_monthly_rate &&
+  // Show green indicator when budget exceeds target (overfunded)
+  const showTrendDown = item.planned_budget > item.frozen_monthly_target &&
+    item.frozen_monthly_target > 0 &&
     (item.is_enabled || item.frozen_monthly_target > 0);
 
   return (
     <div className={compact ? 'flex flex-col gap-1' : ''}>
-      <div className={`flex items-center ${compact ? 'justify-start' : 'justify-end'} gap-1`}>
+      <div className="flex items-center justify-end gap-1">
         {showTrendUp && (
           <Tooltip content={
             item.is_enabled ? (
               <>
-                <div className="font-medium">Catching Up</div>
-                <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
+                <div className="font-medium">Underfunded</div>
+                <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-muted text-xs mt-1">
+                  Increase budget to stay on track
+                </div>
               </>
             ) : (
               <>
-                <div className="font-medium">Higher Than Usual</div>
-                <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-monarch-text-muted text-xs mt-1">Extra needed to catch up • After {date}</div>
+                <div className="font-medium">Below Target</div>
+                <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
               </>
             )
           }>
@@ -62,15 +58,18 @@ export function RecurringItemCost({
           <Tooltip content={
             item.is_enabled ? (
               <>
-                <div className="font-medium">Ahead of Schedule</div>
-                <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
+                <div className="font-medium">Overfunded</div>
+                <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-muted text-xs mt-1">
+                  Budgeting more than needed
+                </div>
               </>
             ) : (
               <>
-                <div className="font-medium">Lower Than Usual</div>
-                <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
+                <div className="font-medium">Above Target</div>
+                <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
+                <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
               </>
             )
           }>
@@ -80,41 +79,13 @@ export function RecurringItemCost({
           </Tooltip>
         )}
         <span className="font-medium text-monarch-text-dark">
-          {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo
+          {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}
         </span>
       </div>
-      <div className={`text-xs ${compact ? '' : 'mt-0.5'} text-monarch-text-light`}>
-        {formatCurrency(item.amount, { maximumFractionDigits: 0 })} {formatFrequencyShort(item.frequency)}
-      </div>
-      {item.is_enabled && (
-        <>
-          <Tooltip content={
-            <>
-              <div className="font-medium">
-                {item.current_balance - item.contributed_this_month > 0 ? (
-                  <>
-                    {formatCurrency(item.current_balance - item.contributed_this_month, { maximumFractionDigits: 0 })}
-                    <span className="text-monarch-text-muted"> + {formatCurrency(item.contributed_this_month, { maximumFractionDigits: 0 })}</span>
-                    {' '}= {formatCurrency(item.current_balance, { maximumFractionDigits: 0 })} of {formatCurrency(item.amount, { maximumFractionDigits: 0 })}
-                  </>
-                ) : (
-                  <>{formatCurrency(item.current_balance, { maximumFractionDigits: 0 })} of {formatCurrency(item.amount, { maximumFractionDigits: 0 })}</>
-                )}
-              </div>
-              <div className="text-monarch-text-muted text-xs mt-1">Resets {formatFrequencyShort(item.frequency)} after payment</div>
-            </>
-          }>
-            <div className={`w-full rounded-full h-1.5 ${compact ? 'mt-2' : 'mt-1.5'} cursor-help bg-monarch-border`}>
-              <div
-                className="h-1.5 rounded-full transition-all"
-                style={{ width: `${progressPercent}%`, backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color }}
-              />
-            </div>
-          </Tooltip>
-          <div className={`text-xs ${compact ? '' : 'mt-0.5'} text-monarch-text-light`}>
-            {formatCurrency(Math.max(0, item.amount - item.current_balance), { maximumFractionDigits: 0 })} to go
-          </div>
-        </>
+      {item.frequency !== 'monthly' && (
+        <div className={`text-xs ${compact ? '' : 'mt-0.5'} text-monarch-text-light text-right`}>
+          {formatCurrency(item.amount, { maximumFractionDigits: 0 })}{formatFrequencyShort(item.frequency)}
+        </div>
       )}
     </div>
   );

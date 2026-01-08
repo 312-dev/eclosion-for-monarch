@@ -23,6 +23,8 @@ interface PlatformDownloadCardProps {
   readonly downloadUrl: string | null;
   readonly version?: string | undefined;
   readonly fileSize?: string | undefined;
+  readonly checksum?: string | null;
+  readonly architecture?: string | undefined;
   readonly primary?: boolean;
   readonly onClick?: () => void;
 }
@@ -57,6 +59,8 @@ export function PlatformDownloadCard({
   downloadUrl,
   version,
   fileSize,
+  checksum,
+  architecture,
   primary = false,
   onClick,
 }: PlatformDownloadCardProps) {
@@ -129,12 +133,20 @@ export function PlatformDownloadCard({
           color={primary ? 'white' : 'var(--monarch-orange)'}
         />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div
           className={`font-semibold ${primary ? 'text-lg' : ''}`}
           style={{ color: primary ? 'white' : 'var(--monarch-text-dark)' }}
         >
           {label}
+          {architecture && (
+            <span
+              className="ml-2 text-xs font-normal"
+              style={{ color: primary ? 'rgba(255, 255, 255, 0.7)' : 'var(--monarch-text-muted)' }}
+            >
+              ({architecture})
+            </span>
+          )}
         </div>
         <div
           className="text-sm"
@@ -146,6 +158,17 @@ export function PlatformDownloadCard({
           {version && fileSize && ' · '}
           {fileSize}
         </div>
+        {checksum && (
+          <div
+            className="text-xs font-mono truncate mt-1"
+            style={{
+              color: primary ? 'rgba(255, 255, 255, 0.6)' : 'var(--monarch-text-muted)',
+            }}
+            title={`SHA256: ${checksum}`}
+          >
+            SHA256: {checksum.slice(0, 12)}...
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         {platform !== 'unknown' && (

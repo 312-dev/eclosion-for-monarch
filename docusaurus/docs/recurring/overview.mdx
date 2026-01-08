@@ -86,3 +86,38 @@ Select any item to:
 - Change the amount or frequency
 - Move it between rollup and individual tracking
 - Delete it from tracking
+
+## Auto-Categorization
+
+Eclosion can automatically categorize new recurring transactions as they're imported into Monarch.
+
+### How It Works
+
+When enabled, during each sync:
+
+1. Eclosion fetches recent recurring transactions from Monarch
+2. Matches them to your tracked recurring items using the recurring stream ID
+3. Updates each transaction's category to the corresponding tracking category
+
+This ensures new charges from tracked subscriptions are automatically categorized correctly.
+
+### Enabling Auto-Categorization
+
+You can enable auto-categorization in two ways:
+
+- **During setup**: Check the "Auto-categorize new transactions" option in the rollup configuration step
+- **In Settings**: Toggle "Auto-categorize transactions" under Recurring settings
+
+:::note
+Auto-categorization only affects new transactions going forward. It does not modify past transactions.
+:::
+
+### Historical Accuracy
+
+For accurate historical reports in Monarch, you may want to manually re-categorize past transactions to their tracking categories. This can be done directly in Monarch's Transactions view:
+
+1. Filter transactions by the merchant name
+2. Select the transactions you want to re-categorize
+3. Change their category to the tracking category
+
+This one-time step ensures your spending reports accurately reflect the full history of each recurring expense.

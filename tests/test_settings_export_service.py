@@ -52,6 +52,7 @@ class TestExportSettings:
         result = service.export_settings()
 
         assert result.success
+        assert result.data is not None
         recurring = result.data["tools"]["recurring"]
 
         # Check config
@@ -90,6 +91,7 @@ class TestExportSettings:
         result = service.export_settings()
 
         assert result.success
+        assert result.data is not None
         rollup = result.data["tools"]["recurring"]["rollup"]
 
         assert rollup["enabled"] is True
@@ -115,6 +117,7 @@ class TestExportSettings:
         result = service.export_settings()
 
         assert result.success
+        assert result.data is not None
         cat = result.data["tools"]["recurring"]["categories"]["recurring-001"]
 
         # These fields should not be in export
@@ -203,11 +206,12 @@ class TestImportSettings:
         result = service.import_settings(export_data)
 
         assert not result.success
+        assert result.error is not None
         assert "version" in result.error.lower()
 
     def test_import_missing_metadata(self, state_manager: StateManager) -> None:
         """Importing data without metadata should fail."""
-        export_data = {
+        export_data: dict[str, object] = {
             "tools": {},
             "app_settings": {},
         }
@@ -216,6 +220,7 @@ class TestImportSettings:
         result = service.import_settings(export_data)
 
         assert not result.success
+        assert result.error is not None
         assert "metadata" in result.error.lower()
 
     def test_import_selective_tools(self, state_manager: StateManager) -> None:
@@ -335,6 +340,7 @@ class TestExportImportRoundTrip:
         state_manager.save(TrackerState())
 
         # Import
+        assert export_result.data is not None
         import_result = service.import_settings(export_result.data)
         assert import_result.success
 
@@ -389,6 +395,7 @@ class TestExportImportRoundTrip:
 
         # Round trip
         export_result = service.export_settings()
+        assert export_result.data is not None
         state_manager.save(TrackerState())  # Clear
         service.import_settings(export_result.data)
 
@@ -465,6 +472,7 @@ class TestExportPreview:
         service = SettingsExportService(state_manager)
 
         export_result = service.export_settings()
+        assert export_result.data is not None
         preview = service.get_export_preview(export_result.data)
 
         assert preview["version"] == "1.0"

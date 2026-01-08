@@ -21,6 +21,8 @@ export interface GithubRelease {
   published_at: string;
   assets: GithubAsset[];
   html_url: string;
+  body: string; // Release notes in markdown
+  prerelease: boolean;
 }
 
 /**
@@ -145,4 +147,101 @@ export function getAssetForPlatform(
 
   const pattern = ASSET_PATTERNS[platform];
   return release.assets.find((a) => pattern.test(a.name)) ?? null;
+}
+
+/**
+ * Parsed checksums mapping filename to SHA256 hash.
+ */
+export type Checksums = Record<string, string>;
+
+/**
+ * Fetches and parses the SHA256SUMS.txt file from a release.
+ * Returns null if the file is not found or fails to parse.
+ */
+export async function fetchChecksums(release: GithubRelease): Promise<Checksums | null> {
+  try {
+    const checksumAsset = release.assets.find((a) => a.name === 'SHA256SUMS.txt');
+    if (!checksumAsset) {
+      return null;
+    }
+
+    const response = await fetch(checksumAsset.browser_download_url);
+    if (!response.ok) {
+      console.error('Failed to fetch checksums:', response.status);
+      return null;
+    }
+
+    const text = await response.text();
+    const checksums: Checksums = {};
+
+    // Parse the checksum file (format: "hash  filename" or "hash *filename")
+    for (const line of text.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Match "hash  filename" or "hash *filename" (sha256sum/shasum format)
+      const pattern = /^([a-f0-9]{64})\s+\*?(.+)$/i;
+      const match = pattern.exec(trimmed);
+      if (match?.[1] && match[2]) {
+        const hash = match[1];
+        const filename = match[2];
+        checksums[filename] = hash.toLowerCase();
+      }
+    }
+
+    return Object.keys(checksums).length > 0 ? checksums : null;
+  } catch (error) {
+    console.error('Error fetching checksums:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets the checksum for a specific platform's asset.
+ * Returns null if checksums are not available or the asset is not found.
+ */
+export function getChecksumForPlatform(
+  checksums: Checksums | null,
+  release: GithubRelease,
+  platform: Platform
+): string | null {
+  if (!checksums || platform === 'unknown') return null;
+
+  const asset = getAssetForPlatform(release, platform);
+  if (!asset) return null;
+
+  return checksums[asset.name] ?? null;
+}
+
+/**
+ * Formats a published date in human-readable format.
+ * Example: "January 5, 2026"
+ */
+export function formatPublishedDate(publishedAt: string): string {
+  const date = new Date(publishedAt);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+/**
+ * Gets relative time from a published date.
+ * Example: "2 days ago", "1 week ago"
+ */
+export function getRelativeTime(publishedAt: string): string {
+  const date = new Date(publishedAt);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 14) return '1 week ago';
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 60) return '1 month ago';
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) > 1 ? 's' : ''} ago`;
 }

@@ -45,11 +45,11 @@ export const LANDING_CONTENT = {
     } as ContentVariant,
   },
 
-  // PriceExplainerPopover
-  priceExplainer: {
-    technicalOption: {
-      coder: 'Already technical? Self-host on your own hardware for $0.',
-      friendly: 'Have a tech-savvy friend? They can set it up for free.',
+  // CustomProblemCard
+  customProblem: {
+    helperText: {
+      coder: 'Press Enter to share on GitHub Discussions',
+      friendly: 'Press Enter to share with the community',
     } as ContentVariant,
   },
 } as const;

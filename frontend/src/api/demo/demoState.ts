@@ -5,6 +5,7 @@
  */
 
 import { createInitialDemoState, type DemoState } from '../demoData';
+import { TOUR_STATE_KEY } from '../../hooks/useRecurringTour';
 
 // Version injected at build time
 declare const __APP_VERSION__: string;
@@ -56,8 +57,10 @@ export async function simulateDelay(ms: number = 200): Promise<void> {
 
 /**
  * Reset demo data to initial state.
+ * Also clears the tour state so the guided tour replays.
  */
 export function resetDemoData(): void {
   const initial = createInitialDemoState();
   localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(initial));
+  localStorage.removeItem(TOUR_STATE_KEY);
 }

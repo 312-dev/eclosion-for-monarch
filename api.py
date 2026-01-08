@@ -804,7 +804,7 @@ def get_settings():
 @app.route("/recurring/settings", methods=["POST"])
 @api_handler(handle_mfa=False)
 def update_settings():
-    """Update settings like auto_sync_new, auto_track_threshold, and auto_update_targets."""
+    """Update settings like auto_sync_new, auto_track_threshold, auto_update_targets, auto_categorize_enabled, and show_category_group."""
     data = request.get_json()
     if "auto_sync_new" in data:
         sync_service.set_auto_sync(data["auto_sync_new"])
@@ -812,7 +812,27 @@ def update_settings():
         sync_service.set_auto_track_threshold(data["auto_track_threshold"])
     if "auto_update_targets" in data:
         sync_service.set_auto_update_targets(data["auto_update_targets"])
+    if "auto_categorize_enabled" in data:
+        sync_service.set_auto_categorize(data["auto_categorize_enabled"])
+    if "show_category_group" in data:
+        sync_service.set_show_category_group(data["show_category_group"])
     return {"success": True}
+
+
+@app.route("/recurring/auto-categorize", methods=["POST"])
+@api_handler(handle_mfa=True)
+async def run_auto_categorize():
+    """
+    Manually trigger auto-categorization of recurring transactions.
+
+    Finds recent transactions matching tracked recurring streams and
+    categorizes them to the appropriate tracking category.
+    """
+    from services.transaction_categorizer import TransactionCategorizerService
+
+    categorizer = TransactionCategorizerService(sync_service.state_manager)
+    result = await categorizer.auto_categorize_new_transactions(force=True)
+    return result
 
 
 # ---- SETTINGS EXPORT/IMPORT ENDPOINTS ----

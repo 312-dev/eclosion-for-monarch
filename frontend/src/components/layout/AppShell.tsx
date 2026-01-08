@@ -9,17 +9,18 @@
  * - Footer with GitHub link
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { TourProvider } from '@reactour/tour';
 import { ShieldCheck } from 'lucide-react';
 import { SidebarNavigation } from './SidebarNavigation';
 import { HelpDropdown } from './HelpDropdown';
-import { APP_TOUR_STEPS, appTourStyles } from './appShellTour';
+import { appTourStyles } from './appShellTour';
 import { SyncButton } from '../SyncButton';
 import { SecurityInfo } from '../SecurityInfo';
 import { UpdateBanner } from '../UpdateBanner';
-import { UpdateReadyBanner } from '../update';
+import { UpdateReadyBanner, UpdateErrorBanner } from '../update';
+import { OfflineIndicator } from '../OfflineIndicator';
 import { WhatsNewModal } from '../WhatsNewModal';
 import { VersionIndicator } from '../VersionIndicator';
 import { NoticeBanner } from '../ui/NoticeBanner';
@@ -32,7 +33,7 @@ import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils';
 import { isDesktopMode } from '../../utils/apiBase';
 import { AppIcon, TourController } from '../wizards/WizardComponents';
-import { useMacOSElectron } from '../../hooks';
+import { useMacOSElectron, useRecurringTour } from '../../hooks';
 
 export function AppShell() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -47,11 +48,35 @@ export function AppShell() {
   const syncMutation = useSyncMutation();
   const isMacOSElectron = useMacOSElectron();
 
+  // Get recurring tour steps and state
+  const {
+    steps: recurringTourSteps,
+    hasSeenTour,
+    markAsSeen,
+    hasTourSteps,
+  } = useRecurringTour(data);
+
   // Demo-aware path prefix
   const pathPrefix = isDemo ? '/demo' : '';
 
   // Check if current route has a tour available
   const hasTour = location.pathname === '/recurring' || location.pathname === '/demo/recurring';
+
+  // Auto-start tour on first visit to recurring page
+  useEffect(() => {
+    if (hasTour && hasTourSteps && !hasSeenTour) {
+      const timer = setTimeout(() => setShowTour(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [hasTour, hasTourSteps, hasSeenTour]);
+
+  // Handle tour close - mark as seen
+  const handleTourClose = () => {
+    setShowTour(false);
+    if (hasTour) {
+      markAsSeen();
+    }
+  };
 
   const handleSignOut = async () => {
     await logout();
@@ -103,16 +128,24 @@ export function AppShell() {
 
   return (
     <TourProvider
-      steps={APP_TOUR_STEPS}
+      steps={recurringTourSteps}
       styles={appTourStyles}
-      onClickMask={() => setShowTour(false)}
-      onClickClose={() => setShowTour(false)}
+      onClickMask={handleTourClose}
+      onClickClose={handleTourClose}
+      afterOpen={() => {
+        document.documentElement.style.overflow = 'hidden';
+      }}
+      beforeClose={() => {
+        document.documentElement.style.overflow = '';
+      }}
     >
-      <TourController isOpen={showTour} onClose={() => setShowTour(false)} />
+      <TourController isOpen={showTour} onClose={handleTourClose} />
       <div className="app-layout" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
         {/* Update notification banners */}
         <UpdateBanner />
         <UpdateReadyBanner />
+        <UpdateErrorBanner />
+        <OfflineIndicator />
 
         {/* Skip to main content link for keyboard users */}
         <a href="#main-content" className="skip-link">
@@ -123,7 +156,7 @@ export function AppShell() {
         <header className="app-header" role="banner">
           <div className="app-header-content relative" style={isMacOSElectron ? { paddingLeft: '80px' } : undefined}>
             <div className="app-brand">
-              <Link to={`${pathPrefix}/`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to home">
+              <Link to={isDemo ? '/' : `${pathPrefix}/`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to home" onClick={() => isDemo && window.scrollTo(0, 0)}>
                 <AppIcon size={32} />
                 <h1 className="app-title hidden sm:block" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600 }}>
                   Eclosion

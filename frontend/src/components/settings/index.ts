@@ -16,3 +16,4 @@ export { DemoModeSection } from './DemoModeSection';
 export { DataManagementSection } from './DataManagementSection';
 export { DangerZoneSection } from './DangerZoneSection';
 export { CreditsSection } from './CreditsSection';
+export { LogViewerSection } from './LogViewerSection';

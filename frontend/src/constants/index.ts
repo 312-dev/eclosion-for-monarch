@@ -157,6 +157,29 @@ export const Z_INDEX = {
 } as const;
 
 // ============================================================================
+// Currency Rounding Rules
+// ============================================================================
+// Monarch Money doesn't support cents, so we round to whole dollars.
+//
+// Rules:
+// 1. Monthly targets: Math.ceil() - Always round UP to ensure enough is saved
+// 2. Balance comparisons: Math.round() - Standard rounding for display
+// 3. Currency display: maximumFractionDigits: 0 - No cents shown
+//
+// Example: If ideal_monthly_rate calculates to $33.33, we round UP to $34
+// to ensure the user saves enough to cover the expense.
+// ============================================================================
+
+export const ROUNDING = {
+  /** Round monthly targets UP to ensure sufficient savings */
+  TARGET: 'ceil',
+  /** Round balances for display comparison */
+  BALANCE: 'round',
+  /** Fraction digits for currency display */
+  CURRENCY_DECIMALS: 0,
+} as const;
+
+// ============================================================================
 // Ideas Board Animation Timings
 // ============================================================================
 

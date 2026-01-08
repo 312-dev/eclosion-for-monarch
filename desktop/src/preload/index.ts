@@ -33,6 +33,26 @@ const electronAPI = {
   triggerSync: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('trigger-sync'),
 
+  /**
+   * Get current backend health status.
+   */
+  getHealthStatus: (): Promise<{ running: boolean; lastSync?: string }> =>
+    ipcRenderer.invoke('get-health-status'),
+
+  /**
+   * Listen for backend status changes.
+   */
+  onBackendStatusChanged: (
+    callback: (status: { running: boolean; lastSync?: string; timestamp: string }) => void
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      status: { running: boolean; lastSync?: string; timestamp: string }
+    ): void => callback(status);
+    ipcRenderer.on('backend-status-changed', handler);
+    return () => ipcRenderer.removeListener('backend-status-changed', handler);
+  },
+
   // =========================================================================
   // Auto-Start
   // =========================================================================
@@ -202,6 +222,185 @@ const electronAPI = {
    * Reveal the data folder in the system file manager.
    */
   revealDataFolder: (): Promise<void> => ipcRenderer.invoke('reveal-data-folder'),
+
+  // =========================================================================
+  // Log Viewer
+  // =========================================================================
+
+  /**
+   * Get list of available log files.
+   */
+  getLogFiles: (): Promise<
+    Array<{ name: string; path: string; size: number; modified: string }>
+  > => ipcRenderer.invoke('get-log-files'),
+
+  /**
+   * Read log file contents.
+   */
+  readLogFile: (
+    filePath: string,
+    options?: { lines?: number; search?: string }
+  ): Promise<{
+    content?: string;
+    totalLines?: number;
+    displayedLines?: number;
+    truncated?: boolean;
+    error?: string;
+  }> => ipcRenderer.invoke('read-log-file', filePath, options),
+
+  // =========================================================================
+  // Backup & Restore
+  // =========================================================================
+
+  /**
+   * Create a backup of all application data and settings.
+   */
+  createBackup: (): Promise<{ success: boolean; path?: string; error?: string }> =>
+    ipcRenderer.invoke('create-backup'),
+
+  /**
+   * Restore application data and settings from a backup file.
+   */
+  restoreBackup: (): Promise<{
+    success: boolean;
+    error?: string;
+    filesRestored?: number;
+    settingsRestored?: boolean;
+  }> => ipcRenderer.invoke('restore-backup'),
+
+  /**
+   * Get the warning message for creating a backup.
+   */
+  getBackupWarning: (): Promise<string> => ipcRenderer.invoke('get-backup-warning'),
+
+  /**
+   * Get the warning message for restoring a backup.
+   */
+  getRestoreWarning: (): Promise<string> => ipcRenderer.invoke('get-restore-warning'),
+
+  // =========================================================================
+  // Global Hotkeys
+  // =========================================================================
+
+  /**
+   * Get all hotkey configurations.
+   */
+  getHotkeyConfigs: (): Promise<Record<string, { enabled: boolean; accelerator: string }>> =>
+    ipcRenderer.invoke('get-hotkey-configs'),
+
+  /**
+   * Set a hotkey configuration.
+   */
+  setHotkeyConfig: (
+    action: string,
+    config: { enabled: boolean; accelerator: string }
+  ): Promise<boolean> => ipcRenderer.invoke('set-hotkey-config', action, config),
+
+  /**
+   * Validate a keyboard shortcut.
+   */
+  validateShortcut: (accelerator: string, currentAction?: string): Promise<string | null> =>
+    ipcRenderer.invoke('validate-shortcut', accelerator, currentAction),
+
+  /**
+   * Reset hotkeys to defaults.
+   */
+  resetHotkeys: (): Promise<void> => ipcRenderer.invoke('reset-hotkeys'),
+
+  // =========================================================================
+  // Onboarding
+  // =========================================================================
+
+  /**
+   * Get onboarding data (whether to show, steps, version).
+   */
+  getOnboardingData: (): Promise<{
+    shouldShow: boolean;
+    steps: Array<{
+      id: string;
+      title: string;
+      description: string;
+      icon: string;
+      tip?: string;
+    }>;
+    version: number;
+  }> => ipcRenderer.invoke('get-onboarding-data'),
+
+  /**
+   * Mark onboarding as complete.
+   */
+  completeOnboarding: (): Promise<void> => ipcRenderer.invoke('complete-onboarding'),
+
+  /**
+   * Reset onboarding (for testing or re-showing).
+   */
+  resetOnboarding: (): Promise<void> => ipcRenderer.invoke('reset-onboarding'),
+
+  // =========================================================================
+  // Startup Metrics
+  // =========================================================================
+
+  /**
+   * Get startup performance metrics.
+   */
+  getStartupMetrics: (): Promise<{
+    current: {
+      totalStartup: number;
+      appReady: number;
+      backendStart: number;
+      windowCreate: number;
+      postWindow: number;
+      timestamp: string;
+      version: string;
+    } | null;
+    average: {
+      totalStartup?: number;
+      appReady?: number;
+      backendStart?: number;
+      windowCreate?: number;
+      postWindow?: number;
+    } | null;
+    history: Array<{
+      id: string;
+      totalStartup: number;
+      appReady: number;
+      backendStart: number;
+      windowCreate: number;
+      postWindow: number;
+      timestamp: string;
+      version: string;
+    }>;
+  }> => ipcRenderer.invoke('get-startup-metrics'),
+
+  /**
+   * Clear startup metrics history.
+   */
+  clearStartupMetrics: (): Promise<void> => ipcRenderer.invoke('clear-startup-metrics'),
+
+  // =========================================================================
+  // Data Cleanup
+  // =========================================================================
+
+  /**
+   * Show factory reset dialog and perform reset if confirmed.
+   */
+  showFactoryResetDialog: (): Promise<{
+    confirmed: boolean;
+    result?: {
+      success: boolean;
+      filesDeleted: string[];
+      errors: string[];
+    };
+  }> => ipcRenderer.invoke('show-factory-reset-dialog'),
+
+  /**
+   * Get cleanup instructions for the current platform.
+   */
+  getCleanupInstructions: (): Promise<{
+    platform: string;
+    dataPath: string;
+    instructions: string;
+  }> => ipcRenderer.invoke('get-cleanup-instructions'),
 };
 
 // Expose the API to the renderer process

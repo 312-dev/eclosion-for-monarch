@@ -8,13 +8,15 @@
 
 import { memo, useState, useRef, useEffect } from 'react';
 import type { RecurringItem } from '../../types';
+import { Tooltip } from '../ui/Tooltip';
 import { formatDateRelative } from '../../utils';
 import { RecurringItemHeader } from './RecurringItemHeader';
-import { RecurringItemCost } from './RecurringItemCost';
 import { RecurringItemBudget } from './RecurringItemBudget';
 import { RecurringItemStatus } from './RecurringItemStatus';
+import { RecurringItemProgress } from './RecurringItemProgress';
 import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
+import { SpinnerIcon, ArrowUpIcon } from '../icons';
 import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
 
 interface RecurringCardProps {
@@ -29,6 +31,7 @@ interface RecurringCardProps {
   readonly onNameChange: (id: string, name: string) => Promise<void>;
   readonly onLinkCategory: (item: RecurringItem) => void;
   readonly highlightId?: string | null;
+  readonly showCategoryGroup?: boolean;
 }
 
 export const RecurringCard = memo(function RecurringCard({
@@ -43,6 +46,7 @@ export const RecurringCard = memo(function RecurringCard({
   onNameChange,
   onLinkCategory,
   highlightId,
+  showCategoryGroup = true,
 }: RecurringCardProps) {
   // Async action hooks for loading states
   const toggleAction = useAsyncAction();
@@ -116,7 +120,7 @@ export const RecurringCard = memo(function RecurringCard({
       } ${!item.is_enabled ? 'opacity-75' : ''}`}
     >
       {/* Row 1: Header + Actions */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <RecurringItemHeader
             item={item}
@@ -126,9 +130,13 @@ export const RecurringCard = memo(function RecurringCard({
             onChangeGroup={handleChangeGroup}
             isToggling={toggleAction.loading}
             contentOpacity={contentOpacity}
+            displayStatus={displayStatus}
+            progressPercent={progressPercent}
+            showCategoryGroup={showCategoryGroup}
+            showProgress={false}
           />
         </div>
-        {item.is_enabled && (
+        {item.is_enabled ? (
           <ActionsDropdown
             item={item}
             onToggle={handleToggle}
@@ -136,44 +144,71 @@ export const RecurringCard = memo(function RecurringCard({
             onRecreate={handleRecreate}
             onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
             onRefresh={handleRefresh}
+            onChangeGroup={handleChangeGroup}
             isToggling={toggleAction.loading}
             isRecreating={recreateAction.loading}
             isAddingToRollup={addToRollupAction.loading}
             isRefreshing={refreshAction.loading}
+            showCategoryGroup={showCategoryGroup}
           />
+        ) : (
+          onAddToRollup && (
+            <Tooltip content="Add to rollup">
+              <button
+                onClick={handleAddToRollup}
+                disabled={addToRollupAction.loading}
+                aria-label="Add to rollup"
+                className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-black/10 disabled:opacity-50"
+              >
+                {addToRollupAction.loading ? (
+                  <SpinnerIcon size={16} color="var(--monarch-orange)" />
+                ) : (
+                  <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
+                )}
+              </button>
+            </Tooltip>
+          )
         )}
       </div>
 
-      {/* Row 2: Date + Status */}
-      <div className={`flex items-center justify-between mb-3 ${contentOpacity}`}>
-        <div className="text-sm">
-          <span className="text-monarch-text-dark">{date}</span>
-          {relative && (
-            <span className="text-monarch-text-light ml-2">{relative}</span>
-          )}
-        </div>
-        <RecurringItemStatus
-          item={item}
-          displayStatus={displayStatus}
-          onAllocate={handleAllocateNeeded}
-          isAllocating={allocateAction.loading}
-        />
-      </div>
-
-      {/* Row 3: Cost + Budget */}
-      <div className={`grid grid-cols-2 gap-4 ${contentOpacity}`}>
-        <RecurringItemCost
+      {/* Progress bar - aligned with text content (after icon + gap) */}
+      <div className={`mt-2 mb-3 pl-15 ${contentOpacity}`}>
+        <RecurringItemProgress
           item={item}
           displayStatus={displayStatus}
           progressPercent={progressPercent}
-          date={date}
-          compact
         />
-        <div className="flex flex-col items-end justify-start">
-          <span className="text-xs text-monarch-text-light mb-1">Budgeted</span>
-          <RecurringItemBudget
+      </div>
+
+      {/* Bottom section with darker background */}
+      <div className="bg-monarch-bg-page -mx-4 -mb-4 px-4 py-3 rounded-b-lg">
+        {/* Row 2: Date + Budget */}
+        <div className={`flex items-end justify-between mb-3 ${contentOpacity}`}>
+          <div>
+            <span className="text-xs text-monarch-text-light">Due</span>
+            <div className="text-monarch-text-dark">{date}</div>
+            {relative && (
+              <div className="text-sm text-monarch-text-light">{relative}</div>
+            )}
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="text-xs text-monarch-text-light mb-1">
+              {new Date().toLocaleDateString('en-US', { month: 'short' })}. Budget
+            </span>
+            <RecurringItemBudget
+              item={item}
+              onAllocate={handleAllocate}
+              isAllocating={allocateAction.loading}
+            />
+          </div>
+        </div>
+
+        {/* Row 3: Status (under budget) */}
+        <div className={`flex justify-end ${contentOpacity}`}>
+          <RecurringItemStatus
             item={item}
-            onAllocate={handleAllocate}
+            displayStatus={displayStatus}
+            onAllocate={handleAllocateNeeded}
             isAllocating={allocateAction.loading}
           />
         </div>

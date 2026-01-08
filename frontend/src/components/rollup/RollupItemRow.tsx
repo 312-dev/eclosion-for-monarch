@@ -14,11 +14,14 @@ import { TrendUpIcon, TrendDownIcon, XIcon } from '../icons';
 interface RollupItemRowProps {
   readonly item: RollupItem;
   readonly onRemove: () => Promise<void>;
+  /** Optional data-tour attribute for guided tour targeting */
+  readonly dataTourId?: string;
 }
 
 export const RollupItemRow = memo(function RollupItemRow({
   item,
   onRemove,
+  dataTourId,
 }: RollupItemRowProps) {
   const [isRemoving, setIsRemoving] = useState(false);
   const isCatchingUp = item.frozen_monthly_target > item.ideal_monthly_rate;
@@ -35,7 +38,7 @@ export const RollupItemRow = memo(function RollupItemRow({
   }, [onRemove]);
 
   return (
-    <tr className="group border-t border-monarch-border transition-colors">
+    <tr className="group border-t border-monarch-border transition-colors" data-tour={dataTourId}>
       {/* Subscription name with logo */}
       <td className="py-2 px-3">
         <div className="flex items-center gap-2">
@@ -71,7 +74,9 @@ export const RollupItemRow = memo(function RollupItemRow({
               <>
                 <div className="font-medium">Catching Up</div>
                 <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
+                <div className="text-monarch-text-muted text-xs mt-1">
+                  {item.frequency_months < 1 ? 'Normalizes as buffer builds' : 'Normalizes next month'}
+                </div>
               </>
             }>
               <span className="cursor-help text-monarch-error">
@@ -84,7 +89,9 @@ export const RollupItemRow = memo(function RollupItemRow({
               <>
                 <div className="font-medium">Ahead of Schedule</div>
                 <div className="text-monarch-text-dark">{formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo → {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo</div>
-                <div className="text-monarch-text-muted text-xs mt-1">After {date} payment</div>
+                <div className="text-monarch-text-muted text-xs mt-1">
+                  {item.frequency_months < 1 ? 'Normalizes as buffer depletes' : 'Normalizes next month'}
+                </div>
               </>
             }>
               <span className="cursor-help text-monarch-success">

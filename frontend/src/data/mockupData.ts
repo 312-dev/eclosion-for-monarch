@@ -25,7 +25,10 @@ export interface MockupIndividualItem {
   amount: number;
   dueIn: string;
   progress: number;
-  monthly: number;
+  /** Current monthly budget */
+  budget: number;
+  /** Target monthly amount needed */
+  target: number;
   status: 'funded' | 'on_track' | 'behind';
 }
 
@@ -65,7 +68,8 @@ export const MOCKUP_INDIVIDUAL_ITEMS: MockupIndividualItem[] = [
     amount: 600,
     dueIn: '3 months',
     progress: 42,
-    monthly: 100,
+    budget: 100,
+    target: 150,
     status: 'behind',
   },
   {
@@ -76,7 +80,8 @@ export const MOCKUP_INDIVIDUAL_ITEMS: MockupIndividualItem[] = [
     amount: 139,
     dueIn: '5 months',
     progress: 25,
-    monthly: 20.8,
+    budget: 28,
+    target: 28,
     status: 'on_track',
   },
 ];

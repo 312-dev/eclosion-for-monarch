@@ -1,13 +1,17 @@
 /**
- * BurndownChart - Monthly savings target burndown visualization
+ * BurndownChart - Stabilization point visualization
  *
- * Shows how monthly contribution will decrease as catch-up payments complete.
+ * Shows the path to monthly rate stabilization - when all catch-up payments
+ * complete and costs reach their steady-state minimum.
+ *
+ * Note: Over-contributing is NOT factored into this projection.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Area } from 'recharts';
 import { Portal } from '../Portal';
 import { Z_INDEX } from '../../constants';
+import { AnchorIcon } from '../icons';
 import type { BurndownPoint } from './burndownUtils';
 
 type FormatCurrencyFn = (amount: number, options?: { minimumFractionDigits?: number; maximumFractionDigits?: number }) => string;
@@ -22,20 +26,25 @@ interface CustomTooltipProps {
   payload?: Array<{ payload: BurndownPoint }>;
   formatCurrency: FormatCurrencyFn;
   coordinate?: { x: number; y: number };
-  viewBox?: { x: number; y: number; width: number; height: number };
+  data: BurndownPoint[];
 }
 
 // Store chart rect ref at module level so Portal-rendered tooltip can access it
 let chartRectCache: DOMRect | null = null;
 
-function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, formatCurrency, coordinate, data }: CustomTooltipProps) {
   const firstPayload = payload?.[0];
   if (!active || !firstPayload || !coordinate || !chartRectCache) return null;
 
-  const data = firstPayload.payload;
+  const point = firstPayload.payload;
   const chartRect = chartRectCache;
-  const tooltipWidth = 180;
-  const tooltipHeight = 80;
+  const tooltipWidth = 280;
+  const tooltipHeight = 120;
+
+  // Find the stabilization point - the last month where catch-up payments complete
+  const stabilizationIndex = data.reduce((lastIdx, p, i) => p.hasChange ? i : lastIdx, -1);
+  const currentIndex = data.findIndex(p => p.fullLabel === point.fullLabel);
+  const isStabilizationPoint = currentIndex === stabilizationIndex && stabilizationIndex !== -1;
 
   let left = chartRect.left + coordinate.x + 10;
   let top = chartRect.top + coordinate.y - 60;
@@ -53,11 +62,23 @@ function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTo
     top = 10;
   }
 
-  // Always render via Portal to escape overflow:hidden containers
+  // Generate explanation based on completing items
+  let explanation = '';
+  if (point.completingItems.length > 0) {
+    const names = point.completingItems.slice(0, 3);
+    if (point.completingItems.length > 3) {
+      explanation = `${names.join(', ')} and ${point.completingItems.length - 3} more complete catch-up`;
+    } else {
+      explanation = `${names.join(', ')} ${names.length === 1 ? 'completes' : 'complete'} catch-up`;
+    }
+  } else {
+    explanation = 'Monthly contribution rate';
+  }
+
   return (
     <Portal>
       <div
-        className="px-2 py-1.5 rounded-md shadow-lg text-xs"
+        className="rounded-md shadow-lg text-xs max-w-70 overflow-hidden"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
@@ -68,25 +89,40 @@ function CustomTooltip({ active, payload, formatCurrency, coordinate }: CustomTo
           pointerEvents: 'none',
         }}
       >
-        <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-          {data.fullLabel}
-        </div>
-        <div style={{ color: 'var(--monarch-success)' }}>
-          {formatCurrency(data.amount, { maximumFractionDigits: 0 })}/mo
-        </div>
-        {data.rollupAmount > 0 && (
-          <div className="text-[10px]" style={{ color: 'var(--monarch-text-muted)' }}>
-            incl. {formatCurrency(data.rollupAmount, { maximumFractionDigits: 0 })} rollup
+        {isStabilizationPoint && (
+          <div
+            className="px-3 py-1.5 text-[11px] font-medium"
+            style={{
+              backgroundColor: 'var(--monarch-success)',
+              color: 'white',
+            }}
+          >
+            Stabilization point achieved. All caught up.
           </div>
         )}
-        {data.completingItems.length > 0 && (
-          <div className="text-[10px] mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
-            <div>Paid / resets:</div>
-            {data.completingItems.map((item, i) => (
-              <div key={i}>- {item}</div>
-            ))}
+        <div className="px-3 py-2">
+          <div className="flex justify-between items-baseline gap-3 mb-1.5">
+            <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+              {point.fullLabel}
+            </div>
+            <div className="font-semibold" style={{ color: 'var(--monarch-success)' }}>
+              {formatCurrency(point.amount, { maximumFractionDigits: 0 })}/mo
+            </div>
           </div>
-        )}
+          {point.rollupAmount > 0 && (
+            <div className="text-[10px] mb-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
+              incl. {formatCurrency(point.rollupAmount, { maximumFractionDigits: 0 })} rollup
+            </div>
+          )}
+          <div
+            className="text-[11px] leading-relaxed"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            {isStabilizationPoint
+              ? 'Your steady-state monthly rate going forward'
+              : explanation}
+          </div>
+        </div>
       </div>
     </Portal>
   );
@@ -150,7 +186,7 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
 
   const minAmount = Math.min(...data.map(d => d.amount));
   const maxAmount = Math.max(...data.map(d => d.amount));
-  // Add some padding to the domain - use 5% of max value for flat lines, otherwise 10% of range
+  // Add some padding to the domain
   const range = maxAmount - minAmount;
   const padding = range > 0 ? range * 0.15 : maxAmount * 0.02;
 
@@ -174,7 +210,7 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
           <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
             <defs>
               <linearGradient id="burndownGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={colors.success} stopOpacity={0.2} />
+                <stop offset="0%" stopColor={colors.success} stopOpacity={0.15} />
                 <stop offset="100%" stopColor={colors.success} stopOpacity={0.02} />
               </linearGradient>
             </defs>
@@ -196,7 +232,7 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
               orientation="left"
             />
             <RechartsTooltip
-              content={<CustomTooltip formatCurrency={formatCurrency} />}
+              content={<CustomTooltip formatCurrency={formatCurrency} data={data} />}
               cursor={{ stroke: colors.border, strokeDasharray: '3 3' }}
               allowEscapeViewBox={{ x: true, y: true }}
               wrapperStyle={{ zIndex: Z_INDEX.TOOLTIP, pointerEvents: 'none' }}
@@ -212,9 +248,30 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
               dataKey="amount"
               stroke={colors.success}
               strokeWidth={2}
-              dot={({ cx, cy, payload, index }) => {
+              dot={({ cx, cy, index }) => {
                 const isEndpoint = index === 0 || index === data.length - 1;
-                const hasChange = payload.hasChange;
+                const point = data[index];
+                const hasChange = point?.hasChange ?? false;
+
+                // Find the stabilization point - the last month where catch-up payments complete
+                const stabilizationIndex = data.reduce((lastIdx, p, i) => p.hasChange ? i : lastIdx, -1);
+                const isStabilizationPoint = index === stabilizationIndex;
+
+                // Use anchor icon for the stabilization point
+                if (isStabilizationPoint && cx !== undefined && cy !== undefined) {
+                  const size = 20;
+
+                  return (
+                    <g key={index}>
+                      {/* Background circle to prevent line intersection */}
+                      <circle cx={cx} cy={cy} r={14} fill={colors.bgCard} />
+                      <foreignObject x={cx - size / 2} y={cy - size / 2} width={size} height={size}>
+                        <AnchorIcon size={size} color={colors.success} strokeWidth={2.5} />
+                      </foreignObject>
+                    </g>
+                  );
+                }
+
                 return (
                   <circle
                     key={index}
@@ -227,7 +284,35 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
                   />
                 );
               }}
-              activeDot={{ r: 5, fill: colors.success, stroke: colors.success }}
+              activeDot={({ cx, cy, index }) => {
+                // Find the stabilization point - the last month where catch-up payments complete
+                const stabilizationIndex = data.reduce((lastIdx, p, i) => p.hasChange ? i : lastIdx, -1);
+                const isStabilizationPoint = index === stabilizationIndex;
+
+                if (isStabilizationPoint && cx !== undefined && cy !== undefined) {
+                  const size = 22;
+
+                  return (
+                    <g key={`active-${index}`}>
+                      <circle cx={cx} cy={cy} r={16} fill={colors.bgCard} />
+                      <foreignObject x={cx - size / 2} y={cy - size / 2} width={size} height={size}>
+                        <AnchorIcon size={size} color={colors.success} strokeWidth={2.5} />
+                      </foreignObject>
+                    </g>
+                  );
+                }
+
+                return (
+                  <circle
+                    key={`active-${index}`}
+                    cx={cx}
+                    cy={cy}
+                    r={5}
+                    fill={colors.success}
+                    stroke={colors.success}
+                  />
+                );
+              }}
             />
           </LineChart>
         </ResponsiveContainer>

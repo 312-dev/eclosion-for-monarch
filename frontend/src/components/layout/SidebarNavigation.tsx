@@ -11,7 +11,10 @@ import { Settings, LogOut, Lightbulb, LayoutDashboard } from 'lucide-react';
 import { RecurringIcon } from '../wizards/WizardComponents';
 import { IdeasModal } from '../IdeasModal';
 import { Portal } from '../Portal';
+import { Tooltip } from '../ui/Tooltip';
+import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
+import { getComingSoonFeatures } from '../../data/features';
 
 interface SidebarNavigationProps {
   onSignOut: () => void;
@@ -66,11 +69,26 @@ function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSett
   );
 }
 
+function ComingSoonNavItem({ label, icon }: Readonly<{ label: string; icon: React.ReactNode }>) {
+  return (
+    <Tooltip content="Coming Soon" side="right" delayDuration={100}>
+      <span
+        className="sidebar-nav-item sidebar-nav-item-disabled"
+        aria-label={`${label} - Coming Soon`}
+      >
+        <span className="sidebar-nav-icon" aria-hidden="true">{icon}</span>
+        <span className="sidebar-nav-label">{label}</span>
+      </span>
+    </Tooltip>
+  );
+}
+
 export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps>) {
   const navigate = useNavigate();
   const isDemo = useDemo();
   const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
+  const comingSoonFeatures = getComingSoonFeatures();
 
   const handleSettingsClick = (hash: string) => {
     const prefix = isDemo ? '/demo' : '';
@@ -111,6 +129,17 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
                   <NavItemLink item={item} onSettingsClick={handleSettingsClick} />
                 </li>
               ))}
+              {comingSoonFeatures.map((feature) => {
+                const IconComponent = Icons[feature.icon];
+                return (
+                  <li key={feature.id}>
+                    <ComingSoonNavItem
+                      label={feature.name}
+                      icon={<IconComponent size={20} />}
+                    />
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div className="sidebar-nav-divider" aria-hidden="true" />

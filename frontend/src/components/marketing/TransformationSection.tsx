@@ -122,8 +122,6 @@ export function TransformationSection() {
             {/* Main mockup - links to demo */}
             <a
               href="/demo/recurring"
-              target="_blank"
-              rel="noopener noreferrer"
               className="group block relative cursor-pointer"
             >
               <div className="transition-[filter] duration-200 group-hover:brightness-50">
@@ -139,8 +137,6 @@ export function TransformationSection() {
             {/* Secondary mockup - Settings panel, overlapping bottom-right */}
             <a
               href="/demo/settings"
-              target="_blank"
-              rel="noopener noreferrer"
               className="group block absolute -bottom-12 right-0 cursor-pointer"
             >
               <div className="transition-[filter] duration-200 group-hover:brightness-50">

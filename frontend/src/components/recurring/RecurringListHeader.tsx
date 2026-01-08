@@ -21,7 +21,7 @@ export function SortButton({ field, label, currentField, direction, onClick, ali
   return (
     <button
       onClick={() => onClick(field)}
-      className={`flex items-center gap-1 text-sm font-medium ${alignClass} w-full ${isActive ? 'text-monarch-text-dark' : 'text-monarch-text-light'}`}
+      className={`flex items-center gap-1 text-sm font-medium w-full ${alignClass} ${isActive ? 'text-monarch-text-dark' : 'text-monarch-text-light'}`}
     >
       {label}
       {isActive && (
@@ -37,11 +37,23 @@ interface RecurringListHeaderProps {
   readonly onSort: (field: SortField) => void;
 }
 
+/**
+ * Column width classes for the recurring table
+ * These must match the widths used in RecurringRow.tsx
+ */
+export const COLUMN_WIDTHS = {
+  name: 'w-[42%]', // Name, icon, category, progress bar
+  date: 'w-[12%]', // Due date
+  budget: 'w-[23%]', // Budget input and target
+  status: 'w-[14%]', // Status badge
+  actions: 'w-[9%]', // Actions menu
+} as const;
+
 export function RecurringListHeader({ sortField, sortDirection, onSort }: RecurringListHeaderProps) {
   return (
     <thead>
       <tr className="bg-monarch-bg-page border-b border-monarch-border">
-        <th className="py-3 pl-5 pr-2 text-left w-70 max-w-70">
+        <th className={`py-3 pl-5 pr-2 text-left ${COLUMN_WIDTHS.name}`}>
           <SortButton
             field="name"
             label="Recurring"
@@ -50,7 +62,7 @@ export function RecurringListHeader({ sortField, sortDirection, onSort }: Recurr
             onClick={onSort}
           />
         </th>
-        <th className="py-3 px-4 text-left w-25">
+        <th className={`py-3 px-4 text-left ${COLUMN_WIDTHS.date}`}>
           <SortButton
             field="due_date"
             label="Date"
@@ -59,30 +71,22 @@ export function RecurringListHeader({ sortField, sortDirection, onSort }: Recurr
             onClick={onSort}
           />
         </th>
-        <th className="py-3 px-4 text-right">
-          <SortButton
-            field="amount"
-            label="Total Cost"
-            currentField={sortField}
-            direction={sortDirection}
-            onClick={onSort}
-            align="right"
-          />
-        </th>
-        <th className="py-3 px-4 text-right">
+        <th className={`py-3 px-4 text-right ${COLUMN_WIDTHS.budget}`}>
           <SortButton
             field="monthly"
-            label="Budgeted"
+            label={`${new Date().toLocaleDateString('en-US', { month: 'short' })}. Budget`}
             currentField={sortField}
             direction={sortDirection}
             onClick={onSort}
             align="right"
           />
         </th>
-        <th className="py-3 px-5 text-center text-sm font-medium w-24 text-monarch-text-light">
+        <th className={`py-3 px-5 text-center text-sm font-medium text-monarch-text-light ${COLUMN_WIDTHS.status}`}>
           Status
         </th>
-        <th className="py-3 px-3 w-12"></th>
+        <th className={`py-3 px-3 ${COLUMN_WIDTHS.actions}`}>
+          <span className="sr-only">Actions</span>
+        </th>
       </tr>
     </thead>
   );

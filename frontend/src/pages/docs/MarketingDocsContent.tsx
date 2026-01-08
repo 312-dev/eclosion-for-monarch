@@ -153,7 +153,7 @@ export function MarketingDocsContent() {
           <div className="space-y-4">
             <FaqItem
               question="Is Eclosion free?"
-              answer="Eclosion is open source and free to self-host. If you use Railway for hosting, their infrastructure costs around $5-7/month."
+              answer="Eclosion is completely free. Download the desktop app or self-host with Docker at no cost. Railway hosting is available as an alternative (~$5-7/month for their infrastructure)."
             />
             <FaqItem
               question="Is my Monarch password safe?"

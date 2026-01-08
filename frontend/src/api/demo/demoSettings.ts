@@ -23,6 +23,8 @@ export async function updateSettings(settings: {
   auto_sync_new?: boolean;
   auto_track_threshold?: number | null;
   auto_update_targets?: boolean;
+  auto_categorize_enabled?: boolean;
+  show_category_group?: boolean;
 }): Promise<void> {
   await simulateDelay(100);
 
@@ -41,6 +43,12 @@ export async function updateSettings(settings: {
         }),
         ...(settings.auto_update_targets !== undefined && {
           auto_update_targets: settings.auto_update_targets,
+        }),
+        ...(settings.auto_categorize_enabled !== undefined && {
+          auto_categorize_enabled: settings.auto_categorize_enabled,
+        }),
+        ...(settings.show_category_group !== undefined && {
+          show_category_group: settings.show_category_group,
         }),
       },
     },
@@ -150,6 +158,7 @@ export async function importSettings(
         auto_sync_new: recurring.config.auto_sync_new,
         auto_track_threshold: recurring.config.auto_track_threshold,
         auto_update_targets: recurring.config.auto_update_targets,
+        auto_categorize_enabled: state.settings.auto_categorize_enabled,
       };
 
       const newItems = state.dashboard.items.map((item) => ({

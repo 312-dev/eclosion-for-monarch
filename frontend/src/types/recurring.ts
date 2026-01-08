@@ -49,14 +49,9 @@ export interface RollupItem {
   frequency_months: number;
   next_due_date: string;
   months_until_due: number;
-  current_balance: number;
   ideal_monthly_rate: number;
   frozen_monthly_target: number;
-  contributed_this_month: number;
-  monthly_progress_percent: number;
-  progress_percent: number;
   status: ItemStatus;
-  amount_needed_now: number;
 }
 
 export interface RollupData {

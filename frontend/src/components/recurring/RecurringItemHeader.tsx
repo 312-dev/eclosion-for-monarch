@@ -6,12 +6,14 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import type { RecurringItem } from '../../types';
+import type { RecurringItem, ItemStatus } from '../../types';
 import { EmojiPicker } from '../EmojiPicker';
 import { Tooltip } from '../ui/Tooltip';
 import { MerchantIcon } from '../ui';
-import { WarningIcon, LinkedCategoryIcon } from './RecurringListIcons';
+import { LinkedCategoryIcon } from './RecurringListIcons';
+import { StaleWarningPopover } from './StaleWarningPopover';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
+import { RecurringItemProgress } from './RecurringItemProgress';
 import { SpinnerIcon, WarningFilledIcon, CheckFilledIcon, BlockedIcon } from '../icons';
 
 interface RecurringItemHeaderProps {
@@ -22,6 +24,10 @@ interface RecurringItemHeaderProps {
   readonly onChangeGroup: (groupId: string, groupName: string) => Promise<void>;
   readonly isToggling: boolean;
   readonly contentOpacity: string;
+  readonly displayStatus: ItemStatus;
+  readonly progressPercent: number;
+  readonly showCategoryGroup?: boolean;
+  readonly showProgress?: boolean;
 }
 
 export function RecurringItemHeader({
@@ -32,6 +38,10 @@ export function RecurringItemHeader({
   onChangeGroup,
   isToggling,
   contentOpacity,
+  displayStatus,
+  progressPercent,
+  showCategoryGroup = true,
+  showProgress = true,
 }: RecurringItemHeaderProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(item.name);
@@ -81,7 +91,7 @@ export function RecurringItemHeader({
   return (
     <div className="flex items-center gap-3">
       <div className="relative shrink-0">
-        <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="md" />
+        <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size={item.is_enabled ? 'lg' : 'md'} />
         <Tooltip
           content={
             item.is_enabled
@@ -110,7 +120,7 @@ export function RecurringItemHeader({
           </button>
         </Tooltip>
       </div>
-      <div className={`flex flex-col min-w-0 ${contentOpacity}`}>
+      <div className={`flex flex-col flex-1 min-w-0 ${contentOpacity}`}>
         <div className="flex items-center gap-1">
           {isEditingName ? (
             <input
@@ -154,28 +164,17 @@ export function RecurringItemHeader({
                 href={`https://app.monarchmoney.com/categories/${item.category_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 hover:opacity-70 transition-opacity text-monarch-text-light"
+                className="shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-70! transition-opacity text-monarch-text-light"
                 onClick={(e) => e.stopPropagation()}
               >
                 <LinkedCategoryIcon />
               </a>
             </Tooltip>
           )}
-          {item.is_stale && (
-            <Tooltip content={
-              <>
-                <div className="font-medium">Possibly Stale</div>
-                <div className="text-monarch-text-muted text-xs mt-1">Last charge was missed or off from expected date</div>
-              </>
-            }>
-              <span className="cursor-help">
-                <WarningIcon />
-              </span>
-            </Tooltip>
-          )}
+          {item.is_stale && <StaleWarningPopover />}
         </div>
-        {item.category_group_name && (
-          <div className="text-sm truncate text-monarch-text-light">
+        {showCategoryGroup && item.category_group_name && (
+          <div className="text-sm truncate text-monarch-text-light pt-0.5">
             {item.is_enabled && !item.category_missing ? (
               <CategoryGroupDropdown
                 currentGroupName={item.category_group_name}
@@ -184,6 +183,15 @@ export function RecurringItemHeader({
             ) : (
               item.category_group_name
             )}
+          </div>
+        )}
+        {showProgress && (
+          <div className="mt-2">
+            <RecurringItemProgress
+              item={item}
+              displayStatus={displayStatus}
+              progressPercent={progressPercent}
+            />
           </div>
         )}
       </div>

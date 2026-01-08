@@ -150,6 +150,9 @@ class TrackerState:
     auto_sync_new: bool = False  # Auto-enable tracking for new recurring items
     auto_track_threshold: float | None = None  # Max monthly amount to auto-track (null = any)
     auto_update_targets: bool = False  # Auto-update category targets when recurring amount changes
+    auto_categorize_enabled: bool = False  # Auto-categorize new transactions to tracking categories
+    last_auto_categorize_date: str | None = None  # Last date auto-categorization was run
+    show_category_group: bool = True  # Show category group name under item names
     enabled_items: set = field(default_factory=set)  # IDs of items enabled for tracking
     categories: dict[str, CategoryState] = field(default_factory=dict)
     rollup: RollupState = field(default_factory=RollupState)
@@ -214,6 +217,9 @@ class StateManager:
             "auto_sync_new": state.auto_sync_new,
             "auto_track_threshold": state.auto_track_threshold,
             "auto_update_targets": state.auto_update_targets,
+            "auto_categorize_enabled": state.auto_categorize_enabled,
+            "last_auto_categorize_date": state.last_auto_categorize_date,
+            "show_category_group": state.show_category_group,
             "enabled_items": list(state.enabled_items),
             "categories": {k: self._serialize_category(v) for k, v in state.categories.items()},
             "rollup": self._serialize_rollup(state.rollup),
@@ -309,6 +315,9 @@ class StateManager:
             "auto_sync_new",
             "auto_track_threshold",
             "auto_update_targets",
+            "auto_categorize_enabled",
+            "last_auto_categorize_date",
+            "show_category_group",
             "enabled_items",
             "categories",
             "rollup",
@@ -345,6 +354,9 @@ class StateManager:
             auto_sync_new=data.get("auto_sync_new", False),
             auto_track_threshold=data.get("auto_track_threshold"),
             auto_update_targets=data.get("auto_update_targets", False),
+            auto_categorize_enabled=data.get("auto_categorize_enabled", False),
+            last_auto_categorize_date=data.get("last_auto_categorize_date"),
+            show_category_group=data.get("show_category_group", True),
             enabled_items=set(data.get("enabled_items", [])),
             last_read_changelog_version=data.get("last_read_changelog_version"),
             user_first_name=data.get("user_first_name"),
@@ -557,12 +569,41 @@ class StateManager:
         self.save(state)
         return auto_update
 
+    def set_auto_categorize_enabled(self, enabled: bool) -> bool:
+        """Set whether to auto-categorize new transactions to tracking categories."""
+        state = self.load()
+        state.auto_categorize_enabled = enabled
+        self.save(state)
+        return enabled
+
+    def set_show_category_group(self, show: bool) -> bool:
+        """Set whether to show category group names under item names."""
+        state = self.load()
+        state.show_category_group = show
+        self.save(state)
+        return show
+
+    def record_auto_categorize_run(self, date: str) -> None:
+        """Record the date of the last auto-categorization run."""
+        state = self.load()
+        state.last_auto_categorize_date = date
+        self.save(state)
+
+    def get_auto_categorize_settings(self) -> dict:
+        """Get auto-categorize settings."""
+        state = self.load()
+        return {
+            "auto_categorize_enabled": state.auto_categorize_enabled,
+            "last_auto_categorize_date": state.last_auto_categorize_date,
+        }
+
     def get_settings(self) -> dict:
         """Get current settings."""
         state = self.load()
         return {
             "auto_sync_new": state.auto_sync_new,
             "rollup_enabled": state.rollup.enabled,
+            "show_category_group": state.show_category_group,
         }
 
     # Rollup methods

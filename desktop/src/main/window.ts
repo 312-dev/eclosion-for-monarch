@@ -5,7 +5,7 @@
  */
 
 import { BrowserWindow, shell, app, session } from 'electron';
-import path from 'path';
+import path from 'node:path';
 import Store from 'electron-store';
 
 const store = new Store();
@@ -23,7 +23,7 @@ function setupCSP(): void {
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'", // Tailwind uses inline styles
-            "img-src 'self' data: https:",
+            "img-src 'self' data:",
             "font-src 'self' data:",
             "connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*",
           ].join('; '),
@@ -77,7 +77,26 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
       contextIsolation: true,
       sandbox: true,
     },
-    // Platform-specific styling
+    /**
+     * Title Bar Styling - Platform-Specific Design
+     *
+     * macOS: Uses 'hiddenInset' for a modern, integrated look:
+     * - Traffic lights (close/minimize/maximize) are inset into the window content
+     * - Creates a seamless header that blends app branding with window chrome
+     * - Standard for modern macOS apps (Slack, Discord, VS Code, Notion)
+     * - Requires extra padding in header component to avoid traffic light overlap
+     *   (see AppShell.tsx: paddingLeft when isMacOSElectron)
+     *
+     * Windows/Linux: Uses 'default' for native appearance:
+     * - Standard title bar with native window controls (minimize/maximize/close)
+     * - Matches OS conventions and user expectations
+     * - Better accessibility with native control behavior
+     *
+     * Why not use 'hiddenInset' everywhere?
+     * - Windows: Requires custom window controls (more code, less accessible)
+     * - Linux: Varies by desktop environment, native is more reliable
+     * - Each platform has different conventions for window chrome
+     */
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#1a1a2e',
     show: false, // Don't show until ready
@@ -90,7 +109,28 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     'index.html'
   );
 
-  // Load frontend with backend port as query parameter
+  /**
+   * Backend Port Communication Architecture
+   *
+   * The backend runs on a dynamically-assigned port (5001-5100 range). The frontend
+   * needs this port to make API requests. We use two complementary mechanisms:
+   *
+   * 1. **Query Parameter** (passed here): The port is embedded in the URL as
+   *    `?_backendPort=5001`. This makes the port visible for debugging and provides
+   *    a synchronous access path before IPC is fully initialized.
+   *
+   * 2. **IPC Handler** (in ipc.ts): The `get-backend-port` handler allows the
+   *    renderer to request the port asynchronously. This is the primary mechanism
+   *    used by the frontend (see frontend/src/utils/apiBase.ts).
+   *
+   * Why this design?
+   * - IPC is preferred because it's the standard Electron pattern for main↔renderer
+   *   communication and works reliably after the preload script loads.
+   * - The query parameter serves as a fallback/debug mechanism and allows inspection
+   *   of the port without developer tools.
+   * - Both mechanisms are kept for resilience; if IPC fails during startup, the
+   *   query parameter could be used as a fallback (though currently not implemented).
+   */
   await mainWindow.loadFile(frontendPath, {
     query: { _backendPort: String(backendPort) },
   });

@@ -4,8 +4,10 @@
  * A small mockup showing a settings toggle panel for the landing page.
  * Demonstrates the "enable only what you need" concept.
  * Uses real feature data from features.ts to show accurate feature availability.
+ * Responsive: scales to fit container width on smaller screens.
  */
 
+import { useRef, useState, useEffect } from 'react';
 import { FEATURES } from '../../data/features';
 import { MockupDeviceFrame } from './MockupDeviceFrame';
 
@@ -72,13 +74,49 @@ export function MockupSettingsPanel({
   scale = 0.4,
   className = '',
 }: MockupSettingsPanelProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [effectiveScale, setEffectiveScale] = useState(scale);
+
+  // Content dimensions at full size
   const contentWidth = 400;
   const contentHeight = 280;
-  const scaledWidth = contentWidth * scale;
-  const scaledHeight = contentHeight * scale;
+
+  // Calculate the scaled dimensions at the target scale
+  const targetScaledWidth = contentWidth * scale;
+
+  // Observe container width and adjust scale if needed
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateScale = () => {
+      // Get available width (account for padding in mockup-content)
+      const availableWidth = container.clientWidth - 32; // 1rem padding on each side
+
+      if (availableWidth < targetScaledWidth) {
+        // Scale down to fit
+        const fitScale = availableWidth / contentWidth;
+        setEffectiveScale(fitScale);
+      } else {
+        setEffectiveScale(scale);
+      }
+    };
+
+    // Initial calculation
+    updateScale();
+
+    // Update on resize
+    const resizeObserver = new ResizeObserver(updateScale);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [scale, targetScaledWidth, contentWidth]);
+
+  const scaledWidth = contentWidth * effectiveScale;
+  const scaledHeight = contentHeight * effectiveScale;
 
   return (
-    <div className={className} aria-hidden="true">
+    <div ref={containerRef} className={className} aria-hidden="true">
       <MockupDeviceFrame url="your.eclosion.app/settings">
         <div
           className="mockup-scaled-container"
@@ -91,7 +129,7 @@ export function MockupSettingsPanel({
             className="mockup-scaled-content"
             style={{
               width: contentWidth,
-              transform: `scale(${scale})`,
+              transform: `scale(${effectiveScale})`,
             }}
           >
             <div className="p-5 bg-(--monarch-bg-page)">

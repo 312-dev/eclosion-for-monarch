@@ -5,20 +5,85 @@
  * Handles port selection, health checks, crash recovery, and graceful shutdown.
  */
 
-import { spawn, ChildProcess } from 'child_process';
-import path from 'path';
+import { spawn, ChildProcess } from 'node:child_process';
+import path from 'node:path';
 import fs from 'node:fs';
 import { app, dialog } from 'electron';
 import getPort from 'get-port';
+import { debugLog as log, getLogDir } from './logger';
+import { updateHealthStatus } from './tray';
+import { getStateDir } from './paths';
 
-// Debug logging to file - always enabled for production diagnostics
+// Wrapper to add [Backend] prefix to all log messages
 function debugLog(msg: string): void {
-  console.log(msg);
-  const logPath = path.join(app.getPath('home'), 'eclosion-debug.log');
+  log(msg, '[Backend]');
+}
+
+// Backend log file stream (separate from main debug log)
+let backendLogStream: fs.WriteStream | null = null;
+
+/**
+ * Initialize the backend log file stream.
+ */
+function initBackendLog(): void {
+  // Close existing stream first to prevent leaks on restart
+  closeBackendLog();
+
+  const logDir = getLogDir();
+  if (!logDir) return;
+
   try {
-    fs.appendFileSync(logPath, `${new Date().toISOString()} - [Backend] ${msg}\n`);
-  } catch {
-    // Ignore write errors
+    const backendLogPath = path.join(logDir, 'backend.log');
+
+    // Rotate if file is too large (>5MB)
+    if (fs.existsSync(backendLogPath)) {
+      const stats = fs.statSync(backendLogPath);
+      if (stats.size > 5 * 1024 * 1024) {
+        const rotatedPath = `${backendLogPath}.1`;
+        if (fs.existsSync(rotatedPath)) {
+          fs.unlinkSync(rotatedPath);
+        }
+        fs.renameSync(backendLogPath, rotatedPath);
+      }
+    }
+
+    backendLogStream = fs.createWriteStream(backendLogPath, { flags: 'a' });
+    backendLogStream.write(`\n${'='.repeat(60)}\n`);
+    backendLogStream.write(`Backend Log - ${new Date().toISOString()}\n`);
+    backendLogStream.write(`${'='.repeat(60)}\n`);
+  } catch (error) {
+    console.error('Failed to initialize backend log:', error);
+  }
+}
+
+/**
+ * Write a line to the backend log.
+ */
+function writeBackendLog(line: string, isError = false): void {
+  const timestamp = new Date().toISOString();
+  const prefix = isError ? '[ERROR]' : '[OUT]';
+  const formatted = `${timestamp} ${prefix} ${line}\n`;
+
+  // Also log to console
+  if (isError) {
+    console.error(`[Backend] ${line}`);
+  } else {
+    console.log(`[Backend] ${line}`);
+  }
+
+  // Write to backend log file
+  if (backendLogStream) {
+    backendLogStream.write(formatted);
+  }
+}
+
+/**
+ * Close the backend log stream.
+ */
+function closeBackendLog(): void {
+  if (backendLogStream) {
+    backendLogStream.end();
+    backendLogStream = null;
   }
 }
 
@@ -44,22 +109,6 @@ export class BackendManager {
   }
 
   /**
-   * Get the state directory path for the current platform.
-   */
-  private getStateDir(): string {
-    const appName = 'Eclosion';
-
-    switch (process.platform) {
-      case 'darwin':
-        return path.join(app.getPath('home'), 'Library', 'Application Support', appName);
-      case 'win32':
-        return path.join(app.getPath('appData'), appName);
-      default: // Linux
-        return path.join(app.getPath('home'), '.config', appName.toLowerCase());
-    }
-  }
-
-  /**
    * Start the Python backend subprocess.
    */
   async start(): Promise<void> {
@@ -69,15 +118,20 @@ export class BackendManager {
     }
 
     // Find available port
-    this.port = await getPort({ port: [5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010] });
+    // Expanded port range (5001-5100) to handle cases where other apps use these ports
+    const portRange = Array.from({ length: 100 }, (_, i) => 5001 + i);
+    this.port = await getPort({ port: portRange });
 
     const backendPath = this.getBackendPath();
-    const stateDir = this.getStateDir();
+    const stateDir = getStateDir();
 
     debugLog(`Starting backend on port ${this.port}`);
     debugLog(`Backend path: ${backendPath}`);
     debugLog(`Backend exists: ${fs.existsSync(backendPath)}`);
     debugLog(`State directory: ${stateDir}`);
+
+    // Initialize backend-specific log file
+    initBackendLog();
 
     this.process = spawn(backendPath, [], {
       env: {
@@ -91,13 +145,19 @@ export class BackendManager {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    // Log backend output
+    // Log backend output to separate backend.log
     this.process.stdout?.on('data', (data: Buffer) => {
-      console.log(`[Backend] ${data.toString().trim()}`);
+      const lines = data.toString().trim().split('\n');
+      for (const line of lines) {
+        if (line) writeBackendLog(line);
+      }
     });
 
     this.process.stderr?.on('data', (data: Buffer) => {
-      console.error(`[Backend Error] ${data.toString().trim()}`);
+      const lines = data.toString().trim().split('\n');
+      for (const line of lines) {
+        if (line) writeBackendLog(line, true);
+      }
     });
 
     this.process.on('exit', (code, signal) => {
@@ -145,14 +205,21 @@ export class BackendManager {
    * Start periodic health checks.
    */
   private startHealthCheck(): void {
+    // Update status immediately when starting
+    updateHealthStatus(true);
+
     this.healthCheckInterval = setInterval(async () => {
       try {
         const response = await fetch(`http://127.0.0.1:${this.port}/health`);
         if (response.ok) {
           this.restartAttempts = 0; // Reset on successful check
+          updateHealthStatus(true);
+        } else {
+          updateHealthStatus(false);
         }
       } catch {
         console.warn('Health check failed');
+        updateHealthStatus(false);
       }
     }, 30000); // Every 30 seconds
   }
@@ -161,6 +228,9 @@ export class BackendManager {
    * Handle backend process exit.
    */
   private handleExit(): void {
+    // Update tray to show backend stopped
+    updateHealthStatus(false);
+
     if (this.isShuttingDown) {
       return;
     }
@@ -182,7 +252,7 @@ export class BackendManager {
       dialog.showErrorBox(
         'Backend Failed',
         'The Eclosion backend failed to start after multiple attempts.\n\n' +
-          'Please check the logs at ~/eclosion-debug.log and restart the app.'
+          `Please check the logs at ${getLogDir()} and restart the app.`
       );
     }
   }
@@ -235,6 +305,9 @@ export class BackendManager {
       this.process = null;
       console.log('Backend stopped');
     }
+
+    // Close the backend log stream
+    closeBackendLog();
   }
 
   /**
@@ -261,8 +334,9 @@ export class BackendManager {
 
   /**
    * Check if a sync is needed (for wake-from-sleep handling).
+   * Returns the result of the sync if triggered, or null if no sync was needed.
    */
-  async checkSyncNeeded(): Promise<void> {
+  async checkSyncNeeded(): Promise<{ synced: boolean; success?: boolean; error?: string }> {
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/auto-sync/status`, {
         credentials: 'include',
@@ -282,12 +356,15 @@ export class BackendManager {
 
           if (hoursSinceSync > intervalHours) {
             console.log(`Triggering sync after wake (${hoursSinceSync.toFixed(1)} hours since last sync)`);
-            await this.triggerSync();
+            const result = await this.triggerSync();
+            return { synced: true, success: result.success, error: result.error };
           }
         }
       }
+      return { synced: false };
     } catch (err) {
       console.error('Failed to check sync status:', err);
+      return { synced: false };
     }
   }
 }

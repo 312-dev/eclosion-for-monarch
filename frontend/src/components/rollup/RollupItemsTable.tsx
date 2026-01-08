@@ -57,6 +57,18 @@ export function RollupItemsTable({ items, onRemoveItem }: RollupItemsTableProps)
     return result;
   }, [groupedItems, sortedFrequencies]);
 
+  // Compute the first item ID for tour targeting
+  const firstItemId = useMemo(() => {
+    for (const freq of sortedFrequencies) {
+      const freqItems = sortedGroupedItems[freq];
+      const firstItem = freqItems?.[0];
+      if (firstItem) {
+        return firstItem.id;
+      }
+    }
+    return null;
+  }, [sortedFrequencies, sortedGroupedItems]);
+
   // Memoize remove handler creator
   const handleRemoveItem = useCallback((itemId: string) => {
     return () => onRemoveItem(itemId);
@@ -109,6 +121,7 @@ export function RollupItemsTable({ items, onRemoveItem }: RollupItemsTableProps)
                   key={item.id}
                   item={item}
                   onRemove={handleRemoveItem(item.id)}
+                  {...(item.id === firstItemId && { dataTourId: 'rollup-item' })}
                 />
               ))}
             </React.Fragment>

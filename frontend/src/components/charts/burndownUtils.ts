@@ -1,8 +1,112 @@
 /**
  * Burndown chart utility functions and types
+ *
+ * The chart shows the path to the "stabilization point" - when all catch-up
+ * payments complete and monthly costs reach their steady-state minimum.
  */
 
-import type { RecurringItem } from '../../types';
+import type { RecurringItem, RollupData } from '../../types';
+
+/**
+ * Information about when the monthly rate stabilizes
+ */
+export interface StabilizationInfo {
+  /** Final stable monthly rate (sum of all ideal rates) */
+  stableMonthlyRate: number;
+  /** How many months until stabilization */
+  monthsUntilStable: number;
+  /** Formatted date string, e.g., "Mar '25" */
+  stabilizationDate: string;
+  /** Whether there are any items with catch-up in progress */
+  hasCatchUp: boolean;
+}
+
+/**
+ * Calculate when the monthly rate will stabilize.
+ *
+ * The stabilization point is when all catch-up payments complete - i.e., when
+ * all items with frozen_monthly_target > ideal_monthly_rate have had their
+ * bills hit and reset to ideal rates.
+ *
+ * Note: Over-contributing is NOT factored in. This projection assumes the user
+ * budgets exactly the frozen target each month.
+ */
+export function calculateStabilizationPoint(
+  items: RecurringItem[],
+  rollup: RollupData | null
+): StabilizationInfo {
+  const now = new Date();
+  const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Get all enabled items (both dedicated and rollup)
+  const dedicatedItems = items.filter(i => i.is_enabled && !i.is_in_rollup);
+  const rollupItems = rollup?.enabled ? rollup.items : [];
+
+  // Calculate stable rate (sum of ideal rates)
+  const dedicatedStableRate = dedicatedItems.reduce(
+    (sum, i) => sum + (i.ideal_monthly_rate || 0),
+    0
+  );
+  const rollupStableRate = rollupItems.reduce(
+    (sum, i) => sum + (i.ideal_monthly_rate || 0),
+    0
+  );
+  const stableMonthlyRate = Math.round(dedicatedStableRate + rollupStableRate);
+
+  // Find items with catch-up (frozen_target > ideal_rate)
+  const itemsWithCatchUp = [
+    ...dedicatedItems.filter(i =>
+      (i.frozen_monthly_target || 0) > (i.ideal_monthly_rate || 0)
+    ),
+    ...rollupItems.filter(i =>
+      (i.frozen_monthly_target || 0) > (i.ideal_monthly_rate || 0)
+    ),
+  ];
+
+  if (itemsWithCatchUp.length === 0) {
+    // Already at stable rate
+    const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'short' });
+    const yearLabel = currentMonth.getFullYear().toString().slice(-2);
+    return {
+      stableMonthlyRate,
+      monthsUntilStable: 0,
+      stabilizationDate: `${monthLabel} '${yearLabel}`,
+      hasCatchUp: false,
+    };
+  }
+
+  // Find the latest due date among items with catch-up
+  // Safe to use [0] since we checked itemsWithCatchUp.length === 0 above
+  let latestDueDate = new Date(itemsWithCatchUp[0]!.next_due_date);
+  for (const item of itemsWithCatchUp) {
+    const dueDate = new Date(item.next_due_date);
+    if (dueDate > latestDueDate) {
+      latestDueDate = dueDate;
+    }
+  }
+
+  // Calculate months until stable
+  const stabilizationMonth = new Date(
+    latestDueDate.getFullYear(),
+    latestDueDate.getMonth(),
+    1
+  );
+  const monthsUntilStable = Math.max(
+    0,
+    (stabilizationMonth.getFullYear() - currentMonth.getFullYear()) * 12 +
+      (stabilizationMonth.getMonth() - currentMonth.getMonth())
+  );
+
+  const monthLabel = stabilizationMonth.toLocaleDateString('en-US', { month: 'short' });
+  const yearLabel = stabilizationMonth.getFullYear().toString().slice(-2);
+
+  return {
+    stableMonthlyRate,
+    monthsUntilStable,
+    stabilizationDate: `${monthLabel} '${yearLabel}`,
+    hasCatchUp: true,
+  };
+}
 
 export interface BurndownPoint {
   month: string;

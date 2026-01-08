@@ -81,6 +81,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             onSyncNameChange={wizard.setRollupSyncName}
             loading={wizard.loadingRollupCategories}
             groupName={wizard.selectedGroupName}
+            autoCategorizeEnabled={wizard.autoCategorizeEnabled}
+            onAutoCategorizeChange={wizard.setAutoCategorizeEnabled}
           />
         );
       case 4:

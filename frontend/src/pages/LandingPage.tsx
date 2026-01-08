@@ -14,7 +14,6 @@ import {
   FrustrationSection,
   TransformationSection,
   SocialProofBar,
-  PriceExplainerPopover,
   WhyEclosionSection,
 } from '../components/marketing';
 import { GetStartedModal } from '../components/ui/GetStartedModal';
@@ -147,8 +146,8 @@ export function LandingPage() {
                 accentColor="#3B82F6"
                 title="Spin Your Cocoon"
               >
-                Click one button to deploy your own private copy. Runs on Railway,
-                costs around <PriceExplainerPopover>~$5/mo (or nothing?)</PriceExplainerPopover>
+                Get your own private copy. Download the desktop app, self-host with
+                Docker, or deploy to Railway.
               </HowItWorksStep>
 
               <HowItWorksStep

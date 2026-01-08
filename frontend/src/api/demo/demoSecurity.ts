@@ -12,50 +12,7 @@ import type {
   SecurityEventsQueryOptions,
 } from '../../types';
 import { simulateDelay } from './demoState';
-
-// Demo security events data
-const DEMO_SECURITY_EVENTS = [
-  {
-    id: 1,
-    event_type: 'LOGIN_ATTEMPT',
-    success: true,
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    ip_address: '73.45.123.89',
-    country: 'United States',
-    city: 'San Francisco',
-    details: 'User: dem***@example.com',
-  },
-  {
-    id: 2,
-    event_type: 'LOGIN_ATTEMPT',
-    success: false,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    ip_address: '185.220.101.45',
-    country: 'Germany',
-    city: 'Frankfurt',
-    details: 'Invalid credentials',
-  },
-  {
-    id: 3,
-    event_type: 'UNLOCK_ATTEMPT',
-    success: true,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    ip_address: '73.45.123.89',
-    country: 'United States',
-    city: 'San Francisco',
-    details: null,
-  },
-  {
-    id: 4,
-    event_type: 'LOGIN_ATTEMPT',
-    success: false,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    ip_address: '91.243.82.116',
-    country: 'Russia',
-    city: 'Moscow',
-    details: 'Invalid credentials',
-  },
-];
+import { DEMO_SECURITY_EVENTS } from './demoSecurityData';
 
 /**
  * Get security status information.
@@ -109,12 +66,24 @@ export async function getSecurityEvents(
  */
 export async function getSecuritySummary(): Promise<SecurityEventSummary> {
   await simulateDelay(50);
+  // Calculate actual counts from demo data
+  const successfulLogins = DEMO_SECURITY_EVENTS.filter(
+    (e) => e.event_type === 'LOGIN_ATTEMPT' && e.success
+  ).length;
+  const failedLogins = DEMO_SECURITY_EVENTS.filter(
+    (e) => e.event_type === 'LOGIN_ATTEMPT' && !e.success
+  ).length;
+  const failedUnlocks = DEMO_SECURITY_EVENTS.filter(
+    (e) => e.event_type === 'UNLOCK_ATTEMPT' && !e.success
+  ).length;
+  const uniqueIps = new Set(DEMO_SECURITY_EVENTS.map((e) => e.ip_address)).size;
+
   return {
     total_events: DEMO_SECURITY_EVENTS.length,
-    successful_logins: 23,
-    failed_logins: 3,
-    failed_unlock_attempts: 1,
-    unique_ips: 4,
+    successful_logins: successfulLogins,
+    failed_logins: failedLogins,
+    failed_unlock_attempts: failedUnlocks,
+    unique_ips: uniqueIps,
     last_successful_login: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     last_failed_login: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   };

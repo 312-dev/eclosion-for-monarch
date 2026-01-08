@@ -4,8 +4,10 @@
  * Sets up the native macOS/Windows application menu bar.
  */
 
-import { Menu, app, shell } from 'electron';
+import { Menu, app, shell, clipboard, dialog } from 'electron';
 import { getMainWindow, showWindow } from './window';
+import { exportDiagnostics, getQuickDebugInfo } from './diagnostics';
+import { createBackup, restoreBackup, getBackupWarning, getRestoreWarning } from './backup';
 
 /**
  * Check if the current app version is a beta build.
@@ -80,6 +82,112 @@ export function createAppMenu(): void {
               { type: 'separator' as const },
             ]
           : []),
+        {
+          label: 'Backup Data...',
+          click: async (): Promise<void> => {
+            const mainWindow = getMainWindow();
+            if (!mainWindow) return;
+
+            // Show warning dialog
+            const warning = getBackupWarning();
+            const proceed = await dialog.showMessageBox(mainWindow, {
+              type: 'warning',
+              buttons: ['Cancel', 'Create Backup'],
+              defaultId: 1,
+              cancelId: 0,
+              title: 'Create Backup',
+              message: 'Backup includes sensitive data',
+              detail: warning,
+            });
+
+            if (proceed.response !== 1) return;
+
+            try {
+              const result = await createBackup();
+              if (result.success && result.path) {
+                await dialog.showMessageBox(mainWindow, {
+                  type: 'info',
+                  title: 'Backup Created',
+                  message: 'Backup created successfully.',
+                  detail: `Saved to:\n${result.path}`,
+                });
+              } else if (result.error) {
+                await dialog.showMessageBox(mainWindow, {
+                  type: 'error',
+                  title: 'Backup Failed',
+                  message: 'Failed to create backup.',
+                  detail: result.error,
+                });
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              await dialog.showMessageBox(mainWindow, {
+                type: 'error',
+                title: 'Backup Failed',
+                message: 'Failed to create backup.',
+                detail: errorMessage,
+              });
+            }
+          },
+        },
+        {
+          label: 'Restore from Backup...',
+          click: async (): Promise<void> => {
+            const mainWindow = getMainWindow();
+            if (!mainWindow) return;
+
+            // Show warning dialog
+            const warning = getRestoreWarning();
+            const proceed = await dialog.showMessageBox(mainWindow, {
+              type: 'warning',
+              buttons: ['Cancel', 'Select Backup File'],
+              defaultId: 0,
+              cancelId: 0,
+              title: 'Restore from Backup',
+              message: 'This will replace your current data',
+              detail: warning,
+            });
+
+            if (proceed.response !== 1) return;
+
+            try {
+              const result = await restoreBackup();
+              if (result.success) {
+                const details = [];
+                if (result.filesRestored !== undefined) {
+                  details.push(`Files restored: ${result.filesRestored}`);
+                }
+                if (result.settingsRestored) {
+                  details.push('Desktop settings restored');
+                }
+                details.push('\nPlease restart Eclosion for changes to take effect.');
+
+                await dialog.showMessageBox(mainWindow, {
+                  type: 'info',
+                  title: 'Restore Complete',
+                  message: 'Backup restored successfully.',
+                  detail: details.join('\n'),
+                });
+              } else if (result.error) {
+                await dialog.showMessageBox(mainWindow, {
+                  type: 'error',
+                  title: 'Restore Failed',
+                  message: 'Failed to restore backup.',
+                  detail: result.error,
+                });
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              await dialog.showMessageBox(mainWindow, {
+                type: 'error',
+                title: 'Restore Failed',
+                message: 'Failed to restore backup.',
+                detail: errorMessage,
+              });
+            }
+          },
+        },
+        { type: 'separator' as const },
         isMac ? { role: 'close' as const } : { role: 'quit' as const },
       ],
     },
@@ -153,6 +261,44 @@ export function createAppMenu(): void {
             await shell.openExternal(
               'https://github.com/GraysonCAdams/eclosion-for-monarch/issues'
             );
+          },
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Export Diagnostics...',
+          click: async (): Promise<void> => {
+            try {
+              const filePath = await exportDiagnostics();
+              if (filePath) {
+                const mainWindow = getMainWindow();
+                if (mainWindow) {
+                  await dialog.showMessageBox(mainWindow, {
+                    type: 'info',
+                    title: 'Diagnostics Exported',
+                    message: 'Diagnostics exported successfully.',
+                    detail: `Saved to:\n${filePath}`,
+                  });
+                }
+              }
+            } catch (error) {
+              const mainWindow = getMainWindow();
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              if (mainWindow) {
+                await dialog.showMessageBox(mainWindow, {
+                  type: 'error',
+                  title: 'Export Failed',
+                  message: 'Failed to export diagnostics.',
+                  detail: errorMessage,
+                });
+              }
+            }
+          },
+        },
+        {
+          label: 'Copy Debug Info',
+          click: (): void => {
+            const info = getQuickDebugInfo();
+            clipboard.writeText(info);
           },
         },
       ],

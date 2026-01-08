@@ -120,7 +120,7 @@ function toPublicIdeasFromGitHub(
     .map(([key, tracked]) => ({
       id: key,
       title: tracked.title ?? 'Untitled',
-      description: tracked.description ?? '',
+      description: cleanDescription(tracked.description ?? ''),
       votes: tracked.githubVotes ?? 0,
       category: tracked.category ?? 'Community',
       productboardUrl: null,

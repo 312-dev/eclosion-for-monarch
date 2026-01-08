@@ -174,6 +174,42 @@ describe('useDropdown', () => {
       expect(result.current.position.right).toBeDefined();
       expect(result.current.position.left).toBeUndefined();
     });
+
+    it('flips to above when no space below', () => {
+      const triggerElement = document.createElement('button');
+      document.body.appendChild(triggerElement);
+
+      // Position trigger near bottom of viewport
+      triggerElement.getBoundingClientRect = vi.fn(() => ({
+        top: 700,
+        left: 50,
+        right: 150,
+        bottom: 740,
+        width: 100,
+        height: 40,
+        x: 50,
+        y: 700,
+        toJSON: () => ({}),
+      }));
+
+      // Mock window dimensions
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+
+      const { result } = renderHook(() => useDropdown());
+
+      act(() => {
+        (result.current.triggerRef as React.MutableRefObject<HTMLButtonElement>).current =
+          triggerElement;
+      });
+
+      act(() => {
+        result.current.open();
+      });
+
+      // Should flip to above - bottom property should be set instead of top
+      expect(result.current.position.bottom).toBeDefined();
+      expect(result.current.position.top).toBeUndefined();
+    });
   });
 
   describe('click outside', () => {

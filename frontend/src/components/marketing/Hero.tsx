@@ -68,8 +68,6 @@ export function Hero({ onGetStarted, demoHref = '/demo' }: HeroProps) {
           </button>
           <a
             href={demoHref}
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-[var(--monarch-orange)]/10 transition-colors"
           >
             Explore Demo

@@ -84,8 +84,8 @@ class SavingsCalculator:
             math.ceil(target_amount / frequency_months) if frequency_months > 0 else target_amount
         )
 
-        # Calculate progress
-        progress_percent = (current_balance / target_amount * 100) if target_amount > 0 else 0
+        # Calculate progress (zero-amount items are considered 100% complete)
+        progress_percent = (current_balance / target_amount * 100) if target_amount > 0 else 100
         progress_percent = min(100, max(0, progress_percent))
 
         # Check if fully funded

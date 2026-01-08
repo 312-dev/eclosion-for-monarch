@@ -22,9 +22,10 @@ import { useRecurringItemActions } from '../hooks';
 interface RecurringListProps {
   readonly items: RecurringItem[];
   readonly onRefresh: () => void;
+  readonly showCategoryGroup?: boolean;
 }
 
-export function RecurringList({ items, onRefresh }: RecurringListProps) {
+export function RecurringList({ items, onRefresh, showCategoryGroup = true }: RecurringListProps) {
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [hideDisabled, setHideDisabled] = useState(false);
@@ -99,6 +100,26 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
     );
   }, [groupedItems]);
 
+  // Compute tour target IDs for specific items (first of each type)
+  const tourTargetIds = useMemo(() => {
+    // Flatten all items in render order
+    const allItems = sortedFrequencies.flatMap(
+      (freq) => sortItems(groupedItems[freq] ?? [])
+    );
+
+    // Find first item matching each condition
+    const firstIndividual = allItems.find((i) => i.is_enabled && !i.is_in_rollup);
+    const firstBehind = allItems.find((i) => i.is_enabled && i.status === 'behind');
+    const firstDisabled = allItems.find((i) => !i.is_enabled);
+
+    const targets: Record<string, string> = {};
+    if (firstIndividual) targets[firstIndividual.id] = 'individual-item';
+    if (firstBehind && !targets[firstBehind.id]) targets[firstBehind.id] = 'item-status';
+    if (firstDisabled && !targets[firstDisabled.id]) targets[firstDisabled.id] = 'disabled-section';
+
+    return targets;
+  }, [sortedFrequencies, groupedItems, sortItems]);
+
   // True empty state - no categories at all
   if (items.length === 0) {
     return (
@@ -168,6 +189,7 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
                   onNameChange={handleNameChangeItem}
                   onLinkCategory={handleLinkCategory}
                   highlightId={highlightId}
+                  showCategoryGroup={showCategoryGroup}
                 />
               ))}
             </Fragment>
@@ -206,6 +228,8 @@ export function RecurringList({ items, onRefresh }: RecurringListProps) {
                     onNameChange={handleNameChangeItem}
                     onLinkCategory={handleLinkCategory}
                     highlightId={highlightId}
+                    showCategoryGroup={showCategoryGroup}
+                    {...(tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
                   />
                 ))}
               </Fragment>

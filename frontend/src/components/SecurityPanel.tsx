@@ -21,7 +21,7 @@ interface SecurityPanelProps {
 
 type EventFilter = 'all' | 'LOGIN_ATTEMPT' | 'UNLOCK_ATTEMPT';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 3;
 
 export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   const [filter, setFilter] = useState<EventFilter>('all');
@@ -108,7 +108,10 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value as EventFilter)}
+          onChange={(e) => {
+            setFilter(e.target.value as EventFilter);
+            setPage(0); // Reset to first page when filter changes
+          }}
           className="px-3 py-1.5 rounded-lg text-sm"
           style={{
             backgroundColor: 'var(--monarch-bg-page)',

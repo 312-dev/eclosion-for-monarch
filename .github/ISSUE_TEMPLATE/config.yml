@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Documentation
-    url: https://docs.eclosion.app
+    url: https://eclosion.app
     about: Check the documentation for setup and usage information
   - name: Security Issues
     url: https://github.com/graysoncadams/eclosion-for-monarch/security

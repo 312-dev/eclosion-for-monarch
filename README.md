@@ -8,7 +8,7 @@ A self-hosted toolkit that expands what's possible with Monarch Money. Each tool
 
 *Eclosion (n.): The moment a butterfly emerges.*
 
-**[Try the Demo](https://docs.eclosion.app/demo)** · **[Documentation](https://docs.eclosion.app)**
+**[Try the Demo](https://eclosion.app/demo)** · **[Documentation](https://eclosion.app)**
 
 ## The Toolkit
 
@@ -155,7 +155,7 @@ The built application will be in `desktop/release/`.
 
 ## How It Works
 
-1. **Deploy** — One-click setup with Railway (~$5-7/month), self-host with Docker, or download the desktop app
+1. **Get Started** — Download the desktop app, self-host with Docker, or deploy to Railway
 2. **Connect** — Sign in with your Monarch Money credentials (encrypted with a passphrase only you know)
 3. **Enable** — Pick the tools you want to use
 4. **Relax** — Eclosion syncs with Monarch and keeps everything updated for you

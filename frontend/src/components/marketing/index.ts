@@ -23,7 +23,6 @@ export { FrustrationCard } from './FrustrationCard';
 export { FrustrationSection } from './FrustrationSection';
 export { TransformationSection } from './TransformationSection';
 export { SocialProofBar } from './SocialProofBar';
-export { PriceExplainerPopover } from './PriceExplainerPopover';
 export { WhyEclosionSection } from './WhyEclosionSection';
 
 // Ideas Board components

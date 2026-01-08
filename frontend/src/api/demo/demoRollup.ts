@@ -34,7 +34,8 @@ export async function addToRollup(
 
     const rollupItems = updatedItems.filter((i) => i.is_in_rollup);
     const totalRate = rollupItems.reduce((sum, i) => sum + i.ideal_monthly_rate, 0);
-    const totalSaved = rollupItems.reduce((sum, i) => sum + i.current_balance, 0);
+    // Total saved = current_balance (rollover) + contributed_this_month
+    const totalSaved = rollupItems.reduce((sum, i) => sum + i.current_balance + i.contributed_this_month, 0);
     const totalTarget = rollupItems.reduce((sum, i) => sum + i.amount, 0);
 
     return {
@@ -54,14 +55,9 @@ export async function addToRollup(
             frequency_months: i.frequency_months,
             next_due_date: i.next_due_date,
             months_until_due: i.months_until_due,
-            current_balance: i.current_balance,
             ideal_monthly_rate: i.ideal_monthly_rate,
             frozen_monthly_target: i.frozen_monthly_target,
-            contributed_this_month: i.contributed_this_month,
-            monthly_progress_percent: i.monthly_progress_percent,
-            progress_percent: i.progress_percent,
             status: i.status,
-            amount_needed_now: i.amount_needed_now,
           })),
           total_ideal_rate: totalRate,
           total_saved: totalSaved,
@@ -101,7 +97,8 @@ export async function removeFromRollup(
 
     const rollupItems = updatedItems.filter((i) => i.is_in_rollup);
     const totalRate = rollupItems.reduce((sum, i) => sum + i.ideal_monthly_rate, 0);
-    const totalSaved = rollupItems.reduce((sum, i) => sum + i.current_balance, 0);
+    // Total saved = current_balance (rollover) + contributed_this_month
+    const totalSaved = rollupItems.reduce((sum, i) => sum + i.current_balance + i.contributed_this_month, 0);
     const totalTarget = rollupItems.reduce((sum, i) => sum + i.amount, 0);
 
     return {
@@ -121,14 +118,9 @@ export async function removeFromRollup(
             frequency_months: i.frequency_months,
             next_due_date: i.next_due_date,
             months_until_due: i.months_until_due,
-            current_balance: i.current_balance,
             ideal_monthly_rate: i.ideal_monthly_rate,
             frozen_monthly_target: i.frozen_monthly_target,
-            contributed_this_month: i.contributed_this_month,
-            monthly_progress_percent: i.monthly_progress_percent,
-            progress_percent: i.progress_percent,
             status: i.status,
-            amount_needed_now: i.amount_needed_now,
           })),
           total_ideal_rate: totalRate,
           total_saved: totalSaved,
@@ -152,22 +144,41 @@ export async function removeFromRollup(
 
 /**
  * Set the rollup budget amount.
+ *
+ * This only updates the user's planned budget for the rollup category.
+ * It does NOT modify current_balance or total_saved - those are computed
+ * from actual allocations to individual items.
+ *
+ * In the real backend, this updates the stored budget and syncs to Monarch,
+ * but doesn't change category balances (those come from transactions).
  */
 export async function setRollupBudget(
   amount: number
 ): Promise<{ success: boolean; total_budgeted?: number; error?: string }> {
   await simulateDelay(100);
 
-  updateDemoState((state) => ({
-    ...state,
-    dashboard: {
-      ...state.dashboard,
-      rollup: {
-        ...state.dashboard.rollup,
-        budgeted: amount,
+  updateDemoState((state) => {
+    const oldBudgeted = state.dashboard.rollup.budgeted;
+    const delta = amount - oldBudgeted;
+
+    return {
+      ...state,
+      dashboard: {
+        ...state.dashboard,
+        ready_to_assign: {
+          ...state.dashboard.ready_to_assign,
+          // Budgeting more decreases "left to budget", budgeting less increases it
+          ready_to_assign: state.dashboard.ready_to_assign.ready_to_assign - delta,
+        },
+        rollup: {
+          ...state.dashboard.rollup,
+          budgeted: amount,
+          // Note: current_balance and total_saved are NOT modified here.
+          // They are computed from individual items' actual allocations.
+        },
       },
-    },
-  }));
+    };
+  });
 
   return { success: true, total_budgeted: amount };
 }

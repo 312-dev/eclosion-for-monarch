@@ -68,11 +68,117 @@ export interface DesktopSettings {
   autoStart: boolean;
 }
 
+export interface LogFileInfo {
+  name: string;
+  path: string;
+  size: number;
+  modified: string;
+}
+
+export interface LogFileContent {
+  content?: string;
+  totalLines?: number;
+  displayedLines?: number;
+  truncated?: boolean;
+  error?: string;
+}
+
+export interface ReadLogOptions {
+  lines?: number;
+  search?: string;
+}
+
+export interface HealthStatus {
+  running: boolean;
+  lastSync?: string;
+}
+
+export interface BackendStatusChange {
+  running: boolean;
+  lastSync?: string;
+  timestamp: string;
+}
+
+export interface BackupResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+}
+
+export interface RestoreResult {
+  success: boolean;
+  error?: string;
+  filesRestored?: number;
+  settingsRestored?: boolean;
+}
+
+export type HotkeyAction = 'toggle-window' | 'trigger-sync';
+
+export interface HotkeyConfig {
+  enabled: boolean;
+  accelerator: string;
+}
+
+export type HotkeyConfigs = Record<HotkeyAction, HotkeyConfig>;
+
+export interface OnboardingStep {
+  id: string;
+  title: string;
+  description: string;
+  icon: 'tray' | 'rocket' | 'keyboard' | 'link' | 'sync' | 'settings';
+  tip?: string;
+}
+
+export interface OnboardingData {
+  shouldShow: boolean;
+  steps: OnboardingStep[];
+  version: number;
+}
+
+export interface StartupMetrics {
+  totalStartup: number;
+  appReady: number;
+  backendStart: number;
+  windowCreate: number;
+  postWindow: number;
+  timestamp: string;
+  version: string;
+}
+
+export interface StartupMetricsHistory extends StartupMetrics {
+  id: string;
+}
+
+export interface StartupMetricsData {
+  current: StartupMetrics | null;
+  average: Partial<StartupMetrics> | null;
+  history: StartupMetricsHistory[];
+}
+
+export interface CleanupResultData {
+  success: boolean;
+  filesDeleted: string[];
+  errors: string[];
+}
+
+export interface FactoryResetResult {
+  confirmed: boolean;
+  result?: CleanupResultData;
+}
+
+export interface CleanupInstructions {
+  platform: string;
+  dataPath: string;
+  instructions: string;
+}
+
 export interface ElectronAPI {
   // Backend Communication
   getBackendPort: () => Promise<number>;
   getBackendStatus: () => Promise<BackendStatus>;
   triggerSync: () => Promise<SyncResult>;
+  getHealthStatus: () => Promise<HealthStatus>;
+  onBackendStatusChanged: (callback: (status: BackendStatusChange) => void) => () => void;
 
   // Auto-Start
   getAutoStartStatus: () => Promise<boolean>;
@@ -108,6 +214,35 @@ export interface ElectronAPI {
   setShowInDock: (enabled: boolean) => Promise<boolean>;
   getStateDir: () => Promise<string>;
   revealDataFolder: () => Promise<void>;
+
+  // Log Viewer
+  getLogFiles: () => Promise<LogFileInfo[]>;
+  readLogFile: (filePath: string, options?: ReadLogOptions) => Promise<LogFileContent>;
+
+  // Backup & Restore
+  createBackup: () => Promise<BackupResult>;
+  restoreBackup: () => Promise<RestoreResult>;
+  getBackupWarning: () => Promise<string>;
+  getRestoreWarning: () => Promise<string>;
+
+  // Global Hotkeys
+  getHotkeyConfigs: () => Promise<HotkeyConfigs>;
+  setHotkeyConfig: (action: HotkeyAction, config: HotkeyConfig) => Promise<boolean>;
+  validateShortcut: (accelerator: string, currentAction?: HotkeyAction) => Promise<string | null>;
+  resetHotkeys: () => Promise<void>;
+
+  // Onboarding
+  getOnboardingData: () => Promise<OnboardingData>;
+  completeOnboarding: () => Promise<void>;
+  resetOnboarding: () => Promise<void>;
+
+  // Startup Metrics
+  getStartupMetrics: () => Promise<StartupMetricsData>;
+  clearStartupMetrics: () => Promise<void>;
+
+  // Data Cleanup
+  showFactoryResetDialog: () => Promise<FactoryResetResult>;
+  getCleanupInstructions: () => Promise<CleanupInstructions>;
 }
 
 declare global {

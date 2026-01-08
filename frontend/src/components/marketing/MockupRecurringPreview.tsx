@@ -3,8 +3,10 @@
  *
  * Assembles the full recurring expenses mockup for the landing page.
  * Uses CSS transform scaling to render full-size components as a screenshot-like preview.
+ * Responsive: scales to fit container width on smaller screens.
  */
 
+import { useRef, useState, useEffect } from 'react';
 import { MockupDeviceFrame } from './MockupDeviceFrame';
 import { MockupRollupZone } from './MockupRollupZone';
 import { MockupRecurringItem } from './MockupRecurringItem';
@@ -28,14 +30,49 @@ export function MockupRecurringPreview({
   scale = 0.4,
   className = '',
 }: MockupRecurringPreviewProps) {
-  // Calculate container dimensions based on content size and scale
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [effectiveScale, setEffectiveScale] = useState(scale);
+
+  // Content dimensions at full size
   const contentWidth = 900;
   const contentHeight = 500;
-  const scaledWidth = contentWidth * scale;
-  const scaledHeight = contentHeight * scale;
+
+  // Calculate the scaled dimensions at the target scale
+  const targetScaledWidth = contentWidth * scale;
+
+  // Observe container width and adjust scale if needed
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateScale = () => {
+      // Get available width (account for padding in mockup-content)
+      const availableWidth = container.clientWidth - 32; // 1rem padding on each side
+
+      if (availableWidth < targetScaledWidth) {
+        // Scale down to fit
+        const fitScale = availableWidth / contentWidth;
+        setEffectiveScale(fitScale);
+      } else {
+        setEffectiveScale(scale);
+      }
+    };
+
+    // Initial calculation
+    updateScale();
+
+    // Update on resize
+    const resizeObserver = new ResizeObserver(updateScale);
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, [scale, targetScaledWidth, contentWidth]);
+
+  const scaledWidth = contentWidth * effectiveScale;
+  const scaledHeight = contentHeight * effectiveScale;
 
   return (
-    <div className={className} aria-hidden="true">
+    <div ref={containerRef} className={className} aria-hidden="true">
       <MockupDeviceFrame>
         <div
           className="mockup-scaled-container"
@@ -48,7 +85,7 @@ export function MockupRecurringPreview({
             className="mockup-scaled-content"
             style={{
               width: contentWidth,
-              transform: `scale(${scale})`,
+              transform: `scale(${effectiveScale})`,
             }}
           >
             {/* Simulated app content */}

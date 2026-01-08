@@ -104,10 +104,16 @@ export function getStatusStyles(status: ItemStatus, isEnabled = true): StatusSty
 }
 
 /**
- * Calculate the display status for an item based on its properties.
- * Used to determine if item is in catch-up mode vs stable rate.
+ * Calculate the display status for rollup aggregates based on budget vs target.
  *
- * @param item - Object with item properties
+ * NOTE: For individual RecurringItem objects, use `calculateItemDisplayStatus`
+ * from `hooks/useItemDisplayStatus.ts` instead. That function handles the full
+ * item logic including funded status and effective target for infrequent expenses.
+ *
+ * This simplified version is for rollup/aggregate objects that only have
+ * partial properties (frozen_monthly_target, planned_budget, etc.).
+ *
+ * @param item - Object with aggregate properties
  * @returns The calculated display status
  */
 export function calculateDisplayStatus(item: {

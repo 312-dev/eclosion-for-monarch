@@ -4,15 +4,12 @@
  * Accessibility features:
  * - aria-haspopup and aria-expanded on trigger button
  * - role="menu" on dropdown with proper aria-labelledby
- * - role="menuitem" on all action items
  * - Keyboard navigation (Escape to close, Enter/Space to activate)
  * - Focus management
  */
 
-import { useCallback, useRef, useEffect, useId } from 'react';
+import { useState, useCallback, useRef, useEffect, useId } from 'react';
 import type { RecurringItem } from '../../types';
-import { useDropdown } from '../../hooks';
-import { Tooltip } from '../ui/Tooltip';
 import {
   SpinnerIcon,
   MoreVerticalIcon,
@@ -21,7 +18,9 @@ import {
   LinkIcon,
   RotateIcon,
   ArrowUpIcon,
+  FolderIcon,
 } from '../icons';
+import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 
 export interface ActionsDropdownProps {
   readonly item: RecurringItem;
@@ -30,10 +29,12 @@ export interface ActionsDropdownProps {
   readonly onRecreate: () => void;
   readonly onAddToRollup: (() => void) | undefined;
   readonly onRefresh: () => void;
+  readonly onChangeGroup?: (groupId: string, groupName: string) => Promise<void>;
   readonly isToggling: boolean;
   readonly isRecreating: boolean;
   readonly isAddingToRollup: boolean;
   readonly isRefreshing: boolean;
+  readonly showCategoryGroup?: boolean;
 }
 
 export function ActionsDropdown({
@@ -43,34 +44,50 @@ export function ActionsDropdown({
   onRecreate,
   onAddToRollup,
   onRefresh,
+  onChangeGroup,
   isToggling,
   isRecreating,
   isAddingToRollup,
   isRefreshing,
+  showCategoryGroup = true,
 }: ActionsDropdownProps) {
   const menuId = useId();
   const triggerId = useId();
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const focusIndexRef = useRef(-1);
-
-  const dropdown = useDropdown<HTMLDivElement, HTMLButtonElement>({
-    alignment: 'right',
-    offset: { y: 4 },
-  });
 
   const isLoading = isToggling || isRecreating || isAddingToRollup || isRefreshing;
 
   const handleToggle = () => {
     if (!isLoading) {
-      dropdown.toggle();
+      setIsOpen((prev) => !prev);
     }
   };
 
+  const close = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
   const handleAction = (action: () => void) => {
-    dropdown.close();
-    dropdown.triggerRef.current?.focus();
+    close();
     action();
   };
+
+  // Handle click outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        close();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, close]);
 
   // Handle keyboard navigation within menu
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -80,8 +97,7 @@ export function ActionsDropdown({
     switch (e.key) {
       case 'Escape':
         e.preventDefault();
-        dropdown.close();
-        dropdown.triggerRef.current?.focus();
+        close();
         break;
       case 'ArrowDown':
         e.preventDefault();
@@ -104,16 +120,15 @@ export function ActionsDropdown({
         items.at(-1)?.focus();
         break;
       case 'Tab':
-        dropdown.close();
+        close();
         break;
     }
-  }, [dropdown]);
+  }, [close]);
 
   // Focus first menu item when dropdown opens
   useEffect(() => {
-    if (dropdown.isOpen) {
+    if (isOpen) {
       focusIndexRef.current = 0;
-      // Small delay to ensure DOM is ready
       setTimeout(() => {
         const firstItem = menuItemsRef.current.find((item): item is HTMLButtonElement => item !== null);
         firstItem?.focus();
@@ -122,55 +137,57 @@ export function ActionsDropdown({
       focusIndexRef.current = -1;
       menuItemsRef.current = [];
     }
-  }, [dropdown.isOpen]);
-
+  }, [isOpen]);
 
   return (
-    <div className="relative">
-      <Tooltip content="Actions">
-        {/* eslint-disable react-hooks/refs -- dropdown hook returns state/callbacks, not direct ref access */}
-        <button
-          id={triggerId}
-          ref={dropdown.triggerRef}
-          onClick={handleToggle}
-          disabled={isLoading}
-          aria-label={`Actions for ${item.name}`}
-          aria-haspopup="menu"
-          aria-expanded={dropdown.isOpen}
-          aria-controls={dropdown.isOpen ? menuId : undefined}
-          className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-black/10 disabled:opacity-50"
-        >
-          {isLoading ? (
-            <SpinnerIcon size={16} color="var(--monarch-orange)" aria-hidden="true" />
-          ) : (
-            <MoreVerticalIcon size={16} color="var(--monarch-text-muted)" aria-hidden="true" />
-          )}
-        </button>
-        {/* eslint-enable react-hooks/refs */}
-      </Tooltip>
+    <div className="relative" ref={containerRef}>
+      <button
+        id={triggerId}
+        onClick={handleToggle}
+        disabled={isLoading}
+        aria-label={`Actions for ${item.name}`}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? menuId : undefined}
+        className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-black/10 disabled:opacity-50"
+      >
+        {isLoading ? (
+          <SpinnerIcon size={16} color="var(--monarch-orange)" aria-hidden="true" />
+        ) : (
+          <MoreVerticalIcon size={16} color="var(--monarch-text-muted)" aria-hidden="true" />
+        )}
+      </button>
 
-      {/* eslint-disable react-hooks/refs -- dropdown hook returns state/callbacks, not direct ref access */}
-      {dropdown.isOpen && (
+      {isOpen && (
         <div
           id={menuId}
-          ref={dropdown.dropdownRef}
           role="menu"
           aria-labelledby={triggerId}
           aria-label={`Actions for ${item.name}`}
           onKeyDown={handleMenuKeyDown}
-          className="fixed z-dropdown py-1 rounded-lg shadow-lg text-sm min-w-[180px] dropdown-menu"
-          style={{
-            backgroundColor: 'var(--monarch-bg-card)',
-            border: '1px solid var(--monarch-border)',
-            top: dropdown.position.top,
-            right: dropdown.position.right,
-          }}
+          className="absolute right-0 top-full mt-1 z-popover py-1 rounded-lg shadow-lg text-sm min-w-45 dropdown-menu bg-monarch-bg-card border border-monarch-border"
         >
+          {/* Change category group - first item when available */}
+          {!showCategoryGroup && item.is_enabled && !item.category_missing && onChangeGroup && item.category_group_name && (
+            <>
+              <div className="px-3 py-2 flex items-center gap-2 text-monarch-text-dark">
+                <FolderIcon size={14} />
+                <CategoryGroupDropdown
+                  currentGroupName={item.category_group_name}
+                  onChangeGroup={(groupId, groupName) => {
+                    close();
+                    onChangeGroup(groupId, groupName);
+                  }}
+                />
+              </div>
+              <div className="border-t my-1 border-monarch-border" />
+            </>
+          )}
+
           {/* Enable/Disable */}
           <button
             onClick={() => handleAction(onToggle)}
-            className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
-            style={{ color: 'var(--monarch-text-dark)' }}
+            className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
           >
             {item.is_enabled ? (
               <>
@@ -189,8 +206,7 @@ export function ActionsDropdown({
           {!item.is_enabled && (
             <button
               onClick={() => handleAction(onLinkCategory)}
-              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
-              style={{ color: 'var(--monarch-orange)' }}
+              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-orange"
             >
               <LinkIcon size={14} />
               Link to existing category
@@ -201,8 +217,7 @@ export function ActionsDropdown({
           {item.is_enabled && item.category_missing && (
             <button
               onClick={() => handleAction(onRecreate)}
-              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
-              style={{ color: 'var(--monarch-warning)' }}
+              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-warning"
             >
               <RotateIcon size={14} />
               Recreate category
@@ -213,8 +228,7 @@ export function ActionsDropdown({
           {item.is_enabled && !item.category_missing && (
             <button
               onClick={() => handleAction(onRefresh)}
-              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
-              style={{ color: 'var(--monarch-text-dark)' }}
+              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
             >
               <RotateIcon size={14} />
               Recalculate target
@@ -224,11 +238,10 @@ export function ActionsDropdown({
           {/* Add to rollup - only when item is enabled and handler is provided */}
           {item.is_enabled && onAddToRollup && (
             <>
-              <div className="border-t my-1" style={{ borderColor: 'var(--monarch-border)' }} />
+              <div className="border-t my-1 border-monarch-border" />
               <button
                 onClick={() => handleAction(onAddToRollup)}
-                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors"
-                style={{ color: 'var(--monarch-orange)' }}
+                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-orange"
               >
                 <ArrowUpIcon size={14} />
                 Add to rollup

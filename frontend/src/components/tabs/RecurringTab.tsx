@@ -206,6 +206,7 @@ export function RecurringTab() {
           <div
             className="rounded-xl shadow-sm overflow-hidden mb-4"
             style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+            data-tour="burndown-decline"
           >
             <div className="px-5 py-4">
               <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -233,6 +234,7 @@ export function RecurringTab() {
           <RecurringList
             items={data.items.filter(i => !i.is_in_rollup)}
             onRefresh={handleRefresh}
+            showCategoryGroup={data.config.show_category_group ?? true}
           />
         </div>
       </div>

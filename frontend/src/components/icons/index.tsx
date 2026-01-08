@@ -11,6 +11,7 @@
  */
 
 import {
+  Anchor,
   Settings,
   RefreshCw,
   Loader2,
@@ -93,6 +94,7 @@ import {
   CloudSun,
   Rainbow,
   Smile,
+  Target,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -108,6 +110,7 @@ export interface IconProps extends SVGProps<SVGSVGElement> {
 // Core Icons (re-exports with our naming convention)
 // =============================================================================
 
+export const AnchorIcon = Anchor;
 export const SettingsIcon = Settings;
 export const RefreshIcon = RefreshCw;
 export const SyncIcon = RefreshCw;
@@ -191,6 +194,7 @@ export const SearchAlertIcon = SearchAlert;
 export const CloudSunIcon = CloudSun;
 export const RainbowIcon = Rainbow;
 export const SmileIcon = Smile;
+export const TargetIcon = Target;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -555,6 +559,7 @@ export function LinuxIcon({
  */
 export const Icons = {
   // Core
+  Anchor: AnchorIcon,
   Settings: SettingsIcon,
   Refresh: RefreshIcon,
   Sync: SyncIcon,
@@ -676,4 +681,7 @@ export const Icons = {
   CloudSun: CloudSunIcon,
   Rainbow: RainbowIcon,
   Smile: SmileIcon,
+
+  // Goals
+  Target: TargetIcon,
 };

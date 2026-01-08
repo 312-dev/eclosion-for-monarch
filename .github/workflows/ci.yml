@@ -115,8 +115,7 @@ jobs:
         run: ruff format --check .
 
       - name: Type check with mypy
-        run: mypy . --ignore-missing-imports || true
-        # Note: Start permissive, tighten over time
+        run: mypy .
 
       - name: Test
         run: pytest
@@ -139,7 +138,6 @@ jobs:
           config-file: '.github/mlc_config.json'
           folder-path: '.'
           file-path: './README.md, ./CONTRIBUTING.md, ./SECURITY.md'
-        continue-on-error: true  # Start as warning, tighten later
 
   # Desktop checks
   desktop:
@@ -172,7 +170,6 @@ jobs:
 
       - name: Test
         run: npm test
-        continue-on-error: true  # Tests may not exist yet
 
   # Desktop build validation (runs on macOS to verify full build works)
   desktop-build:

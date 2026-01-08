@@ -3,5 +3,11 @@
  */
 
 export { BurndownChart } from './BurndownChart';
-export { calculateBurndownData } from './burndownUtils';
-export type { BurndownPoint } from './burndownUtils';
+export {
+  calculateBurndownData,
+  calculateStabilizationPoint,
+} from './burndownUtils';
+export type {
+  BurndownPoint,
+  StabilizationInfo,
+} from './burndownUtils';

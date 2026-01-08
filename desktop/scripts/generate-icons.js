@@ -132,18 +132,57 @@ async function generateLinuxIcon() {
 }
 
 /**
+ * Generate monochrome template icon for macOS.
+ * Template icons should be black with alpha channel - macOS automatically
+ * inverts them for light/dark mode.
+ */
+async function generateMacTemplateIcon(outputPath, size) {
+  // Get the original image with alpha
+  const original = sharp(sourceSvg).resize(size, size).ensureAlpha();
+
+  // Extract alpha channel from original
+  const alphaBuffer = await original.clone().extractChannel('alpha').toBuffer();
+
+  // Create solid black image same size
+  const black = await sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 3,
+      background: { r: 0, g: 0, b: 0 },
+    },
+  })
+    .png()
+    .toBuffer();
+
+  // Combine black RGB with original alpha
+  await sharp(black)
+    .joinChannel(alphaBuffer)
+    .png()
+    .toFile(outputPath);
+
+  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size}, monochrome template)`);
+}
+
+/**
  * Generate tray icons
  */
 async function generateTrayIcons() {
   console.log('\n🔔 Generating tray icons...');
 
-  // macOS tray icons (template images - should be black/white)
-  // For simplicity, we'll use the regular icon; in production you might want
-  // a separate monochrome version for macOS template images
-  await generatePng(path.join(trayDir, 'iconTemplate.png'), 16);
-  await generatePng(path.join(trayDir, 'iconTemplate@2x.png'), 32);
+  // macOS tray icons (template images - must be monochrome black with alpha)
+  // The "Template" suffix tells macOS to automatically handle light/dark mode
+  try {
+    await generateMacTemplateIcon(path.join(trayDir, 'iconTemplate.png'), 16);
+    await generateMacTemplateIcon(path.join(trayDir, 'iconTemplate@2x.png'), 32);
+  } catch (err) {
+    console.log(`  ⚠ Failed to generate monochrome templates, using regular icons: ${err.message}`);
+    // Fallback to regular icons if monochrome generation fails
+    await generatePng(path.join(trayDir, 'iconTemplate.png'), 16);
+    await generatePng(path.join(trayDir, 'iconTemplate@2x.png'), 32);
+  }
 
-  // Windows/Linux tray icon
+  // Windows/Linux tray icon (colored)
   await generatePng(path.join(trayDir, 'tray.png'), 32);
 
   // Windows tray ICO

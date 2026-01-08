@@ -73,3 +73,9 @@ export { useIsBetaSite } from './useIsBetaSite';
 export { useMacOSElectron } from './useMacOSElectron';
 
 export { useElectronNavigation } from './useElectronNavigation';
+
+export {
+  useRecurringTour,
+  TOUR_STATE_KEY,
+  type UseRecurringTourReturn,
+} from './useRecurringTour';

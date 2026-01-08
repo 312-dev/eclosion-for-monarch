@@ -187,6 +187,41 @@ export const FEATURES: FeatureDefinition[] = [
     ],
     appPath: '/leaderboard',
   },
+  {
+    id: 'inbox-sync',
+    name: 'Inbox Sync',
+    tagline: 'Automatic transaction splits from your inbox',
+    description:
+      'Connect your email and automatically extract itemized receipts from Walmart, Costco, Uber, DoorDash, and more. Support for new merchants grows over time.',
+    icon: 'Inbox',
+    status: 'coming-soon',
+    benefits: [
+      {
+        icon: 'Inbox',
+        title: 'Email Integration',
+        description: 'Securely connects to Gmail or Outlook with read-only access.',
+      },
+      {
+        icon: 'Package',
+        title: 'Smart Itemization',
+        description:
+          'Automatically splits transactions by item with accurate categories.',
+      },
+      {
+        icon: 'Shield',
+        title: 'Completely Private',
+        description: 'Your emails are processed locally and never sent anywhere.',
+      },
+      {
+        icon: 'Sync',
+        title: 'Growing Coverage',
+        description:
+          'New merchants added regularly. Walmart, Costco, Uber, DoorDash, and more.',
+      },
+    ],
+    appPath: '/inbox-sync',
+    originIssue: 84,
+  },
 ];
 
 // =============================================================================

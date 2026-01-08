@@ -9,10 +9,10 @@ import type { RecurringItem } from '../../types';
 import { Tooltip } from '../ui/Tooltip';
 import { formatDateRelative } from '../../utils';
 import { RecurringItemHeader } from './RecurringItemHeader';
-import { RecurringItemCost } from './RecurringItemCost';
 import { RecurringItemBudget } from './RecurringItemBudget';
 import { RecurringItemStatus } from './RecurringItemStatus';
 import { ActionsDropdown } from './ActionsDropdown';
+import { COLUMN_WIDTHS } from './RecurringListHeader';
 import { UI } from '../../constants';
 import { SpinnerIcon, ArrowUpIcon } from '../icons';
 import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
@@ -29,6 +29,9 @@ interface RecurringRowProps {
   readonly onNameChange: (id: string, name: string) => Promise<void>;
   readonly onLinkCategory: (item: RecurringItem) => void;
   readonly highlightId?: string | null;
+  /** Optional data-tour attribute for guided tour targeting */
+  readonly dataTourId?: string;
+  readonly showCategoryGroup?: boolean;
 }
 
 export const RecurringRow = memo(function RecurringRow({
@@ -43,6 +46,8 @@ export const RecurringRow = memo(function RecurringRow({
   onNameChange,
   onLinkCategory,
   highlightId,
+  dataTourId,
+  showCategoryGroup = true,
 }: RecurringRowProps) {
   // Async action hooks for loading states
   const toggleAction = useAsyncAction();
@@ -110,8 +115,9 @@ export const RecurringRow = memo(function RecurringRow({
     <tr
       ref={rowRef}
       className={`group transition-all duration-300 border-b border-monarch-border ${isHighlighted ? 'animate-highlight bg-monarch-orange-light' : 'bg-monarch-bg-card hover:bg-monarch-bg-hover'}`}
+      data-tour={dataTourId}
     >
-      <td className={`${rowPadding} pl-5 pr-2 max-w-40`}>
+      <td className={`${rowPadding} pl-5 pr-2 ${COLUMN_WIDTHS.name}`}>
         <RecurringItemHeader
           item={item}
           onToggle={handleToggle}
@@ -120,9 +126,12 @@ export const RecurringRow = memo(function RecurringRow({
           onChangeGroup={handleChangeGroup}
           isToggling={toggleAction.loading}
           contentOpacity={contentOpacity}
+          displayStatus={displayStatus}
+          progressPercent={progressPercent}
+          showCategoryGroup={showCategoryGroup}
         />
       </td>
-      <td className={`${rowPadding} px-4 w-28 ${contentOpacity}`}>
+      <td className={`${rowPadding} px-4 ${COLUMN_WIDTHS.date} ${contentOpacity}`}>
         <div className="text-monarch-text-dark">{date}</div>
         {relative && (
           <div className="text-sm text-monarch-text-light">
@@ -130,30 +139,24 @@ export const RecurringRow = memo(function RecurringRow({
           </div>
         )}
       </td>
-      <td className={`${rowPadding} px-4 text-right w-40 ${contentOpacity}`}>
-        <RecurringItemCost
-          item={item}
-          displayStatus={displayStatus}
-          progressPercent={progressPercent}
-          date={date}
-        />
-      </td>
-      <td className={`${rowPadding} px-4 text-right w-28 ${contentOpacity}`}>
+      <td className={`${rowPadding} px-4 text-right ${COLUMN_WIDTHS.budget} ${contentOpacity}`}>
         <RecurringItemBudget
           item={item}
           onAllocate={handleAllocate}
           isAllocating={allocateAction.loading}
         />
       </td>
-      <td className={`${rowPadding} px-5 text-center w-24`}>
-        <RecurringItemStatus
-          item={item}
-          displayStatus={displayStatus}
-          onAllocate={handleAllocateNeeded}
-          isAllocating={allocateAction.loading}
-        />
+      <td className={`${rowPadding} px-5 ${COLUMN_WIDTHS.status}`}>
+        <div className="flex justify-center">
+          <RecurringItemStatus
+            item={item}
+            displayStatus={displayStatus}
+            onAllocate={handleAllocateNeeded}
+            isAllocating={allocateAction.loading}
+          />
+        </div>
       </td>
-      <td className={`${rowPadding} px-3 w-12`}>
+      <td className={`${rowPadding} px-3 ${COLUMN_WIDTHS.actions}`}>
         {item.is_enabled ? (
           <ActionsDropdown
             item={item}
@@ -162,10 +165,12 @@ export const RecurringRow = memo(function RecurringRow({
             onRecreate={handleRecreate}
             onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
             onRefresh={handleRefresh}
+            onChangeGroup={handleChangeGroup}
             isToggling={toggleAction.loading}
             isRecreating={recreateAction.loading}
             isAddingToRollup={addToRollupAction.loading}
             isRefreshing={refreshAction.loading}
+            showCategoryGroup={showCategoryGroup}
           />
         ) : (
           onAddToRollup && (

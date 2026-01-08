@@ -11,13 +11,19 @@ import * as demoApi from '../demoClient';
 import { queryKeys, getQueryKey } from './keys';
 
 /**
- * Update settings (auto-sync, threshold)
+ * Update settings (auto-sync, threshold, auto-update targets, auto-categorize, show category group)
  */
 export function useUpdateSettingsMutation() {
   const isDemo = useDemo();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (settings: { auto_sync_new?: boolean; auto_track_threshold?: number | null }) =>
+    mutationFn: (settings: {
+      auto_sync_new?: boolean;
+      auto_track_threshold?: number | null;
+      auto_update_targets?: boolean;
+      auto_categorize_enabled?: boolean;
+      show_category_group?: boolean;
+    }) =>
       isDemo
         ? demoApi.updateSettings(settings)
         : api.updateSettings(settings),

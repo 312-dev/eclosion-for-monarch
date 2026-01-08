@@ -12,6 +12,7 @@ import {
   linkToCategory,
   linkRollupToCategory,
   createRollupCategory,
+  updateSettings,
 } from '../api/client';
 import { useCategoryGroups, useItemSelection, useRollupConfig } from './wizard';
 
@@ -23,6 +24,7 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
   const [currentStep, setCurrentStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [autoCategorizeEnabled, setAutoCategorizeEnabled] = useState(false);
 
   const categoryGroups = useCategoryGroups();
   const itemSelection = useItemSelection();
@@ -102,6 +104,12 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
         );
 
       await Promise.all(enablePromises);
+
+      // Save auto-categorize setting
+      if (autoCategorizeEnabled) {
+        await updateSettings({ auto_categorize_enabled: true });
+      }
+
       onComplete();
     } catch (err) {
       setSaveError(getErrorMessage(err));
@@ -186,6 +194,10 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
     rollupSyncName: rollupConfig.rollupSyncName,
     setRollupSyncName: rollupConfig.setRollupSyncName,
     loadingRollupCategories: rollupConfig.loadingRollupCategories,
+
+    // Auto-categorize
+    autoCategorizeEnabled,
+    setAutoCategorizeEnabled,
 
     // Saving
     saving,

@@ -32,6 +32,7 @@ import {
   AutomationSection,
   UpdatesSection,
   DesktopSection,
+  LogViewerSection,
   AccountSection,
   SecuritySection,
   DemoModeSection,
@@ -169,6 +170,8 @@ export function SettingsTab() {
       />
 
       {isDesktop && <DesktopSection />}
+
+      {isDesktop && <LogViewerSection />}
 
       <AccountSection />
 

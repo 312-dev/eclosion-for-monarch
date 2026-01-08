@@ -12,7 +12,7 @@ export function RecurringFrequencyGroup({ frequency }: RecurringFrequencyGroupPr
   return (
     <tr>
       <td
-        colSpan={6}
+        colSpan={5}
         className="py-2 px-5 text-xs font-medium uppercase tracking-wide"
         style={{ backgroundColor: 'var(--monarch-bg-hover)', color: 'var(--monarch-text-muted)' }}
       >

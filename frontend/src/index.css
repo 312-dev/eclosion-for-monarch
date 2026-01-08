@@ -75,6 +75,9 @@
 
   /* Font family - Plus Jakarta Sans as default */
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Custom breakpoints */
+  --breakpoint-xs: 480px;
 }
 
 /* Plus Jakarta Sans Font for Body */
@@ -629,6 +632,16 @@ input[type="radio"] {
 .sidebar-nav-item-active:hover {
   background-color: var(--monarch-bg-card);
   color: var(--monarch-orange);
+}
+
+.sidebar-nav-item-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sidebar-nav-item-disabled:hover {
+  background-color: transparent;
+  color: var(--monarch-text-muted);
 }
 
 .sidebar-nav-icon {
@@ -1792,6 +1805,34 @@ input[type="radio"] {
 .fade-in-slow { animation: fadeIn var(--animation-slow) ease-out forwards; }
 .fade-out { animation: fadeOut var(--animation-fast) ease-out forwards; }
 
+/* Flip text - smooth transition for alternating text content */
+.flip-text {
+  transition: opacity var(--animation-normal) ease, color var(--animation-normal) ease;
+}
+
+/* Flip up animation - for alternating between two text values */
+.flip-up-container {
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--animation-normal) var(--ease-out-smooth);
+}
+
+.flip-up-container.show-to-go {
+  transform: translateY(0);
+}
+
+.flip-up-container.show-saved {
+  transform: translateY(-50%);
+}
+
+.flip-up-item {
+  height: 1rem;
+  line-height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 /* Slide utilities */
 .slide-up { animation: slideUp var(--animation-fast) ease-out forwards; }
 .slide-down { animation: slideDown var(--animation-fast) ease-out forwards; }
@@ -1891,10 +1932,11 @@ input[type="radio"] {
 }
 
 /* Desktop: Show table, hide cards */
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   .recurring-table {
     display: table;
     width: 100%;
+    table-layout: fixed;
   }
 
   .recurring-cards {
@@ -1977,12 +2019,21 @@ input[type="radio"] {
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
+  max-width: 100%;
 }
 
 /* Scaled content - renders at full size, then scales down */
 .mockup-scaled-content {
   transform-origin: top left;
   pointer-events: none;
+}
+
+/* Make mockup content scroll horizontally on very small screens */
+@media (max-width: 480px) {
+  .mockup-content {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
 }
 
 /* Marketing page section animations */
