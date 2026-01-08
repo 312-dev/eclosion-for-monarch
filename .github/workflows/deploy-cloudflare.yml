@@ -4,13 +4,11 @@
 # Supports both production (releases) and beta (pre-releases) deployments.
 #
 # Deployment triggers:
-# - Pre-release published: Deploys to beta.eclosion.app (requires approval)
-# - Release published: Deploys to eclosion.app (requires approval)
+# - workflow_call: Called from create-beta.yml or release.yml (no additional approval)
+# - workflow_dispatch: Manual trigger for testing (requires environment approval)
 #
-# Doc versions are only created for actual releases (not develop commits).
-#
-# Concurrency: Only one deployment per environment runs at a time.
-# Newer deployments automatically cancel older pending ones.
+# Note: This workflow is now called directly from create-beta.yml after all
+# builds pass, rather than being triggered by release events.
 
 name: "Deploy: Cloudflare"
 
@@ -31,10 +29,6 @@ on:
       CLOUDFLARE_ACCOUNT_ID:
         required: true
 
-  # Trigger on pre-release publication for beta deployments
-  release:
-    types: [prereleased]
-
   # Manual trigger for testing
   workflow_dispatch:
     inputs:
@@ -50,15 +44,15 @@ on:
 # Cancel any in-progress deployments to the same environment
 # This prevents queued deployments from piling up
 concurrency:
-  group: cloudflare-deploy-${{ github.event_name == 'release' && 'beta' || github.event.inputs.environment || 'beta' }}
+  group: cloudflare-deploy-${{ github.event.inputs.environment || 'beta' }}
   cancel-in-progress: true
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Use environment protection for releases (requires approval)
-    environment: ${{ (github.event_name == 'release' && 'beta') || (github.event_name == 'workflow_call' && inputs.environment) || (github.event_name == 'workflow_dispatch' && inputs.environment) || null }}
+    # Only require environment approval for manual dispatch (workflow_call is already gated)
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || null }}
     permissions:
       contents: read
       deployments: write
@@ -73,11 +67,6 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_call" ]]; then
             ENV="${{ inputs.environment }}"
             VERSION="${{ inputs.version }}"
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            ENV="beta"
-            # Strip 'v' prefix from tag for consistent versioning
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
           else
             # Manual dispatch - default to beta with generated version
             ENV="${{ inputs.environment || 'beta' }}"
