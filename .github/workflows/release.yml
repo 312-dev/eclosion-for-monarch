@@ -1,3 +1,18 @@
+# Production Release
+#
+# Triggered on push to main branch. Uses release-please to manage releases.
+#
+# Two modes:
+#   1. PR Mode: When release-please creates/updates a release PR
+#      - Generates AI summary for changelog
+#      - Generates documentation
+#      - Triggers CI checks
+#      - Auto-merges if no doc changes
+#
+#   2. Release Mode: When release-please creates a release
+#      - Runs the unified release pipeline (security → build → publish)
+#      - Strict gating: nothing published unless ALL builds succeed
+
 name: Release
 
 on:
@@ -9,8 +24,13 @@ permissions:
   pull-requests: write
   packages: write
   actions: write
+  security-events: write
+  deployments: write
 
 jobs:
+  # ===========================================================================
+  # RELEASE-PLEASE
+  # ===========================================================================
   release-please:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -36,6 +56,9 @@ jobs:
           echo "Release created: ${{ steps.release.outputs.tag_name }}"
           echo "Version: ${{ steps.release.outputs.version }}"
 
+  # ===========================================================================
+  # PR MODE: Manage Release PRs
+  # ===========================================================================
   generate-summary:
     needs: release-please
     if: needs.release-please.outputs.pr_created == 'true'
@@ -51,8 +74,6 @@ jobs:
       - name: Extract changelog additions
         id: extract
         run: |
-          # Extract content between first ## [version] header and second ## [version] or end
-          # This captures all the new changelog entries
           CHANGELOG_CONTENT=$(awk '
             /^## \[.*\]/ {
               if (found) exit
@@ -62,7 +83,6 @@ jobs:
             found { print }
           ' CHANGELOG.md)
 
-          # Use delimiter for multiline output
           echo "changelog_content<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -93,14 +113,12 @@ jobs:
 
           if [ -z "$SUMMARY" ]; then
             echo "Failed to generate summary"
-            # Only log error info, not full response (may contain sensitive data)
             ERROR=$(echo "$RESPONSE" | jq -r '.error.message // .error // "Unknown error"')
             echo "API Error: $ERROR"
             echo "summary=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Escape for shell and output
           echo "summary<<EOF" >> $GITHUB_OUTPUT
           echo "$SUMMARY" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -110,7 +128,6 @@ jobs:
         env:
           SUMMARY: ${{ steps.summary.outputs.summary }}
         run: |
-          # Insert blockquote summary after first ## [version] line
           awk -v summary="> $SUMMARY" '
             /^## \[.*\] - [0-9]/ && !done {
               print
@@ -122,10 +139,7 @@ jobs:
             { print }
           ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
 
-          echo "Inserted summary into CHANGELOG.md"
-
       - name: Commit and push summary
-        id: commit
         if: steps.summary.outputs.summary != ''
         run: |
           git config user.name "github-actions[bot]"
@@ -134,10 +148,7 @@ jobs:
           git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "chore: add AI-generated changelog summary"
           git push
-          echo "pushed=true" >> $GITHUB_OUTPUT
 
-  # Generate user documentation from source content
-  # Must run after generate-summary to avoid push conflicts (both commit to same branch)
   generate-docs:
     needs: [release-please, generate-summary]
     if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success'
@@ -147,9 +158,6 @@ jobs:
       branch: ${{ needs.release-please.outputs.pr_head_branch }}
     secrets: inherit
 
-  # Trigger CI/Security workflows after all commits are done
-  # Runs once with final HEAD SHA, regardless of which jobs pushed
-  # Uses workflow_dispatch since GITHUB_TOKEN pushes don't trigger on:push/pull_request
   trigger-checks:
     needs: [release-please, generate-summary, generate-docs]
     if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success'
@@ -162,7 +170,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           BRANCH="${{ needs.release-please.outputs.pr_head_branch }}"
-          # Get the final HEAD SHA after all commits from generate-summary and generate-docs
           HEAD_SHA=$(gh api repos/${{ github.repository }}/git/ref/heads/$BRANCH --jq '.object.sha')
           echo "Triggering workflows for $BRANCH at SHA $HEAD_SHA"
 
@@ -170,12 +177,8 @@ jobs:
           gh workflow run security.yml --ref "$BRANCH" -f head_sha="$HEAD_SHA"
           gh workflow run require-develop.yml --ref main -f pr_branch="$BRANCH"
 
-          echo "✅ Triggered CI, Security, and Require Develop workflows"
-
   auto-merge:
     needs: [release-please, generate-docs, trigger-checks]
-    # Only auto-merge if no docs were generated (docs need manual review)
-    # When generate-docs runs successfully and commits changes, skip auto-merge
     if: always() && needs.release-please.outputs.pr_created == 'true' && needs.release-please.result == 'success' && needs.generate-docs.result == 'skipped'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -186,7 +189,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
 
-  # Notify when docs are generated and need review
   docs-review-reminder:
     needs: [release-please, generate-docs]
     if: needs.generate-docs.result == 'success'
@@ -206,79 +208,21 @@ jobs:
 
           Once reviewed, manually merge this PR."
 
-  # Create Docusaurus version snapshot when a release is created
-  create-docs-version:
+  # ===========================================================================
+  # RELEASE MODE: Run Release Pipeline
+  # ===========================================================================
+  release-pipeline:
+    name: Release Pipeline
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: docusaurus/package-lock.json
-
-      - name: Install dependencies
-        working-directory: docusaurus
-        run: npm ci
-
-      - name: Create docs version
-        working-directory: docusaurus
-        run: npm run version -- "${{ needs.release-please.outputs.version }}"
-
-      - name: Commit version changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docusaurus/versions.json docusaurus/versioned_docs docusaurus/versioned_sidebars
-          git diff --staged --quiet && echo "No changes to commit" && exit 0
-          git commit -m "docs: create version ${{ needs.release-please.outputs.version }}"
-          git push
-
-  # Build and publish Docker image when a release is created
-  docker-publish:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
-    uses: ./.github/workflows/docker-publish.yml
+    uses: ./.github/workflows/release-pipeline.yml
     with:
-      tag: ${{ needs.release-please.outputs.tag_name }}
-    permissions:
-      contents: read
-      packages: write
-
-  # Deploy to Cloudflare Pages when a release is created
-  deploy-cloudflare:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
-    uses: ./.github/workflows/deploy-cloudflare.yml
-    with:
-      environment: production
+      release_type: production
       version: ${{ needs.release-please.outputs.version }}
+      tag: ${{ needs.release-please.outputs.tag_name }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    permissions:
-      contents: read
-      deployments: write
-
-  # Build and publish Desktop app when a release is created
-  desktop-publish:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
-    uses: ./.github/workflows/build-desktop.yml
-    with:
-      version: ${{ needs.release-please.outputs.version }}
-      upload_to_release: true
-    secrets:
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
       APPLE_ID: ${{ secrets.APPLE_ID }}

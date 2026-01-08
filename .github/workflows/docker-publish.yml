@@ -1,11 +1,20 @@
-name: "Deploy: Docker"
+# Docker Build & Test
+#
+# This workflow handles Docker image building for CI/testing purposes.
+# Production and beta releases use the unified release-pipeline.yml,
+# which includes Docker building and publishing as stages.
+#
+# Triggers:
+# - PR changes to Docker-related files: Build only (no push)
+# - Manual dispatch: Build only (no push)
+#
+# For releases, use:
+# - create-beta.yml (beta releases)
+# - release.yml (production releases)
+
+name: "Build: Docker"
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - "v*"
   pull_request:
     paths:
       - "Dockerfile"
@@ -18,61 +27,29 @@ on:
       - "state/**"
       - "requirements*.txt"
       - ".github/workflows/docker-publish.yml"
-  workflow_call:
-    inputs:
-      tag:
-        description: "Git tag to build and publish (e.g., v1.1.0)"
-        required: true
-        type: string
+
   workflow_dispatch:
+    inputs:
+      push:
+        description: 'Push to registry (use with caution)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Detect if relevant files changed (for main branch pushes)
-  changes:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      should_build: ${{ steps.check.outputs.should_build }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check if build needed
-        id: check
-        run: |
-          # Always build for workflow_call, tags, and PRs (PRs already filtered by paths)
-          if [[ -n "${{ inputs.tag }}" ]] || [[ "${{ github.ref }}" == refs/tags/* ]] || [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # For main branch pushes, check if relevant files changed
-          git fetch origin main --depth=2
-          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-
-          if echo "$CHANGED" | grep -qE '^(Dockerfile|docker-compose\.yml|\.dockerignore|frontend/|.*\.py$|core/|services/|state/|requirements.*\.txt)'; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_build=false" >> $GITHUB_OUTPUT
-            echo "No Docker-relevant files changed, skipping build"
-          fi
-
-  build-and-publish:
-    needs: changes
-    if: needs.changes.outputs.should_build == 'true'
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.tag || github.ref }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -81,90 +58,45 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
-        if: github.event_name != 'pull_request'
+        if: inputs.push == true
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine release channel
-        id: channel
+      - name: Generate metadata
+        id: meta
         run: |
-          # Use input tag if provided (workflow_call), otherwise use github.ref
-          if [[ -n "${{ inputs.tag }}" ]]; then
-            TAG="${{ inputs.tag }}"
-          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
-          else
-            TAG=""
-          fi
-
-          if [[ -n "$TAG" ]]; then
-            if [[ "$TAG" == *-beta* ]] || [[ "$TAG" == *-rc* ]] || [[ "$TAG" == *-alpha* ]]; then
-              echo "channel=beta" >> $GITHUB_OUTPUT
-            else
-              echo "channel=stable" >> $GITHUB_OUTPUT
-            fi
-            echo "is_release=true" >> $GITHUB_OUTPUT
-            echo "version=$TAG" >> $GITHUB_OUTPUT
-          else
-            echo "channel=dev" >> $GITHUB_OUTPUT
-            echo "is_release=false" >> $GITHUB_OUTPUT
-            echo "version=dev" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Generate Docker tags
-        id: tags
-        run: |
-          # GHCR requires lowercase image names
           IMAGE=$(echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
-          VERSION="${{ steps.channel.outputs.version }}"
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
 
-          if [[ "${{ steps.channel.outputs.is_release }}" == "true" ]]; then
-            # Strip 'v' prefix if present
-            VERSION="${VERSION#v}"
-            # Extract major.minor
-            MAJOR_MINOR=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$IMAGE:ci-$SHORT_SHA" >> $GITHUB_OUTPUT
 
-            TAGS="$IMAGE:$VERSION"
-            # Add major.minor tag only for stable releases (not pre-releases)
-            if [[ "$VERSION" != *-* ]] && [[ -n "$MAJOR_MINOR" ]]; then
-              TAGS="$TAGS,$IMAGE:$MAJOR_MINOR"
-            fi
-            echo "tags=$TAGS" >> $GITHUB_OUTPUT
-          else
-            echo "tags=" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build and push Docker image
-        if: steps.channel.outputs.is_release == 'true'
+      - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
+          push: ${{ inputs.push == true }}
+          tags: ${{ steps.meta.outputs.tag }}
           build-args: |
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
             GIT_SHA=${{ github.sha }}
-            VERSION=${{ steps.channel.outputs.version }}
-            RELEASE_CHANNEL=${{ steps.channel.outputs.channel }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Build-only for PRs and main branch pushes (no publish)
-      - name: Build Docker image (CI only)
-        if: steps.channel.outputs.is_release != 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: false
-          build-args: |
-            BUILD_TIME=${{ github.event.head_commit.timestamp }}
-            GIT_SHA=${{ github.sha }}
-            VERSION=dev
+            VERSION=ci-${{ github.sha }}
             RELEASE_CHANNEL=dev
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build Summary
+        run: |
+          echo "### Docker Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** \`${{ steps.meta.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.push }}" == "true" ]]; then
+            echo "- **Pushed:** Yes" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Pushed:** No (build-only)" >> $GITHUB_STEP_SUMMARY
+          fi

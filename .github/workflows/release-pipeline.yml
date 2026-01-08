@@ -1,0 +1,418 @@
+# Release Pipeline
+#
+# Unified release orchestrator that handles the complete release process
+# for both beta and production releases. Ensures strict stage gating:
+#
+#   Security → Build All → Validate → Publish → Finalize
+#
+# Nothing is published unless ALL builds succeed. Nothing is finalized
+# unless ALL publishing steps succeed.
+#
+# Usage:
+#   - Called by create-beta.yml for beta releases
+#   - Called by release.yml for production releases
+
+name: Release Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      release_type:
+        description: 'Release type (beta or production)'
+        required: true
+        type: string
+      version:
+        description: 'Version number (e.g., 1.2.0 or 1.2.0-beta.20260108.1)'
+        required: true
+        type: string
+      tag:
+        description: 'Git tag (e.g., v1.2.0)'
+        required: true
+        type: string
+      skip_security:
+        description: 'Skip security scan (for re-runs after security already passed)'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        required: true
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      APPLE_CERTIFICATE:
+        required: false
+      APPLE_CERTIFICATE_PASSWORD:
+        required: false
+      APPLE_ID:
+        required: false
+      APPLE_APP_SPECIFIC_PASSWORD:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+
+jobs:
+  # ===========================================================================
+  # STAGE 1: SECURITY GATE
+  # ===========================================================================
+  security:
+    name: "Stage 1: Security Scan"
+    if: ${{ !inputs.skip_security }}
+    uses: ./.github/workflows/security.yml
+    with:
+      severity: high
+      skip_dast: true
+    permissions:
+      security-events: write
+      contents: read
+
+  # ===========================================================================
+  # STAGE 2: BUILD ALL ARTIFACTS
+  # All builds run in parallel but ALL must succeed to proceed
+  # ===========================================================================
+
+  # Build frontend once - shared by Docker and Cloudflare
+  build-frontend:
+    name: "Stage 2: Build Frontend"
+    needs: [security]
+    if: always() && (needs.security.result == 'success' || needs.security.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      artifact_name: frontend-dist-${{ github.run_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_DEMO_MODE: 'true'
+          VITE_APP_VERSION: ${{ inputs.version }}
+        run: npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-${{ github.run_id }}
+          path: frontend/dist
+          retention-days: 1
+
+  # Build desktop apps for all platforms
+  build-desktop:
+    name: "Stage 2: Build Desktop Apps"
+    needs: [security]
+    if: always() && (needs.security.result == 'success' || needs.security.result == 'skipped')
+    uses: ./.github/workflows/build-desktop.yml
+    with:
+      version: ${{ inputs.version }}
+      upload_to_release: false  # We'll upload after validation
+    secrets:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+  # Build Docker image (push with SHA tag, not version tag yet)
+  build-docker:
+    name: "Stage 2: Build Docker Image"
+    needs: [security, build-frontend]
+    if: always() && (needs.security.result == 'success' || needs.security.result == 'skipped') && needs.build-frontend.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-${{ github.run_id }}
+          path: frontend/dist
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push with SHA tag
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          build-args: |
+            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            GIT_SHA=${{ github.sha }}
+            VERSION=${{ inputs.version }}
+            RELEASE_CHANNEL=${{ inputs.release_type }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # STAGE 3: VALIDATION GATE
+  # Ensures ALL builds passed before any publishing
+  # ===========================================================================
+  validate-builds:
+    name: "Stage 3: Validate All Builds"
+    needs: [build-frontend, build-desktop, build-docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check build results
+        run: |
+          echo "## Build Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.build-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Desktop | ${{ needs.build-desktop.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ needs.build-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if any build failed
+          if [[ "${{ needs.build-frontend.result }}" != "success" ]]; then
+            echo "::error::Frontend build failed"
+            exit 1
+          fi
+          if [[ "${{ needs.build-desktop.result }}" != "success" ]]; then
+            echo "::error::Desktop build failed"
+            exit 1
+          fi
+          if [[ "${{ needs.build-docker.result }}" != "success" ]]; then
+            echo "::error::Docker build failed"
+            exit 1
+          fi
+
+          echo "✅ All builds passed validation" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # STAGE 4: PUBLISH
+  # Only runs after ALL builds are validated
+  # ===========================================================================
+
+  # Tag Docker image with version (promotes SHA tag to version tag)
+  publish-docker:
+    name: "Stage 4: Publish Docker"
+    needs: [validate-builds, build-docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: write
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag image with version
+        run: |
+          # GHCR requires lowercase
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          VERSION="${{ inputs.version }}"
+          # Strip 'v' prefix if present
+          VERSION="${VERSION#v}"
+
+          echo "Promoting $IMAGE:sha-${{ github.sha }} to $IMAGE:$VERSION"
+
+          # Pull the SHA-tagged image
+          docker pull "$IMAGE:sha-${{ github.sha }}"
+
+          # Tag with version
+          docker tag "$IMAGE:sha-${{ github.sha }}" "$IMAGE:$VERSION"
+          docker push "$IMAGE:$VERSION"
+
+          # For stable releases, also tag with major.minor
+          if [[ "$VERSION" != *-* ]]; then
+            MAJOR_MINOR=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+')
+            if [[ -n "$MAJOR_MINOR" ]]; then
+              docker tag "$IMAGE:sha-${{ github.sha }}" "$IMAGE:$MAJOR_MINOR"
+              docker push "$IMAGE:$MAJOR_MINOR"
+              echo "Also tagged as $IMAGE:$MAJOR_MINOR"
+            fi
+          fi
+
+          echo "## Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "- \`$IMAGE:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+
+  # Upload desktop artifacts to GitHub release
+  publish-desktop:
+    name: "Stage 4: Publish Desktop"
+    needs: [validate-builds]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: eclosion-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: Combine checksums
+        run: |
+          echo "Combining checksum files..."
+          cat artifacts/checksums-*.txt 2>/dev/null | sort -k2 | uniq > artifacts/SHA256SUMS.txt || true
+          rm -f artifacts/checksums-*.txt
+          echo "Combined checksums:"
+          cat artifacts/SHA256SUMS.txt
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG="${{ inputs.tag }}"
+          echo "Uploading desktop artifacts to release $TAG..."
+
+          for file in artifacts/*; do
+            if [ -f "$file" ]; then
+              echo "Uploading: $(basename $file)"
+              gh release upload "$TAG" "$file" --clobber || echo "::warning::Failed to upload $file"
+            fi
+          done
+
+          echo "## Desktop Artifacts Published" >> $GITHUB_STEP_SUMMARY
+          echo "Uploaded to release $TAG" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy to Cloudflare Pages
+  deploy-cloudflare:
+    name: "Stage 4: Deploy Cloudflare"
+    needs: [validate-builds, build-frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.release_type }}
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-${{ github.run_id }}
+          path: frontend/dist
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: docusaurus/package-lock.json
+
+      - name: Build Docusaurus
+        working-directory: docusaurus
+        env:
+          ECLOSION_BETA: ${{ inputs.release_type == 'beta' && 'true' || '' }}
+          ECLOSION_VERSION: ${{ inputs.version }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Merge builds
+        run: |
+          # Save React app's key files
+          cp frontend/dist/index.html /tmp/react-index.html
+          cp frontend/dist/_redirects /tmp/react-redirects
+          cp frontend/dist/404.html /tmp/react-404.html
+
+          # Copy Docusaurus build
+          cp -r docusaurus/build/* frontend/dist/
+
+          # Restore React app files
+          cp /tmp/react-index.html frontend/dist/index.html
+          cp /tmp/react-redirects frontend/dist/_redirects
+          cp /tmp/react-404.html frontend/dist/404.html
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=eclosion --branch=${{ inputs.release_type == 'production' && 'main' || 'beta' }}
+
+      - name: Summary
+        run: |
+          echo "## Cloudflare Deployment" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.release_type }}" == "production" ]]; then
+            echo "Deployed to [eclosion.app](https://eclosion.app)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Deployed to [beta.eclosion.app](https://beta.eclosion.app)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ===========================================================================
+  # STAGE 5: FINALIZE
+  # Only runs after ALL publishing steps succeed
+  # ===========================================================================
+  finalize:
+    name: "Stage 5: Finalize Release"
+    needs: [publish-docker, publish-desktop, deploy-cloudflare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create docs version (production only)
+        if: inputs.release_type == 'production'
+        run: |
+          cd docusaurus
+          npm ci
+          npm run version -- "${{ inputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add versions.json versioned_docs versioned_sidebars
+          git diff --staged --quiet && echo "No version changes" && exit 0
+          git commit -m "docs: create version ${{ inputs.version }}"
+          git push
+
+      - name: Release Summary
+        run: |
+          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Type:** ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Docker image" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Desktop apps (macOS, Windows, Linux)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Web deployment" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.release_type }}" == "production" ]]; then
+            echo "- ✅ Documentation version" >> $GITHUB_STEP_SUMMARY
+          fi

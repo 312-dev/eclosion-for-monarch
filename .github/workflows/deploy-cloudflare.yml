@@ -1,38 +1,20 @@
-# Deploy to Cloudflare Pages
+# Deploy to Cloudflare Pages (Standalone)
 #
-# Builds the frontend in demo mode and deploys to Cloudflare Pages.
-# Supports both production (releases) and beta (pre-releases) deployments.
+# This workflow is for MANUAL deployments and testing only.
+# Production and beta releases use the unified release-pipeline.yml,
+# which includes Cloudflare deployment as one of its stages.
 #
-# Deployment triggers:
-# - Pre-release published: Deploys to beta.eclosion.app (requires approval)
-# - Release published: Deploys to eclosion.app (requires approval)
+# Use cases:
+# - Manual deployment for testing
+# - Hotfix deployments outside the normal release flow
 #
-# Doc versions are only created for actual releases (not develop commits).
+# For releases, use:
+# - create-beta.yml (beta releases)
+# - release.yml (production releases)
 
-name: "Deploy: Cloudflare"
+name: "Deploy: Cloudflare (Manual)"
 
 on:
-  workflow_call:
-    inputs:
-      environment:
-        description: 'Deployment environment (production or beta)'
-        required: true
-        type: string
-      version:
-        description: 'Version being deployed'
-        required: false
-        type: string
-    secrets:
-      CLOUDFLARE_API_TOKEN:
-        required: true
-      CLOUDFLARE_ACCOUNT_ID:
-        required: true
-
-  # Trigger on pre-release publication for beta deployments
-  release:
-    types: [prereleased]
-
-  # Manual trigger for testing
   workflow_dispatch:
     inputs:
       environment:
@@ -43,13 +25,16 @@ on:
         options:
           - production
           - beta
+      version:
+        description: 'Version label (optional, defaults to SHA-based)'
+        required: false
+        type: string
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Use environment protection for releases (requires approval)
-    environment: ${{ (github.event_name == 'release' && 'beta') || (github.event_name == 'workflow_call' && inputs.environment) || (github.event_name == 'workflow_dispatch' && inputs.environment) || null }}
+    environment: ${{ inputs.environment }}
     permissions:
       contents: read
       deployments: write
@@ -57,32 +42,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Determine environment and version
+      - name: Determine version
         id: config
         run: |
-          # Determine environment and version based on trigger
-          if [[ "${{ github.event_name }}" == "workflow_call" ]]; then
-            ENV="${{ inputs.environment }}"
+          if [[ -n "${{ inputs.version }}" ]]; then
             VERSION="${{ inputs.version }}"
-          elif [[ "${{ github.event_name }}" == "release" ]]; then
-            ENV="beta"
-            # Strip 'v' prefix from tag for consistent versioning
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"
           else
-            # Manual dispatch - default to beta with generated version
-            ENV="${{ inputs.environment || 'beta' }}"
             BASE_VERSION=$(node -p "require('./frontend/package.json').version")
             SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            VERSION="${BASE_VERSION}-beta.${SHORT_SHA}"
+            VERSION="${BASE_VERSION}-${{ inputs.environment }}.${SHORT_SHA}"
           fi
 
-          echo "environment=$ENV" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "branch=$([[ $ENV == 'production' ]] && echo 'main' || echo 'beta')" >> $GITHUB_OUTPUT
+          echo "branch=$([[ '${{ inputs.environment }}' == 'production' ]] && echo 'main' || echo 'beta')" >> $GITHUB_OUTPUT
 
           echo "### Deployment Config" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment:** $ENV" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
 
       - name: Setup Node.js
@@ -110,25 +85,21 @@ jobs:
       - name: Build Docusaurus
         working-directory: docusaurus
         env:
-          ECLOSION_BETA: ${{ steps.config.outputs.environment == 'beta' && 'true' || '' }}
+          ECLOSION_BETA: ${{ inputs.environment == 'beta' && 'true' || '' }}
           ECLOSION_VERSION: ${{ steps.config.outputs.version }}
         run: npm run build
 
       - name: Merge builds
         run: |
-          # Save React app's key files that must not be overwritten
+          # Save React app's key files
           cp frontend/dist/index.html /tmp/react-index.html
           cp frontend/dist/_redirects /tmp/react-redirects
           cp frontend/dist/404.html /tmp/react-404.html
 
-          # Copy Docusaurus build contents into frontend/dist
-          # Docusaurus already builds to /docs path, so we copy to root
+          # Copy Docusaurus build
           cp -r docusaurus/build/* frontend/dist/
 
-          # Restore React app's SPA routing files
-          # - index.html: Main entry point for the SPA
-          # - _redirects: Cloudflare Pages routing rules
-          # - 404.html: SPA fallback that redirects to / and preserves the path
+          # Restore React app files
           cp /tmp/react-index.html frontend/dist/index.html
           cp /tmp/react-redirects frontend/dist/_redirects
           cp /tmp/react-404.html frontend/dist/404.html
@@ -140,43 +111,11 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy frontend/dist --project-name=eclosion --branch=${{ steps.config.outputs.branch }}
 
-      - name: Cleanup old beta deployments
-        if: steps.config.outputs.environment == 'beta'
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deployment Summary
         run: |
-          # Keep only the 5 most recent beta deployments
-          KEEP_COUNT=5
-          PROJECT="eclosion"
-
-          echo "Fetching beta deployments..."
-          DEPLOYMENTS=$(curl -s -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            -H "Content-Type: application/json")
-
-          # Get beta deployment IDs (non-production), sorted by created_on desc, skip first KEEP_COUNT
-          BETA_IDS=$(echo "$DEPLOYMENTS" | jq -r --arg keep "$KEEP_COUNT" '
-            .result
-            | map(select(.environment == "preview"))
-            | sort_by(.created_on) | reverse
-            | .[$keep | tonumber:]
-            | .[].id
-          ')
-
-          if [ -z "$BETA_IDS" ]; then
-            echo "No old beta deployments to clean up"
-            exit 0
+          echo "### Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.environment }}" == "production" ]]; then
+            echo "Deployed to [eclosion.app](https://eclosion.app)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Deployed to [beta.eclosion.app](https://beta.eclosion.app)" >> $GITHUB_STEP_SUMMARY
           fi
-
-          # Delete old deployments
-          for ID in $BETA_IDS; do
-            echo "Deleting deployment: $ID"
-            curl -s -X DELETE \
-              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/deployments/${ID}" \
-              -H "Authorization: Bearer ${CF_API_TOKEN}" \
-              -H "Content-Type: application/json" | jq -r '.success'
-          done
-
-          echo "Cleanup complete"
