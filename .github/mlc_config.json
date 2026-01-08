@@ -19,7 +19,13 @@
       "pattern": "^https://github.com/GraysonCAdams/eclosion-for-monarch/compare/"
     },
     {
-      "pattern": "^https://eclosion.app/demo"
+      "pattern": "^https://eclosion.app"
+    },
+    {
+      "pattern": "^https://www.npmjs.com"
+    },
+    {
+      "pattern": "copilot-instructions.md"
     }
   ],
   "timeout": "20s",
