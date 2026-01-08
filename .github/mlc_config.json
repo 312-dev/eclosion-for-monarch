@@ -14,6 +14,12 @@
     },
     {
       "pattern": "^https://eclosion.yourdomain.com"
+    },
+    {
+      "pattern": "^https://github.com/GraysonCAdams/eclosion-for-monarch/compare/"
+    },
+    {
+      "pattern": "^https://eclosion.app/demo"
     }
   ],
   "timeout": "20s",
