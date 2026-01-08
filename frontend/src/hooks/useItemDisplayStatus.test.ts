@@ -18,6 +18,7 @@ function createItem(overrides: Partial<RecurringItem> = {}): RecurringItem {
     frozen_monthly_target: 100,
     planned_budget: 100,
     current_balance: 0,
+    contributed_this_month: 0,
     amount: 100,
     amount_needed_now: 100,
     progress_percent: 0,

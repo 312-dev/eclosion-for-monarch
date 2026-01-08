@@ -86,7 +86,7 @@ vi.mock('@sentry/electron/main', () => ({
 vi.mock('electron-store', () => {
   return {
     default: vi.fn(() => ({
-      get: vi.fn((key: string, defaultValue: unknown) => defaultValue),
+      get: vi.fn((_key: string, defaultValue: unknown) => defaultValue),
       set: vi.fn(),
       delete: vi.fn(),
       clear: vi.fn(),
