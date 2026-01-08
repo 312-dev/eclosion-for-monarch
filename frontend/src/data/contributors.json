@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-01-08T23:15:40.731Z",
+  "features": {
+    "recurring": {
+      "featureId": "recurring",
+      "ideator": {
+        "username": "GraysonCAdams",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/51373669?v=4",
+        "profileUrl": "https://github.com/GraysonCAdams",
+        "commits": 0
+      },
+      "contributors": [
+        {
+          "username": "GraysonAdams",
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1523519?v=4",
+          "profileUrl": "https://github.com/GraysonAdams",
+          "commits": 39
+        }
+      ],
+      "lastUpdated": "2026-01-08T23:15:40.731Z"
+    },
+    "linked-goals": {
+      "featureId": "linked-goals",
+      "ideator": {
+        "username": "GraysonCAdams",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/51373669?v=4",
+        "profileUrl": "https://github.com/GraysonCAdams",
+        "commits": 0
+      },
+      "contributors": [],
+      "lastUpdated": "2026-01-08T23:15:40.999Z"
+    },
+    "leaderboard": {
+      "featureId": "leaderboard",
+      "ideator": {
+        "username": "GraysonCAdams",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/51373669?v=4",
+        "profileUrl": "https://github.com/GraysonCAdams",
+        "commits": 0
+      },
+      "contributors": [],
+      "lastUpdated": "2026-01-08T23:15:41.100Z"
+    },
+    "inbox-sync": {
+      "featureId": "inbox-sync",
+      "ideator": null,
+      "contributors": [],
+      "lastUpdated": "2026-01-08T23:15:41.194Z"
+    }
+  }
+}
