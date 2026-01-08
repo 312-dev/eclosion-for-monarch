@@ -44,7 +44,7 @@ on:
 # Cancel any in-progress deployments to the same environment
 # This prevents queued deployments from piling up
 concurrency:
-  group: cloudflare-deploy-${{ github.event.inputs.environment || 'beta' }}
+  group: cloudflare-deploy-${{ inputs.environment || 'beta' }}
   cancel-in-progress: true
 
 jobs:
