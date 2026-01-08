@@ -23,11 +23,6 @@ on:
         description: 'Version being deployed'
         required: false
         type: string
-    secrets:
-      CLOUDFLARE_API_TOKEN:
-        required: true
-      CLOUDFLARE_ACCOUNT_ID:
-        required: true
 
   # Manual trigger for testing
   workflow_dispatch:
