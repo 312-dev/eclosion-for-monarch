@@ -41,10 +41,46 @@ permissions:
 
 jobs:
   # =========================================================================
+  # Build Frontend Once (shared by all packaging jobs)
+  # =========================================================================
+  build-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_DESKTOP_BUILD: 'true'
+          VITE_APP_VERSION: ${{ inputs.version }}
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  # =========================================================================
   # Build Python Backend for macOS (both architectures)
   # =========================================================================
   build-backend-mac:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: macos-15
@@ -118,6 +154,7 @@ jobs:
   # =========================================================================
   build-backend-linux:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -157,8 +194,9 @@ jobs:
   # Package for macOS (ARM64 and x64)
   # =========================================================================
   package-mac:
-    needs: build-backend-mac
+    needs: [build-frontend, build-backend-mac]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: macos-15
@@ -178,9 +216,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: |
-            frontend/package-lock.json
-            desktop/package-lock.json
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
 
       - name: Download backend artifact
         uses: actions/download-artifact@v4
@@ -193,17 +235,6 @@ jobs:
           chmod +x desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
           echo "Backend binary:"
           file desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-        env:
-          VITE_DESKTOP_BUILD: 'true'
-          VITE_APP_VERSION: ${{ inputs.version }}
 
       - name: Install desktop dependencies
         working-directory: desktop
@@ -302,7 +333,7 @@ jobs:
   # Package for Windows
   # =========================================================================
   package-win:
-    needs: build-backend-win
+    needs: [build-frontend, build-backend-win]
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -314,26 +345,19 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: |
-            frontend/package-lock.json
-            desktop/package-lock.json
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
 
       - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
           name: backend-win-x64
           path: desktop/pyinstaller/dist/eclosion-backend
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-        env:
-          VITE_DESKTOP_BUILD: 'true'
-          VITE_APP_VERSION: ${{ inputs.version }}
 
       - name: Install desktop dependencies
         working-directory: desktop
@@ -390,10 +414,12 @@ jobs:
 
   # =========================================================================
   # Package for Linux (x64 and ARM64)
+  # Uses native fpm to avoid cross-architecture binary issues
   # =========================================================================
   package-linux:
-    needs: build-backend-linux
+    needs: [build-frontend, build-backend-linux]
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runner: ubuntu-latest
@@ -413,9 +439,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: |
-            frontend/package-lock.json
-            desktop/package-lock.json
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
 
       - name: Download backend artifact
         uses: actions/download-artifact@v4
@@ -426,16 +456,13 @@ jobs:
       - name: Make backend executable
         run: chmod +x desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-        env:
-          VITE_DESKTOP_BUILD: 'true'
-          VITE_APP_VERSION: ${{ inputs.version }}
+      # Install native fpm to avoid electron-builder downloading x86 binaries on ARM64
+      - name: Install native packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev build-essential rpm
+          sudo gem install fpm
+          echo "Installed fpm version: $(fpm --version)"
 
       - name: Install desktop dependencies
         working-directory: desktop
@@ -449,6 +476,8 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Tell electron-builder to use system fpm instead of downloading
+          USE_SYSTEM_FPM: 'true'
         run: npx electron-builder --linux --${{ matrix.arch }} --publish never
 
       - name: Check binary sizes

@@ -8,6 +8,9 @@
 # - Release published: Deploys to eclosion.app (requires approval)
 #
 # Doc versions are only created for actual releases (not develop commits).
+#
+# Concurrency: Only one deployment per environment runs at a time.
+# Newer deployments automatically cancel older pending ones.
 
 name: "Deploy: Cloudflare"
 
@@ -43,6 +46,12 @@ on:
         options:
           - production
           - beta
+
+# Cancel any in-progress deployments to the same environment
+# This prevents queued deployments from piling up
+concurrency:
+  group: cloudflare-deploy-${{ github.event_name == 'release' && 'beta' || github.event.inputs.environment || 'beta' }}
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:

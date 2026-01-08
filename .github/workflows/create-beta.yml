@@ -8,7 +8,9 @@
 # This workflow creates a GitHub pre-release, which triggers:
 # - deploy-cloudflare.yml → deploys to beta.eclosion.app
 # - docker-publish.yml → builds Docker image with beta tag
-# - build-desktop.yml → builds desktop apps for all platforms
+#
+# Desktop builds run in parallel but don't block the release (continue-on-error).
+# macOS builds require paid GitHub Actions minutes - check billing if they fail.
 
 name: "Release: Create Beta"
 
@@ -186,9 +188,11 @@ jobs:
           echo "- Desktop app builds for macOS, Windows, and Linux" >> $GITHUB_STEP_SUMMARY
 
   # Build and publish Desktop app for beta release
+  # Uses continue-on-error so desktop failures don't block the web release
   desktop-publish:
     name: Build Desktop App
     needs: create-beta
+    continue-on-error: true
     uses: ./.github/workflows/build-desktop.yml
     with:
       version: ${{ needs.create-beta.outputs.version }}
