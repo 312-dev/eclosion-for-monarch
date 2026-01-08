@@ -3,13 +3,12 @@
 # Manually triggered workflow to create a beta pre-release from the develop branch.
 # Beta versions use the format: v{current}-beta.{YYYYMMDD}.{sequence}
 #
-# Release Flow:
-# 1. Security scan (HIGH+ severity fails the release)
-# 2. Desktop + Docker builds (in PARALLEL - both must pass)
-# 3. Cloudflare Pages deployment (only if all builds pass)
-# 4. GitHub Release creation (only if deployment succeeds)
+# Release Flow (all must pass before release is created):
+# 1. Security scan (HIGH+ severity fails)
+# 2. Desktop + Docker builds (in PARALLEL)
+# 3. Cloudflare deploy (only if all builds pass)
+# 4. Create GitHub release (only after everything succeeds)
 #
-# If ANY build fails, Cloudflare deploy is skipped and no release is created.
 # macOS builds require paid GitHub Actions minutes - check billing if they fail.
 
 name: "Release: Create Beta"
@@ -22,12 +21,9 @@ on:
 permissions:
   contents: write
   packages: write
-  security-events: write
 
 jobs:
-  # =========================================================================
-  # Step 1: Validate branch
-  # =========================================================================
+  # Validate we're on the develop branch (hardcoded check)
   check-branch:
     name: Check Branch
     runs-on: ubuntu-latest
@@ -40,18 +36,11 @@ jobs:
             echo ""
             echo "Current branch: ${{ github.ref }}"
             echo "Required branch: refs/heads/develop"
-            echo ""
-            echo "To create a beta release:"
-            echo "1. Go to Actions → Release: Create Beta"
-            echo "2. Click 'Run workflow'"
-            echo "3. Select 'develop' from the branch dropdown"
             exit 1
           fi
           echo "✓ Running on develop branch"
 
-  # =========================================================================
-  # Step 2: Calculate version (needed by subsequent steps)
-  # =========================================================================
+  # Calculate version early (needed by build jobs)
   calculate-version:
     name: Calculate Version
     runs-on: ubuntu-latest
@@ -72,24 +61,16 @@ jobs:
         run: |
           BASE=$(node -p "require('./frontend/package.json').version")
           DATE=$(date +%Y%m%d)
-
           git fetch --tags
           EXISTING=$(git tag -l "v${BASE}-beta.${DATE}.*" | wc -l | tr -d ' ')
           SEQ=$((EXISTING + 1))
-
           TAG="v${BASE}-beta.${DATE}.${SEQ}"
           VERSION="${BASE}-beta.${DATE}.${SEQ}"
-
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "### Beta Version: $TAG" >> $GITHUB_STEP_SUMMARY
 
-          echo "### Beta Version" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag:** $TAG" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
-
-  # =========================================================================
-  # Step 3: Security scan
-  # =========================================================================
+  # Run full security scan suite
   security:
     name: Security Scan
     needs: check-branch
@@ -97,10 +78,11 @@ jobs:
     with:
       severity: high
       skip_dast: true
+    permissions:
+      security-events: write
+      contents: read
 
-  # =========================================================================
-  # Step 4a: Desktop builds (runs in PARALLEL with Docker)
-  # =========================================================================
+  # Desktop builds (runs in parallel with docker)
   desktop-build:
     name: Desktop Build
     needs: [calculate-version, security]
@@ -115,9 +97,7 @@ jobs:
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-  # =========================================================================
-  # Step 4b: Docker build (runs in PARALLEL with Desktop)
-  # =========================================================================
+  # Docker build (runs in parallel with desktop)
   docker-build:
     name: Docker Build
     needs: [calculate-version, security]
@@ -125,9 +105,7 @@ jobs:
     with:
       tag: ${{ needs.calculate-version.outputs.tag }}
 
-  # =========================================================================
-  # Step 5: Cloudflare deploy (only if ALL builds pass)
-  # =========================================================================
+  # Cloudflare deploy (only after ALL builds pass)
   cloudflare-deploy:
     name: Cloudflare Deploy
     needs: [calculate-version, desktop-build, docker-build]
@@ -139,14 +117,14 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-  # =========================================================================
-  # Step 6: Create GitHub Release (only after deployment succeeds)
-  # =========================================================================
+  # Create release ONLY after all builds and deploy succeed
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [calculate-version, cloudflare-deploy]
+    permissions:
+      contents: write
     steps:
       - name: Checkout develop
         uses: actions/checkout@v4
@@ -155,58 +133,40 @@ jobs:
           fetch-depth: 0
 
       - name: Generate release notes
-        id: notes
         run: |
           LAST_STABLE=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v beta | head -1)
-
           if [ -z "$LAST_STABLE" ]; then
-            echo "No previous stable release found, using first commit"
             LAST_STABLE=$(git rev-list --max-parents=0 HEAD)
           fi
-
-          echo "Generating notes since $LAST_STABLE"
-
           COMMITS=$(git log "$LAST_STABLE"..HEAD --pretty=format:"- %s" --no-merges | head -30)
           FEATURES=$(echo "$COMMITS" | grep -E "^- feat" | sed 's/^- feat[:(]/- /' | sed 's/):/:/') || true
           FIXES=$(echo "$COMMITS" | grep -E "^- fix" | sed 's/^- fix[:(]/- /' | sed 's/):/:/') || true
 
-          cat > /tmp/release-notes.md << 'NOTESEOF'
-          ## What's New in This Beta
-
-          This is a pre-release build from the `develop` branch for testing new features before stable release.
-
-          NOTESEOF
+          echo "## What's New in This Beta" > /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "This is a pre-release build from the \`develop\` branch for testing." >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
 
           if [ -n "$FEATURES" ]; then
             echo "### Features" >> /tmp/release-notes.md
             echo "$FEATURES" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
           fi
-
           if [ -n "$FIXES" ]; then
             echo "### Bug Fixes" >> /tmp/release-notes.md
             echo "$FIXES" >> /tmp/release-notes.md
             echo "" >> /tmp/release-notes.md
           fi
 
-          cat >> /tmp/release-notes.md << INSTALLEOF
-          ---
-
-          ### Installation Notes
-
-          **macOS users:** If you see "App is damaged" when opening, run this in Terminal:
-          \`\`\`
-          xattr -cr /Applications/Eclosion.app
-          \`\`\`
-
-          **Windows users:** Click "More info" → "Run anyway" if SmartScreen appears.
-
-          ---
-
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_STABLE}...${{ needs.calculate-version.outputs.tag }}
-          INSTALLEOF
-
-          sed -i 's/^          //' /tmp/release-notes.md
+          echo "---" >> /tmp/release-notes.md
+          echo "### Installation Notes" >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "**macOS:** If you see \"App is damaged\", run: \`xattr -cr /Applications/Eclosion.app\`" >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "**Windows:** Click \"More info\" → \"Run anyway\" if SmartScreen appears." >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "---" >> /tmp/release-notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_STABLE}...${{ needs.calculate-version.outputs.tag }}" >> /tmp/release-notes.md
 
       - name: Create pre-release
         env:
@@ -217,69 +177,49 @@ jobs:
             --prerelease \
             --title "${{ needs.calculate-version.outputs.tag }}" \
             --notes-file /tmp/release-notes.md
-
           echo "### Release Created" >> $GITHUB_STEP_SUMMARY
-          echo "Pre-release [${{ needs.calculate-version.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ needs.calculate-version.outputs.tag }}) created successfully." >> $GITHUB_STEP_SUMMARY
+          echo "[${{ needs.calculate-version.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ needs.calculate-version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
 
-  # =========================================================================
-  # Step 7: Upload desktop artifacts to release
-  # =========================================================================
+  # Upload desktop artifacts to the release
   upload-artifacts:
     name: Upload Artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [calculate-version, create-release]
+    permissions:
+      contents: write
     steps:
-      - name: Download all desktop artifacts
+      - name: Download desktop artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: eclosion-*
           path: artifacts
           merge-multiple: true
 
-      - name: List artifacts
-        run: |
-          echo "Artifacts to upload:"
-          find artifacts -type f -exec ls -lh {} \; || echo "No artifacts found"
-
-      - name: Combine checksums
-        run: |
-          if ls artifacts/checksums-*.txt 1> /dev/null 2>&1; then
-            echo "Combining all checksum files into SHA256SUMS.txt..."
-            cat artifacts/checksums-*.txt | sort -k2 | uniq > artifacts/SHA256SUMS.txt
-            echo "Combined checksums:"
-            cat artifacts/SHA256SUMS.txt
-            rm -f artifacts/checksums-*.txt
-          else
-            echo "No checksum files found"
-          fi
-
-      - name: Upload to Release
+      - name: Combine checksums and upload
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
         run: |
           TAG="${{ needs.calculate-version.outputs.tag }}"
 
-          echo "Uploading desktop artifacts to release ${TAG}..."
+          # Combine checksums if they exist
+          if ls artifacts/checksums-*.txt 1> /dev/null 2>&1; then
+            cat artifacts/checksums-*.txt | sort -k2 | uniq > artifacts/SHA256SUMS.txt
+            rm -f artifacts/checksums-*.txt
+          fi
 
+          # Upload all artifacts
           for file in artifacts/*; do
             if [ -f "$file" ]; then
               echo "Uploading: $file"
-              gh release upload "$TAG" "$file" --clobber || echo "Failed to upload $file"
+              gh release upload "$TAG" "$file" --clobber || true
             fi
           done
+          echo "### Artifacts uploaded" >> $GITHUB_STEP_SUMMARY
 
-          echo "Upload complete!"
-
-          echo "### Artifacts Uploaded" >> $GITHUB_STEP_SUMMARY
-          echo "Desktop artifacts uploaded to release." >> $GITHUB_STEP_SUMMARY
-
-  # =========================================================================
-  # Summary
-  # =========================================================================
+  # Summary job
   summary:
-    name: Release Summary
+    name: Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [calculate-version, security, desktop-build, docker-build, cloudflare-deploy, create-release, upload-artifacts]
@@ -288,14 +228,13 @@ jobs:
       - name: Generate Summary
         run: |
           echo "## Beta Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Scan | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Desktop Build | ${{ needs.desktop-build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker Build | ${{ needs.docker-build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cloudflare Deploy | ${{ needs.cloudflare-deploy.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Create Release | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Upload Artifacts | ${{ needs.upload-artifacts.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | ${{ needs.security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Desktop | ${{ needs.desktop-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ needs.docker-build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cloudflare | ${{ needs.cloudflare-deploy.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload | ${{ needs.upload-artifacts.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.calculate-version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
