@@ -45,8 +45,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Only require environment approval for manual dispatch (workflow_call is already gated)
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || null }}
     permissions:
       contents: read
       deployments: write
