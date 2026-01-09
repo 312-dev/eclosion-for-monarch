@@ -20,7 +20,7 @@ The Recurring tab is the heart of Eclosion. Track all your recurring bills, subs
   />
   <FeatureCard
     icon={<ClipboardList size={24} />}
-    title="Individual Tracking"
+    title="Dedicated Categories"
     description="Track major bills separately with their own categories"
   />
   <FeatureCard
@@ -42,50 +42,52 @@ The rollup combines smaller recurring charges into a single Monarch category. Th
 - Small monthly fees
 - Any expenses you want to budget together
 
-### Individual Items
+### Dedicated Categories
 
-Expenses tracked individually, each with their own Monarch category. Use this for:
+Larger expenses tracked individually, each with their own Monarch category. Use this for:
 
 - Major bills (rent, utilities)
 - Expenses you want to track separately
 - Items with variable amounts
 
-## Adding New Items
+## How Items Are Added
+
+Recurring items are automatically detected from your Monarch account. Eclosion syncs with Monarch to find transactions marked as recurring.
 
 <WorkflowSteps
-  title="Add a Recurring Expense"
+  title="Getting New Recurring Expenses"
   steps={[
     {
-      title: "Select Add Item",
-      description: "Click the Add Item button in the top toolbar to open the new expense form."
+      title: "Mark as Recurring in Monarch",
+      description: "In Monarch Money, mark transactions as recurring. Eclosion will detect them during sync."
     },
     {
-      title: "Enter Details",
-      description: "Fill in the expense name, amount, and how often it recurs (monthly, yearly, etc.)."
+      title: "Sync with Eclosion",
+      description: "New recurring items appear in Eclosion after syncing. They'll show in the Dedicated Categories section."
     },
     {
-      title: "Choose Tracking",
-      description: "Decide whether to add this to the rollup zone or track it as an individual item."
+      title: "Enable Tracking",
+      description: "Toggle tracking on for items you want to budget. Untracked items remain visible but don't affect your totals."
     },
     {
-      title: "Link Category",
-      description: "Connect to an existing Monarch category or create a new one. The expense will sync automatically."
+      title: "Link or Create Category",
+      description: "Connect to an existing Monarch category or let Eclosion create one. The expense will sync automatically."
     }
   ]}
 />
 
 :::note
-Changes sync automatically with your Monarch account. You don't need to manually sync after adding items.
+Changes sync automatically with your Monarch account. New recurring transactions from Monarch will appear after each sync.
 :::
 
 ## Managing Existing Items
 
 Select any item to:
 
-- Edit its details
-- Change the amount or frequency
-- Move it between rollup and individual tracking
-- Delete it from tracking
+- Edit its name and emoji
+- View its amount and payment frequency
+- Move it between the rollup zone and dedicated categories
+- Toggle tracking on or off
 
 ## Auto-Categorization
 

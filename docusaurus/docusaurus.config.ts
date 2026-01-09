@@ -82,12 +82,15 @@ const config: Config = {
           lastVersion,
           onlyIncludeVersions: includedVersions,
           versions: {
-            // Current docs - labeled with beta version on beta site
-            current: {
-              label: betaVersion || 'Next',
-              path: '',
-              banner: 'none',
-            },
+            // Current docs - only define when building beta site
+            // (Docusaurus fails if versions config references versions not in onlyIncludeVersions)
+            ...(isBetaSite && {
+              current: {
+                label: betaVersion || 'Next',
+                path: '',
+                banner: 'none',
+              },
+            }),
             // Stable versions get clean labels
             ...Object.fromEntries(
               stableVersions.map(v => [v, { label: v, banner: 'none' as const }])
