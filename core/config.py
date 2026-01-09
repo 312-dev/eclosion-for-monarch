@@ -13,8 +13,11 @@ from pathlib import Path
 _IN_CONTAINER = os.path.exists("/.dockerenv") or os.environ.get("DOCKER_CONTAINER") == "1"
 
 # Determine if running as desktop app (Electron-bundled)
-# Desktop mode is detected by STATE_DIR env var pointing to user app data
-_IS_DESKTOP = bool(os.environ.get("STATE_DIR")) and not _IN_CONTAINER
+# Desktop mode is explicitly signaled by the Electron main process via ECLOSION_DESKTOP=1
+# Falls back to STATE_DIR heuristic for backward compatibility
+_IS_DESKTOP = os.environ.get("ECLOSION_DESKTOP") == "1" or (
+    bool(os.environ.get("STATE_DIR")) and not _IN_CONTAINER
+)
 
 
 # ============================================================================
@@ -99,6 +102,11 @@ INSTANCE_SECRET = os.environ.get("INSTANCE_SECRET")
 
 # Cookie name for instance access
 INSTANCE_SECRET_COOKIE = "eclosion_access"
+
+# Desktop secret for API authentication in Electron mode
+# This is a runtime secret passed by the Electron main process
+# to prevent other local processes from accessing the API
+DESKTOP_SECRET = os.environ.get("DESKTOP_SECRET")
 
 
 # ============================================================================

@@ -4,7 +4,7 @@
  * Shared fetch wrapper and error classes for the API client.
  */
 
-import { getApiBaseSync, initializeApiBase, isDesktopMode } from '../../utils/apiBase';
+import { getApiBaseSync, getDesktopSecret, initializeApiBase, isDesktopMode } from '../../utils/apiBase';
 
 // Track initialization state for desktop mode
 let apiBaseInitialized = false;
@@ -79,11 +79,20 @@ export async function fetchApi<T>(
 
   const requestPromise = (async () => {
     try {
+      // Build headers, including desktop secret if in Electron mode
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      // Add desktop secret header for API authentication in Electron mode
+      const desktopSecret = getDesktopSecret();
+      if (desktopSecret) {
+        headers['X-Desktop-Secret'] = desktopSecret;
+      }
+
       const response = await fetch(`${getApiBase()}${endpoint}`, {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         ...options,
       });
 
@@ -121,8 +130,16 @@ export async function fetchApi<T>(
  * Fetch a blob response (for file downloads).
  */
 export async function fetchBlob(endpoint: string): Promise<Blob> {
+  // Build headers, including desktop secret if in Electron mode
+  const headers: Record<string, string> = {};
+  const desktopSecret = getDesktopSecret();
+  if (desktopSecret) {
+    headers['X-Desktop-Secret'] = desktopSecret;
+  }
+
   const response = await fetch(`${getApiBase()}${endpoint}`, {
     credentials: 'include',
+    headers,
   });
   if (!response.ok) {
     throw new Error(`Failed to fetch: ${response.status}`);

@@ -8,6 +8,7 @@
 import { spawn, ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { app, dialog } from 'electron';
 import getPort from 'get-port';
 import { debugLog as log, getLogDir } from './logger';
@@ -94,6 +95,12 @@ export class BackendManager {
   private restartAttempts = 0;
   private readonly maxRestarts = 3;
   private isShuttingDown = false;
+  /**
+   * Runtime secret token for API authentication.
+   * Generated fresh on each app start to prevent unauthorized access.
+   * Only the Electron app knows this secret.
+   */
+  private desktopSecret: string = '';
 
   /**
    * Get the path to the backend executable based on platform.
@@ -122,6 +129,10 @@ export class BackendManager {
     const portRange = Array.from({ length: 100 }, (_, i) => 5001 + i);
     this.port = await getPort({ port: portRange });
 
+    // Generate a cryptographically secure runtime secret
+    // This prevents other local processes (browser tabs, malicious apps) from accessing the API
+    this.desktopSecret = crypto.randomBytes(32).toString('hex');
+
     const backendPath = this.getBackendPath();
     const stateDir = getStateDir();
 
@@ -141,6 +152,14 @@ export class BackendManager {
         FLASK_DEBUG: '0',
         // Ensure only localhost binding for security
         HOST: '127.0.0.1',
+        // Signal to backend that we're running in desktop mode
+        ECLOSION_DESKTOP: '1',
+        // Runtime secret for API authentication - only the Electron app knows this
+        DESKTOP_SECRET: this.desktopSecret,
+        // Pass build-time version and channel to backend
+        // These are injected by esbuild at build time (see build-main.js)
+        APP_VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0',
+        RELEASE_CHANNEL: typeof __RELEASE_CHANNEL__ !== 'undefined' ? __RELEASE_CHANNEL__ : 'dev',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -265,6 +284,14 @@ export class BackendManager {
   }
 
   /**
+   * Get the runtime secret for API authentication.
+   * This secret is required in the X-Desktop-Secret header for all API requests.
+   */
+  getDesktopSecret(): string {
+    return this.desktopSecret;
+  }
+
+  /**
    * Check if the backend is running.
    */
   isRunning(): boolean {
@@ -317,8 +344,10 @@ export class BackendManager {
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/sync`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Desktop-Secret': this.desktopSecret,
+        },
       });
 
       if (!response.ok) {
@@ -333,13 +362,40 @@ export class BackendManager {
   }
 
   /**
+   * Fetch the last sync time from the backend.
+   * Returns the formatted time string or null if never synced.
+   */
+  async fetchLastSyncTime(): Promise<string | null> {
+    try {
+      const response = await fetch(`http://127.0.0.1:${this.port}/recurring/dashboard`, {
+        headers: {
+          'X-Desktop-Secret': this.desktopSecret,
+        },
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { last_sync?: string | null };
+        if (data.last_sync) {
+          return data.last_sync;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.error('Failed to fetch last sync time:', err);
+      return null;
+    }
+  }
+
+  /**
    * Check if a sync is needed (for wake-from-sleep handling).
    * Returns the result of the sync if triggered, or null if no sync was needed.
    */
   async checkSyncNeeded(): Promise<{ synced: boolean; success?: boolean; error?: string }> {
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/auto-sync/status`, {
-        credentials: 'include',
+        headers: {
+          'X-Desktop-Secret': this.desktopSecret,
+        },
       });
 
       if (response.ok) {
