@@ -42,14 +42,7 @@ jobs:
           # Use input for workflow_dispatch, github.head_ref for pull_request
           HEAD_REF="${{ inputs.pr_branch || github.head_ref }}"
 
-          # Allow automated branches from release-please and productboard-sync
-          if [[ "$HEAD_REF" =~ ^release-please-- ]]; then
-            echo "✅ Release-please branch - automated release PR"
-            echo "result=success" >> $GITHUB_OUTPUT
-            echo "description=Release-please branch - automated release PR" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
+          # Allow automated branches from productboard-sync and contributors-sync
           if [[ "$HEAD_REF" =~ ^update/productboard-sync- ]]; then
             echo "✅ ProductBoard sync branch - automated data update"
             echo "result=success" >> $GITHUB_OUTPUT
