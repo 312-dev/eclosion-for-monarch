@@ -7,7 +7,7 @@
 import type { Platform } from './platformDetection';
 import { isBetaEnvironment } from './environment';
 
-const GITHUB_REPO = 'GraysonCAdams/eclosion-for-monarch';
+const GITHUB_REPO = '312-dev/eclosion';
 
 export interface GithubAsset {
   name: string;

@@ -10,7 +10,7 @@ interface TrustBadgesProps {
   readonly variant?: 'inline' | 'stacked';
 }
 
-const GITHUB_REPO_URL = 'https://github.com/GraysonCAdams/eclosion-for-monarch';
+const GITHUB_REPO_URL = 'https://github.com/312-dev/eclosion';
 const LICENSE_URL = `${GITHUB_REPO_URL}/blob/main/LICENSE`;
 
 export function TrustBadges({ variant = 'inline' }: TrustBadgesProps) {

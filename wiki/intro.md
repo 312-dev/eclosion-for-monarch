@@ -1,6 +1,6 @@
-# Eclosion for Monarch Documentation
+# Eclosion Documentation
 
-Welcome to the Eclosion for Monarch documentation. Eclosion is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarchmoney.com).
+Welcome to the Eclosion documentation. Eclosion is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarchmoney.com).
 
 ## Features
 
@@ -22,5 +22,5 @@ Try Eclosion without installing anything at [eclosion.app/demo](https://eclosion
 
 ## Support
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/GraysonCAdams/eclosion-for-monarch/issues)
-- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/GraysonCAdams/eclosion-for-monarch/discussions)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/312-dev/eclosion/issues)
+- **GitHub Discussions**: [Ask questions and share ideas](https://github.com/312-dev/eclosion/discussions)

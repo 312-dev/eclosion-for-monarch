@@ -110,7 +110,7 @@ export function GetStartedDeploymentContent() {
           <span className="text-xs opacity-80">One-click setup</span>
         </a>
         <a
-          href="https://github.com/GraysonCAdams/eclosion-for-monarch/wiki"
+          href="https://github.com/312-dev/eclosion/wiki"
           target="_blank"
           rel="noopener noreferrer"
           className="group flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-lg border transition-all hover:scale-[1.01]"

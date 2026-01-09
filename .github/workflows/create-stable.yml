@@ -1,0 +1,355 @@
+# Create Stable Release
+#
+# Manually triggered workflow to create a stable release from the main branch.
+# This replaces release-please for more predictable changelog generation.
+#
+# Flow:
+#   1. Validate main branch
+#   2. Calculate next version based on bump type
+#   3. Update version files
+#   4. Generate release notes from commits/PRs since last tag
+#   5. Create draft release
+#   6. Run release pipeline (security -> build all -> validate -> publish)
+#   7. Finalize release (mark non-draft)
+#
+# If any step fails, the release remains in draft state and nothing is published.
+
+name: "Release: Create Stable"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
+  packages: write
+  security-events: write
+  deployments: write
+
+jobs:
+  # ===========================================================================
+  # PREPARATION
+  # ===========================================================================
+  check-branch:
+    name: Validate Branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require main branch
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "::error::This workflow can ONLY run from the main branch."
+            echo ""
+            echo "Current branch: ${{ github.ref }}"
+            echo "Required branch: refs/heads/main"
+            echo ""
+            echo "To create a stable release:"
+            echo "1. Go to Actions -> Release: Create Stable"
+            echo "2. Click 'Run workflow'"
+            echo "3. Select 'main' from the branch dropdown"
+            echo "4. Choose version bump type (patch/minor/major)"
+            exit 1
+          fi
+          echo "Running on main branch"
+
+  calculate-version:
+    name: Calculate Version
+    needs: check-branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      current_version: ${{ steps.version.outputs.current }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Calculate next version
+        id: version
+        run: |
+          # Get current version from package.json
+          CURRENT=$(node -p "require('./frontend/package.json').version")
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          # Parse semver
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          # Bump based on input
+          case "${{ inputs.bump }}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${VERSION}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+          echo "### Version Bump" >> $GITHUB_STEP_SUMMARY
+          echo "- **Current:** $CURRENT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bump Type:** ${{ inputs.bump }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** $TAG" >> $GITHUB_STEP_SUMMARY
+
+  update-versions:
+    name: Update Version Files
+    needs: calculate-version
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Update version files
+        env:
+          VERSION: ${{ needs.calculate-version.outputs.version }}
+          CURRENT: ${{ needs.calculate-version.outputs.current_version }}
+        run: |
+          # Update frontend/package.json
+          jq --arg v "$VERSION" '.version = $v' frontend/package.json > tmp.json && mv tmp.json frontend/package.json
+
+          # Update docusaurus/package.json
+          jq --arg v "$VERSION" '.version = $v' docusaurus/package.json > tmp.json && mv tmp.json docusaurus/package.json
+
+          # Update pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+
+          # Update .release-please-manifest.json (keep for compatibility)
+          echo "{\".\": \"$VERSION\"}" > .release-please-manifest.json
+
+          echo "### Updated Files" >> $GITHUB_STEP_SUMMARY
+          echo "- frontend/package.json: $CURRENT -> $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- docusaurus/package.json: -> $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- pyproject.toml: -> $VERSION" >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/package.json docusaurus/package.json pyproject.toml .release-please-manifest.json
+          git commit -m "chore: release ${{ needs.calculate-version.outputs.version }}"
+          git push
+
+  create-draft-release:
+    name: Create Draft Release
+    needs: [calculate-version, update-versions]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pull latest (after version commit)
+        run: git pull origin main
+
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find last stable tag
+          LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v beta | head -1)
+          if [ -z "$LAST_TAG" ]; then
+            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "Generating notes from $LAST_TAG to HEAD"
+
+          # Get merged PRs since last release
+          PRS=$(gh pr list --state merged --base main --search "merged:>=$(git log -1 --format=%ci $LAST_TAG | cut -d' ' -f1)" --json number,title,labels --jq '
+            .[] | "- \(.title) (#\(.number))"
+          ' 2>/dev/null || true)
+
+          # Fallback to commits if no PRs found
+          if [ -z "$PRS" ]; then
+            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" | head -30)
+          else
+            COMMITS=""
+          fi
+
+          # Categorize changes
+          if [ -n "$PRS" ]; then
+            CHANGES="$PRS"
+          else
+            CHANGES="$COMMITS"
+          fi
+
+          FEATURES=$(echo "$CHANGES" | grep -iE "feat|feature|add" || true)
+          FIXES=$(echo "$CHANGES" | grep -iE "fix|bug|patch" || true)
+          OTHER=$(echo "$CHANGES" | grep -viE "feat|feature|add|fix|bug|patch" || true)
+
+          # Build release notes
+          cat > /tmp/release-notes.md << 'NOTESEOF'
+          ## What's Changed
+
+          NOTESEOF
+
+          if [ -n "$FEATURES" ]; then
+            echo "### Features" >> /tmp/release-notes.md
+            echo "$FEATURES" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if [ -n "$FIXES" ]; then
+            echo "### Bug Fixes" >> /tmp/release-notes.md
+            echo "$FIXES" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if [ -n "$OTHER" ]; then
+            echo "### Other Changes" >> /tmp/release-notes.md
+            echo "$OTHER" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          cat >> /tmp/release-notes.md << INSTALLEOF
+          ---
+
+          ### Installation Notes
+
+          **macOS users:** If you see "App is damaged" when opening, run this in Terminal:
+          \`\`\`
+          xattr -cr /Applications/Eclosion.app
+          \`\`\`
+
+          **Windows users:** Click "More info" -> "Run anyway" if SmartScreen appears.
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG}...${{ needs.calculate-version.outputs.tag }}
+          INSTALLEOF
+
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' /tmp/release-notes.md
+
+      - name: Create tag
+        run: |
+          git tag ${{ needs.calculate-version.outputs.tag }}
+          git push origin ${{ needs.calculate-version.outputs.tag }}
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ needs.calculate-version.outputs.tag }} \
+            --target main \
+            --draft \
+            --title "${{ needs.calculate-version.outputs.tag }}" \
+            --notes-file /tmp/release-notes.md
+
+          echo "### Draft Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "Created draft release: ${{ needs.calculate-version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # RUN RELEASE PIPELINE
+  # ===========================================================================
+  release-pipeline:
+    name: Release Pipeline
+    needs: [calculate-version, create-draft-release]
+    uses: ./.github/workflows/release-pipeline.yml
+    with:
+      release_type: production
+      version: ${{ needs.calculate-version.outputs.version }}
+      tag: ${{ needs.calculate-version.outputs.tag }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+  # ===========================================================================
+  # FINALIZE
+  # ===========================================================================
+  publish-release:
+    name: Publish Release
+    needs: [calculate-version, release-pipeline]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Mark release as non-draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release edit ${{ needs.calculate-version.outputs.tag }} --draft=false
+
+          echo "### Release Published!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release:** [${{ needs.calculate-version.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ needs.calculate-version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed to:**" >> $GITHUB_STEP_SUMMARY
+          echo "- [eclosion.app](https://eclosion.app)" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker: \`ghcr.io/${{ github.repository }}:${{ needs.calculate-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # Cleanup draft release if pipeline fails
+  cleanup-on-failure:
+    name: Cleanup Failed Release
+    needs: [calculate-version, release-pipeline]
+    if: failure()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Delete draft release and tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG="${{ needs.calculate-version.outputs.tag }}"
+          echo "Pipeline failed - cleaning up draft release $TAG"
+
+          # Delete the release (this also deletes the tag)
+          gh release delete "$TAG" --yes --cleanup-tag || true
+
+          echo "### Release Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Draft release $TAG has been deleted." >> $GITHUB_STEP_SUMMARY
+          echo "Check the workflow logs for failure details." >> $GITHUB_STEP_SUMMARY
+
+      - name: Revert version commit
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+
+      - name: Revert if needed
+        run: |
+          # Check if the last commit was our version bump
+          LAST_MSG=$(git log -1 --format=%s)
+          if [[ "$LAST_MSG" == "chore: release"* ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git revert HEAD --no-edit
+            git push
+            echo "Reverted version bump commit" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -45,7 +45,7 @@ export function HelpDocsContent() {
               You're running the latest version of Eclosion.
             </p>
             <a
-              href="https://github.com/graysoncadams/eclosion-for-monarch/releases"
+              href="https://github.com/312-dev/eclosion/releases"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-[var(--monarch-orange)] hover:underline flex items-center gap-1"
@@ -57,7 +57,7 @@ export function HelpDocsContent() {
 
           {/* GitHub Issues */}
           <a
-            href="https://github.com/graysoncadams/eclosion-for-monarch/issues"
+            href="https://github.com/312-dev/eclosion/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
@@ -76,7 +76,7 @@ export function HelpDocsContent() {
 
           {/* Security */}
           <a
-            href="https://github.com/graysoncadams/eclosion-for-monarch/blob/main/SECURITY.md"
+            href="https://github.com/312-dev/eclosion/blob/main/SECURITY.md"
             target="_blank"
             rel="noopener noreferrer"
             className="p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"

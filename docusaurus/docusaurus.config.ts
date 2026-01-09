@@ -26,8 +26,8 @@ const config: Config = {
   url: 'https://eclosion.app',
   baseUrl: '/',
 
-  organizationName: 'GraysonCAdams',
-  projectName: 'eclosion-for-monarch',
+  organizationName: '312-dev',
+  projectName: 'eclosion',
 
   // SEO: Head tags for all pages
   headTags: [
@@ -74,7 +74,7 @@ const config: Config = {
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
           editUrl:
-            'https://github.com/GraysonCAdams/eclosion-for-monarch/tree/main/docusaurus/',
+            'https://github.com/312-dev/eclosion/tree/main/docusaurus/',
           showLastUpdateTime: true,
           // Versioning configuration
           // Beta site: Shows only current docs labeled with pre-release version (no version dropdown)
@@ -159,7 +159,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/GraysonCAdams/eclosion-for-monarch',
+          href: 'https://github.com/312-dev/eclosion',
           label: 'GitHub',
           position: 'right',
         },
@@ -181,7 +181,7 @@ const config: Config = {
             },
             {
               label: 'Self-Hosting Guide',
-              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
+              href: 'https://github.com/312-dev/eclosion/wiki',
             },
           ],
         },
@@ -207,15 +207,15 @@ const config: Config = {
             },
             {
               label: 'Discussions',
-              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/discussions',
+              href: 'https://github.com/312-dev/eclosion/discussions',
             },
             {
               label: 'Report an Issue',
-              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch/issues',
+              href: 'https://github.com/312-dev/eclosion/issues',
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/GraysonCAdams/eclosion-for-monarch',
+              href: 'https://github.com/312-dev/eclosion',
             },
           ],
         },
