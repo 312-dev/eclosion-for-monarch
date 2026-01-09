@@ -4,7 +4,7 @@
 
 > **Your budgeting, evolved.**
 
-A self-hosted toolkit that expands what's possible with Monarch Money. Each tool works independently with your account—enable only what you need.
+An open source desktop & web app that expands what's possible with Monarch Money. Each tool works independently with your account—enable only what you need.
 
 *Eclosion (n.): The moment a butterfly emerges.*
 
@@ -147,9 +147,9 @@ npm run dist:linux   # Linux
 
 The built application will be in `desktop/release/`.
 
-## Why Self-Host?
+## Why Eclosion?
 
-- **Fully Yours** — You own your copy completely. Your credentials stay encrypted on your server—no one else can access them.
+- **Fully Yours** — You own your copy completely. Your credentials stay encrypted locally—no one else can access them.
 - **Always In Sync** — Changes you make in Eclosion show up in Monarch automatically. No manual updates needed.
 - **Set It & Forget It** — Turn on the features you want, and Eclosion handles the rest in the background.
 

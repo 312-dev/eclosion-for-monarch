@@ -8,6 +8,10 @@ name: "Check: Require Develop"
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docusaurus/**'
+      - 'scripts/docs-gen/**'
   # Allow manual trigger for PRs created by GITHUB_TOKEN (e.g., release-please)
   workflow_dispatch:
     inputs:

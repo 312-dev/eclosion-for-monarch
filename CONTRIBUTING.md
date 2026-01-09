@@ -91,7 +91,7 @@ Copy `.env.example` to `.env` and configure:
 
 ## Branching Strategy
 
-This project uses a **Git Flow** workflow where all changes flow through `develop` before reaching `main`.
+This project uses a **Git Flow** workflow where all code changes flow through `develop` before reaching `main`. Documentation-only changes can go directly to `main`.
 
 ### Branch Types
 
@@ -232,7 +232,9 @@ Using the correct commit type ensures accurate versioning and a useful changelog
 | `develop` | Run | Run (visible) | None required | — |
 | `main` | Must pass | Must pass | 1 approval | Medium+ blocks merge |
 
-> **Note**: PRs directly to `main` will be blocked. Always target `develop` first.
+> **Note**: Code PRs directly to `main` will be blocked. Always target `develop` first.
+>
+> **Exception**: Documentation-only PRs (markdown files, `docusaurus/`, `scripts/docs-gen/`) can go directly to `main` and skip CI builds.
 
 ### Security Thresholds
 

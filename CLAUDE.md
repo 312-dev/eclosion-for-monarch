@@ -4,7 +4,7 @@ This file contains coding standards and guidelines for AI assistants working on 
 
 ## Project Overview
 
-Eclosion for Monarch is a self-hosted toolkit that expands what's possible with Monarch Money. It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, smart savings calculations, and direct Monarch sync. The demo mode runs entirely in the browser with localStorage.
+Eclosion for Monarch is an open source desktop & web app that expands what's possible with Monarch Money. It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, smart savings calculations, and direct Monarch sync. The demo mode runs entirely in the browser with localStorage.
 
 ## Code Standards
 
@@ -353,7 +353,7 @@ git checkout -b update/readme
 git checkout -b feature/new-dashboard
 ```
 
-PRs to `main` must come from the `develop` branch only (enforced by `require-develop.yml`).
+PRs to `main` must come from the `develop` branch only (enforced by `require-develop.yml`), **except for docs-only changes** (markdown files, docusaurus, docs-gen scripts) which can go directly to `main`.
 
 ## Demo Mode Compatibility
 
