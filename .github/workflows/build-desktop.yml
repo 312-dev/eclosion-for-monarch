@@ -85,7 +85,7 @@ jobs:
         include:
           - runner: macos-15
             arch: arm64
-          - runner: macos-15-large
+          - runner: macos-13
             arch: x64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
@@ -202,7 +202,7 @@ jobs:
           - runner: macos-15
             arch: arm64
             backend_artifact: backend-mac-arm64
-          - runner: macos-15-large
+          - runner: macos-13
             arch: x64
             backend_artifact: backend-mac-x64
     runs-on: ${{ matrix.runner }}
