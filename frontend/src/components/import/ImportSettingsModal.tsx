@@ -13,6 +13,7 @@ import { useApiClient } from '../../hooks';
 import type { EclosionExport, ImportPreview } from '../../types';
 import { FilePickerSection } from './FilePickerSection';
 import { ImportPreviewSection } from './ImportPreviewSection';
+import { Portal } from '../Portal';
 
 interface ImportSettingsModalProps {
   readonly isOpen: boolean;
@@ -124,15 +125,16 @@ export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={handleClose}
-        onKeyDown={(e) => e.key === 'Escape' && handleClose()}
-        role="button"
-        tabIndex={0}
-        aria-label="Close modal"
-      />
+    <Portal>
+      <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
+        <div
+          className="absolute inset-0 bg-black/50 modal-backdrop"
+          onClick={handleClose}
+          onKeyDown={(e) => e.key === 'Escape' && handleClose()}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
+        />
       <div
         className="relative w-full max-w-md mx-4 rounded-xl shadow-xl modal-content"
         style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
@@ -239,5 +241,6 @@ export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProp
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

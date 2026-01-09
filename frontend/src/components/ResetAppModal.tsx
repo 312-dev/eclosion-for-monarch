@@ -3,6 +3,7 @@ import { getDeploymentInfo } from '../api/client';
 import type { DeploymentInfo } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../utils';
+import { Portal } from './Portal';
 
 interface ResetAppModalProps {
   isOpen: boolean;
@@ -52,18 +53,19 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={resetting ? undefined : onClose}
-      />
+    <Portal>
+      <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 modal-backdrop"
+          onClick={resetting ? undefined : onClose}
+        />
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-md mx-4 rounded-xl shadow-xl modal-content"
-        style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
-      >
+        {/* Modal */}
+        <div
+          className="relative w-full max-w-md mx-4 rounded-xl shadow-xl modal-content"
+          style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+        >
         {/* Header */}
         <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
           <div className="flex items-center justify-between">
@@ -170,8 +172,9 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
               {resetting ? 'Resetting...' : 'Reset and Re-login'}
             </button>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }

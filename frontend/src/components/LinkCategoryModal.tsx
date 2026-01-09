@@ -3,6 +3,7 @@ import type { UnmappedCategory, RecurringItem } from '../types';
 import { getUnmappedCategories, linkToCategory } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import { handleApiError } from '../utils';
+import { Portal } from './Portal';
 
 export interface PendingLink {
   categoryId: string;
@@ -133,12 +134,13 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={onClose}
-      />
+    <Portal>
+      <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 modal-backdrop"
+          onClick={onClose}
+        />
 
       {/* Modal */}
       <div className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[80vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
@@ -311,5 +313,6 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

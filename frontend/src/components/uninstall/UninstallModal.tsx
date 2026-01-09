@@ -12,6 +12,7 @@ import { UI } from '../../constants';
 import { DeleteCategoriesContent } from './DeleteCategoriesContent';
 import { CancelSubscriptionContent } from './CancelSubscriptionContent';
 import { UninstallModalFooter } from './UninstallModalFooter';
+import { Portal } from '../Portal';
 
 interface UninstallModalProps {
   readonly isOpen: boolean;
@@ -126,12 +127,13 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
   const isProcessing = deleting || cancelling;
 
   return (
-    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={isProcessing ? undefined : onClose}
-      />
+    <Portal>
+      <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 modal-backdrop"
+          onClick={isProcessing ? undefined : onClose}
+        />
 
       {/* Modal */}
       <div
@@ -247,5 +249,6 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
         />
       </div>
     </div>
+    </Portal>
   );
 }

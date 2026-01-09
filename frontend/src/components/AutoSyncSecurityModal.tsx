@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getErrorMessage } from '../utils';
+import { Portal } from './Portal';
 
 interface AutoSyncSecurityModalProps {
   isOpen: boolean;
@@ -52,12 +53,13 @@ export function AutoSyncSecurityModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={handleClose}
-      />
+    <Portal>
+      <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 modal-backdrop"
+          onClick={handleClose}
+        />
 
       {/* Modal */}
       <div
@@ -237,5 +239,6 @@ export function AutoSyncSecurityModal({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
