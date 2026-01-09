@@ -81,8 +81,9 @@ Direct credential authentication is the only available method. Eclosion uses str
 ## Reporting Security Issues
 
 If you discover a security vulnerability, please report it responsibly:
-1. Do not disclose publicly until addressed
-2. Email details to the project maintainers
+
+1. **Report privately** via [GitHub Security Advisories](https://github.com/312-dev/eclosion/security/advisories/new)
+2. Do not disclose publicly until addressed
 3. Allow reasonable time for a fix
 
 ## Technical Implementation

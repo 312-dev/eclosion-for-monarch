@@ -4,5 +4,5 @@ contact_links:
     url: https://eclosion.app
     about: Check the documentation for setup and usage information
   - name: Security Issues
-    url: https://github.com/graysoncadams/eclosion-for-monarch/security
+    url: https://github.com/312-dev/eclosion/security
     about: Report security vulnerabilities privately

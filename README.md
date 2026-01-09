@@ -42,12 +42,12 @@ Then access your instance at: `https://your-app.railway.app?secret=YOUR_SECRET`
 
 ### Option 2: Self-Host with Docker
 
-Run your own instance on any server with Docker. For comprehensive guides including platform-specific instructions (AWS, DigitalOcean, Kubernetes, NAS, Raspberry Pi, etc.) and reverse proxy setup, see the **[Self-Hosting Guide](https://github.com/GraysonCAdams/eclosion-for-monarch/wiki/SELF_HOSTING)**.
+Run your own instance on any server with Docker. For comprehensive guides including platform-specific instructions (AWS, DigitalOcean, Kubernetes, NAS, Raspberry Pi, etc.) and reverse proxy setup, see the **[Self-Hosting Guide](https://github.com/312-dev/eclosion/wiki/SELF_HOSTING)**.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/graysoncadams/eclosion-for-monarch.git
-cd eclosion-for-monarch
+git clone https://github.com/312-dev/eclosion.git
+cd eclosion
 
 # 2. Generate a secret access code
 export INSTANCE_SECRET=$(openssl rand -hex 16)
@@ -112,9 +112,9 @@ Run Eclosion as a native desktop application on macOS, Windows, or Linux. No ser
 
 **Download the latest release:**
 
-- **macOS**: [Eclosion.dmg](https://github.com/graysoncadams/eclosion-for-monarch/releases/latest) (Universal - works on Intel and Apple Silicon)
-- **Windows**: [Eclosion-Setup.exe](https://github.com/graysoncadams/eclosion-for-monarch/releases/latest)
-- **Linux**: [Eclosion.AppImage](https://github.com/graysoncadams/eclosion-for-monarch/releases/latest) or [.deb](https://github.com/graysoncadams/eclosion-for-monarch/releases/latest)
+- **macOS**: [Eclosion.dmg](https://github.com/312-dev/eclosion/releases/latest) (Universal - works on Intel and Apple Silicon)
+- **Windows**: [Eclosion-Setup.exe](https://github.com/312-dev/eclosion/releases/latest)
+- **Linux**: [Eclosion.AppImage](https://github.com/312-dev/eclosion/releases/latest) or [.deb](https://github.com/312-dev/eclosion/releases/latest)
 
 **Features:**
 - System tray icon with quick access menu
@@ -130,8 +130,8 @@ Run Eclosion as a native desktop application on macOS, Windows, or Linux. No ser
 # Prerequisites: Node.js 20+, Python 3.11+
 
 # Clone and install
-git clone https://github.com/graysoncadams/eclosion-for-monarch.git
-cd eclosion-for-monarch/desktop
+git clone https://github.com/312-dev/eclosion.git
+cd eclosion/desktop
 npm install
 
 # Install frontend and backend dependencies
@@ -277,7 +277,7 @@ docker compose up -d
 
 **Building from source:**
 ```bash
-cd eclosion-for-monarch
+cd eclosion
 git pull
 docker compose up -d --build
 ```
@@ -299,7 +299,7 @@ If you need to revert to a specific version:
 ```yaml
 services:
   eclosion:
-    image: ghcr.io/graysoncadams/eclosion-for-monarch:1.0.0
+    image: ghcr.io/312-dev/eclosion:1.0.0
 ```
 
 **Railway:** In your project settings, you can redeploy a previous deployment from the deployment history.

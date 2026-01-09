@@ -25,7 +25,7 @@ const PLACEHOLDER_PROMPTS = [
 ];
 
 const GITHUB_DISCUSSIONS_URL =
-  'https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/new';
+  'https://github.com/312-dev/eclosion/discussions/new';
 
 function buildDiscussionUrl(ideaText: string): string {
   const params = new URLSearchParams({

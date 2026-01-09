@@ -1,4 +1,4 @@
-# Eclosion for Monarch - Docker Compose for Self-Hosting
+# Eclosion - Docker Compose for Self-Hosting
 # Your budgeting, evolved. A toolkit for Monarch Money.
 #
 # Quick Start:
@@ -15,7 +15,7 @@
 
 services:
   eclosion:
-    image: ghcr.io/graysoncadams/eclosion-for-monarch:stable
+    image: ghcr.io/312-dev/eclosion:stable
     # Or build from source:
     # build: .
     container_name: eclosion

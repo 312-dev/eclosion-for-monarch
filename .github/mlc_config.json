@@ -16,13 +16,16 @@
       "pattern": "^https://eclosion.yourdomain.com"
     },
     {
-      "pattern": "^https://github.com/GraysonCAdams/eclosion-for-monarch/compare/"
-    },
-    {
-      "pattern": "^https://github.com/312-dev/eclosion-for-monarch/compare/"
+      "pattern": "^https://github.com/312-dev/eclosion/compare/"
     },
     {
       "pattern": "^https://312.dev"
+    },
+    {
+      "pattern": "^https://github.com/GraysonCAdams/eclosion-for-monarch"
+    },
+    {
+      "pattern": "^https://github.com/312-dev/eclosion-for-monarch"
     },
     {
       "pattern": "^https://eclosion.app"

@@ -68,5 +68,5 @@ docker compose up -d
 
 ## Getting Help
 
-- **GitHub Issues**: [Report bugs](https://github.com/GraysonCAdams/eclosion-for-monarch/issues)
+- **GitHub Issues**: [Report bugs](https://github.com/312-dev/eclosion/issues)
 - **Security Issues**: See [[Security|security]] for responsible disclosure

@@ -11,6 +11,12 @@
         "frontend/package.json",
         "docusaurus/package.json",
         "pyproject.toml"
+      ],
+      "exclude-commits-from-changelog": [
+        "^Merge .* into .*",
+        "^Merge pull request",
+        "^Merge branch",
+        "^Merge remote-tracking"
       ]
     }
   },

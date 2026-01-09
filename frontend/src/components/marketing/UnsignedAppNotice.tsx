@@ -87,7 +87,7 @@ export function UnsignedAppNotice({ platform }: UnsignedAppNoticeProps) {
                 our source code on GitHub.
               </p>
               <a
-                href="https://github.com/GraysonCAdams/eclosion-for-monarch"
+                href="https://github.com/312-dev/eclosion"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-[var(--monarch-orange)] hover:underline"

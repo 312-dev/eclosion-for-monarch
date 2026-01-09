@@ -78,7 +78,7 @@ export function MarketingDocsContent() {
 
           {/* GitHub */}
           <a
-            href="https://github.com/graysoncadams/eclosion-for-monarch"
+            href="https://github.com/312-dev/eclosion"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
@@ -99,7 +99,7 @@ export function MarketingDocsContent() {
 
           {/* Security */}
           <a
-            href="https://github.com/graysoncadams/eclosion-for-monarch#security"
+            href="https://github.com/312-dev/eclosion#security"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"

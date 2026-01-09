@@ -1,14 +1,14 @@
 # Changelog
 
-All notable changes to Eclosion are documented in the [GitHub Releases](https://github.com/GraysonCAdams/eclosion-for-monarch/releases).
+All notable changes to Eclosion are documented in the [GitHub Releases](https://github.com/312-dev/eclosion/releases).
 
 ## Latest Releases
 
 View the full changelog and release notes on GitHub:
 
-**[View All Releases](https://github.com/GraysonCAdams/eclosion-for-monarch/releases)**
+**[View All Releases](https://github.com/312-dev/eclosion/releases)**
 
-For detailed release notes, see the [CHANGELOG.md](https://github.com/GraysonCAdams/eclosion-for-monarch/blob/main/CHANGELOG.md) in the repository.
+For detailed release notes, see the [CHANGELOG.md](https://github.com/312-dev/eclosion/blob/main/CHANGELOG.md) in the repository.
 
 ## Versioning
 

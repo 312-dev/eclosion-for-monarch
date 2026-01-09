@@ -41,7 +41,7 @@ export function UpdateErrorBanner() {
     setDismissed(true);
   };
 
-  const releasesUrl = 'https://github.com/graysoncadams/eclosion-for-monarch/releases';
+  const releasesUrl = 'https://github.com/312-dev/eclosion/releases';
 
   return (
     <div
