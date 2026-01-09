@@ -244,12 +244,11 @@ jobs:
 
           ### Installation Notes
 
-          **macOS users:** If you see "App is damaged" when opening, run this in Terminal:
-          \`\`\`
-          xattr -cr /Applications/Eclosion.app
-          \`\`\`
+          **macOS:** Signed and notarized. Drag to Applications and launch.
 
-          **Windows users:** Click "More info" -> "Run anyway" if SmartScreen appears.
+          **Windows:** Click "More info" → "Run anyway" if SmartScreen appears.
+
+          **Linux:** Run \`chmod +x Eclosion-*.AppImage\` to make executable.
 
           ---
 

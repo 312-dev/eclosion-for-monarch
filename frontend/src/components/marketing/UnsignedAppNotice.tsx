@@ -13,22 +13,16 @@ interface UnsignedAppNoticeProps {
   readonly platform: Platform;
 }
 
-const PLATFORM_WARNINGS: Record<Exclude<Platform, 'unknown'>, {
+const PLATFORM_WARNINGS: Partial<Record<Exclude<Platform, 'unknown'>, {
   warning: string;
   bypassHint: string;
-}> = {
-  macos: {
-    warning: 'macOS Gatekeeper may show "App is damaged" or "cannot be opened"',
-    bypassHint: 'See installation instructions below for bypass steps',
-  },
+}>> = {
+  // macOS is now signed and notarized - no warning needed
   windows: {
     warning: 'Windows SmartScreen may show "Windows protected your PC"',
     bypassHint: 'Click "More info" then "Run anyway" to proceed',
   },
-  linux: {
-    warning: 'Some Linux distributions may require manual permissions',
-    bypassHint: 'Run chmod +x on the AppImage to make it executable',
-  },
+  // Linux doesn't need a warning - just chmod instructions in InstallationInstructions
 };
 
 export function UnsignedAppNotice({ platform }: UnsignedAppNoticeProps) {
@@ -36,7 +30,11 @@ export function UnsignedAppNotice({ platform }: UnsignedAppNoticeProps) {
 
   if (platform === 'unknown') return null;
 
-  const { warning, bypassHint } = PLATFORM_WARNINGS[platform];
+  const platformWarning = PLATFORM_WARNINGS[platform];
+  // No warning needed for signed platforms (macOS) or Linux
+  if (!platformWarning) return null;
+
+  const { warning, bypassHint } = platformWarning;
 
   return (
     <div

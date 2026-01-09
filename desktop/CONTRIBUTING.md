@@ -162,10 +162,10 @@ ECLOSION_VERSION="1.0.0-local" RELEASE_CHANNEL="stable" npm run build:main
 # 4. Package for your platform (still in desktop/)
 npx electron-builder --mac --publish never  # or --win / --linux
 
-# 5. Install (macOS) - remove quarantine for unsigned app
+# 5. Install (macOS) - local builds are unsigned, so remove quarantine
 rm -rf /Applications/Eclosion.app
 cp -R release/mac-arm64/Eclosion.app /Applications/
-xattr -cr /Applications/Eclosion.app
+xattr -cr /Applications/Eclosion.app  # Only needed for local unsigned builds
 ```
 
 ## Troubleshooting
