@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useChangelogQuery, useDeploymentInfoQuery } from '../api/queries';
 import type { ChangelogEntry, ChangelogSection } from '../types';
 import { InfoIcon, CheckCircleIcon, CopyIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
+import { isDesktopMode } from '../utils/apiBase';
 
 export interface ChangelogDisplayProps {
   version: string | undefined; // Show specific version, or all if undefined
@@ -34,9 +35,12 @@ export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = 
     ? data.entries.filter(e => e.version === version)
     : data.entries;
 
+  // Desktop uses electron-updater, so don't show web update instructions
+  const isDesktop = isDesktopMode();
+
   return (
     <div className="space-y-6">
-      {showUpdateInstructions && (
+      {showUpdateInstructions && !isDesktop && (
         <UpdateInstructions
           isRailway={deploymentInfo?.is_railway ?? false}
           railwayProjectUrl={deploymentInfo?.railway_project_url}

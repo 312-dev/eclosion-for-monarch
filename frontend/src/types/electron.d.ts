@@ -63,8 +63,7 @@ export interface UpdateCheckResult {
 }
 
 export interface DesktopSettings {
-  runInBackground: boolean;
-  showInDock: boolean;
+  menuBarMode: boolean;
   autoStart: boolean;
 }
 
@@ -199,6 +198,19 @@ export interface LockAPI {
   onLocked: (callback: (data: { reason: string }) => void) => () => void;
 }
 
+// Pending Sync API (for menu-triggered sync when locked)
+
+export interface PendingSyncAPI {
+  /** Check if there's a pending sync waiting for authentication */
+  hasPending: () => Promise<boolean>;
+  /** Clear the pending sync state */
+  clearPending: () => Promise<void>;
+  /** Execute pending sync after authentication with passphrase */
+  executePending: (passphrase: string) => Promise<SyncResult>;
+  /** Listen for pending sync requests from main process */
+  onSyncPending: (callback: () => void) => () => void;
+}
+
 export interface BiometricAuthResult {
   success: boolean;
   passphrase?: string;
@@ -214,6 +226,10 @@ export interface BiometricAPI {
   authenticate: () => Promise<BiometricAuthResult>;
   clear: () => Promise<void>;
   getStoredPassphrase: () => Promise<string | null>;
+  /** Check if passphrase is stored (for sync, regardless of biometric status) */
+  isPassphraseStored: () => Promise<boolean>;
+  /** Store passphrase for background sync (without enabling biometric unlock) */
+  storeForSync: (passphrase: string) => Promise<boolean>;
 }
 
 export interface ElectronAPI {
@@ -254,8 +270,7 @@ export interface ElectronAPI {
 
   // Desktop Settings
   getDesktopSettings: () => Promise<DesktopSettings>;
-  setRunInBackground: (enabled: boolean) => Promise<boolean>;
-  setShowInDock: (enabled: boolean) => Promise<boolean>;
+  setMenuBarMode: (enabled: boolean) => Promise<boolean>;
   getStateDir: () => Promise<string>;
   revealDataFolder: () => Promise<void>;
 
@@ -293,6 +308,9 @@ export interface ElectronAPI {
 
   // Lock Management
   lock: LockAPI;
+
+  // Pending Sync (for menu-triggered sync when locked)
+  pendingSync: PendingSyncAPI;
 }
 
 declare global {

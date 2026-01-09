@@ -1380,26 +1380,43 @@ async def delete_all_categories():
 @api_handler(handle_mfa=True)
 async def cancel_subscription():
     """
-    Full cancellation flow:
-    1. Delete all Monarch categories created by this tool
+    Full uninstall flow:
+    1. Optionally delete all Monarch categories created by this tool
     2. Clear all local state and credentials
-    3. Return Railway project deletion URL for final step
-
-    This is the "nuclear option" - completely removes all traces of the app.
+    3. Reset config to trigger setup wizard on next visit
+    4. Return Railway project deletion URL for final step
     """
     from typing import Any
+
+    data = request.get_json() or {}
+    delete_categories = data.get("delete_categories", True)
+    full_reset = data.get("full_reset", False)
 
     steps_completed: list[str] = []
     instructions: list[str] = []
 
-    # Step 1: Delete Monarch categories
-    try:
-        delete_result = await sync_service.delete_all_categories()
-        if delete_result.get("success"):
-            steps_completed.append("monarch_categories_deleted")
-    except Exception as e:
-        logger.warning(f"[CANCEL] Failed to delete Monarch categories: {e}")
-        # Continue anyway - user may have already deleted them
+    # Step 0: Full reset (if requested) - resets all recurring data
+    if full_reset:
+        try:
+            reset_result = await sync_service.reset_recurring_tool()
+            if reset_result.get("success"):
+                steps_completed.append("full_reset_completed")
+                # Full reset already deletes categories, so skip step 1
+                delete_categories = False
+        except Exception as e:
+            logger.warning(f"[CANCEL] Failed to perform full reset: {e}")
+
+    # Step 1: Delete Monarch categories (if requested and not already done by full reset)
+    if delete_categories:
+        try:
+            delete_result = await sync_service.delete_all_categories()
+            if delete_result.get("success"):
+                steps_completed.append("monarch_categories_deleted")
+        except Exception as e:
+            logger.warning(f"[CANCEL] Failed to delete Monarch categories: {e}")
+            # Continue anyway - user may have already deleted them
+    elif "full_reset_completed" not in steps_completed:
+        steps_completed.append("monarch_categories_kept")
 
     # Step 2: Clear credentials and logout
     try:
@@ -1408,7 +1425,14 @@ async def cancel_subscription():
     except Exception as e:
         logger.warning(f"[CANCEL] Failed to clear credentials: {e}")
 
-    # Step 3: Get Railway deletion URL
+    # Step 3: Reset config to trigger setup wizard on next visit
+    try:
+        sync_service.state_manager.reset_config()
+        steps_completed.append("config_reset")
+    except Exception as e:
+        logger.warning(f"[CANCEL] Failed to reset config: {e}")
+
+    # Step 4: Get Railway deletion URL
     railway_url = _get_railway_project_url()
     result: dict[str, Any] = {
         "success": True,
@@ -1417,19 +1441,39 @@ async def cancel_subscription():
         "instructions": instructions,
     }
 
+    if "full_reset_completed" in steps_completed:
+        categories_msg = "All recurring data and categories have been reset."
+    elif "monarch_categories_deleted" in steps_completed:
+        categories_msg = "Categories deleted from Monarch."
+    else:
+        categories_msg = "Categories kept in Monarch."
+
+    is_desktop = config.is_desktop_environment()
+    data_cleared_msg = "App data has been cleared."
+
     if railway_url:
         result["instructions"] = [
-            "All app data has been deleted.",
+            categories_msg,
+            data_cleared_msg,
             "To stop billing, click the link below to delete your Railway project.",
-            "On the Railway page, scroll down and click 'Delete Project'.",
         ]
         result["is_railway"] = True
-    else:
+        result["is_desktop"] = False
+    elif is_desktop:
         result["instructions"] = [
-            "All app data has been deleted.",
-            "If running on a cloud platform, delete the deployment from your provider's dashboard to stop billing.",
+            categories_msg,
+            data_cleared_msg,
         ]
         result["is_railway"] = False
+        result["is_desktop"] = True
+    else:
+        result["instructions"] = [
+            categories_msg,
+            data_cleared_msg,
+            "Delete the deployment from your cloud provider's dashboard to stop billing.",
+        ]
+        result["is_railway"] = False
+        result["is_desktop"] = False
 
     _audit_log("CANCEL_SUBSCRIPTION", True, f"Steps: {steps_completed}")
 

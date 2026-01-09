@@ -147,6 +147,7 @@ export function SettingsTab() {
         </div>
       </div>
 
+      {/* User-facing settings */}
       <AppearanceSettings />
 
       <RecurringToolSettings
@@ -157,6 +158,16 @@ export function SettingsTab() {
         onShowResetModal={() => setShowRecurringResetModal(true)}
       />
 
+      <AccountSection />
+
+      <UpdatesSection
+        versionInfo={versionInfo}
+        onShowUpdateModal={() => setShowUpdateModal(true)}
+      />
+
+      <CreditsSection />
+
+      {/* Technical settings */}
       <AutomationSection
         status={autoSyncStatus}
         onEnable={handleEnableAutoSync}
@@ -164,30 +175,21 @@ export function SettingsTab() {
         onRefresh={fetchAutoSyncStatus}
       />
 
-      <UpdatesSection
-        versionInfo={versionInfo}
-        onShowUpdateModal={() => setShowUpdateModal(true)}
-      />
-
       {isDesktop && <DesktopSection />}
-
-      {isDesktop && <LogViewerSection />}
-
-      <AccountSection />
 
       {/* Hide security events on desktop - only relevant for web deployments */}
       {!isDesktop && <SecuritySection />}
 
-      {isDemo && <DemoModeSection />}
-
       <DataManagementSection onShowImportModal={() => setShowImportModal(true)} />
+
+      {isDesktop && <LogViewerSection />}
+
+      {isDemo && <DemoModeSection />}
 
       <DangerZoneSection
         onShowResetModal={() => setShowResetModal(true)}
         onShowUninstallModal={() => setShowUninstallModal(true)}
       />
-
-      <CreditsSection />
 
       {/* Modals */}
       <ResetAppModal

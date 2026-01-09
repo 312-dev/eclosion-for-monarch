@@ -9,7 +9,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { HelpCircle, ChevronDown, BookOpen, Play } from 'lucide-react';
+import { HelpCircle, BookOpen, Play } from 'lucide-react';
 import { getDocsUrl } from '../../utils';
 
 // Vite injects app version at build time
@@ -92,7 +92,6 @@ export function HelpDropdown({ hasTour, onStartTour }: HelpDropdownProps) {
         aria-haspopup={hasDropdown ? 'menu' : undefined}
       >
         <HelpCircle className="app-header-icon" aria-hidden="true" />
-        {hasDropdown && <ChevronDown className="h-3 w-3" aria-hidden="true" />}
       </button>
       {showDropdown && (
         <div

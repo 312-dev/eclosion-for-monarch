@@ -188,9 +188,13 @@ export async function authenticateWithBiometric(): Promise<BiometricAuthResult> 
     // Retrieve and decrypt the passphrase
     const passphrase = getStoredPassphrase();
     if (!passphrase) {
+      // Clear corrupted enrollment so user can re-enroll after manual unlock
+      // This typically happens when the app's keychain entry changed (e.g., app rename)
+      debugLog('Biometric: Clearing corrupted enrollment - passphrase retrieval failed');
+      clearBiometricEnrollment();
       return {
         success: false,
-        error: 'Failed to retrieve stored passphrase',
+        error: 'Touch ID setup was reset. Please unlock with your passphrase and re-enable Touch ID in settings.',
       };
     }
 
@@ -236,6 +240,54 @@ export function getStoredPassphrase(): string | null {
 }
 
 /**
+ * Check if a passphrase is stored in secure storage.
+ * This is true regardless of whether biometric unlock is enabled.
+ * Used to determine if auto-sync can work.
+ */
+export function isPassphraseStored(): boolean {
+  const hasPassphrase = store.has(PASSPHRASE_STORAGE_KEY);
+  debugLog(`Biometric: isPassphraseStored: ${hasPassphrase}`);
+  return hasPassphrase;
+}
+
+/**
+ * Store passphrase for background sync without enabling biometric unlock.
+ * This allows auto-sync to work while the user still types their passphrase to unlock.
+ *
+ * @param passphrase The user's passphrase to store
+ * @returns true if storage was successful
+ */
+export function storePassphraseForSync(passphrase: string): boolean {
+  if (!safeStorage.isEncryptionAvailable()) {
+    debugLog('Biometric: Cannot store passphrase - safeStorage not available');
+    return false;
+  }
+
+  try {
+    const encrypted = safeStorage.encryptString(passphrase);
+    const base64 = encrypted.toString('base64');
+    store.set(PASSPHRASE_STORAGE_KEY, base64);
+    // Note: We do NOT set BIOMETRIC_ENABLED_KEY here - that's only for biometric unlock
+
+    debugLog('Biometric: Passphrase stored for sync');
+    return true;
+  } catch (error) {
+    debugLog(`Biometric: Failed to store passphrase: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Clear stored passphrase (for logout/reset).
+ * Also clears biometric enrollment if enabled.
+ */
+export function clearStoredPassphrase(): void {
+  store.delete(PASSPHRASE_STORAGE_KEY);
+  store.set(BIOMETRIC_ENABLED_KEY, false);
+  debugLog('Biometric: Stored passphrase cleared');
+}
+
+/**
  * Clear biometric enrollment (remove stored passphrase).
  */
 export function clearBiometricEnrollment(): void {
@@ -246,14 +298,14 @@ export function clearBiometricEnrollment(): void {
 
 /**
  * Update the stored passphrase (e.g., when user changes their passphrase).
- * Maintains enrollment status.
+ * Works whether passphrase was stored for sync or biometric unlock.
  *
  * @param newPassphrase The new passphrase to store
  * @returns true if update was successful
  */
 export function updateStoredPassphrase(newPassphrase: string): boolean {
-  if (!isBiometricEnrolled()) {
-    debugLog('Biometric: Cannot update - not enrolled');
+  if (!isPassphraseStored()) {
+    debugLog('Biometric: Cannot update - no passphrase stored');
     return false;
   }
 

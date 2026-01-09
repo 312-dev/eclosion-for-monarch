@@ -35,6 +35,11 @@ export function useDeleteAllCategoriesMutation() {
   });
 }
 
+interface CancelSubscriptionParams {
+  deleteCategories?: boolean;
+  fullReset?: boolean;
+}
+
 /**
  * Cancel subscription (nuclear option)
  * Not supported in demo mode
@@ -49,7 +54,9 @@ export function useCancelSubscriptionMutation() {
           railway_deletion_url: null,
           instructions: ['Not available in demo mode'],
           is_railway: false,
+          is_desktop: false,
         })
-      : api.cancelSubscription,
+      : ({ deleteCategories, fullReset }: CancelSubscriptionParams = {}) =>
+          api.cancelSubscription(deleteCategories, fullReset),
   });
 }

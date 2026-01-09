@@ -38,6 +38,8 @@ export interface AuthState {
 export interface AuthActions {
   /** Login with email/password/mfa */
   login: (email: string, password: string, mfaSecret?: string) => Promise<LoginResult>;
+  /** Lock app and return to unlock screen (preserves credentials) */
+  lock: () => void;
   /** Logout and clear credentials */
   logout: () => Promise<void>;
   /** Set passphrase to encrypt credentials */
@@ -68,11 +70,12 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 // Provider
 // ============================================================================
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasPendingSync, setHasPendingSync] = useState(false);
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
@@ -121,6 +124,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result;
   }, []);
 
+  const lock = useCallback(() => {
+    // Lock the app - user will need to enter passphrase to unlock
+    // This preserves credentials, just requires re-authentication
+    setAuthenticated(false);
+    setNeedsUnlock(true);
+  }, []);
+
   const logout = useCallback(async () => {
     await apiLogout();
     setAuthenticated(false);
@@ -132,9 +142,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.success) {
       setAuthenticated(true);
       setNeedsUnlock(false);
+
+      // Execute pending sync if one was requested from menu
+      if (hasPendingSync && globalThis.electron?.pendingSync) {
+        setHasPendingSync(false);
+        globalThis.electron.pendingSync.executePending(passphrase).catch(() => {
+          // Sync errors are handled by main process notifications
+        });
+      }
     }
     return result;
-  }, []);
+  }, [hasPendingSync]);
 
   const unlockCredentials = useCallback(async (passphrase: string): Promise<UnlockResult> => {
     // Always validate against Monarch when unlocking
@@ -142,10 +160,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.success) {
       setAuthenticated(true);
       setNeedsUnlock(false);
+
+      // Execute pending sync if one was requested from menu
+      if (hasPendingSync && globalThis.electron?.pendingSync) {
+        setHasPendingSync(false);
+        globalThis.electron.pendingSync.executePending(passphrase).catch(() => {
+          // Sync errors are handled by main process notifications
+        });
+      }
     }
     // If unlock_success but not validation_success, caller should handle credential update
     return result;
-  }, []);
+  }, [hasPendingSync]);
 
   const updateCredentials = useCallback(async (
     email: string,
@@ -181,9 +207,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Listen for app lock events from Electron (desktop only)
   useEffect(() => {
-    if (!window.electron?.lock?.onLocked) return;
+    if (!globalThis.electron?.lock?.onLocked) return;
 
-    const unsubscribe = window.electron.lock.onLocked((_data) => {
+    const unsubscribe = globalThis.electron.lock.onLocked(() => {
       // Only lock if we're currently authenticated
       if (authenticated) {
         setAuthenticated(false);
@@ -196,6 +222,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [authenticated]);
 
+  // Listen for pending sync requests from menu (desktop only)
+  // This is triggered when user clicks "Sync Now" from menu while locked
+  useEffect(() => {
+    if (!globalThis.electron?.pendingSync?.onSyncPending) return;
+
+    const unsubscribe = globalThis.electron.pendingSync.onSyncPending(() => {
+      setHasPendingSync(true);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const value: AuthContextValue = {
     // State
     authenticated,
@@ -204,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     // Actions
     login,
+    lock,
     logout,
     setPassphrase,
     unlockCredentials,

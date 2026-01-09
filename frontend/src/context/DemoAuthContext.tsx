@@ -59,6 +59,10 @@ const mockSetNeedsUnlock = (): void => {
   // No-op in demo mode
 };
 
+const mockLock = (): void => {
+  // No-op in demo mode
+};
+
 // ============================================================================
 // Provider
 // ============================================================================
@@ -73,6 +77,7 @@ export function DemoAuthProvider({ children }: Readonly<{ children: ReactNode }>
       error: null as string | null,
       // Actions - all no-ops or return success
       login: mockLogin,
+      lock: mockLock,
       logout: mockLogout,
       setPassphrase: mockSetPassphrase,
       unlockCredentials: mockUnlockCredentials,

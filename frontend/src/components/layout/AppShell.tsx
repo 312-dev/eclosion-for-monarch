@@ -2,7 +2,7 @@
  * App Shell
  *
  * Main layout component providing:
- * - App header with branding, help, and sign out
+ * - App header with branding, help, and lock
  * - Vertical sidebar navigation
  * - Outlet for routed tab content
  * - Tutorial walkthrough system
@@ -40,7 +40,7 @@ export function AppShell() {
   const [showTour, setShowTour] = useState(false);
 
   const location = useLocation();
-  const { logout } = useAuth();
+  const { lock } = useAuth();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
   const toast = useToast();
@@ -78,8 +78,8 @@ export function AppShell() {
     }
   };
 
-  const handleSignOut = async () => {
-    await logout();
+  const handleLock = () => {
+    lock();
   };
 
   const handleSync = async () => {
@@ -141,12 +141,6 @@ export function AppShell() {
     >
       <TourController isOpen={showTour} onClose={handleTourClose} />
       <div className="app-layout" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
-        {/* Update notification banners */}
-        <UpdateBanner />
-        <UpdateReadyBanner />
-        <UpdateErrorBanner />
-        <OfflineIndicator />
-
         {/* Skip to main content link for keyboard users */}
         <a href="#main-content" className="skip-link">
           Skip to main content
@@ -154,27 +148,38 @@ export function AppShell() {
 
         {/* App Header */}
         <header className="app-header" role="banner">
-          <div className="app-header-content relative" style={isMacOSElectron ? { paddingLeft: '80px' } : undefined}>
-            <div className="app-brand">
-              <Link to={isDemo ? '/' : `${pathPrefix}/`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to home" onClick={() => isDemo && window.scrollTo(0, 0)}>
-                <AppIcon size={32} />
-                <h1 className="app-title hidden sm:block" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600 }}>
-                  Eclosion
-                </h1>
-              </Link>
-              {/* Demo mode: show slogan; Non-demo: show version in slogan position */}
-              {isDemo ? (
-                <span className="app-slogan hidden lg:block" style={{ color: 'var(--monarch-text-muted)', fontSize: '14px', fontStyle: 'italic', marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid var(--monarch-border)' }} aria-hidden="true">
-                  Your budgeting, evolved.
-                </span>
-              ) : (
-                <div className="hidden md:block" style={{ marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid var(--monarch-border)' }}>
-                  <VersionIndicator />
-                </div>
-              )}
-            </div>
+          <div
+            className="app-header-content relative"
+            style={isDesktop ? { justifyContent: 'center', paddingLeft: isMacOSElectron ? '80px' : undefined } : undefined}
+          >
+            {/* Logo/brand - hidden on desktop app (shown in sidebar instead) */}
+            {!isDesktop && (
+              <div className="app-brand">
+                <Link to={isDemo ? '/' : `${pathPrefix}/`} className="flex items-center gap-2" style={{ textDecoration: 'none' }} aria-label="Eclosion - Go to home" onClick={() => isDemo && window.scrollTo(0, 0)}>
+                  <AppIcon size={32} />
+                  <h1 className="app-title hidden sm:block" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600 }}>
+                    Eclosion
+                  </h1>
+                </Link>
+                {/* Demo mode: show slogan; Non-demo: show version in slogan position */}
+                {isDemo ? (
+                  <span className="app-slogan hidden lg:block" style={{ color: 'var(--monarch-text-muted)', fontSize: '14px', fontStyle: 'italic', marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid var(--monarch-border)' }} aria-hidden="true">
+                    Your budgeting, evolved.
+                  </span>
+                ) : (
+                  <div className="hidden md:block" style={{ marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid var(--monarch-border)' }}>
+                    <VersionIndicator />
+                  </div>
+                )}
+              </div>
+            )}
             <LeftToBudgetBadge data={data.ready_to_assign} />
-            <div className="app-header-actions" role="group" aria-label="Header actions">
+            <div
+              className="app-header-actions"
+              role="group"
+              aria-label="Header actions"
+              style={isDesktop ? { position: 'absolute', right: '1rem' } : undefined}
+            >
               <SyncButton
                 onSync={handleSync}
                 isSyncing={syncMutation.isPending}
@@ -198,6 +203,12 @@ export function AppShell() {
           </div>
         </header>
 
+        {/* Update notification banners - below header to avoid traffic light overlap */}
+        <UpdateBanner />
+        <UpdateReadyBanner />
+        <UpdateErrorBanner />
+        <OfflineIndicator />
+
         <SecurityInfo
           isOpen={showSecurityInfo}
           onClose={() => setShowSecurityInfo(false)}
@@ -209,7 +220,7 @@ export function AppShell() {
         {/* Main Layout: Sidebar + Content + Stats */}
         <div className="app-body">
           {/* Left Sidebar Navigation */}
-          <SidebarNavigation onSignOut={handleSignOut} />
+          <SidebarNavigation onLock={handleLock} />
 
           {/* Main content wrapper */}
           <div className="app-content-wrapper">
@@ -274,6 +285,12 @@ export function AppShell() {
               </a>
             </span>
           </div>
+          {/* Version indicator - desktop app only, bottom right */}
+          {isDesktop && (
+            <div className="ml-auto">
+              <VersionIndicator />
+            </div>
+          )}
         </footer>
       </div>
     </TourProvider>

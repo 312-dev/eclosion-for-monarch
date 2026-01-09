@@ -2,15 +2,11 @@
  * Updates Section
  *
  * Displays current version and allows checking for updates.
- * In desktop mode, shows the current update channel (determined at build time).
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Download, FlaskConical, Shield } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { VersionBadge } from '../VersionBadge';
 import type { VersionInfo } from '../../types';
-
-type UpdateChannel = 'stable' | 'beta';
 
 interface UpdatesSectionProps {
   versionInfo: VersionInfo | null;
@@ -18,27 +14,6 @@ interface UpdatesSectionProps {
 }
 
 export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectionProps) {
-  const [channel, setChannel] = useState<UpdateChannel>('stable');
-  // Initialize desktop state synchronously to avoid effect-triggered setState
-  const isDesktop = typeof window !== 'undefined' && !!window.electron;
-
-  const fetchChannel = useCallback(async () => {
-    if (!window.electron) return;
-    try {
-      const currentChannel = await window.electron.getUpdateChannel();
-      setChannel(currentChannel);
-    } catch {
-      // Ignore errors
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isDesktop) {
-      // Fetch channel from Electron IPC - async external state update is allowed
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchChannel();
-    }
-  }, [isDesktop, fetchChannel]);
 
   return (
     <section className="mb-8">
@@ -97,37 +72,6 @@ export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectio
           </div>
         </div>
 
-        {/* Desktop: Show current channel (read-only, determined at build time) */}
-        {isDesktop && (
-          <>
-            <div style={{ borderTop: '1px solid var(--monarch-border)' }} />
-            <div className="p-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className="p-2.5 rounded-lg"
-                  style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-                >
-                  {channel === 'beta' ? (
-                    <FlaskConical size={20} style={{ color: 'var(--monarch-orange)' }} />
-                  ) : (
-                    <Shield size={20} style={{ color: 'var(--monarch-text-muted)' }} />
-                  )}
-                </div>
-                <div>
-                  <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-                    {channel === 'beta' ? 'Beta Channel' : 'Stable Channel'}
-                  </div>
-                  <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
-                    {channel === 'beta'
-                      ? 'Receiving early releases with new features'
-                      : 'Receiving stable, tested releases'
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </section>
   );

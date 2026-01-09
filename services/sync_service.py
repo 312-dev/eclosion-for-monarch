@@ -657,10 +657,20 @@ class SyncService:
                 )
 
         if not state.is_configured():
-            return {
-                "success": False,
-                "error": "Tracker not configured. Please select a category group first.",
-            }
+            # Even without Recurring configured, verify connection to Monarch
+            # and update last_sync to show the app is working
+            try:
+                await self.recurring_service.get_all_recurring()
+                self.state_manager.mark_sync_complete()
+                return {
+                    "success": True,
+                    "message": "Connected to Monarch. Configure Recurring to start syncing.",
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"Failed to connect to Monarch: {e}",
+                }
 
         # Step 1: Fetch recurring items
         recurring_items = await self.recurring_service.get_all_recurring()
@@ -1233,7 +1243,7 @@ class SyncService:
                     "is_configured": False,
                     "user_first_name": state.user_first_name,
                 },
-                "last_sync": None,
+                "last_sync": state.last_sync,
                 "ready_to_assign": None,
                 "rollup": {
                     "enabled": False,

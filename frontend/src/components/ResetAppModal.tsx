@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { getDeploymentInfo } from '../api/client';
 import type { DeploymentInfo } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { getErrorMessage } from '../utils';
+import { isDesktopMode } from '../utils/apiBase';
 import { Portal } from './Portal';
 
 interface ResetAppModalProps {
@@ -11,8 +13,19 @@ interface ResetAppModalProps {
   onReset: () => void;
 }
 
+function DataLocationMessage({ deploymentInfo }: { readonly deploymentInfo: DeploymentInfo | null }) {
+  if (deploymentInfo?.is_railway) {
+    return <>Your configuration data is safely stored on Railway and will be preserved.</>;
+  }
+  if (isDesktopMode()) {
+    return <>Your configuration data is stored in your local data folder and will be preserved.</>;
+  }
+  return <>Your configuration data is stored in the Docker volume and will be preserved.</>;
+}
+
 export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) {
   const { resetApp } = useAuth();
+  const toast = useToast();
   const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,12 +52,17 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
     try {
       const result = await resetApp();
       if (result.success) {
+        toast.success('Credentials reset successfully');
         onReset();
       } else {
-        setError(result.error || 'Failed to reset app');
+        const errorMsg = result.error || 'Failed to reset app';
+        toast.error(errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errorMsg = getErrorMessage(err);
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setResetting(false);
     }
@@ -126,19 +144,9 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
 
           {/* Deployment-specific info */}
           <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-elevated)' }}>
-            {deploymentInfo?.is_railway ? (
-              <>
-                <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-                  Your configuration data is safely stored on Railway and will be preserved.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-                  Your configuration data is stored locally and will be preserved.
-                </p>
-              </>
-            )}
+            <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              <DataLocationMessage deploymentInfo={deploymentInfo} />
+            </p>
           </div>
 
           {error && (

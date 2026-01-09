@@ -75,7 +75,7 @@ export function GetStartedDeploymentContent() {
                 Recommended
               </div>
               <div className="mt-1 text-sm font-semibold text-(--monarch-text-dark)">Quick Setup</div>
-              <div className="text-xs text-(--monarch-text-muted)">~$5/mo</div>
+              <div className="text-xs text-(--monarch-text-muted)">~$5-7/mo on Railway</div>
             </th>
             <th className="py-2 pl-4 text-center">
               <div className="h-5" /> {/* Spacer to align with badge */}

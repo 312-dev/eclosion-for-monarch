@@ -193,25 +193,18 @@ const electronAPI = {
   // =========================================================================
 
   /**
-   * Get desktop-specific settings (run in background, show in dock, auto-start).
+   * Get desktop-specific settings (menu bar mode, auto-start).
    */
   getDesktopSettings: (): Promise<{
-    runInBackground: boolean;
-    showInDock: boolean;
+    menuBarMode: boolean;
     autoStart: boolean;
   }> => ipcRenderer.invoke('get-desktop-settings'),
 
   /**
-   * Set whether to run in background when window is closed.
+   * Set menu bar mode (run in background + hide from dock on macOS).
    */
-  setRunInBackground: (enabled: boolean): Promise<boolean> =>
-    ipcRenderer.invoke('set-run-in-background', enabled),
-
-  /**
-   * Set dock visibility (macOS only).
-   */
-  setShowInDock: (enabled: boolean): Promise<boolean> =>
-    ipcRenderer.invoke('set-show-in-dock', enabled),
+  setMenuBarMode: (enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('set-menu-bar-mode', enabled),
 
   /**
    * Get the state directory path.
@@ -457,6 +450,18 @@ const electronAPI = {
      */
     getStoredPassphrase: (): Promise<string | null> =>
       ipcRenderer.invoke('biometric:get-stored-passphrase'),
+
+    /**
+     * Check if a passphrase is stored (for sync, regardless of biometric status).
+     */
+    isPassphraseStored: (): Promise<boolean> =>
+      ipcRenderer.invoke('biometric:is-passphrase-stored'),
+
+    /**
+     * Store passphrase for background sync (without enabling biometric unlock).
+     */
+    storeForSync: (passphrase: string): Promise<boolean> =>
+      ipcRenderer.invoke('biometric:store-for-sync', passphrase),
   },
 
   // =========================================================================
@@ -499,6 +504,42 @@ const electronAPI = {
       ): void => callback(data);
       ipcRenderer.on('app:locked', handler);
       return () => ipcRenderer.removeListener('app:locked', handler);
+    },
+  },
+
+  // =========================================================================
+  // Pending Sync (for menu-triggered sync when locked)
+  // =========================================================================
+
+  /**
+   * Pending sync API for handling sync requests that require authentication first.
+   */
+  pendingSync: {
+    /**
+     * Check if there's a pending sync waiting for authentication.
+     */
+    hasPending: (): Promise<boolean> => ipcRenderer.invoke('sync:has-pending'),
+
+    /**
+     * Clear the pending sync state.
+     */
+    clearPending: (): Promise<void> => ipcRenderer.invoke('sync:clear-pending'),
+
+    /**
+     * Execute pending sync after authentication.
+     * Call this after successful login/unlock with the passphrase.
+     */
+    executePending: (passphrase: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('sync:execute-pending', passphrase),
+
+    /**
+     * Listen for pending sync requests from the main process.
+     * Triggered when user clicks "Sync Now" from menu while locked.
+     */
+    onSyncPending: (callback: () => void): (() => void) => {
+      const handler = (): void => callback();
+      ipcRenderer.on('sync:pending', handler);
+      return () => ipcRenderer.removeListener('sync:pending', handler);
     },
   },
 };

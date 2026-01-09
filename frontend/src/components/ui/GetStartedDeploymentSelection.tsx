@@ -65,7 +65,7 @@ const DEPLOYMENT_OPTIONS: DeploymentOption[] = [
     title: 'Cloud Hosted',
     titleCoder: 'Railway Deploy',
     description: 'Runs 24/7 in the cloud. Syncs automatically, even when you\'re away.',
-    descriptionCoder: 'Docker container on Railway. ~$5/mo. PostgreSQL backend.',
+    descriptionCoder: 'Docker container on Railway. ~$5-7/mo. PostgreSQL backend.',
     badge: '24/7 Sync',
     features: [
       { text: 'Always running', icon: ClockIcon },

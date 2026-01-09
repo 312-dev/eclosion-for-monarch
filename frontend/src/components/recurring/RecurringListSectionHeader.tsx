@@ -22,10 +22,10 @@ export function RecurringListSectionHeader({
     <div className="px-5 py-4 flex items-center justify-between bg-monarch-bg-card border-b border-monarch-border">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-monarch-text-dark">
+          <span className="text-lg font-semibold text-monarch-text-dark leading-tight">
             Dedicated Categories
           </span>
-          <span className="text-xs text-monarch-text-muted">
+          <span className="text-xs text-monarch-text-muted leading-none self-center">
             ({enabledCount})
           </span>
         </div>

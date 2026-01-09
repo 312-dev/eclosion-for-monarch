@@ -68,3 +68,6 @@ desktop/pyinstaller/dist/
 desktop/pyinstaller/build/
 desktop/resources/frontend/
 desktop/resources/backend/
+
+# Local app copies (e.g., copied from release for testing)
+apps/

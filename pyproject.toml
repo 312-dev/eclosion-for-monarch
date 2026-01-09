@@ -22,7 +22,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "monarchmoney @ git+https://github.com/GraysonCAdams/monarchmoney.git@flex-budget",
+    "monarchmoney @ git+https://github.com/312-dev/monarchmoney.git@flex-budget",
     "pyotp>=2.9.0",
     "Flask>=3.1.0",
     "flask-cors>=4.0.0",

@@ -6,18 +6,19 @@
  */
 
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Settings, LogOut, Lightbulb, LayoutDashboard } from 'lucide-react';
-import { RecurringIcon } from '../wizards/WizardComponents';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
+import { Settings, Lock, Lightbulb, LayoutDashboard } from 'lucide-react';
+import { RecurringIcon, AppIcon } from '../wizards/WizardComponents';
 import { IdeasModal } from '../IdeasModal';
 import { Portal } from '../Portal';
 import { Tooltip } from '../ui/Tooltip';
 import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
 import { getComingSoonFeatures } from '../../data/features';
+import { isDesktopMode } from '../../utils/apiBase';
 
 interface SidebarNavigationProps {
-  onSignOut: () => void;
+  onLock: () => void;
 }
 
 interface NavItem {
@@ -83,20 +84,31 @@ function ComingSoonNavItem({ label, icon }: Readonly<{ label: string; icon: Reac
   );
 }
 
-export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps>) {
+export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) {
   const navigate = useNavigate();
   const isDemo = useDemo();
+  const isDesktop = isDesktopMode();
   const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
   const comingSoonFeatures = getComingSoonFeatures();
+  const prefix = isDemo ? '/demo' : '';
 
   const handleSettingsClick = (hash: string) => {
-    const prefix = isDemo ? '/demo' : '';
     navigate(`${prefix}/settings${hash}`);
   };
 
   return (
     <nav className="sidebar-nav" aria-label="Main navigation">
+      {/* Logo section - desktop app only */}
+      {isDesktop && (
+        <div className="sidebar-logo sidebar-desktop-only">
+          <Link to={`${prefix}/`} className="sidebar-logo-link" aria-label="Eclosion - Go to home">
+            <AppIcon size={28} />
+            <span className="sidebar-logo-text">Eclosion</span>
+          </Link>
+        </div>
+      )}
+
       {/* Tools section - scrollable on mobile */}
       <div className="sidebar-nav-tools">
         <div className="sidebar-nav-sections">
@@ -156,17 +168,17 @@ export function SidebarNavigation({ onSignOut }: Readonly<SidebarNavigationProps
         ))}
       </div>
 
-      {/* Sign Out - at the bottom */}
+      {/* Footer - at the bottom (desktop only) */}
       <div className="sidebar-nav-footer sidebar-desktop-only">
         <div className="sidebar-nav-list">
           <button
             type="button"
-            onClick={onSignOut}
-            className="sidebar-nav-item sidebar-signout"
-            aria-label="Sign out of your account"
+            onClick={onLock}
+            className="sidebar-nav-item sidebar-lock"
+            aria-label="Lock Eclosion"
           >
-            <span className="sidebar-nav-icon" aria-hidden="true"><LogOut size={20} /></span>
-            <span className="sidebar-nav-label">Sign Out</span>
+            <span className="sidebar-nav-icon" aria-hidden="true"><Lock size={20} /></span>
+            <span className="sidebar-nav-label">Lock</span>
           </button>
         </div>
       </div>

@@ -70,10 +70,12 @@ export function SyncButton({ onSync, isSyncing, lastSync, compact = false }: Syn
         )}
         <span aria-live="polite">
           {isSyncing ? 'Syncing...' : (
-            <>
-              <span className="hidden sm:inline">Synced </span>
-              {formattedTime}
-            </>
+            lastSync ? (
+              <>
+                <span className="hidden sm:inline">Synced </span>
+                {formattedTime}
+              </>
+            ) : 'Never synced'
           )}
         </span>
       </button>

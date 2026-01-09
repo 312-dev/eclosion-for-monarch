@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { useToast } from '../../context/ToastContext';
 import { CopyIcon, CheckCircleIcon } from '../icons';
 
 interface ChecksumDisplayProps {
@@ -27,6 +28,7 @@ export function ChecksumDisplay({
   filename,
   algorithm = 'SHA256',
 }: ChecksumDisplayProps) {
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
   const [showFull, setShowFull] = useState(false);
 
@@ -38,6 +40,7 @@ export function ChecksumDisplay({
     try {
       await navigator.clipboard.writeText(checksum);
       setCopied(true);
+      toast.success('Checksum copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
@@ -46,8 +49,9 @@ export function ChecksumDisplay({
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
-      document.body.removeChild(textArea);
+      textArea.remove();
       setCopied(true);
+      toast.success('Checksum copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     }
   };

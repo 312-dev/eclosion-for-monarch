@@ -7,6 +7,9 @@
 
 import { app, dialog, powerMonitor } from 'electron';
 
+// Set the display name for menus (overrides package.json "name")
+app.setName('Eclosion');
+
 // Initialize Sentry as early as possible (before other imports that might crash)
 import { initSentry, captureException, addBreadcrumb, isSentryEnabled } from './sentry';
 initSentry();
@@ -49,6 +52,7 @@ import {
 import { recordMilestone, finalizeStartupMetrics } from './startup-metrics';
 import { initializeLockManager, cleanupLockManager, updateMainWindowRef } from './lock-manager';
 import { getStoredPassphrase } from './biometric';
+import { setPendingSync } from './sync-pending';
 
 // Single instance lock - prevent multiple instances
 debugLog('Requesting single instance lock...');
@@ -125,10 +129,14 @@ async function initialize(): Promise<void> {
     setupIpcHandlers(backendManager);
     debugLog('IPC handlers set up');
 
-    // Initialize auto-updater
-    debugLog('Initializing updater...');
-    initializeUpdater();
-    debugLog('Updater initialized');
+    // Initialize auto-updater (only in packaged builds - dev mode has no app-update.yml)
+    if (app.isPackaged) {
+      debugLog('Initializing updater...');
+      initializeUpdater();
+      debugLog('Updater initialized');
+    } else {
+      debugLog('Skipping updater initialization (development mode)');
+    }
 
     // Start Python backend
     debugLog('Starting backend...');
@@ -145,19 +153,34 @@ async function initialize(): Promise<void> {
     await createWindow(backendManager.getPort());
     recordMilestone('windowCreated');
 
-    // Create application menu (adds Settings to macOS app menu)
-    createAppMenu();
+    // Create application menu (adds Settings, Sync, Lock to menu bar)
+    createAppMenu(handleSyncClick);
 
     // Create system tray
     console.log('Creating system tray...');
     createTray(handleSyncClick);
 
-    // Fetch and display last sync time in tray menu
+    // Fetch last sync time and check if sync is needed on startup
     const lastSyncIso = await backendManager.fetchLastSyncTime();
     if (lastSyncIso) {
       const syncStatus = `Last sync: ${formatRelativeTime(lastSyncIso)}`;
       updateTrayMenu(handleSyncClick, syncStatus);
       updateHealthStatus(true, formatRelativeTime(lastSyncIso));
+    }
+
+    // Desktop auto-sync: if passphrase is stored in keychain, sync based on interval
+    // This bypasses the backend's auto_sync.enabled flag (designed for web flow)
+    const passphrase = getStoredPassphrase();
+    const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
+    if (syncResult.synced) {
+      if (syncResult.success) {
+        const syncTime = new Date().toLocaleTimeString();
+        showNotification('Synced on Startup', 'Your recurring expenses are up to date.');
+        updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+        updateHealthStatus(true, syncTime);
+      } else {
+        showNotification('Sync Failed', syncResult.error || 'Unable to sync. Please try again later.');
+      }
     }
 
     // Initialize global hotkeys
@@ -175,8 +198,10 @@ async function initialize(): Promise<void> {
     // Setup power monitor for sleep/wake handling
     setupPowerMonitor();
 
-    // Schedule periodic update checks
-    updateCheckInterval = scheduleUpdateChecks(6); // Check every 6 hours
+    // Schedule periodic update checks (only in packaged builds)
+    if (app.isPackaged) {
+      updateCheckInterval = scheduleUpdateChecks(6); // Check every 6 hours
+    }
 
     // Handle deep link if app was opened via eclosion:// URL
     handleInitialDeepLink();
@@ -201,20 +226,38 @@ async function initialize(): Promise<void> {
 }
 
 /**
- * Handle sync button click from tray menu.
+ * Handle sync button click from tray/menu.
+ * If no passphrase is available, shows the window and waits for auth.
  */
 async function handleSyncClick(): Promise<void> {
   addBreadcrumb({ category: 'sync', message: 'Manual sync triggered' });
+
   // Get passphrase from secure storage for sync (if biometric is enrolled)
   const passphrase = getStoredPassphrase();
-  const result = await backendManager.triggerSync(passphrase ?? undefined);
+
+  if (!passphrase) {
+    // No passphrase stored - need user to authenticate first
+    debugLog('Sync: No passphrase available, requesting auth');
+    setPendingSync(true);
+
+    // Show the window and notify renderer to sync after auth
+    showWindow();
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('sync:pending');
+    }
+    return;
+  }
+
+  // Passphrase available - proceed with sync
+  const result = await backendManager.triggerSync(passphrase);
   if (result.success) {
     const syncTime = new Date().toLocaleTimeString();
     showNotification('Sync Complete', 'Your recurring expenses are up to date.');
     updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
     updateHealthStatus(true, syncTime);
   } else {
-    showNotification('Sync Failed', result.error || 'Please check your connection and try again.');
+    showNotification('Sync Failed', result.error || 'Unable to sync. Please try again later.');
   }
 }
 
@@ -230,7 +273,7 @@ function setupPowerMonitor(): void {
     // Check if sync is needed after wake
     try {
       if (backendManager.isRunning()) {
-        // Get passphrase from secure storage for auto-sync (if biometric is enrolled)
+        // Desktop auto-sync: if passphrase is stored in keychain, sync based on interval
         const passphrase = getStoredPassphrase();
         const result = await backendManager.checkSyncNeeded(passphrase ?? undefined);
 
@@ -242,7 +285,7 @@ function setupPowerMonitor(): void {
             updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
             updateHealthStatus(true, syncTime);
           } else {
-            showNotification('Sync Failed', result.error || 'Automatic sync after wake failed.');
+            showNotification('Sync Failed', result.error || 'Unable to sync. Please try again later.');
           }
         }
       }

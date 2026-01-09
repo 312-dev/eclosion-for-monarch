@@ -2,16 +2,17 @@
  * UninstallModal - Modal for uninstalling/canceling the tool
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { DeletableCategory } from '../../types';
-import { getDeletableCategories, deleteAllCategories, cancelSubscription, getDeploymentInfo } from '../../api/client';
+import { getDeletableCategories, cancelSubscription, getDeploymentInfo } from '../../api/client';
 import type { CancelSubscriptionResult, DeploymentInfo } from '../../api/client';
 import { getErrorMessage } from '../../utils';
-import { WarningIcon, XIcon, CheckSimpleIcon } from '../icons';
-import { UI } from '../../constants';
-import { DeleteCategoriesContent } from './DeleteCategoriesContent';
-import { CancelSubscriptionContent } from './CancelSubscriptionContent';
+import { isDesktopMode } from '../../utils/apiBase';
+import { useToast } from '../../context/ToastContext';
+import { WarningIcon, XIcon } from '../icons';
 import { UninstallModalFooter } from './UninstallModalFooter';
+import { UninstallSuccessContent } from './UninstallSuccessContent';
+import { UninstallFormContent } from './UninstallFormContent';
 import { Portal } from '../Portal';
 
 interface UninstallModalProps {
@@ -19,43 +20,22 @@ interface UninstallModalProps {
   readonly onClose: () => void;
 }
 
-type Tab = 'delete' | 'cancel';
-
-interface ToastState {
-  message: string;
-  type: 'success' | 'error' | 'warning';
-}
+type CategoryChoice = 'delete' | 'keep';
 
 export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('delete');
+  const toast = useToast();
   const [categories, setCategories] = useState<DeletableCategory[]>([]);
   const [loading, setLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmText, setConfirmText] = useState('');
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const [categoryChoice, setCategoryChoice] = useState<CategoryChoice>('delete');
 
-  // Cancel subscription state
   const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   const [cancelResult, setCancelResult] = useState<CancelSubscriptionResult | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [fullReset, setFullReset] = useState(false);
 
-  const expectedConfirmText = `Delete these ${categories.length} categories`;
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchCategories();
-      fetchDeploymentInfo();
-      setConfirmText('');
-      setError(null);
-      setToast(null);
-      setCancelResult(null);
-      setCancelConfirm(false);
-    }
-  }, [isOpen]);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -66,65 +46,70 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchDeploymentInfo = async () => {
+  const fetchDeploymentInfo = useCallback(async () => {
     try {
       const info = await getDeploymentInfo();
       setDeploymentInfo(info);
     } catch {
       // Not critical if this fails
     }
-  };
+  }, []);
 
-  const handleDelete = async () => {
-    if (confirmText !== expectedConfirmText) return;
-
-    setDeleting(true);
-    setError(null);
-    try {
-      const result = await deleteAllCategories();
-
-      if (result.success) {
-        setToast({ message: `${result.deleted_count} categories deleted`, type: 'success' });
-        setTimeout(() => {
-          window.location.reload();
-        }, UI.DELAY.TOAST_BEFORE_RELOAD);
-      } else if (result.deleted_count > 0) {
-        setToast({
-          message: `${result.deleted_count} deleted, ${result.failed_count} failed`,
-          type: 'warning'
-        });
-        setTimeout(() => {
-          window.location.reload();
-        }, UI.DELAY.TOAST_WITH_PARTIAL_SUCCESS);
-      } else {
-        throw new Error(`Failed to delete categories: ${result.failed.map(f => f.error).join(', ')}`);
-      }
-    } catch (err) {
-      setError(getErrorMessage(err));
-      setDeleting(false);
+  useEffect(() => {
+    if (isOpen) {
+      fetchCategories();
+      fetchDeploymentInfo();
+      setError(null);
+      setCancelResult(null);
+      setConfirmed(false);
+      setCategoryChoice('delete');
+      setFullReset(false);
     }
-  };
+  }, [isOpen, fetchCategories, fetchDeploymentInfo]);
 
-  const handleCancelSubscription = async () => {
-    if (!cancelConfirm) return;
+  const handleUninstall = async () => {
+    if (!confirmed) return;
 
     setCancelling(true);
     setError(null);
     try {
-      const result = await cancelSubscription();
+      const result = await cancelSubscription(categoryChoice === 'delete', fullReset);
+
+      // On desktop, also clear local data folder
+      if (isDesktopMode() && globalThis.electron) {
+        try {
+          await globalThis.electron.showFactoryResetDialog();
+        } catch {
+          // Non-critical if this fails - data was already cleared via API
+        }
+      }
+
       setCancelResult(result);
+      toast.success('Uninstall completed successfully');
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errorMsg = getErrorMessage(err);
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setCancelling(false);
     }
   };
 
-  if (!isOpen) return null;
+  const handleBackdropClick = () => {
+    if (!cancelling) {
+      onClose();
+    }
+  };
 
-  const isProcessing = deleting || cancelling;
+  const handleBackdropKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && !cancelling) {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <Portal>
@@ -132,123 +117,77 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
         {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/50 modal-backdrop"
-          onClick={isProcessing ? undefined : onClose}
+          onClick={handleBackdropClick}
+          onKeyDown={handleBackdropKeyDown}
+          role="presentation"
         />
 
-      {/* Modal */}
-      <div
-        className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[80vh] flex flex-col modal-content"
-        style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
-      >
-        {/* Header */}
-        <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <WarningIcon size={20} color="var(--monarch-error)" />
-              <h2 className="text-lg font-semibold" style={{ color: 'var(--monarch-error)' }}>
-                Uninstall / Cancel
-              </h2>
+        {/* Modal */}
+        <div
+          className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[80vh] flex flex-col modal-content"
+          style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="uninstall-modal-title"
+        >
+          {/* Header */}
+          <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <WarningIcon size={20} color="var(--monarch-error)" />
+                <h2 id="uninstall-modal-title" className="text-lg font-semibold" style={{ color: 'var(--monarch-error)' }}>
+                  Uninstall
+                </h2>
+              </div>
+              {!cancelling && (
+                <button
+                  onClick={onClose}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  style={{ color: 'var(--monarch-text-muted)' }}
+                  aria-label="Close modal"
+                >
+                  <XIcon size={20} />
+                </button>
+              )}
             </div>
-            {!isProcessing && (
-              <button
-                onClick={onClose}
-                className="p-1 rounded hover:bg-gray-100 transition-colors"
-                style={{ color: 'var(--monarch-text-muted)' }}
-              >
-                <XIcon size={20} />
-              </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {error && (
+              <div className="mb-4 p-3 rounded-lg text-sm error-message" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
+                {error}
+              </div>
+            )}
+
+            {cancelResult ? (
+              <UninstallSuccessContent cancelResult={cancelResult} />
+            ) : (
+              <UninstallFormContent
+                loading={loading}
+                categories={categories}
+                categoryChoice={categoryChoice}
+                onCategoryChoiceChange={setCategoryChoice}
+                confirmed={confirmed}
+                onConfirmedChange={setConfirmed}
+                fullReset={fullReset}
+                onFullResetChange={setFullReset}
+                cancelling={cancelling}
+                deploymentInfo={deploymentInfo}
+              />
             )}
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => setActiveTab('delete')}
-              disabled={isProcessing}
-              className="px-3 py-1.5 text-sm rounded-lg transition-colors"
-              style={{
-                backgroundColor: activeTab === 'delete' ? 'var(--monarch-error-bg)' : 'transparent',
-                color: activeTab === 'delete' ? 'var(--monarch-error)' : 'var(--monarch-text-muted)',
-                border: activeTab === 'delete' ? 'none' : '1px solid var(--monarch-border)',
-              }}
-            >
-              Delete Categories
-            </button>
-            <button
-              onClick={() => setActiveTab('cancel')}
-              disabled={isProcessing}
-              className="px-3 py-1.5 text-sm rounded-lg transition-colors"
-              style={{
-                backgroundColor: activeTab === 'cancel' ? 'var(--monarch-error-bg)' : 'transparent',
-                color: activeTab === 'cancel' ? 'var(--monarch-error)' : 'var(--monarch-text-muted)',
-                border: activeTab === 'cancel' ? 'none' : '1px solid var(--monarch-border)',
-              }}
-            >
-              Tear Down & Stop Paying
-            </button>
-          </div>
+          {/* Footer */}
+          <UninstallModalFooter
+            cancelling={cancelling}
+            confirmed={confirmed}
+            cancelResult={cancelResult}
+            onClose={onClose}
+            onUninstall={handleUninstall}
+          />
         </div>
-
-        {/* Toast */}
-        {toast && (
-          <div
-            className="mx-4 mt-4 p-3 rounded-lg text-sm flex items-center gap-2"
-            style={{
-              backgroundColor: toast.type === 'success' ? 'var(--monarch-success-bg)' :
-                              toast.type === 'warning' ? 'var(--monarch-orange-bg)' : 'var(--monarch-error-bg)',
-              color: toast.type === 'success' ? 'var(--monarch-success)' :
-                     toast.type === 'warning' ? 'var(--monarch-orange)' : 'var(--monarch-error)',
-            }}
-          >
-            {toast.type === 'success' && <CheckSimpleIcon size={16} />}
-            {toast.message}
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {error && (
-            <div className="mb-4 p-3 rounded-lg text-sm error-message" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
-              {error}
-            </div>
-          )}
-
-          {activeTab === 'delete' ? (
-            <DeleteCategoriesContent
-              categories={categories}
-              loading={loading}
-              confirmText={confirmText}
-              expectedConfirmText={expectedConfirmText}
-              deleting={deleting}
-              onConfirmTextChange={setConfirmText}
-            />
-          ) : (
-            <CancelSubscriptionContent
-              cancelResult={cancelResult}
-              deploymentInfo={deploymentInfo}
-              cancelConfirm={cancelConfirm}
-              cancelling={cancelling}
-              onCancelConfirmChange={setCancelConfirm}
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <UninstallModalFooter
-          activeTab={activeTab}
-          deleting={deleting}
-          cancelling={cancelling}
-          confirmText={confirmText}
-          expectedConfirmText={expectedConfirmText}
-          categoriesCount={categories.length}
-          cancelConfirm={cancelConfirm}
-          cancelResult={cancelResult}
-          onClose={onClose}
-          onDelete={handleDelete}
-          onCancelSubscription={handleCancelSubscription}
-        />
       </div>
-    </div>
     </Portal>
   );
 }

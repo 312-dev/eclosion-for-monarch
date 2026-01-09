@@ -110,6 +110,18 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     'index.html'
   );
 
+  // Handle external links - open in default browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  // Prevent page title from updating window title (keeps dock menu showing "Eclosion")
+  // Must be registered BEFORE loadFile to catch the initial title update
+  mainWindow.webContents.on('page-title-updated', (event) => {
+    event.preventDefault();
+  });
+
   /**
    * Backend Port Communication Architecture
    *
@@ -136,18 +148,12 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     query: { _backendPort: String(backendPort) },
   });
 
-  // Handle external links - open in default browser
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
-
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
   });
 
-  // Handle close - behavior depends on runInBackground setting
+  // Handle close - behavior depends on menuBarMode setting
   mainWindow.on('close', (event) => {
     // Save window bounds regardless of close behavior
     const currentBounds = mainWindow?.getBounds();
@@ -156,13 +162,13 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     }
 
     if (!isQuitting) {
-      const runInBackground = store.get('runInBackground', false) as boolean;
-      if (runInBackground) {
+      const menuBarMode = store.get('menuBarMode', false) as boolean;
+      if (menuBarMode) {
         // Hide to tray instead of quitting
         event.preventDefault();
         mainWindow?.hide();
       }
-      // If runInBackground is false, allow the window to close normally
+      // If menuBarMode is false, allow the window to close normally
       // which will trigger app quit via window-all-closed handler
     }
   });

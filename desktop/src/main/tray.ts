@@ -172,8 +172,7 @@ export function updateTrayMenu(
 ): void {
   if (!tray) return;
 
-  const runInBackground = store.get('runInBackground', false) as boolean;
-  const showInDock = store.get('showInDock', true) as boolean;
+  const menuBarMode = store.get('menuBarMode', false) as boolean;
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -202,30 +201,17 @@ export function updateTrayMenu(
     },
     { type: 'separator' },
     {
-      label: 'Run in Background',
+      label: process.platform === 'darwin' ? 'Menu Bar Mode' : 'Run in Background',
       type: 'checkbox' as const,
-      checked: runInBackground,
+      checked: menuBarMode,
       click: (menuItem: Electron.MenuItem): void => {
-        store.set('runInBackground', menuItem.checked);
+        store.set('menuBarMode', menuItem.checked);
+        // On macOS, also update dock visibility
+        if (process.platform === 'darwin') {
+          updateDockVisibility(menuItem.checked);
+        }
       },
     },
-    // "Show in Dock" is macOS-only because:
-    // - macOS has a distinct dock API (app.dock.show/hide) allowing "menu bar only" apps
-    // - Windows has no equivalent - apps show in taskbar when running, no hide API
-    // - Linux behavior varies by desktop environment (GNOME, KDE, etc.)
-    ...(process.platform === 'darwin'
-      ? [
-          {
-            label: 'Show in Dock',
-            type: 'checkbox' as const,
-            checked: showInDock,
-            click: (menuItem: Electron.MenuItem): void => {
-              store.set('showInDock', menuItem.checked);
-              updateDockVisibility(!menuItem.checked);
-            },
-          },
-        ]
-      : []),
     { type: 'separator' },
     {
       label: 'Quit Eclosion',
@@ -257,9 +243,9 @@ function updateDockVisibility(menuBarMode: boolean): void {
  */
 export function initializeDockVisibility(): void {
   if (process.platform === 'darwin') {
-    // Use showInDock setting (default true = show dock)
-    const showInDock = store.get('showInDock', true) as boolean;
-    updateDockVisibility(!showInDock);
+    // Use menuBarMode setting (default false = show in dock)
+    const menuBarMode = store.get('menuBarMode', false) as boolean;
+    updateDockVisibility(menuBarMode);
   }
 }
 

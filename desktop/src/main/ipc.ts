@@ -41,6 +41,8 @@ import {
   clearBiometricEnrollment,
   getStoredPassphrase,
   getBiometricDisplayName,
+  isPassphraseStored,
+  storePassphraseForSync,
 } from './biometric';
 import {
   getLockTrigger,
@@ -49,6 +51,11 @@ import {
   lockApp,
   type LockTrigger,
 } from './lock-manager';
+import {
+  hasPendingSync,
+  clearPendingSync,
+  setPendingSync,
+} from './sync-pending';
 import {
   getFormattedMetrics,
   clearMetricsHistory,
@@ -251,37 +258,30 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   ipcMain.handle('get-desktop-settings', () => {
     const autoStart = isAutoStartEnabled();
     return {
-      runInBackground: store.get('runInBackground', false) as boolean,
-      showInDock: store.get('showInDock', true) as boolean,
+      menuBarMode: store.get('menuBarMode', false) as boolean,
       autoStart,
     };
   });
 
   /**
-   * Set whether to run in background when window is closed.
-   */
-  ipcMain.handle('set-run-in-background', (_event, enabled: boolean) => {
-    store.set('runInBackground', enabled);
-    return enabled;
-  });
-
-  /**
-   * Set dock visibility (macOS only).
+   * Set menu bar mode (macOS: run in background + hide from dock).
    *
-   * This feature is intentionally macOS-only because:
-   * - macOS has a distinct dock API (app.dock.show/hide) allowing "menu bar only" apps
-   * - Windows has no equivalent - apps show in taskbar when running, no hide API
-   * - Linux behavior varies by desktop environment (GNOME, KDE, etc.)
+   * When enabled:
+   * - App stays running in system tray when window is closed
+   * - On macOS, hides from the Dock (menu bar only app)
+   *
+   * When disabled:
+   * - App quits when window is closed
+   * - On macOS, shows in the Dock
    */
-  ipcMain.handle('set-show-in-dock', (_event, enabled: boolean) => {
-    if (process.platform === 'darwin') {
-      store.set('showInDock', enabled);
-      if (app.dock) {
-        if (enabled) {
-          app.dock.show();
-        } else {
-          app.dock.hide();
-        }
+  ipcMain.handle('set-menu-bar-mode', (_event, enabled: boolean) => {
+    store.set('menuBarMode', enabled);
+    // On macOS, also control dock visibility
+    if (process.platform === 'darwin' && app.dock) {
+      if (enabled) {
+        app.dock.hide();
+      } else {
+        app.dock.show();
       }
     }
     return enabled;
@@ -601,6 +601,20 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     return getStoredPassphrase();
   });
 
+  /**
+   * Check if a passphrase is stored (for sync, regardless of biometric status).
+   */
+  ipcMain.handle('biometric:is-passphrase-stored', () => {
+    return isPassphraseStored();
+  });
+
+  /**
+   * Store passphrase for background sync (without enabling biometric unlock).
+   */
+  ipcMain.handle('biometric:store-for-sync', (_event, passphrase: string) => {
+    return storePassphraseForSync(passphrase);
+  });
+
   // =========================================================================
   // Lock Management
   // =========================================================================
@@ -631,5 +645,40 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    */
   ipcMain.handle('lock:lock-app', () => {
     lockApp();
+  });
+
+  // =========================================================================
+  // Pending Sync (for menu-triggered sync when locked)
+  // =========================================================================
+
+  /**
+   * Check if there's a pending sync waiting for authentication.
+   */
+  ipcMain.handle('sync:has-pending', () => {
+    return hasPendingSync();
+  });
+
+  /**
+   * Clear the pending sync state.
+   */
+  ipcMain.handle('sync:clear-pending', () => {
+    clearPendingSync();
+  });
+
+  /**
+   * Execute pending sync after authentication.
+   * Called by renderer after successful login/unlock with passphrase.
+   */
+  ipcMain.handle('sync:execute-pending', async (_event, passphrase: string) => {
+    if (!hasPendingSync()) {
+      return { success: false, error: 'No pending sync' };
+    }
+
+    // Clear pending state
+    setPendingSync(false);
+
+    // Trigger sync with the provided passphrase
+    const result = await backendManager.triggerSync(passphrase);
+    return result;
   });
 }

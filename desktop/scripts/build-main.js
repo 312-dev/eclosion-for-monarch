@@ -7,8 +7,13 @@
 
 const esbuild = require('esbuild');
 const path = require('path');
+const fs = require('node:fs');
 
 const isWatch = process.argv.includes('--watch');
+
+// Read version from package.json as fallback
+const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf-8'));
+const appVersion = process.env.ECLOSION_VERSION || pkg.version;
 
 /** @type {import('esbuild').BuildOptions} */
 const commonOptions = {
@@ -23,7 +28,7 @@ const commonOptions = {
   // Inject build-time constants for version and channel
   define: {
     'process.env.NODE_ENV': '"production"',
-    '__APP_VERSION__': JSON.stringify(process.env.ECLOSION_VERSION || '0.0.0'),
+    '__APP_VERSION__': JSON.stringify(appVersion),
     '__RELEASE_CHANNEL__': JSON.stringify(process.env.RELEASE_CHANNEL || 'dev'),
   },
   // Keep require() calls as-is for external modules

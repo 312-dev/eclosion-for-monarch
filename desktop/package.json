@@ -20,7 +20,7 @@
     "dev": "npm run build:main && electron .",
     "dev:watch": "node scripts/build-main.js --watch",
     "build:main": "node scripts/build-main.js",
-    "build:frontend": "cd ../frontend && npm run build",
+    "build:frontend": "cd ../frontend && VITE_DESKTOP_BUILD=true npm run build",
     "build:backend": "node scripts/build-backend.js",
     "build:icons": "node scripts/generate-icons.js",
     "build:all": "npm run build:frontend && npm run build:backend && npm run build:main",

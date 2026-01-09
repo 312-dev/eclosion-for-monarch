@@ -23,7 +23,7 @@ const OPEN_SOURCE_PROJECTS: OpenSourceProject[] = [
   {
     name: 'monarchmoney',
     description: 'Python library for the Monarch Money API',
-    url: 'https://github.com/GraysonCAdams/monarchmoney',
+    url: 'https://github.com/312-dev/monarchmoney',
     note: 'using our own fork',
   },
 ];

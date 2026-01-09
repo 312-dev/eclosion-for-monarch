@@ -370,11 +370,12 @@ export class BackendManager {
 
   /**
    * Fetch the last sync time from the backend.
-   * Returns the formatted time string or null if never synced.
+   * Uses auto-sync/status endpoint which doesn't require auth.
+   * Returns the ISO timestamp string or null if never synced.
    */
   async fetchLastSyncTime(): Promise<string | null> {
     try {
-      const response = await fetch(`http://127.0.0.1:${this.port}/recurring/dashboard`, {
+      const response = await fetch(`http://127.0.0.1:${this.port}/recurring/auto-sync/status`, {
         headers: {
           'X-Desktop-Secret': this.desktopSecret,
         },
@@ -394,11 +395,22 @@ export class BackendManager {
   }
 
   /**
-   * Check if a sync is needed (for wake-from-sleep handling).
-   * Returns the result of the sync if triggered, or null if no sync was needed.
-   * @param passphrase Optional passphrase to use for unlocking if credentials are locked
+   * Check if a sync is needed based on interval (for startup and wake-from-sleep).
+   *
+   * On desktop, auto-sync works whenever a passphrase is available (stored in OS keychain).
+   * This bypasses the backend's auto_sync.enabled flag, which is designed for the web flow
+   * where server-encrypted credentials are needed.
+   *
+   * @param passphrase Passphrase from keychain storage (required for desktop auto-sync)
+   * @returns Result indicating if sync was triggered and its outcome
    */
   async checkSyncNeeded(passphrase?: string): Promise<{ synced: boolean; success?: boolean; error?: string }> {
+    // Desktop auto-sync requires a stored passphrase
+    // If no passphrase is available, we can't sync automatically
+    if (!passphrase) {
+      return { synced: false };
+    }
+
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/auto-sync/status`, {
         headers: {
@@ -412,17 +424,26 @@ export class BackendManager {
           last_sync?: string;
           interval_minutes?: number;
         };
-        // If auto-sync is enabled and last sync was too long ago, trigger sync
-        if (data.enabled && data.last_sync) {
+
+        // Use the configured interval, or default to 6 hours
+        const intervalMinutes = data.interval_minutes || 360;
+        const intervalHours = intervalMinutes / 60;
+
+        // Check if enough time has passed since last sync
+        if (data.last_sync) {
           const lastSync = new Date(data.last_sync);
           const hoursSinceSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60);
-          const intervalHours = (data.interval_minutes || 360) / 60;
 
-          if (hoursSinceSync > intervalHours) {
-            console.log(`Triggering sync after wake (${hoursSinceSync.toFixed(1)} hours since last sync)`);
+          if (hoursSinceSync >= intervalHours) {
+            console.log(`Desktop auto-sync: ${hoursSinceSync.toFixed(1)} hours since last sync (interval: ${intervalHours}h)`);
             const result = await this.triggerSync(passphrase);
             return { synced: true, success: result.success, error: result.error };
           }
+        } else {
+          // No last_sync means never synced - trigger initial sync
+          console.log('Desktop auto-sync: No previous sync, triggering initial sync');
+          const result = await this.triggerSync(passphrase);
+          return { synced: true, success: result.success, error: result.error };
         }
       }
       return { synced: false };

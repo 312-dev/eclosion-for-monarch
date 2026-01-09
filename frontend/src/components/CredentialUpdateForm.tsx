@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { getErrorMessage } from '../utils';
 import { ElectronTitleBar } from './ElectronTitleBar';
 
@@ -14,6 +15,7 @@ interface CredentialUpdateFormProps {
 
 export function CredentialUpdateForm({ passphrase, onSuccess, onCancel }: CredentialUpdateFormProps) {
   const { updateCredentials } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mfaSecret, setMfaSecret] = useState('');
@@ -29,15 +31,20 @@ export function CredentialUpdateForm({ passphrase, onSuccess, onCancel }: Creden
     try {
       const result = await updateCredentials(email, password, passphrase, mfaSecret);
       if (result.success) {
+        toast.success('Credentials updated successfully');
         onSuccess();
       } else if (result.needs_mfa) {
         setShowMfa(true);
         setError('MFA required. Please enter your TOTP secret key.');
       } else {
-        setError(result.error || 'Failed to update credentials');
+        const errorMsg = result.error || 'Failed to update credentials';
+        toast.error(errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errorMsg = getErrorMessage(err);
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

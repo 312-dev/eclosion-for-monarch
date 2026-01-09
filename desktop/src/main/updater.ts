@@ -22,6 +22,53 @@ let updateDownloaded = false;
 let updateInfo: UpdateInfo | null = null;
 
 /**
+ * Extract a clean, user-friendly error message from an electron-updater error.
+ * These errors can contain entire HTTP response bodies, headers, and cookies
+ * which makes them enormous and exposes sensitive data.
+ */
+function getCleanErrorMessage(err: Error): string {
+  const message = err.message || 'Unknown error';
+
+  // Common error patterns and their user-friendly messages
+  if (message.includes('net::ERR_INTERNET_DISCONNECTED') || message.includes('ENOTFOUND')) {
+    return 'Unable to check for updates: No internet connection';
+  }
+  if (message.includes('net::ERR_CONNECTION_REFUSED')) {
+    return 'Unable to check for updates: Connection refused';
+  }
+  if (message.includes('net::ERR_CONNECTION_TIMED_OUT') || message.includes('ETIMEDOUT')) {
+    return 'Unable to check for updates: Connection timed out';
+  }
+  if (message.includes('404') || message.includes('Not Found')) {
+    return 'Unable to check for updates: Release not found';
+  }
+  if (message.includes('403') || message.includes('Forbidden')) {
+    return 'Unable to check for updates: Access denied';
+  }
+  if (message.includes('rate limit') || message.includes('429')) {
+    return 'Unable to check for updates: Rate limited, please try again later';
+  }
+  // Missing app-update.yml - happens with development builds
+  if (message.includes('ENOENT') && message.includes('app-update.yml')) {
+    return 'Updates are not available for this build. Please download the latest release from the official website.';
+  }
+
+  // If the message is very long (likely contains HTTP response), truncate it
+  // and extract just the first meaningful part
+  if (message.length > 200) {
+    // Try to find a sensible truncation point
+    const firstLine = message.split('\n')[0];
+    if (firstLine.length <= 200) {
+      return firstLine;
+    }
+    // Truncate at 200 chars
+    return message.substring(0, 200) + '...';
+  }
+
+  return message;
+}
+
+/**
  * Get the build-time release channel.
  * Defaults to 'stable' if not defined (dev builds).
  */
@@ -89,8 +136,11 @@ export function initializeUpdater(): void {
   });
 
   autoUpdater.on('error', (err) => {
-    console.error('Update error:', err);
-    notifyRenderer('update-error', { message: err.message });
+    // Extract a clean, user-friendly error message
+    // electron-updater errors can contain huge HTTP response bodies
+    const cleanMessage = getCleanErrorMessage(err);
+    console.error('Update error:', cleanMessage);
+    notifyRenderer('update-error', { message: cleanMessage });
   });
 }
 
@@ -105,7 +155,15 @@ export function getUpdateChannel(): UpdateChannel {
 /**
  * Check for updates.
  */
-export async function checkForUpdates(): Promise<{ updateAvailable: boolean; version?: string }> {
+export async function checkForUpdates(): Promise<{ updateAvailable: boolean; version?: string; error?: string }> {
+  // Don't attempt to check for updates in dev mode (no app-update.yml exists)
+  if (!app.isPackaged) {
+    return {
+      updateAvailable: false,
+      error: 'Updates are not available in development mode'
+    };
+  }
+
   try {
     const result = await autoUpdater.checkForUpdates();
     if (result && result.updateInfo) {
@@ -116,8 +174,9 @@ export async function checkForUpdates(): Promise<{ updateAvailable: boolean; ver
     }
     return { updateAvailable: false };
   } catch (err) {
-    console.error('Failed to check for updates:', err);
-    return { updateAvailable: false };
+    const cleanMessage = getCleanErrorMessage(err as Error);
+    console.error('Failed to check for updates:', cleanMessage);
+    return { updateAvailable: false, error: cleanMessage };
   }
 }
 
@@ -164,8 +223,15 @@ function notifyRenderer(event: string, data: unknown): void {
 /**
  * Schedule periodic update checks.
  * Checks every 6 hours by default.
+ * Only works in packaged builds (dev mode has no app-update.yml).
  */
-export function scheduleUpdateChecks(intervalHours = 6): NodeJS.Timeout {
+export function scheduleUpdateChecks(intervalHours = 6): NodeJS.Timeout | null {
+  // Don't schedule updates in dev mode
+  if (!app.isPackaged) {
+    console.log('Skipping update check scheduling (development mode)');
+    return null;
+  }
+
   const intervalMs = intervalHours * 60 * 60 * 1000;
 
   // Check immediately on startup

@@ -69,23 +69,12 @@ export function DesktopSection() {
     }
   };
 
-  const handleRunInBackgroundChange = async () => {
+  const handleMenuBarModeChange = async () => {
     if (!window.electron || !settings) return;
     try {
-      const newValue = !settings.runInBackground;
-      await window.electron.setRunInBackground(newValue);
-      setSettings(prev => prev ? { ...prev, runInBackground: newValue } : null);
-    } catch {
-      // Ignore errors
-    }
-  };
-
-  const handleShowInDockChange = async () => {
-    if (!window.electron || !settings) return;
-    try {
-      const newValue = !settings.showInDock;
-      await window.electron.setShowInDock(newValue);
-      setSettings(prev => prev ? { ...prev, showInDock: newValue } : null);
+      const newValue = !settings.menuBarMode;
+      await window.electron.setMenuBarMode(newValue);
+      setSettings(prev => prev ? { ...prev, menuBarMode: newValue } : null);
     } catch {
       // Ignore errors
     }
@@ -193,30 +182,20 @@ export function DesktopSection() {
         </SettingsRow>
 
         <SettingsRow
-          label="Run in Background"
-          description="Keep running in system tray when window is closed"
+          label={isMac ? 'Menu Bar Mode' : 'Run in Background'}
+          description={
+            isMac
+              ? 'Hide from Dock and run as a menu bar icon only'
+              : 'Minimize to system tray instead of quitting when window is closed'
+          }
         >
           <ToggleSwitch
-            checked={settings?.runInBackground ?? false}
-            onChange={handleRunInBackgroundChange}
+            checked={settings?.menuBarMode ?? false}
+            onChange={handleMenuBarModeChange}
             disabled={loading}
-            ariaLabel="Toggle run in background"
+            ariaLabel={isMac ? 'Toggle menu bar mode' : 'Toggle run in background'}
           />
         </SettingsRow>
-
-        {isMac && (
-          <SettingsRow
-            label="Show in Dock"
-            description="Display app icon in the macOS Dock"
-          >
-            <ToggleSwitch
-              checked={settings?.showInDock ?? true}
-              onChange={handleShowInDockChange}
-              disabled={loading}
-              ariaLabel="Toggle show in dock"
-            />
-          </SettingsRow>
-        )}
 
         <div style={{ borderTop: '1px solid var(--monarch-border)' }} />
 

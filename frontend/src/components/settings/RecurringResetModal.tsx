@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDemo } from '../../context/DemoContext';
+import { useToast } from '../../context/ToastContext';
 import * as api from '../../api/client';
 import * as demoApi from '../../api/demoClient';
 
@@ -30,6 +31,7 @@ export function RecurringResetModal({
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isDemo = useDemo();
+  const toast = useToast();
   const queryClient = useQueryClient();
 
   const handleReset = async () => {
@@ -44,9 +46,12 @@ export function RecurringResetModal({
       } else {
         await api.resetRecurringTool();
       }
+      toast.success('Recurring tool reset successfully');
       globalThis.location.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reset');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to reset';
+      toast.error(errorMsg);
+      setError(errorMsg);
       setResetting(false);
     }
   };

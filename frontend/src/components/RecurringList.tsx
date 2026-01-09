@@ -17,7 +17,7 @@ import {
   RecurringListSectionHeader,
 } from './recurring';
 import type { SortField, SortDirection } from './recurring';
-import { useRecurringItemActions } from '../hooks';
+import { useRecurringItemActions, useMediaQuery } from '../hooks';
 
 interface RecurringListProps {
   readonly items: RecurringItem[];
@@ -29,6 +29,10 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
   const [sortField, setSortField] = useState<SortField>('due_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [hideDisabled, setHideDisabled] = useState(false);
+
+  // Detect which layout is visible (cards below 1280px, table at 1280px+)
+  // Tour data attributes should only be on the visible layout to avoid selector conflicts
+  const isCardLayout = useMediaQuery('(max-width: 1279px)');
 
   const {
     highlightId,
@@ -190,7 +194,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
                   onLinkCategory={handleLinkCategory}
                   highlightId={highlightId}
                   showCategoryGroup={showCategoryGroup}
-                  {...(tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
+                  {...(isCardLayout && tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
                 />
               ))}
             </Fragment>
@@ -230,7 +234,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
                     onLinkCategory={handleLinkCategory}
                     highlightId={highlightId}
                     showCategoryGroup={showCategoryGroup}
-                    {...(tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
+                    {...(!isCardLayout && tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
                   />
                 ))}
               </Fragment>

@@ -18,8 +18,10 @@ import type { BiometricType, BiometricAuthResult } from '../types/electron';
 export interface UseBiometricReturn {
   /** Whether biometric authentication is available on this device */
   available: boolean;
-  /** Whether biometric authentication is enrolled (passphrase stored) */
+  /** Whether biometric authentication is enrolled (passphrase stored + biometric enabled) */
   enrolled: boolean;
+  /** Whether passphrase is stored (for sync, regardless of biometric status) */
+  passphraseStored: boolean;
   /** Type of biometric available: 'touchId', 'windowsHello', or null */
   type: BiometricType;
   /** User-friendly display name for the biometric type (e.g., "Touch ID") */
@@ -60,6 +62,7 @@ export interface UseBiometricReturn {
 export function useBiometric(): UseBiometricReturn {
   const [available, setAvailable] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
+  const [passphraseStored, setPassphraseStored] = useState(false);
   const [type, setType] = useState<BiometricType>(null);
   const [displayName, setDisplayName] = useState('Biometric');
   const [loading, setLoading] = useState(true);
@@ -74,15 +77,17 @@ export function useBiometric(): UseBiometricReturn {
     const checkBiometric = async (): Promise<void> => {
       try {
         const biometric = globalThis.electron!.biometric;
-        const [isAvailable, isEnrolled, biometricType, name] = await Promise.all([
+        const [isAvailable, isEnrolled, isPassphraseStored, biometricType, name] = await Promise.all([
           biometric.isAvailable(),
           biometric.isEnrolled(),
+          biometric.isPassphraseStored(),
           biometric.getType(),
           biometric.getDisplayName(),
         ]);
 
         setAvailable(isAvailable);
         setEnrolled(isEnrolled);
+        setPassphraseStored(isPassphraseStored);
         setType(biometricType);
         setDisplayName(name);
       } catch (error) {
@@ -105,8 +110,12 @@ export function useBiometric(): UseBiometricReturn {
     }
 
     try {
-      const isEnrolled = await globalThis.electron.biometric.isEnrolled();
+      const [isEnrolled, isPassphraseStored] = await Promise.all([
+        globalThis.electron.biometric.isEnrolled(),
+        globalThis.electron.biometric.isPassphraseStored(),
+      ]);
       setEnrolled(isEnrolled);
+      setPassphraseStored(isPassphraseStored);
     } catch (error) {
       console.error('Failed to refresh biometric status:', error);
     }
@@ -114,6 +123,8 @@ export function useBiometric(): UseBiometricReturn {
 
   /**
    * Authenticate using biometric and retrieve the stored passphrase.
+   * If authentication fails due to corrupted enrollment, the backend clears
+   * the enrollment and we refresh our local state to reflect that.
    */
   const authenticate = useCallback(async (): Promise<BiometricAuthResult> => {
     if (!isDesktopMode() || !globalThis.electron?.biometric) {
@@ -124,7 +135,16 @@ export function useBiometric(): UseBiometricReturn {
     }
 
     try {
-      return await globalThis.electron.biometric.authenticate();
+      const result = await globalThis.electron.biometric.authenticate();
+
+      // If auth failed (not due to user cancel), refresh enrollment status
+      // The backend may have cleared enrollment due to corrupted data
+      if (!result.success && result.error && !result.error.includes('cancel')) {
+        const isEnrolled = await globalThis.electron.biometric.isEnrolled();
+        setEnrolled(isEnrolled);
+      }
+
+      return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Authentication failed';
       return {
@@ -173,6 +193,7 @@ export function useBiometric(): UseBiometricReturn {
   return {
     available,
     enrolled,
+    passphraseStored,
     type,
     displayName,
     loading,

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { AutoSyncStatus } from '../types';
 import { formatInterval, formatDateTime } from '../utils';
+import { isDesktopMode } from '../utils/apiBase';
+import { useBiometric } from '../hooks';
 import { AutoSyncSecurityModal } from './AutoSyncSecurityModal';
 import { SpinnerIcon, ClockIcon, XIcon, CheckSimpleIcon, AlertCircleIcon } from './icons';
 
@@ -11,7 +13,114 @@ interface AutoSyncSettingsProps {
   onRefresh: () => Promise<void>;
 }
 
-export function AutoSyncSettings({
+/**
+ * Desktop-specific auto-sync display.
+ * On desktop, auto-sync works when passphrase is stored in OS keychain.
+ * The passphrase is stored automatically on successful login.
+ */
+function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) {
+  const biometric = useBiometric();
+
+  if (!status || biometric.loading) {
+    return (
+      <div
+        className="rounded-lg p-4"
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <SpinnerIcon size={20} color="var(--monarch-text-muted)" />
+          <span style={{ color: 'var(--monarch-text-muted)' }}>Loading auto-sync status...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop auto-sync is active when passphrase is stored in keychain
+  // This happens automatically on login - no extra setup needed
+  const isActive = biometric.passphraseStored;
+
+  return (
+    <div
+      className="rounded-lg p-4"
+      style={{
+        backgroundColor: 'var(--monarch-bg-card)',
+        border: '1px solid var(--monarch-border)',
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ClockIcon size={20} color={isActive ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)'} />
+          <div>
+            <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+              Automatic Background Sync
+            </div>
+            <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              {isActive
+                ? `Syncs every ${formatInterval(status.interval_minutes || 360)} on startup and wake`
+                : 'Enabled automatically after login'}
+            </div>
+          </div>
+        </div>
+
+        {isActive ? (
+          <span
+            className="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5"
+            style={{
+              backgroundColor: 'var(--monarch-success-bg)',
+              color: 'var(--monarch-success)',
+            }}
+          >
+            <CheckSimpleIcon size={14} />
+            Active
+          </span>
+        ) : (
+          <span
+            className="px-3 py-1.5 rounded-lg text-sm"
+            style={{
+              backgroundColor: 'var(--monarch-bg-elevated)',
+              color: 'var(--monarch-text-muted)',
+              border: '1px solid var(--monarch-border)',
+            }}
+          >
+            Inactive
+          </span>
+        )}
+      </div>
+
+      {/* Status info when active */}
+      {isActive && status.last_sync && (
+        <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
+          <div className="text-sm">
+            <div style={{ color: 'var(--monarch-text-muted)' }}>Last sync</div>
+            <div className="flex items-center gap-1 mt-0.5" style={{ color: 'var(--monarch-text-dark)' }}>
+              {formatDateTime(status.last_sync)}
+              {status.last_sync_success === false && (
+                <AlertCircleIcon size={16} color="var(--monarch-error)" />
+              )}
+              {status.last_sync_success === true && (
+                <CheckSimpleIcon size={16} color="var(--monarch-success)" />
+              )}
+            </div>
+          </div>
+          {status.last_sync_error && (
+            <div className="mt-2 p-2 rounded text-sm" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
+              Last error: {status.last_sync_error}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Web-specific auto-sync settings with enable/disable controls.
+ * On web, auto-sync requires server-encrypted credentials.
+ */
+function WebAutoSyncSettings({
   status,
   onEnable,
   onDisable,
@@ -150,4 +259,13 @@ export function AutoSyncSettings({
       />
     </>
   );
+}
+
+export function AutoSyncSettings(props: AutoSyncSettingsProps) {
+  // Desktop and web have different auto-sync flows
+  if (isDesktopMode()) {
+    return <DesktopAutoSyncSettings status={props.status} />;
+  }
+
+  return <WebAutoSyncSettings {...props} />;
 }

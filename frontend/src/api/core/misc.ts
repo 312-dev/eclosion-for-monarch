@@ -64,15 +64,20 @@ export interface CancelSubscriptionResult {
   railway_deletion_url: string | null;
   instructions: string[];
   is_railway: boolean;
+  is_desktop: boolean;
 }
 
 export async function getDeploymentInfo(): Promise<DeploymentInfo> {
   return fetchApi<DeploymentInfo>('/recurring/deployment-info');
 }
 
-export async function cancelSubscription(): Promise<CancelSubscriptionResult> {
+export async function cancelSubscription(
+  deleteCategories: boolean = true,
+  fullReset: boolean = false
+): Promise<CancelSubscriptionResult> {
   return fetchApi<CancelSubscriptionResult>('/recurring/cancel-subscription', {
     method: 'POST',
+    body: JSON.stringify({ delete_categories: deleteCategories, full_reset: fullReset }),
   });
 }
 

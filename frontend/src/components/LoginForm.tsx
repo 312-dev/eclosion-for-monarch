@@ -43,10 +43,16 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                           errorLower.includes('multi-factor') ||
                           errorLower.includes('2fa') ||
                           errorLower.includes('two-factor');
+        // Monarch returns 404 for incorrect credentials
+        const isCredentialsError = errorLower.includes('404') ||
+                                   errorLower.includes('not found');
         if (isMfaError && !showMfa) {
           // First MFA prompt - show the field and generic message
           setShowMfa(true);
           setError('MFA required. Please enter your TOTP secret key.');
+        } else if (isCredentialsError) {
+          // 404 from Monarch means incorrect email/password
+          setError('Incorrect email or password. Please check your credentials and try again.');
         } else {
           // Either not MFA-related, or user already provided MFA and it failed
           // Show the actual error from the backend

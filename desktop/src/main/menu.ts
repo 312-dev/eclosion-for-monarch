@@ -8,6 +8,13 @@ import { Menu, app, shell, clipboard, dialog } from 'electron';
 import { getMainWindow, showWindow } from './window';
 import { exportDiagnostics, getQuickDebugInfo } from './diagnostics';
 import { createBackup, restoreBackup, getBackupWarning, getRestoreWarning } from './backup';
+import { lockApp } from './lock-manager';
+import { checkForUpdates } from './updater';
+
+/**
+ * Callback for sync action (set by createAppMenu).
+ */
+let syncCallback: (() => Promise<void>) | null = null;
 
 /**
  * Check if the current app version is a beta build.
@@ -20,18 +27,24 @@ function isBetaBuild(): boolean {
 /**
  * Get the documentation URL based on whether this is a beta or stable build.
  * - Beta builds link to beta.eclosion.app/docs (no version path, shows current docs)
- * - Stable builds link to eclosion.app/docs (versioned docs site)
+ * - Stable builds link to versioned docs matching the app version (e.g., /docs/1.1/)
  */
 function getDocsUrl(): string {
-  return isBetaBuild()
-    ? 'https://beta.eclosion.app/docs'
-    : 'https://eclosion.app/docs';
+  if (isBetaBuild()) {
+    return 'https://beta.eclosion.app/docs';
+  }
+  // Extract major.minor from version (e.g., "1.1.0" -> "1.1")
+  const version = app.getVersion();
+  const [major, minor] = version.split('.');
+  return `https://eclosion.app/docs/${major}.${minor}`;
 }
 
 /**
  * Create and set the application menu.
+ * @param onSync Callback to trigger a sync (optional, enables Sync Now menu item)
  */
-export function createAppMenu(): void {
+export function createAppMenu(onSync?: () => Promise<void>): void {
+  syncCallback = onSync || null;
   const isMac = process.platform === 'darwin';
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -82,6 +95,24 @@ export function createAppMenu(): void {
               { type: 'separator' as const },
             ]
           : []),
+        {
+          label: 'Sync Now',
+          accelerator: 'CmdOrCtrl+Shift+S',
+          enabled: syncCallback !== null,
+          click: (): void => {
+            if (syncCallback) {
+              void syncCallback();
+            }
+          },
+        },
+        {
+          label: 'Lock',
+          accelerator: 'CmdOrCtrl+L',
+          click: (): void => {
+            lockApp();
+          },
+        },
+        { type: 'separator' },
         {
           label: 'Backup Data...',
           click: async (): Promise<void> => {
@@ -218,15 +249,59 @@ export function createAppMenu(): void {
     {
       label: 'View',
       submenu: [
-        { role: 'reload' as const },
-        { role: 'forceReload' as const },
-        { role: 'toggleDevTools' as const },
-        { type: 'separator' as const },
+        // Developer tools only in development builds
+        ...(app.isPackaged
+          ? []
+          : [
+              { role: 'reload' as const },
+              { role: 'forceReload' as const },
+              { role: 'toggleDevTools' as const },
+              { type: 'separator' as const },
+            ]),
         { role: 'resetZoom' as const },
         { role: 'zoomIn' as const },
         { role: 'zoomOut' as const },
         { type: 'separator' as const },
         { role: 'togglefullscreen' as const },
+      ],
+    },
+    // Toolkit menu
+    {
+      label: 'Toolkit',
+      submenu: [
+        {
+          label: 'Dashboard',
+          click: (): void => {
+            showWindow();
+            const mainWindow = getMainWindow();
+            mainWindow?.webContents.send('navigate', '/dashboard');
+          },
+        },
+        {
+          label: 'Recurring Expenses',
+          click: (): void => {
+            showWindow();
+            const mainWindow = getMainWindow();
+            mainWindow?.webContents.send('navigate', '/recurring');
+          },
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Coming Soon',
+          enabled: false,
+        },
+        {
+          label: 'Joint Goals',
+          enabled: false,
+        },
+        {
+          label: 'Leaderboard',
+          enabled: false,
+        },
+        {
+          label: 'Inbox Sync',
+          enabled: false,
+        },
       ],
     },
     // Window menu
@@ -261,6 +336,39 @@ export function createAppMenu(): void {
             await shell.openExternal(
               'https://github.com/GraysonCAdams/eclosion-for-monarch/issues'
             );
+          },
+        },
+        { type: 'separator' as const },
+        {
+          label: 'Check for Updates...',
+          click: async (): Promise<void> => {
+            const mainWindow = getMainWindow();
+            const result = await checkForUpdates();
+            if (result.updateAvailable && result.version) {
+              // Update available - updater will handle the notification
+              if (mainWindow) {
+                await dialog.showMessageBox(mainWindow, {
+                  type: 'info',
+                  title: 'Update Available',
+                  message: `Version ${result.version} is available.`,
+                  detail: 'The update will be downloaded automatically.',
+                });
+              }
+            } else if (result.error && mainWindow) {
+              await dialog.showMessageBox(mainWindow, {
+                type: 'error',
+                title: 'Update Check Failed',
+                message: 'Could not check for updates.',
+                detail: result.error,
+              });
+            } else if (mainWindow) {
+              await dialog.showMessageBox(mainWindow, {
+                type: 'info',
+                title: 'No Updates',
+                message: 'You are running the latest version.',
+                detail: `Current version: ${app.getVersion()}`,
+              });
+            }
           },
         },
         { type: 'separator' as const },

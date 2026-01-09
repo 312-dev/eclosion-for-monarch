@@ -2,6 +2,7 @@
  * RollupConfigStep - Rollup category configuration step for the setup wizard
  */
 
+import { SearchableSelect, type SelectGroup } from '../../SearchableSelect';
 import type { UnmappedCategory } from '../../../types';
 import { PackageIcon } from '../SetupWizardIcons';
 
@@ -33,12 +34,23 @@ export function RollupConfigStep({
   onAutoCategorizeChange,
 }: RollupConfigStepProps) {
   // Group categories by group_name for dropdown
-  const groupedCategories = categories.reduce((acc, cat) => {
-    const group = cat.group_name || 'Other';
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(cat);
-    return acc;
-  }, {} as Record<string, UnmappedCategory[]>);
+  const categoryGroups: SelectGroup[] = Object.entries(
+    categories.reduce((acc, cat) => {
+      const group = cat.group_name || 'Other';
+      acc[group] ??= [];
+      acc[group].push(cat);
+      return acc;
+    }, {} as Record<string, UnmappedCategory[]>)
+  ).map(([groupLabel, cats]) => ({
+    label: groupLabel,
+    options: cats.map((cat) => {
+      const icon = cat.icon ? cat.icon + ' ' : '';
+      return {
+        value: cat.id,
+        label: `${icon}${cat.name} - $${cat.planned_budget || 0} budgeted`,
+      };
+    }),
+  }));
 
   return (
     <div className="text-center animate-fade-in">
@@ -126,30 +138,20 @@ export function RollupConfigStep({
             </div>
           ) : (
             <>
-              <label className="block mb-2 text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+              <label id="category-select-label" className="block mb-2 text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
                 Select a category:
               </label>
-              <select
-                value={selectedCategoryId}
-                onChange={(e) => onCategorySelect(e.target.value)}
-                className="w-full p-3 rounded-lg mb-3"
-                style={{
-                  backgroundColor: 'var(--monarch-bg-card)',
-                  border: '1px solid var(--monarch-border)',
-                  color: 'var(--monarch-text-dark)',
-                }}
-              >
-                <option value="">Choose a category...</option>
-                {Object.entries(groupedCategories).map(([groupName, cats]) => (
-                  <optgroup key={groupName} label={groupName}>
-                    {cats.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.icon ? `${cat.icon} ` : ''}{cat.name} - ${cat.planned_budget || 0} budgeted
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <div className="mb-3">
+                <SearchableSelect
+                  value={selectedCategoryId}
+                  onChange={onCategorySelect}
+                  groups={categoryGroups}
+                  placeholder="Choose a category..."
+                  searchPlaceholder="Search categories..."
+                  loading={loading}
+                  aria-labelledby="category-select-label"
+                />
+              </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

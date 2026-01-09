@@ -338,6 +338,7 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 52px;
 }
 
 .app-brand {
@@ -502,7 +503,38 @@ input[type="radio"] {
   margin-top: auto;
 }
 
-.sidebar-signout {
+/* Sidebar logo - desktop app only */
+.sidebar-logo {
+  padding: 0.5rem 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-logo-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--monarch-text-dark);
+  transition: opacity var(--animation-fast);
+}
+
+.sidebar-logo-link:hover {
+  opacity: 0.8;
+}
+
+.sidebar-logo-text {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+
+/* Sidebar version indicator - desktop app only */
+.sidebar-version {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-lock {
   width: 100%;
   background: none;
   border: none;

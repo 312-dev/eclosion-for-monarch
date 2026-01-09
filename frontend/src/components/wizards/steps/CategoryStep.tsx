@@ -2,6 +2,7 @@
  * CategoryStep - Category group selection step for the setup wizard
  */
 
+import { SearchableSelect } from '../../SearchableSelect';
 import type { CategoryGroup } from '../../../types';
 
 interface CategoryStepProps {
@@ -74,27 +75,20 @@ export function CategoryStep({
               Create New
             </a>
           </div>
-          <select
-            id="category-group"
+          <SearchableSelect
             value={selectedGroupId}
-            onChange={(e) => {
-              const group = groups.find((g) => g.id === e.target.value);
+            onChange={(id) => {
+              const group = groups.find((g) => g.id === id);
               if (group) onSelectGroup(group.id, group.name);
             }}
-            className="w-full rounded-lg px-3 py-2"
-            style={{
-              border: '1px solid var(--monarch-border)',
-              backgroundColor: 'var(--monarch-bg-card)',
-              color: 'var(--monarch-text-dark)',
-            }}
-          >
-            <option value="">Select a group...</option>
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
+            options={groups.map((group) => ({
+              value: group.id,
+              label: group.name,
+            }))}
+            placeholder="Select a group..."
+            searchPlaceholder="Search groups..."
+            aria-labelledby="category-group"
+          />
         </div>
       )}
 
