@@ -61,7 +61,7 @@ mac:
   # Skip re-signing backend binaries (already signed by afterPack.js)
   # electron-builder's signing can break our custom --no-strict signatures
   signIgnore:
-    - "backend/**/*"
+    - "backend"
 
 # macOS code signing
 afterSign: notarize.js
