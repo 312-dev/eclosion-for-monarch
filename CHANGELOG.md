@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/312-dev/eclosion-for-monarch/compare/v1.2.0...v1.3.0) (2026-01-09)
+
+
+### Features
+
+* add RecurringItemCost component with progress indicators ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* add RecurringItemCost component with progress indicators ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* add RecurringItemCost component with progress indicators ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* add RecurringItemCost component with progress indicators ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* create editable RecurringItemBudget component ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* create editable RecurringItemBudget component ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* create editable RecurringItemBudget component ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* create editable RecurringItemBudget component ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* develop RecurringItemHeader for item management ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* develop RecurringItemHeader for item management ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* develop RecurringItemHeader for item management ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* develop RecurringItemHeader for item management ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* extend productboard sync to handle GitHub-only ideas ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* extend productboard sync to handle GitHub-only ideas ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* extend productboard sync to handle GitHub-only ideas ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* extend productboard sync to handle GitHub-only ideas ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* implement RecurringCard component for mobile view ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* implement RecurringCard component for mobile view ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* implement RecurringCard component for mobile view ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* implement RecurringCard component for mobile view ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* implement RecurringItemStatus with allocation actions ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* implement RecurringItemStatus with allocation actions ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* implement RecurringItemStatus with allocation actions ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* implement RecurringItemStatus with allocation actions ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+
+
+### Bug Fixes
+
+* **docs:** resolve Docusaurus versioning issue for stable builds ([#108](https://github.com/312-dev/eclosion-for-monarch/issues/108)) ([ac015fd](https://github.com/312-dev/eclosion-for-monarch/commit/ac015fd664c4b7830400f912bb0f2470033fec6d))
+* enhance date formatting for relative dates in formatters ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* enhance date formatting for relative dates in formatters ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* enhance date formatting for relative dates in formatters ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* enhance date formatting for relative dates in formatters ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+
+
+### Code Refactoring
+
+* improve sync logic for discussions and add normalization functions ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* improve sync logic for discussions and add normalization functions ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* improve sync logic for discussions and add normalization functions ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* improve sync logic for discussions and add normalization functions ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* restructure DocsPage and extract components ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* restructure DocsPage and extract components ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+
+
+### Documentation
+
+* update recurring docs to match current UI terminology ([#111](https://github.com/312-dev/eclosion-for-monarch/issues/111)) ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+
+
+### Miscellaneous
+
+* remove outdated TODO files ([#110](https://github.com/312-dev/eclosion-for-monarch/issues/110)) ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* update types to include idea source for better tracking ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* update types to include idea source for better tracking ([86c99b3](https://github.com/312-dev/eclosion-for-monarch/commit/86c99b3ef788db02f833ac7243382e1fb0de709e))
+* update types to include idea source for better tracking ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+* update types to include idea source for better tracking ([4a3bfb2](https://github.com/312-dev/eclosion-for-monarch/commit/4a3bfb25264244e2a09ac5215430eadfd38bfeb2))
+
 ## [1.2.0](https://github.com/312-dev/eclosion-for-monarch/compare/v1.1.0...v1.2.0) (2026-01-09)
 
 
