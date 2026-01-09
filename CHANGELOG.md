@@ -328,6 +328,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2025-01-15
 
+> This update introduces several new components for managing recurring items, including progress indicators, editable budgets, and mobile views. Users will notice enhancements in date formatting and improved documentation for recurring items.
+
 > Initial release of Eclosion for Monarch Money with recurring expense tracking, smart savings calculations, encrypted credential storage, and PWA support.
 
 ### Added
