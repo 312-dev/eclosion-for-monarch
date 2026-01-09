@@ -58,6 +58,9 @@ mac:
   entitlements: entitlements.mac.plist
   entitlementsInherit: entitlements.mac.plist
   darkModeSupport: true
+  # Skip signing Python.framework (already signed by afterPack.js with --no-strict)
+  signIgnore:
+    - "backend/_internal/Python.framework"
 
 # macOS code signing
 afterSign: notarize.js
