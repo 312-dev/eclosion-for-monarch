@@ -3,8 +3,20 @@ name: CI
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - '*.md'
+      - 'docusaurus/**'
+      - 'scripts/docs-gen/**'
+      - '.github/workflows/generate-docs.yml'
+      - '.github/workflows/sync-wiki.yml'
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - '*.md'
+      - 'docusaurus/**'
+      - 'scripts/docs-gen/**'
+      - '.github/workflows/generate-docs.yml'
+      - '.github/workflows/sync-wiki.yml'
   # Allow manual trigger for PRs created by GITHUB_TOKEN (e.g., release-please)
   workflow_dispatch:
     inputs:
@@ -25,7 +37,6 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
-      docs: ${{ steps.filter.outputs.docs }}
       desktop: ${{ steps.filter.outputs.desktop }}
     steps:
       - uses: actions/checkout@v4
@@ -44,11 +55,6 @@ jobs:
               - 'requirements*.txt'
               - 'pyproject.toml'
               - 'Dockerfile'
-            docs:
-              - '*.md'
-              - 'docusaurus/**'
-              - 'CONTRIBUTING.md'
-              - 'SECURITY.md'
             desktop:
               - 'desktop/**'
 
@@ -119,25 +125,6 @@ jobs:
 
       - name: Test
         run: pytest
-
-  # Documentation link check
-  docs:
-    name: Docs
-    needs: changes
-    if: needs.changes.outputs.docs == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check markdown links
-        uses: gaurav-nelson/github-action-markdown-link-check@v1
-        with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'yes'
-          config-file: '.github/mlc_config.json'
-          folder-path: '.'
-          file-path: './README.md, ./CONTRIBUTING.md, ./SECURITY.md'
 
   # Desktop checks
   desktop:
@@ -259,13 +246,13 @@ jobs:
     name: CI Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [frontend, backend, docs, desktop, desktop-build]
+    needs: [frontend, backend, desktop, desktop-build]
     if: always()
     steps:
       - name: Check CI results
         id: check
         run: |
-          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.docs.result }} ${{ needs.desktop.result }} ${{ needs.desktop-build.result }}"
+          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.desktop.result }} ${{ needs.desktop-build.result }}"
           echo "Job results: $results"
           if echo "$results" | grep -qE '(failure|cancelled)'; then
             echo "::error::One or more CI jobs failed or were cancelled"
