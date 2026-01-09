@@ -117,9 +117,11 @@ The animation system is defined in `index.css` with CSS variables matching `cons
 **Timing Variables (CSS):**
 ```css
 --animation-fast: 150ms   /* Micro-interactions */
---animation-normal: 300ms /* Standard transitions */
---animation-slow: 500ms   /* Emphasis animations */
+--animation-normal: 200ms /* Standard transitions */
+--animation-slow: 300ms   /* Emphasis animations */
 ```
+
+> **Note:** The TypeScript constants in `constants/index.ts` use different values (150/300/500ms) for programmatic delays like `setTimeout`. The CSS variables above are what actually render animations.
 
 **Page Transitions:**
 ```tsx
@@ -329,11 +331,29 @@ All checks must pass before committing.
 
 ## Branch Naming
 
-For standardization work: `refactor/stream-{letter}-{name}`
+**Branch names are enforced by CI.** Only these prefixes are allowed for PRs to `develop`:
 
-Examples:
-- `refactor/stream-a-hover-handlers`
-- `refactor/stream-b-component-splitting`
+| Prefix | Use for | Example |
+|--------|---------|---------|
+| `feature/` | New features, enhancements | `feature/add-dark-mode` |
+| `update/` | Fixes, refactors, docs, chores | `update/fix-login-bug` |
+
+**Important:** Do NOT use `fix/`, `refactor/`, `docs/`, `chore/`, etc. as branch prefixes. Use `update/` for all of these.
+
+```bash
+# BAD - Will fail CI
+git checkout -b fix/unused-imports
+git checkout -b refactor/split-component
+git checkout -b docs/update-readme
+
+# GOOD
+git checkout -b update/unused-imports
+git checkout -b update/split-component
+git checkout -b update/readme
+git checkout -b feature/new-dashboard
+```
+
+PRs to `main` must come from the `develop` branch only (enforced by `require-develop.yml`).
 
 ## Demo Mode Compatibility
 
@@ -343,7 +363,11 @@ Demo mode uses localStorage instead of the backend API. The demo is hosted on Cl
 
 ### How Demo Mode Works
 
-- URL-based detection: paths starting with `/demo/` trigger demo mode
+Demo mode is enabled in two ways:
+- **URL-based**: paths starting with `/demo/` trigger demo mode
+- **Build-time**: `VITE_DEMO_MODE=true` env var enables global demo mode (used for the official demo site)
+
+Other details:
 - `useDemo()` hook returns `true` when in demo mode
 - `api/queries.ts` routes to `demoClient.ts` or `client.ts` based on mode
 - Data persists in localStorage under `eclosion-demo-data`
@@ -410,7 +434,8 @@ The `calculateFrozenTarget` function in demo code mirrors the backend Python log
 | File | Purpose |
 |------|---------|
 | `frontend/src/context/DemoContext.tsx` | Provides `useDemo()` hook |
-| `frontend/src/api/demoClient.ts` | localStorage-based API implementation |
+| `frontend/src/api/demoClient.ts` | Re-exports from `api/demo/` modules |
+| `frontend/src/api/demo/` | Modular demo implementations (demoItems.ts, demoRollup.ts, etc.) |
 | `frontend/src/api/demoData.ts` | Initial seed data for demo |
 | `frontend/src/api/queries.ts` | Routes queries/mutations based on demo mode |
 | `frontend/src/context/DemoAuthContext.tsx` | Auth bypass for demo mode |
@@ -550,17 +575,18 @@ Documentation versioning differs between stable and beta sites:
 
 | Site | Versions shown | Version dropdown |
 |------|----------------|------------------|
-| **Stable** (eclosion.app) | Versioned snapshots (1.0, 1.1) | Yes |
+| **Stable** (eclosion.app) | Versioned snapshots (see `docusaurus/versions.json`) | Yes |
 | **Beta** (beta.eclosion.app) | Current docs only | No |
 
 **Stable site versioning:**
 - Versions are created manually when releasing stable versions
 - Each version is a snapshot in `versioned_docs/`
+- Current versions are listed in `docusaurus/versions.json`
 
 ```bash
 cd docusaurus
-# Create version snapshot for stable release
-npm run docusaurus docs:version 1.1
+# Create version snapshot for stable release (use actual version number)
+npm run docusaurus docs:version X.Y
 ```
 
 **Beta site versioning:**
