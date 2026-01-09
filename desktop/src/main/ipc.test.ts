@@ -43,8 +43,8 @@ vi.mock('./window', () => ({
 }));
 
 vi.mock('./autostart', () => ({
-  isAutoStartEnabled: vi.fn().mockResolvedValue(false),
-  setAutoStart: vi.fn().mockResolvedValue(true),
+  isAutoStartEnabled: vi.fn().mockReturnValue(false),
+  setAutoStart: vi.fn().mockReturnValue(true),
 }));
 
 vi.mock('./updater', () => ({

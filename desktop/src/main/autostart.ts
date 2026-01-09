@@ -1,88 +1,55 @@
 /**
  * Auto-Start Management
  *
- * Handles automatic launch on system login.
+ * Handles automatic launch on system login using Electron's built-in API.
+ * This avoids the need for System Events permissions on macOS.
  */
 
-import AutoLaunch from 'auto-launch';
 import { app } from 'electron';
 import Store from 'electron-store';
 
 const store = new Store();
 
-let autoLauncher: AutoLaunch | null = null;
-
-/**
- * Initialize the auto-launcher.
- */
-function getAutoLauncher(): AutoLaunch {
-  if (!autoLauncher) {
-    autoLauncher = new AutoLaunch({
-      name: 'Eclosion',
-      path: app.getPath('exe'),
-      isHidden: true, // Start minimized to tray
-    });
-  }
-  return autoLauncher;
-}
-
 /**
  * Check if auto-start is enabled.
  */
-export async function isAutoStartEnabled(): Promise<boolean> {
-  try {
-    const launcher = getAutoLauncher();
-    return await launcher.isEnabled();
-  } catch (err) {
-    console.error('Failed to check auto-start status:', err);
-    return false;
-  }
+export function isAutoStartEnabled(): boolean {
+  const settings = app.getLoginItemSettings();
+  return settings.openAtLogin;
 }
 
 /**
  * Enable auto-start on login.
  */
-export async function enableAutoStart(): Promise<void> {
-  try {
-    const launcher = getAutoLauncher();
-    const isEnabled = await launcher.isEnabled();
-    if (!isEnabled) {
-      await launcher.enable();
-    }
-    store.set('autoStart', true);
-    console.log('Auto-start enabled');
-  } catch (err) {
-    console.error('Failed to enable auto-start:', err);
-    throw err;
-  }
+export function enableAutoStart(): void {
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    openAsHidden: true,
+  });
+  store.set('autoStart', true);
+  console.log('Auto-start enabled');
 }
 
 /**
  * Disable auto-start on login.
  */
-export async function disableAutoStart(): Promise<void> {
-  try {
-    const launcher = getAutoLauncher();
-    const isEnabled = await launcher.isEnabled();
-    if (isEnabled) {
-      await launcher.disable();
-    }
-    store.set('autoStart', false);
-    console.log('Auto-start disabled');
-  } catch (err) {
-    console.error('Failed to disable auto-start:', err);
-    throw err;
-  }
+export function disableAutoStart(): void {
+  app.setLoginItemSettings({
+    openAtLogin: false,
+    openAsHidden: false,
+  });
+  store.set('autoStart', false);
+  console.log('Auto-start disabled');
 }
 
 /**
  * Set auto-start state.
  */
-export async function setAutoStart(enabled: boolean): Promise<boolean> {
+export function setAutoStart(enabled: boolean): boolean {
   if (enabled) {
-    await enableAutoStart();
+    enableAutoStart();
   } else {
-    await disableAutoStart();
+    disableAutoStart();
   }
   return enabled;
 }
@@ -90,7 +57,7 @@ export async function setAutoStart(enabled: boolean): Promise<boolean> {
 /**
  * Toggle auto-start state.
  */
-export async function toggleAutoStart(): Promise<boolean> {
-  const isEnabled = await isAutoStartEnabled();
+export function toggleAutoStart(): boolean {
+  const isEnabled = isAutoStartEnabled();
   return setAutoStart(!isEnabled);
 }

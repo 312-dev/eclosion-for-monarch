@@ -33,7 +33,6 @@
   },
   "dependencies": {
     "@sentry/electron": "^5.11.0",
-    "auto-launch": "^5.0.6",
     "electron-store": "^8.2.0",
     "electron-updater": "^6.6.2",
     "get-port": "^5.1.1"
@@ -41,7 +40,6 @@
   "devDependencies": {
     "@electron/notarize": "^3.1.1",
     "@playwright/test": "^1.49.1",
-    "@types/auto-launch": "^5.0.5",
     "@types/node": "^22.10.5",
     "@typescript-eslint/eslint-plugin": "^8.19.0",
     "@typescript-eslint/parser": "^8.19.0",
