@@ -10,7 +10,7 @@
 #
 # Usage:
 #   - Called by create-beta.yml for beta releases
-#   - Called by release.yml for production releases
+#   - Called by create-stable.yml for production releases
 
 name: Release Pipeline
 
