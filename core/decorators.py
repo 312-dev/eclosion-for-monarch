@@ -10,6 +10,7 @@ Provides decorators for Flask API endpoints including:
 """
 
 import asyncio
+import html
 import inspect
 import logging
 from collections.abc import Callable
