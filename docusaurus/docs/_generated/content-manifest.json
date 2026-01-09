@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-01-09T15:32:53.254Z",
+  "appVersion": "1.3.0",
+  "contents": {
+    "recurring-overview": {
+      "hash": "e3b0c44298fc1c14",
+      "generatedDocHash": "e628de5ac94d848a916018f04b0c720f598a6c42144afbc50539d5b3ab20eba7",
+      "lastGenerated": "2026-01-09T15:32:53.253Z",
+      "sourceFiles": [
+        "frontend/src/components/layout/AppShell.tsx",
+        "frontend/src/components/tabs/RecurringTab.tsx",
+        "frontend/src/components/RollupZone.tsx"
+      ],
+      "outputFile": "docusaurus/docs/recurring/overview.mdx"
+    },
+    "setup-wizard": {
+      "hash": "fb4d1d3d01399284",
+      "generatedDocHash": "90aa68f69b7ade95b77ef7a668da7256425965f38c1115483b2bcbdb2edda907",
+      "lastGenerated": "2026-01-09T15:32:53.254Z",
+      "sourceFiles": [
+        "frontend/src/components/wizards/RecurringSetupWizard.tsx",
+        "frontend/src/components/wizards/steps/WelcomeStep.tsx",
+        "frontend/src/components/wizards/steps/CategoryStep.tsx",
+        "frontend/src/components/wizards/steps/ItemSelectionStep.tsx",
+        "frontend/src/components/wizards/steps/RollupConfigStep.tsx",
+        "frontend/src/components/wizards/steps/FinishStep.tsx"
+      ],
+      "outputFile": "docusaurus/docs/recurring/setup-wizard.mdx"
+    },
+    "rollup-category": {
+      "hash": "005617019d6c434a",
+      "generatedDocHash": "a8a75b7e75649bf91b838f5ab063c81237c78cbcc174ec510030975d244e0abb",
+      "lastGenerated": "2026-01-09T15:32:53.254Z",
+      "sourceFiles": [
+        "frontend/src/components/wizards/steps/RollupConfigStep.tsx",
+        "frontend/src/components/RollupZone.tsx"
+      ],
+      "outputFile": "docusaurus/docs/recurring/rollup-category.mdx"
+    },
+    "category-linking": {
+      "hash": "d1dee98c5e58c61c",
+      "generatedDocHash": "bc7783c3f463ede456b3d3807772b48ad1a0865d9f400b20d0f839376956d73c",
+      "lastGenerated": "2026-01-09T15:32:53.254Z",
+      "sourceFiles": [
+        "frontend/src/components/LinkCategoryModal.tsx",
+        "frontend/src/components/wizards/steps/ItemSelectionStep.tsx"
+      ],
+      "outputFile": "docusaurus/docs/recurring/category-linking.mdx"
+    },
+    "status-badges": {
+      "hash": "e3b0c44298fc1c14",
+      "lastGenerated": "2026-01-09T15:32:53.254Z",
+      "sourceFiles": [
+        "frontend/src/hooks/useItemDisplayStatus.ts",
+        "frontend/src/components/recurring/RecurringItemStatus.tsx"
+      ],
+      "outputFile": "docusaurus/docs/recurring/status-badges.mdx"
+    }
+  }
+}

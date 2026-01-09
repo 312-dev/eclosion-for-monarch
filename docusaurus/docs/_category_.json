@@ -1,0 +1,11 @@
+{
+  "label": "User Guides",
+  "position": 2,
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "title": "User Guides",
+    "description": "Learn how to use Eclosion features"
+  }
+}
