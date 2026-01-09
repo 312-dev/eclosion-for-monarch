@@ -10,8 +10,8 @@ interface IdeasModalProps {
   onClose: () => void;
 }
 
-const IDEAS_JSON_URL = 'https://raw.githubusercontent.com/graysoncadams/eclosion-for-monarch/main/data/ideas.json';
-const NEW_DISCUSSION_URL = 'https://github.com/graysoncadams/eclosion-for-monarch/discussions/new?category=Ideas';
+const IDEAS_JSON_URL = 'https://raw.githubusercontent.com/312-dev/eclosion/main/data/ideas.json';
+const NEW_DISCUSSION_URL = 'https://github.com/312-dev/eclosion/discussions/new?category=Ideas';
 
 export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
   const [data, setData] = useState<IdeasData | null>(null);
@@ -76,7 +76,7 @@ export function IdeasModal({ isOpen, onClose }: IdeasModalProps) {
               <p className="text-sm mt-0.5 text-monarch-text-muted">
                 Ideas from{' '}
                 <a
-                  href="https://github.com/GraysonCAdams/eclosion-for-monarch/discussions/categories/ideas"
+                  href="https://github.com/312-dev/eclosion/discussions/categories/ideas"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-monarch-text-dark hover:underline"

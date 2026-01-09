@@ -27,7 +27,7 @@ interface GetStartedModalProps {
 
 const EXTERNAL_URLS = {
   railway: 'https://railway.app/template/eclosion',
-  selfhosted: 'https://github.com/GraysonCAdams/eclosion-for-monarch/wiki',
+  selfhosted: 'https://github.com/312-dev/eclosion/wiki',
 } as const;
 
 export function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {

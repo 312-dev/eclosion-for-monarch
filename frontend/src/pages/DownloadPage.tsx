@@ -193,7 +193,7 @@ export function DownloadPage() {
               <AlertCircleIcon size={32} color="var(--monarch-warning)" />
               <p className="text-[var(--monarch-text)]">{error}</p>
               <a
-                href="https://github.com/GraysonCAdams/eclosion-for-monarch/releases"
+                href="https://github.com/312-dev/eclosion/releases"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-[var(--monarch-orange)] hover:underline"
@@ -334,7 +334,7 @@ export function DownloadPage() {
             Previous releases are available for compatibility or rollback purposes.
           </p>
           <a
-            href="https://github.com/GraysonCAdams/eclosion-for-monarch/releases"
+            href="https://github.com/312-dev/eclosion/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--monarch-border)] text-[var(--monarch-text)] hover:border-[var(--monarch-orange)] hover:text-[var(--monarch-orange)] transition-colors"
@@ -349,7 +349,7 @@ export function DownloadPage() {
       <section className="px-4 sm:px-6 py-6 text-center border-t border-[var(--monarch-border)]">
         <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
           <a
-            href="https://github.com/GraysonCAdams/eclosion-for-monarch"
+            href="https://github.com/312-dev/eclosion"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)]"
