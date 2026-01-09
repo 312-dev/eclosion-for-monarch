@@ -43,6 +43,9 @@ protocols:
     schemes:
       - eclosion
 
+# Pre-sign hook for Python.framework (fixes ambiguous bundle format)
+afterPack: afterPack.js
+
 # macOS configuration
 mac:
   category: public.app-category.finance
