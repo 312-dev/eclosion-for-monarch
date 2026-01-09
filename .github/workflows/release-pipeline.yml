@@ -273,6 +273,28 @@ jobs:
           echo "## Docker Image Published" >> $GITHUB_STEP_SUMMARY
           echo "- \`$IMAGE:$VERSION\`" >> $GITHUB_STEP_SUMMARY
 
+      - name: Make package public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Extract package name from repository (e.g., "owner/repo" -> "repo")
+          PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
+          echo "Setting package visibility to public..."
+          echo "Package: $PACKAGE_NAME"
+          echo "Owner: $OWNER"
+
+          # Try org endpoint first, fall back to user endpoint
+          gh api --method PATCH \
+            "/orgs/$OWNER/packages/container/$PACKAGE_NAME" \
+            -f visibility=public 2>/dev/null || \
+          gh api --method PATCH \
+            "/user/packages/container/$PACKAGE_NAME" \
+            -f visibility=public
+
+          echo "✅ Package visibility set to public" >> $GITHUB_STEP_SUMMARY
+
   # Upload desktop artifacts to GitHub release
   publish-desktop:
     name: "Stage 4: Publish Desktop"
