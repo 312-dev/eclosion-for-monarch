@@ -133,6 +133,8 @@ jobs:
     timeout-minutes: 30
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
+      image_name: ${{ steps.image.outputs.name }}
+      image_tag: ${{ steps.image.outputs.tag }}
     permissions:
       contents: read
       packages: write
@@ -159,6 +161,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute image name
+        id: image
+        run: |
+          # GHCR requires lowercase repository names
+          IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "name=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$IMAGE:sha-${{ github.sha }}" >> $GITHUB_OUTPUT
+
       - name: Build and push with SHA tag
         id: build
         uses: docker/build-push-action@v6
@@ -166,7 +176,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          tags: ${{ steps.image.outputs.tag }}
           build-args: |
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
             GIT_SHA=${{ github.sha }}
@@ -235,26 +245,26 @@ jobs:
 
       - name: Tag image with version
         run: |
-          # GHCR requires lowercase
-          IMAGE=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="${{ needs.build-docker.outputs.image_name }}"
+          SHA_TAG="${{ needs.build-docker.outputs.image_tag }}"
           VERSION="${{ inputs.version }}"
           # Strip 'v' prefix if present
           VERSION="${VERSION#v}"
 
-          echo "Promoting $IMAGE:sha-${{ github.sha }} to $IMAGE:$VERSION"
+          echo "Promoting $SHA_TAG to $IMAGE:$VERSION"
 
           # Pull the SHA-tagged image
-          docker pull "$IMAGE:sha-${{ github.sha }}"
+          docker pull "$SHA_TAG"
 
           # Tag with version
-          docker tag "$IMAGE:sha-${{ github.sha }}" "$IMAGE:$VERSION"
+          docker tag "$SHA_TAG" "$IMAGE:$VERSION"
           docker push "$IMAGE:$VERSION"
 
           # For stable releases, also tag with major.minor
           if [[ "$VERSION" != *-* ]]; then
             MAJOR_MINOR=$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+')
             if [[ -n "$MAJOR_MINOR" ]]; then
-              docker tag "$IMAGE:sha-${{ github.sha }}" "$IMAGE:$MAJOR_MINOR"
+              docker tag "$SHA_TAG" "$IMAGE:$MAJOR_MINOR"
               docker push "$IMAGE:$MAJOR_MINOR"
               echo "Also tagged as $IMAGE:$MAJOR_MINOR"
             fi
