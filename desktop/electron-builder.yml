@@ -24,6 +24,11 @@ extraResources:
     to: backend
     filter:
       - "**/*"
+  # Tray icons (needed at runtime for menu bar)
+  - from: assets/tray
+    to: assets/tray
+    filter:
+      - "**/*"
 
 # Publish to GitHub Releases
 publish:

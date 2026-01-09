@@ -21,8 +21,9 @@ const desktopDir = path.resolve(__dirname, '..');
 const assetsDir = path.join(desktopDir, 'assets');
 const trayDir = path.join(assetsDir, 'tray');
 
-// Source SVG
+// Source SVGs
 const sourceSvg = path.join(projectRoot, 'frontend/public/icons/icon-512.svg');
+const traySourceSvg = path.join(trayDir, 'tray-source.svg');
 
 // Icon sizes needed
 const ICON_SIZES = {
@@ -135,10 +136,13 @@ async function generateLinuxIcon() {
  * Generate monochrome template icon for macOS.
  * Template icons should be black with alpha channel - macOS automatically
  * inverts them for light/dark mode.
+ *
+ * Uses tray-source.svg which contains just the butterflies (no background).
+ * Converts the colored butterflies to solid black while preserving alpha.
  */
 async function generateMacTemplateIcon(outputPath, size) {
-  // Get the original image with alpha
-  const original = sharp(sourceSvg).resize(size, size).ensureAlpha();
+  // Render the SVG to get the alpha channel
+  const original = sharp(traySourceSvg).resize(size, size).ensureAlpha();
 
   // Extract alpha channel from original
   const alphaBuffer = await original.clone().extractChannel('alpha').toBuffer();
@@ -161,7 +165,18 @@ async function generateMacTemplateIcon(outputPath, size) {
     .png()
     .toFile(outputPath);
 
-  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size}, monochrome template)`);
+  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size}, template)`);
+}
+
+/**
+ * Generate colored tray PNG from tray source SVG.
+ */
+async function generateColoredTrayPng(outputPath, size) {
+  await sharp(traySourceSvg)
+    .resize(size, size)
+    .png()
+    .toFile(outputPath);
+  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size}, colored)`);
 }
 
 /**
@@ -176,22 +191,19 @@ async function generateTrayIcons() {
     await generateMacTemplateIcon(path.join(trayDir, 'iconTemplate.png'), 16);
     await generateMacTemplateIcon(path.join(trayDir, 'iconTemplate@2x.png'), 32);
   } catch (err) {
-    console.log(`  ⚠ Failed to generate monochrome templates, using regular icons: ${err.message}`);
-    // Fallback to regular icons if monochrome generation fails
-    await generatePng(path.join(trayDir, 'iconTemplate.png'), 16);
-    await generatePng(path.join(trayDir, 'iconTemplate@2x.png'), 32);
+    console.log(`  ⚠ Failed to generate monochrome templates: ${err.message}`);
   }
 
-  // Windows/Linux tray icon (colored)
-  await generatePng(path.join(trayDir, 'tray.png'), 32);
+  // Windows/Linux tray icon (colored butterflies)
+  await generateColoredTrayPng(path.join(trayDir, 'tray.png'), 32);
 
   // Windows tray ICO
   const pngToIco = require('png-to-ico');
   const trayPng16 = path.join(trayDir, 'temp_tray_16.png');
   const trayPng32 = path.join(trayDir, 'temp_tray_32.png');
 
-  await generatePng(trayPng16, 16);
-  await generatePng(trayPng32, 32);
+  await generateColoredTrayPng(trayPng16, 16);
+  await generateColoredTrayPng(trayPng32, 32);
 
   const buf = await pngToIco([trayPng16, trayPng32]);
   fs.writeFileSync(path.join(trayDir, 'tray.ico'), buf);
@@ -210,12 +222,17 @@ async function main() {
   console.log('║               Eclosion Icon Generator                          ║');
   console.log('╚════════════════════════════════════════════════════════════════╝');
 
-  // Check source exists
+  // Check sources exist
   if (!fs.existsSync(sourceSvg)) {
     console.error(`\n✗ Source SVG not found: ${sourceSvg}`);
     process.exit(1);
   }
-  console.log(`\nSource: ${sourceSvg}`);
+  if (!fs.existsSync(traySourceSvg)) {
+    console.error(`\n✗ Tray source SVG not found: ${traySourceSvg}`);
+    process.exit(1);
+  }
+  console.log(`\nApp icon source: ${sourceSvg}`);
+  console.log(`Tray icon source: ${traySourceSvg}`);
   console.log(`Output: ${assetsDir}`);
 
   ensureDirectories();

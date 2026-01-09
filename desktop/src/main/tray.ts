@@ -89,9 +89,14 @@ export function getHealthStatus(): { running: boolean; lastSync?: string } {
 
 /**
  * Get the path to the tray icon based on platform.
+ *
+ * In dev mode: assets are at ../../assets/tray relative to dist/main/
+ * In packaged mode: assets are in extraResources at process.resourcesPath/assets/tray
  */
 function getTrayIconPath(): string {
-  const assetsPath = path.join(__dirname, '../../assets/tray');
+  const assetsPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets/tray')
+    : path.join(__dirname, '../../assets/tray');
 
   if (process.platform === 'darwin') {
     // macOS uses template images for automatic dark/light mode adaptation
@@ -131,27 +136,24 @@ export function createTray(onSyncClick: () => Promise<void>): void {
   /**
    * Tray Click Behavior - Platform Differences
    *
-   * The click behavior intentionally varies by platform to match user expectations:
+   * - **macOS**: No click handler. Clicking the menu bar icon shows the context menu
+   *   (handled automatically by Electron via setContextMenu). This is the standard
+   *   behavior for macOS menu bar apps - they show a dropdown menu, not toggle windows.
    *
-   * - **macOS & Linux**: Single click toggles window visibility. This is the standard
-   *   behavior for menu bar apps on macOS. Linux follows the same pattern since most
-   *   desktop environments (GNOME, KDE) behave similarly.
+   * - **Windows**: Single click toggles window visibility. Double-click also opens
+   *   the window. Windows users expect tray icons to respond to clicks.
    *
-   * - **Windows**: Single click toggles window, BUT double-click is also supported
-   *   to show/focus the window. Windows users traditionally expect double-click on
-   *   tray icons to open the associated application (like double-clicking a shortcut).
+   * - **Linux**: Single click toggles window. Follows Windows-style behavior since
+   *   most desktop environments (GNOME, KDE) work this way.
    *
    * Note: Right-click opens the context menu on all platforms (handled automatically
    * by Electron via setContextMenu).
-   *
-   * Why not unify? Platform conventions differ significantly:
-   * - macOS menu bar apps rarely support double-click
-   * - Windows tray apps almost always support double-click
-   * - Matching platform expectations improves usability
    */
-  tray.on('click', () => {
-    toggleWindow();
-  });
+  if (process.platform !== 'darwin') {
+    tray.on('click', () => {
+      toggleWindow();
+    });
+  }
 
   // Windows users expect double-click to open apps from tray
   if (process.platform === 'win32') {
