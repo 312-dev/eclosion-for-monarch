@@ -441,21 +441,24 @@ This project uses two versioning schemes:
 
 ### Required GitHub Environments
 
-Releases require manual approval before becoming public. Configure these environments in **Settings → Environments**:
+Releases require manual approval before deployment. Configure these environments in **Settings → Environments**:
 
 | Environment Name | Purpose | Required Reviewers |
 |------------------|---------|-------------------|
-| `beta-release` | Approve beta releases | At least 1 maintainer |
-| `production-release` | Approve production releases | At least 1 maintainer |
+| `beta` | Approve beta releases before deployment | At least 1 maintainer |
+| `production` | Approve production releases before deployment | At least 1 maintainer |
 
 **Setup steps:**
 1. Go to repository **Settings** → **Environments**
 2. Click **New environment**
-3. Name it `beta-release` (or `production-release`)
+3. Name it `beta` (or `production`)
 4. Enable **Required reviewers** and add maintainers
 5. Save protection rules
 
-When a release workflow runs, it will pause at the approval step. Reviewers receive a notification and can approve after reviewing the draft release notes.
+When a release workflow runs, it pauses at the Cloudflare deploy step. Reviewers can approve after reviewing:
+- The draft release notes
+- Build artifacts uploaded to the release
+- Docker image built (but not yet tagged with version)
 
 ### Release Flow
 
@@ -473,23 +476,23 @@ When a release workflow runs, it will pause at the approval step. Reviewers rece
 │  → Reads version from package.json (e.g., 1.1.0)        │
 │  → Creates tag: v1.1.0-beta.20260104.1                  │
 │  → Creates draft GitHub pre-release                     │
-│  → Deploys to beta.eclosion.app                         │
 │  → Builds Docker image and desktop apps                 │
 └─────────────────────┬───────────────────────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│        ⏸️ MANUAL APPROVAL REQUIRED (beta-release)        │
+│           ⏸️ MANUAL APPROVAL REQUIRED (beta)             │
 │  → Review draft release notes in GitHub                 │
-│  → Verify beta.eclosion.app is working                  │
-│  → Approve to publish the release                       │
+│  → Review build artifacts attached to release           │
+│  → Approve to deploy and publish                        │
 └─────────────────────┬───────────────────────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│              AUTOMATIC: Release published               │
+│              AUTOMATIC: Deploy and Publish              │
+│  → Deploys to beta.eclosion.app                         │
+│  → Tags Docker image with version                       │
 │  → Draft release marked as public pre-release           │
-│  → Notification sent to watchers                        │
 └─────────────────────────────────────────────────────────┘
                       │
                       │ (when ready for production)
@@ -506,22 +509,23 @@ When a release workflow runs, it will pause at the approval step. Reviewers rece
 │  → Choose version bump (patch/minor/major)              │
 │  → Updates version files, creates tag                   │
 │  → Creates draft release with changelog                 │
-│  → Runs release pipeline (security → build → publish)   │
+│  → Runs release pipeline (security → build all)         │
 └─────────────────────┬───────────────────────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│    ⏸️ MANUAL APPROVAL REQUIRED (production-release)      │
+│        ⏸️ MANUAL APPROVAL REQUIRED (production)          │
 │  → Review draft release notes in GitHub                 │
-│  → Verify eclosion.app is working                       │
-│  → Approve to publish the release                       │
+│  → Review build artifacts attached to release           │
+│  → Approve to deploy and publish                        │
 └─────────────────────┬───────────────────────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│              AUTOMATIC: Release published               │
+│              AUTOMATIC: Deploy and Publish              │
+│  → Deploys to eclosion.app                              │
+│  → Tags Docker image with version                       │
 │  → Draft release marked as public                       │
-│  → Notification sent to watchers                        │
 │  → Docs version created                                 │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -540,14 +544,14 @@ The workflow automatically:
 - Reads the current version from `package.json`
 - Creates a tag like `v1.1.0-beta.20260104.1`
 - Creates a **draft** GitHub pre-release with auto-generated notes
-- Deploys to beta.eclosion.app
 - Builds Docker image and desktop apps for all platforms
-- **Pauses for manual approval** — review the draft release notes
-- Marks the release as public after approval
+- **Pauses for manual approval** — review before deployment
+- After approval: Deploys to beta.eclosion.app, tags Docker image
+- Marks the release as public
 
 > **Security Gate**: Beta releases run the full security scan suite against the develop branch. Any HIGH or CRITICAL vulnerabilities will block the release. DAST is skipped for faster execution.
 
-> **Approval Gate**: After builds complete, the workflow pauses. Navigate to the workflow run in GitHub Actions to approve. This lets you review the draft release notes before making them public.
+> **Approval Gate**: After builds complete, the workflow pauses at the `beta` environment. Navigate to the workflow run in GitHub Actions to approve. This lets you review the draft release notes and artifacts **before** anything is deployed.
 
 ### Creating a Stable Release
 
@@ -565,13 +569,14 @@ The workflow automatically:
 3. **Updates** version files (`package.json`, `pyproject.toml`)
 4. **Generates** release notes from commits/PRs since last tag
 5. **Creates** a draft release with the changelog
-6. **Runs** the release pipeline (security scan → build all artifacts → publish)
-7. **Pauses for manual approval** — review the draft release notes
-8. **Finalizes** the release (marks as non-draft) after approval
+6. **Runs** the release pipeline (security scan → build all artifacts)
+7. **Pauses for manual approval** — review before deployment
+8. After approval: **Deploys** to eclosion.app, tags Docker image
+9. **Finalizes** the release (marks as non-draft)
 
 If any step fails or approval is rejected, the draft release is automatically cleaned up and the version commit is reverted.
 
-> **Approval Gate**: After builds complete, the workflow pauses at the `production-release` environment. Navigate to the workflow run in GitHub Actions to approve. This lets you review the draft release notes before making them public.
+> **Approval Gate**: After builds complete, the workflow pauses at the `production` environment. Navigate to the workflow run in GitHub Actions to approve. This lets you review the draft release notes and artifacts **before** anything is deployed.
 
 > **Note:** Conventional commit types are still useful for organizing the auto-generated changelog, even though versioning is manual.
 

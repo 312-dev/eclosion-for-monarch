@@ -7,14 +7,16 @@
 #   1. Validate develop branch
 #   2. Calculate version
 #   3. Create draft pre-release
-#   4. Run release pipeline (security → build all → validate → publish artifacts)
-#   5. ⏸️ MANUAL APPROVAL - Review draft release notes before publishing
-#   6. Finalize pre-release (mark non-draft)
+#   4. Run release pipeline:
+#      - Security scan (HIGH+ blocks)
+#      - Build all artifacts (frontend, desktop, Docker)
+#      - Validate all builds passed
+#      - ⏸️ MANUAL APPROVAL at `beta` environment
+#      - After approval: Deploy to Cloudflare, tag Docker image
+#   5. Finalize pre-release (mark non-draft)
 #
-# The release stays as a draft until manually approved. You can review:
-#   - The generated release notes
-#   - Build artifacts uploaded to the release
-#   - The beta site deployment at beta.eclosion.app
+# The workflow pauses at the Cloudflare deploy step for manual approval.
+# You can review the draft release notes and build artifacts before approving.
 #
 # If any step fails or approval is rejected, the draft release is cleaned up.
 
@@ -187,30 +189,11 @@ jobs:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
   # ===========================================================================
-  # MANUAL APPROVAL GATE
-  # ===========================================================================
-  wait-for-approval:
-    name: "⏸️ Awaiting Approval"
-    needs: [calculate-version, release-pipeline]
-    runs-on: ubuntu-latest
-    timeout-minutes: 1440  # 24 hours
-    environment: beta-release
-    steps:
-      - name: Approval received
-        run: |
-          echo "### ✅ Release Approved" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ needs.calculate-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** ${{ needs.calculate-version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Proceeding to publish the release..." >> $GITHUB_STEP_SUMMARY
-
-  # ===========================================================================
   # FINALIZE
   # ===========================================================================
   publish-release:
     name: Publish Release
-    needs: [calculate-version, wait-for-approval]
+    needs: [calculate-version, release-pipeline]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -232,7 +215,7 @@ jobs:
   # Cleanup draft release if pipeline fails or approval is rejected
   cleanup-on-failure:
     name: Cleanup Failed Release
-    needs: [calculate-version, release-pipeline, wait-for-approval]
+    needs: [calculate-version, release-pipeline]
     if: failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5
