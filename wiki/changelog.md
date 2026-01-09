@@ -8,21 +8,7 @@ View the full changelog and release notes on GitHub:
 
 **[View All Releases](https://github.com/GraysonCAdams/eclosion-for-monarch/releases)**
 
-## Version History
-
-### 1.0.0 (January 15, 2025)
-
-Initial release of Eclosion for Monarch Money.
-
-**Added:**
-- Recurring expense tracking with automatic category creation
-- Target group configuration for budget categories
-- Rollup category feature for consolidating small subscriptions
-- Encrypted credential storage with passphrase protection
-- PWA support with offline capability
-- Auto-sync option for new recurring items
-- Category emoji customization
-- Mobile-responsive dashboard design
+For detailed release notes, see the [CHANGELOG.md](https://github.com/GraysonCAdams/eclosion-for-monarch/blob/main/CHANGELOG.md) in the repository.
 
 ## Versioning
 
