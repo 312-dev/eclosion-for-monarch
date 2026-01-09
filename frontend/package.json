@@ -3,6 +3,14 @@
   "private": true,
   "version": "1.1.0",
   "license": "MIT",
+  "author": "Grayson Adams",
+  "maintainers": [
+    {
+      "name": "312.dev",
+      "email": "ope@312.dev",
+      "url": "https://312.dev"
+    }
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",

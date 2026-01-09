@@ -311,6 +311,12 @@ From within the app, go to Settings > Tear Down & Stop Paying to:
 2. Clear all stored credentials and data
 3. Get a direct link to delete your Railway project (if applicable)
 
+## Maintainers
+
+This project is maintained by [312.dev](https://312.dev). Contributions are welcome from the community.
+
+This software is provided as-is for self-hosting. 312.dev does not provide hosting services for this application.
+
 ## License
 
 MIT

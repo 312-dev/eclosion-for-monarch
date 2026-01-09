@@ -179,6 +179,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     init();
   }, [checkAuth]);
 
+  // Listen for app lock events from Electron (desktop only)
+  useEffect(() => {
+    if (!window.electron?.lock?.onLocked) return;
+
+    const unsubscribe = window.electron.lock.onLocked((_data) => {
+      // Only lock if we're currently authenticated
+      if (authenticated) {
+        setAuthenticated(false);
+        setNeedsUnlock(true);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [authenticated]);
+
   const value: AuthContextValue = {
     // State
     authenticated,

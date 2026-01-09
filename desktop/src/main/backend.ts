@@ -339,15 +339,22 @@ export class BackendManager {
 
   /**
    * Trigger a manual sync via the backend.
+   * @param passphrase Optional passphrase to unlock credentials if locked
    */
-  async triggerSync(): Promise<{ success: boolean; error?: string }> {
+  async triggerSync(passphrase?: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const body: { passphrase?: string } = {};
+      if (passphrase) {
+        body.passphrase = passphrase;
+      }
+
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Desktop-Secret': this.desktopSecret,
         },
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -389,8 +396,9 @@ export class BackendManager {
   /**
    * Check if a sync is needed (for wake-from-sleep handling).
    * Returns the result of the sync if triggered, or null if no sync was needed.
+   * @param passphrase Optional passphrase to use for unlocking if credentials are locked
    */
-  async checkSyncNeeded(): Promise<{ synced: boolean; success?: boolean; error?: string }> {
+  async checkSyncNeeded(passphrase?: string): Promise<{ synced: boolean; success?: boolean; error?: string }> {
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/auto-sync/status`, {
         headers: {
@@ -412,7 +420,7 @@ export class BackendManager {
 
           if (hoursSinceSync > intervalHours) {
             console.log(`Triggering sync after wake (${hoursSinceSync.toFixed(1)} hours since last sync)`);
-            const result = await this.triggerSync();
+            const result = await this.triggerSync(passphrase);
             return { synced: true, success: result.success, error: result.error };
           }
         }

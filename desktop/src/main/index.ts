@@ -47,6 +47,8 @@ import {
   handleDeepLink,
 } from './deeplinks';
 import { recordMilestone, finalizeStartupMetrics } from './startup-metrics';
+import { initializeLockManager, cleanupLockManager, updateMainWindowRef } from './lock-manager';
+import { getStoredPassphrase } from './biometric';
 
 // Single instance lock - prevent multiple instances
 debugLog('Requesting single instance lock...');
@@ -164,6 +166,12 @@ async function initialize(): Promise<void> {
     // Setup deep link handlers (for eclosion:// URLs)
     setupDeepLinkHandlers(handleSyncClick);
 
+    // Initialize lock manager (handles auto-lock on system lock or idle)
+    const mainWindow = getMainWindow();
+    if (mainWindow) {
+      initializeLockManager(mainWindow);
+    }
+
     // Setup power monitor for sleep/wake handling
     setupPowerMonitor();
 
@@ -197,7 +205,9 @@ async function initialize(): Promise<void> {
  */
 async function handleSyncClick(): Promise<void> {
   addBreadcrumb({ category: 'sync', message: 'Manual sync triggered' });
-  const result = await backendManager.triggerSync();
+  // Get passphrase from secure storage for sync (if biometric is enrolled)
+  const passphrase = getStoredPassphrase();
+  const result = await backendManager.triggerSync(passphrase ?? undefined);
   if (result.success) {
     const syncTime = new Date().toLocaleTimeString();
     showNotification('Sync Complete', 'Your recurring expenses are up to date.');
@@ -220,7 +230,9 @@ function setupPowerMonitor(): void {
     // Check if sync is needed after wake
     try {
       if (backendManager.isRunning()) {
-        const result = await backendManager.checkSyncNeeded();
+        // Get passphrase from secure storage for auto-sync (if biometric is enrolled)
+        const passphrase = getStoredPassphrase();
+        const result = await backendManager.checkSyncNeeded(passphrase ?? undefined);
 
         // Show feedback if a sync was triggered
         if (result.synced) {
@@ -270,6 +282,9 @@ async function cleanup(): Promise<void> {
   // Unregister global hotkeys
   unregisterAllHotkeys();
 
+  // Cleanup lock manager
+  cleanupLockManager();
+
   // Destroy tray
   destroyTray();
 
@@ -306,11 +321,16 @@ app.on('window-all-closed', () => {
 });
 
 // Handle activate (macOS dock click)
-app.on('activate', () => {
-  const mainWindow = getMainWindow();
+app.on('activate', async () => {
+  let mainWindow = getMainWindow();
   if (!mainWindow) {
     // Recreate window if it was closed
-    createWindow(backendManager.getPort());
+    await createWindow(backendManager.getPort());
+    // Update lock manager with new window reference
+    mainWindow = getMainWindow();
+    if (mainWindow) {
+      updateMainWindowRef(mainWindow);
+    }
   } else {
     showWindow();
   }

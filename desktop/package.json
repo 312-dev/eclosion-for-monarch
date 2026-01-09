@@ -8,6 +8,13 @@
     "name": "Grayson Adams",
     "email": "grayson@eclosion.app"
   },
+  "maintainers": [
+    {
+      "name": "312.dev",
+      "email": "ope@312.dev",
+      "url": "https://312.dev"
+    }
+  ],
   "license": "MIT",
   "scripts": {
     "dev": "npm run build:main && electron .",

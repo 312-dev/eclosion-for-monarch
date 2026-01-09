@@ -217,7 +217,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright ${new Date().getFullYear()} Eclosion for Monarch. Built with Docusaurus.<br/>Eclosion is not affiliated with, endorsed by, or sponsored by Monarch Money.`,
+      copyright: `Copyright ${new Date().getFullYear()} 312.dev and contributors. Built with Docusaurus.<br/>Eclosion is not affiliated with, endorsed by, or sponsored by Monarch Money.`,
     },
     prism: {
       theme: prismThemes.github,

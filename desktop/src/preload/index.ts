@@ -401,6 +401,106 @@ const electronAPI = {
     dataPath: string;
     instructions: string;
   }> => ipcRenderer.invoke('get-cleanup-instructions'),
+
+  // =========================================================================
+  // Biometric Authentication
+  // =========================================================================
+
+  /**
+   * Biometric authentication API for Touch ID (macOS) and Windows Hello.
+   */
+  biometric: {
+    /**
+     * Check if biometric authentication is available on this device.
+     */
+    isAvailable: (): Promise<boolean> => ipcRenderer.invoke('biometric:is-available'),
+
+    /**
+     * Get the type of biometric authentication available.
+     */
+    getType: (): Promise<'touchId' | 'windowsHello' | null> =>
+      ipcRenderer.invoke('biometric:get-type'),
+
+    /**
+     * Get a user-friendly display name for the biometric type.
+     */
+    getDisplayName: (): Promise<string> => ipcRenderer.invoke('biometric:get-display-name'),
+
+    /**
+     * Check if biometric authentication is enrolled (passphrase stored).
+     */
+    isEnrolled: (): Promise<boolean> => ipcRenderer.invoke('biometric:is-enrolled'),
+
+    /**
+     * Enroll biometric authentication by storing the passphrase securely.
+     */
+    enroll: (passphrase: string): Promise<boolean> =>
+      ipcRenderer.invoke('biometric:enroll', passphrase),
+
+    /**
+     * Authenticate using biometric and retrieve the stored passphrase.
+     */
+    authenticate: (): Promise<{
+      success: boolean;
+      passphrase?: string;
+      error?: string;
+    }> => ipcRenderer.invoke('biometric:authenticate'),
+
+    /**
+     * Clear biometric enrollment (remove stored passphrase).
+     */
+    clear: (): Promise<void> => ipcRenderer.invoke('biometric:clear'),
+
+    /**
+     * Get the stored passphrase without prompting for biometric.
+     * Used for auto-sync when biometric is enrolled.
+     */
+    getStoredPassphrase: (): Promise<string | null> =>
+      ipcRenderer.invoke('biometric:get-stored-passphrase'),
+  },
+
+  // =========================================================================
+  // Lock Management
+  // =========================================================================
+
+  /**
+   * Lock management API for configuring auto-lock behavior.
+   */
+  lock: {
+    /**
+     * Get the current lock trigger setting.
+     */
+    getTrigger: (): Promise<string> => ipcRenderer.invoke('lock:get-trigger'),
+
+    /**
+     * Set the lock trigger setting.
+     */
+    setTrigger: (trigger: string): Promise<void> =>
+      ipcRenderer.invoke('lock:set-trigger', trigger),
+
+    /**
+     * Get available lock trigger options with labels.
+     */
+    getOptions: (): Promise<Array<{ value: string; label: string }>> =>
+      ipcRenderer.invoke('lock:get-options'),
+
+    /**
+     * Manually lock the app.
+     */
+    lockApp: (): Promise<void> => ipcRenderer.invoke('lock:lock-app'),
+
+    /**
+     * Listen for app lock events from the main process.
+     */
+    onLocked: (callback: (data: { reason: string }) => void): (() => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        data: { reason: string }
+      ): void => callback(data);
+      ipcRenderer.on('app:locked', handler);
+      return () => ipcRenderer.removeListener('app:locked', handler);
+    },
+  },
 };
 
 // Expose the API to the renderer process

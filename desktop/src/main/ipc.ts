@@ -33,6 +33,23 @@ import {
   resetOnboarding,
 } from './onboarding';
 import {
+  isBiometricAvailable,
+  getBiometricType,
+  isBiometricEnrolled,
+  enrollBiometric,
+  authenticateWithBiometric,
+  clearBiometricEnrollment,
+  getStoredPassphrase,
+  getBiometricDisplayName,
+} from './biometric';
+import {
+  getLockTrigger,
+  setLockTrigger,
+  getLockTriggerOptions,
+  lockApp,
+  type LockTrigger,
+} from './lock-manager';
+import {
   getFormattedMetrics,
   clearMetricsHistory,
 } from './startup-metrics';
@@ -521,5 +538,98 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    */
   ipcMain.handle('get-cleanup-instructions', () => {
     return getCleanupInstructions();
+  });
+
+  // =========================================================================
+  // Biometric Authentication
+  // =========================================================================
+
+  /**
+   * Check if biometric authentication is available on this device.
+   */
+  ipcMain.handle('biometric:is-available', () => {
+    return isBiometricAvailable();
+  });
+
+  /**
+   * Get the type of biometric authentication available.
+   */
+  ipcMain.handle('biometric:get-type', () => {
+    return getBiometricType();
+  });
+
+  /**
+   * Get a user-friendly display name for the biometric type.
+   */
+  ipcMain.handle('biometric:get-display-name', () => {
+    return getBiometricDisplayName();
+  });
+
+  /**
+   * Check if biometric authentication is enrolled (passphrase stored).
+   */
+  ipcMain.handle('biometric:is-enrolled', () => {
+    return isBiometricEnrolled();
+  });
+
+  /**
+   * Enroll biometric authentication by storing the passphrase securely.
+   */
+  ipcMain.handle('biometric:enroll', (_event, passphrase: string) => {
+    return enrollBiometric(passphrase);
+  });
+
+  /**
+   * Authenticate using biometric and retrieve the stored passphrase.
+   */
+  ipcMain.handle('biometric:authenticate', async () => {
+    return authenticateWithBiometric();
+  });
+
+  /**
+   * Clear biometric enrollment (remove stored passphrase).
+   */
+  ipcMain.handle('biometric:clear', () => {
+    clearBiometricEnrollment();
+  });
+
+  /**
+   * Get the stored passphrase without prompting for biometric.
+   * Used for auto-sync when biometric is enrolled.
+   */
+  ipcMain.handle('biometric:get-stored-passphrase', () => {
+    return getStoredPassphrase();
+  });
+
+  // =========================================================================
+  // Lock Management
+  // =========================================================================
+
+  /**
+   * Get the current lock trigger setting.
+   */
+  ipcMain.handle('lock:get-trigger', () => {
+    return getLockTrigger();
+  });
+
+  /**
+   * Set the lock trigger setting.
+   */
+  ipcMain.handle('lock:set-trigger', (_event, trigger: LockTrigger) => {
+    setLockTrigger(trigger);
+  });
+
+  /**
+   * Get available lock trigger options with labels.
+   */
+  ipcMain.handle('lock:get-options', () => {
+    return getLockTriggerOptions();
+  });
+
+  /**
+   * Manually lock the app.
+   */
+  ipcMain.handle('lock:lock-app', () => {
+    lockApp();
   });
 }

@@ -49,6 +49,7 @@ import {
   Shield,
   ShieldCheck,
   Key,
+  Fingerprint,
   Moon,
   Sun,
   Tv,
@@ -150,6 +151,7 @@ export const LockIcon = Lock;
 export const ShieldIcon = Shield;
 export const ShieldCheckIcon = ShieldCheck;
 export const KeyIcon = Key;
+export const FingerprintIcon = Fingerprint;
 export const MoonIcon = Moon;
 export const SunIcon = Sun;
 export const TvIcon = Tv;
@@ -617,6 +619,7 @@ export const Icons = {
   Shield: ShieldIcon,
   ShieldCheck: ShieldCheckIcon,
   Key: KeyIcon,
+  Fingerprint: FingerprintIcon,
 
   // Theme
   Moon: MoonIcon,

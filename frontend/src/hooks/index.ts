@@ -82,3 +82,5 @@ export {
   TOUR_STATE_KEY,
   type UseRecurringTourReturn,
 } from './useRecurringTour';
+
+export { useBiometric, type UseBiometricReturn } from './useBiometric';

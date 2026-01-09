@@ -172,6 +172,50 @@ export interface CleanupInstructions {
   instructions: string;
 }
 
+// Biometric Authentication Types
+
+export type BiometricType = 'touchId' | 'windowsHello' | null;
+
+// Lock Management Types
+
+export type LockTrigger =
+  | 'system-lock'
+  | 'idle-1'
+  | 'idle-5'
+  | 'idle-15'
+  | 'idle-30'
+  | 'never';
+
+export interface LockOption {
+  value: LockTrigger;
+  label: string;
+}
+
+export interface LockAPI {
+  getTrigger: () => Promise<LockTrigger>;
+  setTrigger: (trigger: LockTrigger) => Promise<void>;
+  getOptions: () => Promise<LockOption[]>;
+  lockApp: () => Promise<void>;
+  onLocked: (callback: (data: { reason: string }) => void) => () => void;
+}
+
+export interface BiometricAuthResult {
+  success: boolean;
+  passphrase?: string;
+  error?: string;
+}
+
+export interface BiometricAPI {
+  isAvailable: () => Promise<boolean>;
+  getType: () => Promise<BiometricType>;
+  getDisplayName: () => Promise<string>;
+  isEnrolled: () => Promise<boolean>;
+  enroll: (passphrase: string) => Promise<boolean>;
+  authenticate: () => Promise<BiometricAuthResult>;
+  clear: () => Promise<void>;
+  getStoredPassphrase: () => Promise<string | null>;
+}
+
 export interface ElectronAPI {
   // Backend Communication
   getBackendPort: () => Promise<number>;
@@ -243,6 +287,12 @@ export interface ElectronAPI {
   // Data Cleanup
   showFactoryResetDialog: () => Promise<FactoryResetResult>;
   getCleanupInstructions: () => Promise<CleanupInstructions>;
+
+  // Biometric Authentication
+  biometric: BiometricAPI;
+
+  // Lock Management
+  lock: LockAPI;
 }
 
 declare global {

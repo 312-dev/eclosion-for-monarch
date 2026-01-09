@@ -778,7 +778,29 @@ async def recurring_dashboard():
 @app.route("/recurring/sync", methods=["POST"])
 @api_handler(handle_mfa=True)
 async def recurring_sync():
-    """Trigger full synchronization of recurring transactions."""
+    """
+    Trigger full synchronization of recurring transactions.
+
+    In desktop mode, accepts an optional passphrase parameter to unlock
+    credentials before syncing. This enables background sync when the app
+    is locked but has the passphrase stored in OS-level secure storage.
+    """
+    # In desktop mode, accept optional passphrase for unlocking
+    if config.is_desktop_environment():
+        data = request.get_json(silent=True) or {}
+        passphrase = data.get("passphrase")
+
+        if passphrase:
+            # Unlock credentials if not already unlocked
+            credentials_service = CredentialsService()
+            if not credentials_service.get_session_credentials():
+                unlock_result = credentials_service.unlock(passphrase)
+                if not unlock_result.get("success"):
+                    return _sanitize_api_result(
+                        {"success": False, "error": unlock_result.get("error", "Unlock failed")},
+                        "Failed to unlock credentials for sync.",
+                    )
+
     result = await sync_service.full_sync()
     # Sanitize all error messages to prevent stack trace exposure
     return _sanitize_api_result(result, "Sync failed. Please try again.")
