@@ -115,12 +115,12 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                 {isCoderMode && (
                   <>
                     <NavLink
-                      to="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
+                      to="https://github.com/312-dev/eclosion/wiki"
                       external
                     >
                       Self-Hosting
                     </NavLink>
-                    <NavLink to="https://github.com/graysoncadams/eclosion-for-monarch" external>
+                    <NavLink to="https://github.com/312-dev/eclosion" external>
                       GitHub
                     </NavLink>
                   </>
@@ -148,7 +148,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   </a>
                   {isCoderMode && (
                     <a
-                      href="https://github.com/graysoncadams/eclosion-for-monarch/wiki"
+                      href="https://github.com/312-dev/eclosion/wiki"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm font-medium text-[var(--monarch-text)] hover:text-[var(--monarch-text-dark)] transition-colors px-2"
@@ -175,7 +175,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
               {/* GitHub Link (mobile) */}
               {isCoderMode && (
                 <a
-                  href="https://github.com/graysoncadams/eclosion-for-monarch"
+                  href="https://github.com/312-dev/eclosion"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center w-10 h-10 rounded-lg text-[var(--monarch-text-muted)] hover:text-[var(--monarch-text-dark)] hover:bg-[var(--monarch-bg-hover)] transition-colors md:hidden"
@@ -218,7 +218,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   <>
                     <span className="text-[var(--monarch-border)]">•</span>
                     <a
-                      href="https://github.com/graysoncadams/eclosion-for-monarch"
+                      href="https://github.com/312-dev/eclosion"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 hover:text-[var(--monarch-text-dark)] transition-colors"

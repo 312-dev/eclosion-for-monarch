@@ -11,7 +11,7 @@ interface Env {
 }
 
 const GITHUB_RAW_URL =
-  'https://raw.githubusercontent.com/graysoncadams/eclosion-for-monarch/main/data/ideas.json';
+  'https://raw.githubusercontent.com/312-dev/eclosion/main/data/ideas.json';
 const CACHE_TTL_SECONDS = 5 * 60; // 5 minutes
 
 export const onRequest: PagesFunction<Env> = async (context) => {

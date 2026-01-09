@@ -334,7 +334,7 @@ export function createAppMenu(onSync?: () => Promise<void>): void {
           label: 'Report an Issue',
           click: async (): Promise<void> => {
             await shell.openExternal(
-              'https://github.com/GraysonCAdams/eclosion-for-monarch/issues'
+              'https://github.com/312-dev/eclosion/issues'
             );
           },
         },

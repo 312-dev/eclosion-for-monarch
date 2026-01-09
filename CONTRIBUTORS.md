@@ -1,6 +1,6 @@
 # Contributors
 
-Eclosion for Monarch is maintained by [312.dev](https://312.dev).
+Eclosion is maintained by [312.dev](https://312.dev).
 
 ## Original Author
 
@@ -8,7 +8,7 @@ Eclosion for Monarch is maintained by [312.dev](https://312.dev).
 
 ## Community Contributors
 
-Thank you to all contributors who help improve this project. See the [contributors graph](https://github.com/GraysonCAdams/eclosion-for-monarch/graphs/contributors) for the full list.
+Thank you to all contributors who help improve this project. See the [contributors graph](https://github.com/312-dev/eclosion/graphs/contributors) for the full list.
 
 ---
 

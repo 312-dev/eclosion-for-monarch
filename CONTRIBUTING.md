@@ -1,4 +1,4 @@
-# Contributing to Eclosion for Monarch
+# Contributing to Eclosion
 
 Thank you for your interest in contributing to Eclosion! This guide will help you get started.
 
@@ -32,8 +32,8 @@ Please be respectful and constructive in all interactions. Contributors of all e
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/graysoncadams/eclosion-for-monarch.git
-   cd eclosion-for-monarch
+   git clone https://github.com/312-dev/eclosion.git
+   cd eclosion
    ```
 
 2. **Backend setup**

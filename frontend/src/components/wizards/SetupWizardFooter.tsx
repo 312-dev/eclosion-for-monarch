@@ -25,7 +25,7 @@ export function SetupWizardFooter({ showTutorialButton, onShowTutorial }: SetupW
       )}
 
       <a
-        href="https://github.com/graysoncadams/eclosion-for-monarch"
+        href="https://github.com/312-dev/eclosion"
         target="_blank"
         rel="noopener noreferrer"
         className="p-2 rounded-full transition-colors hover-text-muted-to-dark"

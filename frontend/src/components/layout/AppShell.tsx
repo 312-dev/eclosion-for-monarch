@@ -251,7 +251,7 @@ export function AppShell() {
         <footer className="app-footer" role="contentinfo">
           <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
             <a
-              href="https://github.com/graysoncadams/eclosion-for-monarch"
+              href="https://github.com/312-dev/eclosion"
               target="_blank"
               rel="noopener noreferrer"
               className="app-footer-link"

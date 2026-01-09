@@ -15,7 +15,7 @@ import { getAvailableFeatures } from '../../../data/features';
 // Cloudflare Function URL (production) and GitHub raw fallback (local dev)
 const IDEAS_API_URL = '/api/ideas';
 const IDEAS_GITHUB_URL =
-  'https://raw.githubusercontent.com/graysoncadams/eclosion-for-monarch/main/data/ideas.json';
+  'https://raw.githubusercontent.com/312-dev/eclosion/main/data/ideas.json';
 
 // Detect if we're in local development (localhost or 127.0.0.1)
 const isLocalDev =

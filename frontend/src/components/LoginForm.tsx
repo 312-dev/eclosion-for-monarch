@@ -260,7 +260,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       {/* GitHub source link */}
       <a
-        href="https://github.com/graysoncadams/eclosion-for-monarch"
+        href="https://github.com/312-dev/eclosion"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-4 right-4 p-2 rounded-full transition-colors hover-text-muted-to-dark"

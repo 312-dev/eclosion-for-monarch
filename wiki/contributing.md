@@ -18,7 +18,7 @@ Please be respectful and constructive in all interactions. Contributors of all e
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/GraysonCAdams/eclosion-for-monarch.git
+   git clone https://github.com/312-dev/eclosion.git
    cd eclosion
    ```
 
@@ -94,7 +94,7 @@ feat: add category emoji customization
 Closes #45
 ```
 
-See [CONTRIBUTING.md](https://github.com/GraysonCAdams/eclosion-for-monarch/blob/main/CONTRIBUTING.md) for full commit guidelines.
+See [CONTRIBUTING.md](https://github.com/312-dev/eclosion/blob/main/CONTRIBUTING.md) for full commit guidelines.
 
 ## Pull Request Process
 
@@ -128,7 +128,7 @@ This repository uses Git Flow. All changes go through the `develop` branch befor
 
 > **Note**: PRs directly to `main` will be blocked. Always target `develop` first.
 
-For full CI/CD documentation including workflow standards, see [CONTRIBUTING.md](https://github.com/GraysonCAdams/eclosion-for-monarch/blob/main/CONTRIBUTING.md#github-actions-workflow-standards).
+For full CI/CD documentation including workflow standards, see [CONTRIBUTING.md](https://github.com/312-dev/eclosion/blob/main/CONTRIBUTING.md#github-actions-workflow-standards).
 
 ## Code Style
 

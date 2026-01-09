@@ -22,6 +22,7 @@
 90005	IGNORE	(Sec-Fetch-Dest Header Missing - client-side header, not server controlled)
 
 # Intentional design decisions (documented trade-offs)
+2	IGNORE	(Private IP Disclosure - localhost check in frontend code, not actual IP leak)
 10055	IGNORE	(CSP: Wildcard Directive - intentional for img-src https: to allow external images)
 90004	IGNORE	(Spectre Vulnerability - COEP would break cross-origin image loading)
 
