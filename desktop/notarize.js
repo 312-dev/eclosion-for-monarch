@@ -93,20 +93,9 @@ exports.default = async function notarizing(context) {
   }
 
   // Re-sign Python.framework before notarization
+  // DO NOT re-sign the entire app - that would break Electron Framework signatures
   if (identity) {
     resignPythonFramework(appPath, identity);
-
-    // Re-sign the entire app to ensure the signature is valid after framework re-signing
-    console.log('  Re-signing entire app...');
-    try {
-      execSync(
-        `codesign --sign "${identity}" --force --timestamp --options runtime --deep "${appPath}"`,
-        { stdio: 'inherit' }
-      );
-      console.log('  App re-signed successfully');
-    } catch (error) {
-      console.error('  Warning: App re-sign failed:', error.message);
-    }
   }
 
   console.log('Notarizing macOS application...');
