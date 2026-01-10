@@ -1,19 +1,34 @@
 /**
- * afterPack Hook
+ * afterPack Hook - macOS Code Signing for PyInstaller Backend
  *
  * Signs PyInstaller backend binaries BEFORE electron-builder signs the app.
- * PyInstaller's Python.framework is non-standard and requires --no-strict.
+ * This is necessary because PyInstaller creates a non-standard Python.framework
+ * that requires special handling for Apple notarization.
  *
- * Strategy:
+ * ## The Problem
+ *
+ * PyInstaller creates Python.framework with:
+ * 1. COPIES instead of symlinks (breaks standard framework structure)
+ * 2. Pre-existing signatures WITHOUT secure timestamps (Apple rejects these)
+ * 3. An "ambiguous bundle format" that confuses codesign
+ *
+ * ## The Solution
+ *
  * 1. Sign all .so and .dylib files in _internal (excluding Python.framework)
  * 2. For Python.framework:
- *    a. Remove _CodeSignature directory (has stale metadata without timestamps)
- *    b. Sign the real binary at Versions/X.Y/Python
- *    c. Replace copies with proper symlinks (PyInstaller creates copies, breaking signing)
- *    d. Do NOT sign the bundle (PyInstaller's format is "ambiguous" to codesign)
+ *    a. Remove _CodeSignature directory (stale metadata without timestamps)
+ *    b. Sign the real binary at Versions/X.Y/Python with --no-strict
+ *    c. Replace copies with proper symlinks:
+ *       - Python.framework/Python -> Versions/Current/Python
+ *       - Python.framework/Versions/Current -> X.Y (e.g., 3.12)
+ *    d. Skip bundle signing (codesign can't handle PyInstaller's format)
  * 3. Sign the main eclosion-backend executable
  *
- * electron-builder's signIgnore patterns prevent re-signing of backend binaries.
+ * The symlinks inherit the signature from their target, so we only need to
+ * sign the actual binary once. electron-builder's signIgnore patterns in
+ * electron-builder.yml prevent re-signing of these pre-signed binaries.
+ *
+ * @see https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution
  */
 
 const { execSync } = require('child_process');
