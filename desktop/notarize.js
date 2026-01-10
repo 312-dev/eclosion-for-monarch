@@ -18,9 +18,9 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * Re-sign Python.framework with --no-strict flag
- * This is needed because electron-builder's signing may have overwritten
- * our afterPack signatures, and PyInstaller's framework format requires --no-strict
+ * Re-sign Python.framework binaries
+ * PyInstaller's framework format is non-standard and requires careful signing.
+ * We sign the versioned binary first, then the framework (without --deep).
  */
 function resignPythonFramework(appPath, identity) {
   const pythonFramework = path.join(
@@ -37,14 +37,32 @@ function resignPythonFramework(appPath, identity) {
     return;
   }
 
-  console.log('  Re-signing Python.framework with --no-strict...');
+  console.log('  Re-signing Python.framework...');
 
   try {
-    // Sign the framework with --deep --no-strict --force
+    // Step 1: Find and sign the versioned Python binary (the actual file, not symlink)
+    const versionsDir = path.join(pythonFramework, 'Versions');
+    if (fs.existsSync(versionsDir)) {
+      const versions = fs.readdirSync(versionsDir).filter(v => v !== 'Current');
+      for (const version of versions) {
+        const pythonBinary = path.join(versionsDir, version, 'Python');
+        if (fs.existsSync(pythonBinary) && !fs.lstatSync(pythonBinary).isSymbolicLink()) {
+          console.log(`    Signing Versions/${version}/Python`);
+          execSync(
+            `codesign --sign "${identity}" --force --timestamp --options runtime --no-strict "${pythonBinary}"`,
+            { stdio: 'inherit' }
+          );
+        }
+      }
+    }
+
+    // Step 2: Sign the framework bundle itself (without --deep to preserve inner signatures)
+    console.log('    Signing Python.framework bundle');
     execSync(
-      `codesign --sign "${identity}" --force --timestamp --options runtime --deep --no-strict "${pythonFramework}"`,
+      `codesign --sign "${identity}" --force --timestamp --options runtime --no-strict "${pythonFramework}"`,
       { stdio: 'inherit' }
     );
+
     console.log('  Python.framework re-signed successfully');
   } catch (error) {
     console.error('  Warning: Python.framework re-sign failed:', error.message);
