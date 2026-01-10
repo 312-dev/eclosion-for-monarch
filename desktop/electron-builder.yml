@@ -61,7 +61,8 @@ mac:
   # afterPack.js pre-signs backend with --no-strict (required for PyInstaller)
   # signIgnore prevents electron-builder from re-signing and breaking those signatures
   signIgnore:
-    - "Resources/backend"
+    - "**/backend/**"
+    - "**/Python.framework/**"
 
 # macOS code signing
 afterSign: notarize.js
