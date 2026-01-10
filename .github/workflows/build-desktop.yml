@@ -241,6 +241,12 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Set version in package.json
+        working-directory: desktop
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "Set desktop/package.json version to ${{ inputs.version }}"
+
       - name: Build Electron main process
         working-directory: desktop
         run: npm run build:main
@@ -367,6 +373,15 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Set version in package.json
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json | ConvertFrom-Json
+          $pkg.version = "${{ inputs.version }}"
+          $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json
+          Write-Host "Set desktop/package.json version to ${{ inputs.version }}"
+
       - name: Build Electron main process
         working-directory: desktop
         run: npm run build:main
@@ -474,6 +489,12 @@ jobs:
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm ci
+
+      - name: Set version in package.json
+        working-directory: desktop
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "Set desktop/package.json version to ${{ inputs.version }}"
 
       - name: Build Electron main process
         working-directory: desktop

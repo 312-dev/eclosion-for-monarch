@@ -3,6 +3,10 @@
 # Manually triggered workflow to create a stable release from the main branch.
 # This replaces release-please for more predictable changelog generation.
 #
+# VERSION SOURCE OF TRUTH: frontend/package.json
+# All other version files (desktop/package.json, docusaurus/package.json,
+# pyproject.toml) are updated from this source during the release process.
+#
 # Flow:
 #   1. Validate main branch
 #   2. Calculate next version based on bump type
@@ -143,6 +147,9 @@ jobs:
           # Update frontend/package.json
           jq --arg v "$VERSION" '.version = $v' frontend/package.json > tmp.json && mv tmp.json frontend/package.json
 
+          # Update desktop/package.json
+          jq --arg v "$VERSION" '.version = $v' desktop/package.json > tmp.json && mv tmp.json desktop/package.json
+
           # Update docusaurus/package.json
           jq --arg v "$VERSION" '.version = $v' docusaurus/package.json > tmp.json && mv tmp.json docusaurus/package.json
 
@@ -154,6 +161,7 @@ jobs:
 
           echo "### Updated Files" >> $GITHUB_STEP_SUMMARY
           echo "- frontend/package.json: $CURRENT -> $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- desktop/package.json: -> $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- docusaurus/package.json: -> $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- pyproject.toml: -> $VERSION" >> $GITHUB_STEP_SUMMARY
 
@@ -161,7 +169,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/package.json docusaurus/package.json pyproject.toml .release-please-manifest.json
+          git add frontend/package.json desktop/package.json docusaurus/package.json pyproject.toml .release-please-manifest.json
           git commit -m "chore: release ${{ needs.calculate-version.outputs.version }}"
           git push
 

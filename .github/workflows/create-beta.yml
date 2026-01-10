@@ -3,6 +3,10 @@
 # Manually triggered workflow to create a beta pre-release from the develop branch.
 # Beta versions use the format: v{current}-beta.{YYYYMMDD}.{sequence}
 #
+# VERSION SOURCE OF TRUTH: frontend/package.json
+# Beta versions are calculated from this file. The build-desktop workflow
+# sets desktop/package.json at build time (not committed for beta releases).
+#
 # Flow:
 #   1. Validate develop branch
 #   2. Calculate version
@@ -16,8 +20,6 @@ name: "Release: Create Beta"
 
 on:
   workflow_dispatch:
-    branches:
-      - develop
 
 permissions:
   contents: write
