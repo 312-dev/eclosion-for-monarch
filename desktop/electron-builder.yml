@@ -58,8 +58,10 @@ mac:
   entitlements: entitlements.mac.plist
   entitlementsInherit: entitlements.mac.plist
   darkModeSupport: true
-  # Note: afterPack.js pre-signs backend binaries with --no-strict and entitlements
-  # electron-builder will then sign Electron.framework and main app
+  # afterPack.js pre-signs backend with --no-strict (required for PyInstaller)
+  # signIgnore prevents electron-builder from re-signing and breaking those signatures
+  signIgnore:
+    - "Resources/backend"
 
 # macOS code signing
 afterSign: notarize.js
