@@ -276,26 +276,31 @@ jobs:
           echo "- \`$IMAGE:$VERSION\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Make package public
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Extract package name from repository (e.g., "owner/repo" -> "repo")
+          # This step requires admin permissions and may fail with GITHUB_TOKEN.
+          # Package visibility only needs to be set once - if this fails, set it
+          # manually in GitHub: Settings > Packages > Package Settings > Danger Zone
           PACKAGE_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
 
-          echo "Setting package visibility to public..."
+          echo "Attempting to set package visibility to public..."
           echo "Package: $PACKAGE_NAME"
           echo "Owner: $OWNER"
 
           # Try org endpoint first, fall back to user endpoint
-          gh api --method PATCH \
+          if gh api --method PATCH \
             "/orgs/$OWNER/packages/container/$PACKAGE_NAME" \
             -f visibility=public 2>/dev/null || \
           gh api --method PATCH \
             "/user/packages/container/$PACKAGE_NAME" \
-            -f visibility=public
-
-          echo "✅ Package visibility set to public" >> $GITHUB_STEP_SUMMARY
+            -f visibility=public 2>/dev/null; then
+            echo "✅ Package visibility set to public" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Could not set package visibility (may already be public or require manual setup)" >> $GITHUB_STEP_SUMMARY
+          fi
 
   # Upload desktop artifacts to GitHub release
   publish-desktop:
