@@ -186,23 +186,25 @@ exports.default = async function (context) {
         fs.rmSync(codeSignatureDir, { recursive: true, force: true });
       }
 
-      // Step 2b: Find and sign the REAL Python binary (not symlinks)
-      // Structure: Python.framework/Versions/X.Y/Python (real binary)
-      //            Python.framework/Versions/Current -> X.Y (symlink)
-      //            Python.framework/Python -> Versions/Current/Python (symlink)
+      // Step 2b: Find and sign ONLY the versioned Python binary
+      // Structure: Python.framework/Versions/3.12/Python (real binary - sign this)
+      //            Python.framework/Versions/Current/Python (copy or link - skip)
+      //            Python.framework/Python (symlink - skip)
+      // We only want to sign Versions/X.Y/Python where X.Y matches a version pattern
       const versionsDir = path.join(pythonFrameworkPath, 'Versions');
       if (fs.existsSync(versionsDir)) {
         const versions = fs.readdirSync(versionsDir);
         for (const version of versions) {
-          // Skip the 'Current' symlink - we only want real version directories
-          const versionPath = path.join(versionsDir, version);
-          if (fs.lstatSync(versionPath).isSymbolicLink()) {
-            console.log(`    Skipping symlink: Versions/${version}`);
+          // Only process version directories that match X.Y pattern (like 3.12)
+          // Skip 'Current' and anything else that's not a version number
+          if (!/^\d+\.\d+$/.test(version)) {
+            console.log(`    Skipping non-version directory: Versions/${version}`);
             continue;
           }
 
+          const versionPath = path.join(versionsDir, version);
           const pythonBinary = path.join(versionPath, 'Python');
-          if (fs.existsSync(pythonBinary) && !fs.lstatSync(pythonBinary).isSymbolicLink()) {
+          if (fs.existsSync(pythonBinary)) {
             console.log(`    Removing signature from Versions/${version}/Python`);
             removeSignature(pythonBinary);
 
