@@ -8,7 +8,7 @@
  * 1. Sign all .so and .dylib files in _internal (excluding Python.framework)
  * 2. For Python.framework:
  *    a. Remove _CodeSignature directory (has stale metadata without timestamps)
- *    b. Sign ONLY the real binary at Versions/X.Y/Python (not symlinks)
+ *    b. Sign ALL Python binaries (PyInstaller creates copies, not symlinks)
  *    c. Do NOT sign the bundle (PyInstaller's format is "ambiguous" to codesign)
  * 3. Sign the main eclosion-backend executable
  *
@@ -186,42 +186,32 @@ exports.default = async function (context) {
         fs.rmSync(codeSignatureDir, { recursive: true, force: true });
       }
 
-      // Step 2b: Find and sign ONLY the versioned Python binary
-      // Structure: Python.framework/Versions/3.12/Python (real binary - sign this)
-      //            Python.framework/Versions/Current/Python (copy or link - skip)
-      //            Python.framework/Python (symlink - skip)
-      // We only want to sign Versions/X.Y/Python where X.Y matches a version pattern
-      const versionsDir = path.join(pythonFrameworkPath, 'Versions');
-      if (fs.existsSync(versionsDir)) {
-        const versions = fs.readdirSync(versionsDir);
-        for (const version of versions) {
-          // Only process version directories that match X.Y pattern (like 3.12)
-          // Skip 'Current' and anything else that's not a version number
-          if (!/^\d+\.\d+$/.test(version)) {
-            console.log(`    Skipping non-version directory: Versions/${version}`);
-            continue;
-          }
+      // Step 2b: Find and sign ALL Python binaries in the framework
+      // PyInstaller creates COPIES (not symlinks) at multiple locations:
+      //   - Python.framework/Python
+      //   - Python.framework/Versions/Current/Python
+      //   - Python.framework/Versions/3.12/Python
+      // All three need to be signed with proper timestamps
+      const pythonBinaries = findFiles(pythonFrameworkPath, (name) => name === 'Python');
+      console.log(`    Found ${pythonBinaries.length} Python binaries to sign`);
 
-          const versionPath = path.join(versionsDir, version);
-          const pythonBinary = path.join(versionPath, 'Python');
-          if (fs.existsSync(pythonBinary)) {
-            console.log(`    Removing signature from Versions/${version}/Python`);
-            removeSignature(pythonBinary);
+      for (const binary of pythonBinaries) {
+        const relativePath = path.relative(pythonFrameworkPath, binary);
+        console.log(`    Removing signature from ${relativePath}`);
+        removeSignature(binary);
 
-            console.log(`    Signing Versions/${version}/Python`);
-            try {
-              signFile(pythonBinary, identity, entitlementsPath, true); // --no-strict
-            } catch (e) {
-              console.log(`      Warning: Failed to sign: ${e.message}`);
-            }
+        console.log(`    Signing ${relativePath}`);
+        try {
+          signFile(binary, identity, entitlementsPath, true); // --no-strict
+        } catch (e) {
+          console.log(`      Warning: Failed to sign: ${e.message}`);
+        }
 
-            // Verify the signature
-            const result = verifySignature(pythonBinary);
-            console.log(`    Verify Versions/${version}/Python: ${result.valid ? 'VALID' : 'INVALID'}`);
-            if (!result.valid) {
-              console.log(`      ${result.output}`);
-            }
-          }
+        // Verify the signature
+        const result = verifySignature(binary);
+        console.log(`    Verify ${relativePath}: ${result.valid ? 'VALID' : 'INVALID'}`);
+        if (!result.valid) {
+          console.log(`      ${result.output}`);
         }
       }
 
