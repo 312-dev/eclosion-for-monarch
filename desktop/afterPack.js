@@ -8,8 +8,8 @@
  * 1. Sign all .so and .dylib files in _internal (excluding Python.framework)
  * 2. For Python.framework:
  *    a. Remove pre-existing signatures from Versions/X.Y/Python
- *    b. Sign Versions/X.Y/Python directly (--deep doesn't reach through symlinks)
- *    c. Sign the framework bundle
+ *    b. Sign Versions/X.Y/Python directly
+ *    c. Do NOT sign the framework bundle (conflicts with the signed binary)
  * 3. Sign the main eclosion-backend executable
  *
  * electron-builder will then sign Electron.framework and the main app.
@@ -185,13 +185,11 @@ exports.default = async function (context) {
         }
       }
 
-      // Sign the framework bundle (creates bundle signature, signs symlinks)
-      console.log('    Signing Python.framework bundle');
-      try {
-        signFile(pythonFrameworkPath, identity, entitlementsPath, true); // --no-strict, no --deep
-      } catch (e) {
-        console.log(`    Warning: Failed to sign Python.framework: ${e.message}`);
-      }
+      // NOTE: Do NOT sign Python.framework as a bundle.
+      // Signing the bundle creates a signature for the symlink (Python.framework/Python)
+      // that conflicts with the already-signed target binary (Versions/3.12/Python).
+      // The signIgnore pattern in electron-builder.yml prevents electron-builder from
+      // signing it either, so it stays with just the directly-signed binary.
     }
 
     // Step 3: Sign the main backend executable
