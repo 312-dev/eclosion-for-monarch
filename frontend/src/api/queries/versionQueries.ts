@@ -10,6 +10,9 @@ import * as api from '../client';
 import * as demoApi from '../demoClient';
 import { getChangelogResponse } from '../../data/changelog';
 import { queryKeys, getQueryKey } from './keys';
+import { isBetaEnvironment } from '../../utils/environment';
+import { fetchBetaReleasesAsChangelog } from '../../utils/githubRelease';
+import type { ChangelogEntry, ChangelogResponse } from '../../types';
 
 /**
  * Get server version info
@@ -24,15 +27,67 @@ export function useVersionQuery() {
 }
 
 /**
+ * Fetches changelog with beta releases merged in (for beta environments).
+ */
+async function getChangelogWithBetaReleases(limit?: number): Promise<ChangelogResponse> {
+  const baseResponse = getChangelogResponse(limit);
+
+  // Only fetch beta releases on beta environments
+  if (!isBetaEnvironment()) {
+    return baseResponse;
+  }
+
+  try {
+    const betaReleases = await fetchBetaReleasesAsChangelog();
+
+    if (betaReleases.length === 0) {
+      return baseResponse;
+    }
+
+    // Convert beta releases to ChangelogEntry format
+    const betaEntries: ChangelogEntry[] = betaReleases.map((release) => ({
+      version: release.version,
+      date: release.date,
+      summary: release.summary,
+      sections: release.sections,
+    }));
+
+    // Merge and sort all entries by date (descending)
+    const allEntries = [...baseResponse.entries, ...betaEntries].sort((a, b) => {
+      // Parse dates for comparison (handles various formats)
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    // Apply limit if specified
+    const entries = limit ? allEntries.slice(0, limit) : allEntries;
+
+    return {
+      current_version: baseResponse.current_version,
+      entries,
+      total_entries: allEntries.length,
+    };
+  } catch (error) {
+    // If fetching beta releases fails, return base changelog
+    console.error('Failed to fetch beta releases for changelog:', error);
+    return baseResponse;
+  }
+}
+
+/**
  * Get changelog entries
  *
- * Changelog is baked into the build from CHANGELOG.md, so no API call needed.
+ * Changelog is baked into the build from CHANGELOG.md.
+ * In beta environments, also fetches beta releases from GitHub and merges them.
  */
 export function useChangelogQuery(limit?: number) {
+  const isBeta = isBetaEnvironment();
+
   return useQuery({
-    queryKey: [...queryKeys.changelog, limit],
-    queryFn: () => getChangelogResponse(limit),
-    staleTime: Infinity, // Baked-in data never goes stale
+    queryKey: [...queryKeys.changelog, limit, isBeta],
+    queryFn: () => getChangelogWithBetaReleases(limit),
+    staleTime: isBeta ? 5 * 60 * 1000 : Infinity, // Beta fetches from GitHub, stable is baked-in
   });
 }
 
