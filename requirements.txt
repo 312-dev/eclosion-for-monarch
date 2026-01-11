@@ -8,3 +8,5 @@ python-dotenv==1.2.1
 cachetools==6.2.4
 cryptography>=41.0.0
 APScheduler>=3.10.0
+SQLAlchemy>=2.0.0
+alembic>=1.13.0

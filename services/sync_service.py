@@ -73,9 +73,11 @@ class SyncService:
         """Validate that session credentials are still valid with the Monarch API."""
         return await self.credentials_service.validate_auth()
 
-    async def login(self, email: str, password: str, mfa_secret: str = "") -> dict[str, Any]:
+    async def login(
+        self, email: str, password: str, mfa_secret: str = "", mfa_mode: str = "secret"
+    ) -> dict[str, Any]:
         """Validate credentials by attempting to login to Monarch."""
-        return await self.credentials_service.login(email, password, mfa_secret)
+        return await self.credentials_service.login(email, password, mfa_secret, mfa_mode)
 
     def set_passphrase(self, passphrase: str) -> dict[str, Any]:
         """Set the encryption passphrase and save credentials."""
@@ -108,6 +110,10 @@ class SyncService:
     def reset_credentials_only(self) -> None:
         """Clear only credentials, preserving preferences."""
         self.credentials_service.reset_credentials_only()
+
+    async def reauthenticate(self, mfa_code: str) -> dict[str, Any]:
+        """Re-authenticate with a one-time MFA code."""
+        return await self.credentials_service.reauthenticate(mfa_code)
 
     async def get_category_groups(self) -> list[dict[str, str]]:
         """Get available category groups for configuration."""

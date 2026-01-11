@@ -16,7 +16,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from core import config
 
@@ -162,6 +162,8 @@ class TrackerState:
     last_read_changelog_version: str | None = None  # Last changelog version user has read
     auto_sync: AutoSyncState = field(default_factory=AutoSyncState)  # Background sync settings
     user_first_name: str | None = None  # User's first name from Monarch profile
+    mfa_mode: Literal["secret", "code"] = "secret"  # MFA auth mode: 'secret' for auto-gen, 'code' for one-time
+    sync_blocked_reason: str | None = None  # Why sync is blocked (e.g., 'auth_required')
 
     def is_configured(self) -> bool:
         """Check if the tracker has been configured with a target group."""
@@ -1067,3 +1069,535 @@ class CredentialsManager:
         """Delete stored credentials."""
         if self.creds_file.exists():
             self.creds_file.unlink()
+
+
+# ============================================================================
+# Monthly Notes State Management
+# ============================================================================
+
+
+@dataclass
+class NoteEntry:
+    """A single note entry for a category or group."""
+
+    id: str  # UUID
+    category_type: str  # 'group' or 'category'
+    category_id: str  # Monarch ID
+    category_name: str
+    group_id: str | None  # For categories, their parent group
+    group_name: str | None  # For categories, their parent group name
+    month_key: str  # "YYYY-MM"
+    content: str  # Markdown content
+    created_at: str  # ISO timestamp
+    updated_at: str  # ISO timestamp
+
+
+@dataclass
+class GeneralMonthNoteEntry:
+    """A general note for a month (not tied to a category)."""
+
+    id: str  # UUID
+    month_key: str  # "YYYY-MM"
+    content: str  # Markdown content
+    created_at: str  # ISO timestamp
+    updated_at: str  # ISO timestamp
+
+
+@dataclass
+class ArchivedNoteEntry:
+    """An archived note (category was deleted from Monarch)."""
+
+    id: str
+    category_type: str
+    category_id: str
+    category_name: str
+    group_id: str | None
+    group_name: str | None
+    month_key: str
+    content: str
+    created_at: str
+    updated_at: str
+    archived_at: str  # When the note was archived
+    original_category_name: str  # Name at time of archival
+    original_group_name: str | None
+
+
+@dataclass
+class NotesState:
+    """State for the Monthly Notes feature."""
+
+    # Category/group notes: note_id -> NoteEntry
+    notes: dict[str, NoteEntry] = field(default_factory=dict)
+    # General month notes: month_key -> GeneralMonthNoteEntry
+    general_notes: dict[str, GeneralMonthNoteEntry] = field(default_factory=dict)
+    # Archived notes from deleted categories
+    archived_notes: list[ArchivedNoteEntry] = field(default_factory=list)
+    # Track known category IDs for deletion detection: category_id -> name
+    known_category_ids: dict[str, str] = field(default_factory=dict)
+    # Track when each month was last updated: month_key -> ISO timestamp
+    month_last_updated: dict[str, str] = field(default_factory=dict)
+
+
+class NotesStateManager:
+    """Manages persistence of monthly notes state to JSON file."""
+
+    def __init__(self, state_file: Path | None = None):
+        if state_file is None:
+            state_file = config.NOTES_STATE_FILE
+        self.state_file = state_file
+
+    def load(self) -> NotesState:
+        """Load state from JSON file, or return default state."""
+        if not self.state_file.exists():
+            return NotesState()
+
+        try:
+            with open(self.state_file) as f:
+                data = json.load(f)
+            return self._deserialize(data)
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"Warning: Notes state file corrupted ({e}), creating backup")
+            backup = self.state_file.with_suffix(".json.bak")
+            if self.state_file.exists():
+                self.state_file.rename(backup)
+            return NotesState()
+
+    def save(self, state: NotesState) -> None:
+        """Persist state to JSON file atomically."""
+        _atomic_write_json(self.state_file, self._serialize(state))
+
+    def _serialize(self, state: NotesState) -> dict:
+        """Convert NotesState to JSON-serializable dict."""
+        return {
+            "notes": {k: self._serialize_note(v) for k, v in state.notes.items()},
+            "general_notes": {
+                k: self._serialize_general_note(v)
+                for k, v in state.general_notes.items()
+            },
+            "archived_notes": [self._serialize_archived(n) for n in state.archived_notes],
+            "known_category_ids": state.known_category_ids,
+            "month_last_updated": state.month_last_updated,
+        }
+
+    def _serialize_note(self, note: NoteEntry) -> dict:
+        """Convert NoteEntry to dict."""
+        return {
+            "id": note.id,
+            "category_type": note.category_type,
+            "category_id": note.category_id,
+            "category_name": note.category_name,
+            "group_id": note.group_id,
+            "group_name": note.group_name,
+            "month_key": note.month_key,
+            "content": note.content,
+            "created_at": note.created_at,
+            "updated_at": note.updated_at,
+        }
+
+    def _serialize_general_note(self, note: GeneralMonthNoteEntry) -> dict:
+        """Convert GeneralMonthNoteEntry to dict."""
+        return {
+            "id": note.id,
+            "month_key": note.month_key,
+            "content": note.content,
+            "created_at": note.created_at,
+            "updated_at": note.updated_at,
+        }
+
+    def _serialize_archived(self, note: ArchivedNoteEntry) -> dict:
+        """Convert ArchivedNoteEntry to dict."""
+        return {
+            "id": note.id,
+            "category_type": note.category_type,
+            "category_id": note.category_id,
+            "category_name": note.category_name,
+            "group_id": note.group_id,
+            "group_name": note.group_name,
+            "month_key": note.month_key,
+            "content": note.content,
+            "created_at": note.created_at,
+            "updated_at": note.updated_at,
+            "archived_at": note.archived_at,
+            "original_category_name": note.original_category_name,
+            "original_group_name": note.original_group_name,
+        }
+
+    def _deserialize(self, data: dict) -> NotesState:
+        """Convert JSON dict back to NotesState."""
+        state = NotesState(
+            known_category_ids=data.get("known_category_ids", {}),
+            month_last_updated=data.get("month_last_updated", {}),
+        )
+
+        # Deserialize notes
+        for note_id, note_data in data.get("notes", {}).items():
+            state.notes[note_id] = NoteEntry(
+                id=note_data["id"],
+                category_type=note_data["category_type"],
+                category_id=note_data["category_id"],
+                category_name=note_data["category_name"],
+                group_id=note_data.get("group_id"),
+                group_name=note_data.get("group_name"),
+                month_key=note_data["month_key"],
+                content=note_data["content"],
+                created_at=note_data["created_at"],
+                updated_at=note_data["updated_at"],
+            )
+
+        # Deserialize general notes
+        for month_key, note_data in data.get("general_notes", {}).items():
+            state.general_notes[month_key] = GeneralMonthNoteEntry(
+                id=note_data["id"],
+                month_key=note_data["month_key"],
+                content=note_data["content"],
+                created_at=note_data["created_at"],
+                updated_at=note_data["updated_at"],
+            )
+
+        # Deserialize archived notes
+        for note_data in data.get("archived_notes", []):
+            state.archived_notes.append(
+                ArchivedNoteEntry(
+                    id=note_data["id"],
+                    category_type=note_data["category_type"],
+                    category_id=note_data["category_id"],
+                    category_name=note_data["category_name"],
+                    group_id=note_data.get("group_id"),
+                    group_name=note_data.get("group_name"),
+                    month_key=note_data["month_key"],
+                    content=note_data["content"],
+                    created_at=note_data["created_at"],
+                    updated_at=note_data["updated_at"],
+                    archived_at=note_data["archived_at"],
+                    original_category_name=note_data["original_category_name"],
+                    original_group_name=note_data.get("original_group_name"),
+                )
+            )
+
+        return state
+
+    def _update_month_timestamp(self, state: NotesState, month_key: str) -> None:
+        """Update the last updated timestamp for a month."""
+        state.month_last_updated[month_key] = datetime.now().isoformat()
+
+    # =========================================================================
+    # Category/Group Note Operations
+    # =========================================================================
+
+    def save_note(
+        self,
+        category_type: str,
+        category_id: str,
+        category_name: str,
+        month_key: str,
+        content: str,
+        group_id: str | None = None,
+        group_name: str | None = None,
+    ) -> NoteEntry:
+        """
+        Save or update a note for a category or group.
+
+        If a note already exists for this category/group and month, it will be updated.
+        Otherwise, a new note will be created.
+        """
+        state = self.load()
+        now = datetime.now().isoformat()
+
+        # Check if note already exists for this category/group and month
+        existing_note_id = None
+        for note_id, note in state.notes.items():
+            if (
+                note.category_id == category_id
+                and note.category_type == category_type
+                and note.month_key == month_key
+            ):
+                existing_note_id = note_id
+                break
+
+        if existing_note_id:
+            # Update existing note
+            state.notes[existing_note_id].content = content
+            state.notes[existing_note_id].updated_at = now
+            state.notes[existing_note_id].category_name = category_name
+            if group_id:
+                state.notes[existing_note_id].group_id = group_id
+            if group_name:
+                state.notes[existing_note_id].group_name = group_name
+            note = state.notes[existing_note_id]
+        else:
+            # Create new note
+            note_id = str(uuid.uuid4())
+            note = NoteEntry(
+                id=note_id,
+                category_type=category_type,
+                category_id=category_id,
+                category_name=category_name,
+                group_id=group_id,
+                group_name=group_name,
+                month_key=month_key,
+                content=content,
+                created_at=now,
+                updated_at=now,
+            )
+            state.notes[note_id] = note
+
+        # Update known categories
+        state.known_category_ids[category_id] = category_name
+
+        # Update month timestamp
+        self._update_month_timestamp(state, month_key)
+
+        self.save(state)
+        return note
+
+    def delete_note(self, note_id: str) -> bool:
+        """Delete a note by ID. Returns True if deleted, False if not found."""
+        state = self.load()
+
+        if note_id not in state.notes:
+            return False
+
+        month_key = state.notes[note_id].month_key
+        del state.notes[note_id]
+
+        # Update month timestamp
+        self._update_month_timestamp(state, month_key)
+
+        self.save(state)
+        return True
+
+    def get_notes_for_category(
+        self, category_type: str, category_id: str
+    ) -> list[NoteEntry]:
+        """Get all notes for a category or group, sorted by month."""
+        state = self.load()
+        notes = [
+            n
+            for n in state.notes.values()
+            if n.category_id == category_id and n.category_type == category_type
+        ]
+        return sorted(notes, key=lambda n: n.month_key)
+
+    def get_effective_note(
+        self, category_type: str, category_id: str, target_month: str
+    ) -> dict | None:
+        """
+        Get the effective note for a category/group at a given month.
+
+        Returns the most recent note at or before the target month,
+        along with metadata about whether it's inherited.
+        """
+        notes = self.get_notes_for_category(category_type, category_id)
+
+        # Find most recent note at or before target month
+        for note in reversed(notes):  # Already sorted ascending
+            if note.month_key <= target_month:
+                return {
+                    "note": self._serialize_note(note),
+                    "source_month": note.month_key,
+                    "is_inherited": note.month_key != target_month,
+                }
+
+        return None
+
+    # =========================================================================
+    # General Month Note Operations
+    # =========================================================================
+
+    def save_general_note(self, month_key: str, content: str) -> GeneralMonthNoteEntry:
+        """Save or update a general note for a month."""
+        state = self.load()
+        now = datetime.now().isoformat()
+
+        if month_key in state.general_notes:
+            # Update existing
+            state.general_notes[month_key].content = content
+            state.general_notes[month_key].updated_at = now
+            note = state.general_notes[month_key]
+        else:
+            # Create new
+            note = GeneralMonthNoteEntry(
+                id=str(uuid.uuid4()),
+                month_key=month_key,
+                content=content,
+                created_at=now,
+                updated_at=now,
+            )
+            state.general_notes[month_key] = note
+
+        self._update_month_timestamp(state, month_key)
+        self.save(state)
+        return note
+
+    def get_general_note(self, month_key: str) -> GeneralMonthNoteEntry | None:
+        """Get general note for a month."""
+        state = self.load()
+        return state.general_notes.get(month_key)
+
+    def delete_general_note(self, month_key: str) -> bool:
+        """Delete general note for a month."""
+        state = self.load()
+        if month_key not in state.general_notes:
+            return False
+
+        del state.general_notes[month_key]
+        self._update_month_timestamp(state, month_key)
+        self.save(state)
+        return True
+
+    # =========================================================================
+    # Archived Note Operations
+    # =========================================================================
+
+    def get_archived_notes(self) -> list[ArchivedNoteEntry]:
+        """Get all archived notes."""
+        state = self.load()
+        return state.archived_notes
+
+    def delete_archived_note(self, note_id: str) -> bool:
+        """Permanently delete an archived note."""
+        state = self.load()
+
+        for i, note in enumerate(state.archived_notes):
+            if note.id == note_id:
+                state.archived_notes.pop(i)
+                self.save(state)
+                return True
+
+        return False
+
+    def archive_notes_for_category(self, category_id: str) -> int:
+        """
+        Archive all notes for a deleted category.
+
+        Returns the number of notes archived.
+        """
+        state = self.load()
+        now = datetime.now().isoformat()
+        archived_count = 0
+
+        # Find and archive all notes for this category
+        notes_to_remove = []
+        for note_id, note in state.notes.items():
+            if note.category_id == category_id:
+                archived = ArchivedNoteEntry(
+                    id=note.id,
+                    category_type=note.category_type,
+                    category_id=note.category_id,
+                    category_name=note.category_name,
+                    group_id=note.group_id,
+                    group_name=note.group_name,
+                    month_key=note.month_key,
+                    content=note.content,
+                    created_at=note.created_at,
+                    updated_at=note.updated_at,
+                    archived_at=now,
+                    original_category_name=note.category_name,
+                    original_group_name=note.group_name,
+                )
+                state.archived_notes.append(archived)
+                notes_to_remove.append(note_id)
+                archived_count += 1
+
+        # Remove archived notes from active notes
+        for note_id in notes_to_remove:
+            del state.notes[note_id]
+
+        # Remove from known categories
+        if category_id in state.known_category_ids:
+            del state.known_category_ids[category_id]
+
+        if archived_count > 0:
+            self.save(state)
+
+        return archived_count
+
+    # =========================================================================
+    # Month Data Operations
+    # =========================================================================
+
+    def get_month_last_updated(self, month_key: str) -> str | None:
+        """Get the last updated timestamp for a month."""
+        state = self.load()
+        return state.month_last_updated.get(month_key)
+
+    def get_all_notes_for_month(self, month_key: str) -> dict:
+        """
+        Get all notes that are effective for a given month.
+
+        Returns notes with inheritance resolved.
+        """
+        state = self.load()
+
+        # Get all unique category/group references from notes
+        category_refs = set()
+        for note in state.notes.values():
+            category_refs.add((note.category_type, note.category_id))
+
+        # Get effective note for each
+        effective_notes = {}
+        for cat_type, cat_id in category_refs:
+            effective = self.get_effective_note(cat_type, cat_id, month_key)
+            if effective:
+                key = f"{cat_type}:{cat_id}"
+                effective_notes[key] = effective
+
+        return {
+            "month_key": month_key,
+            "last_updated": state.month_last_updated.get(month_key),
+            "effective_notes": effective_notes,
+            "general_note": (
+                self._serialize_general_note(state.general_notes[month_key])
+                if month_key in state.general_notes
+                else None
+            ),
+        }
+
+    # =========================================================================
+    # Category Sync Operations
+    # =========================================================================
+
+    def sync_categories(self, current_category_ids: set[str]) -> dict:
+        """
+        Sync known categories with current Monarch categories.
+
+        Detects deleted categories and archives their notes.
+        Returns dict with archived_count.
+        """
+        state = self.load()
+
+        # Find categories that were deleted
+        known_ids = set(state.known_category_ids.keys())
+        deleted_ids = known_ids - current_category_ids
+
+        archived_count = 0
+        for category_id in deleted_ids:
+            archived_count += self.archive_notes_for_category(category_id)
+
+        return {"archived_count": archived_count}
+
+    # =========================================================================
+    # Revision History
+    # =========================================================================
+
+    def get_revision_history(
+        self, category_type: str, category_id: str
+    ) -> list[dict]:
+        """
+        Get revision history for a category or group.
+
+        Returns all note versions sorted by month.
+        """
+        notes = self.get_notes_for_category(category_type, category_id)
+
+        versions = []
+        for note in notes:
+            versions.append({
+                "month_key": note.month_key,
+                "content": note.content,
+                "content_preview": note.content[:100] + "..." if len(note.content) > 100 else note.content,
+                "created_at": note.created_at,
+                "updated_at": note.updated_at,
+            })
+
+        return versions

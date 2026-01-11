@@ -571,6 +571,7 @@ async def auth_login():
         email = data.get("email")
         password = data.get("password")
         mfa_secret = data.get("mfa_secret", "")
+        mfa_mode = data.get("mfa_mode", "secret")  # 'secret' or 'code'
 
         # Mask email for audit log
         masked_email = email[:3] + "***" if email and len(email) > 3 else "***"
@@ -579,8 +580,8 @@ async def auth_login():
             _audit_log("LOGIN_ATTEMPT", False, f"Missing credentials for {masked_email}")
             return jsonify({"success": False, "error": "Email and password are required"}), 400
 
-        result = await sync_service.login(email, password, mfa_secret)
-        _audit_log("LOGIN_ATTEMPT", result.get("success", False), f"User: {masked_email}")
+        result = await sync_service.login(email, password, mfa_secret, mfa_mode)
+        _audit_log("LOGIN_ATTEMPT", result.get("success", False), f"User: {masked_email}, MFA mode: {mfa_mode}")
 
         if result.get("success"):
             _update_activity()  # Start session timeout tracking
@@ -696,6 +697,37 @@ def auth_logout():
     session.clear()
     _audit_log("LOGOUT", True, "Credentials cleared")
     return {"success": True}
+
+
+@app.route("/auth/reauthenticate", methods=["POST"])
+@limiter.limit("5 per minute")
+@api_handler(handle_mfa=False)
+@async_flask
+async def auth_reauthenticate():
+    """
+    Re-authenticate with a one-time MFA code.
+
+    Used when:
+    - User's Monarch session has expired
+    - User is in 'code' mode (using 6-digit codes instead of stored secret)
+
+    Request body:
+    - mfa_code: The 6-digit MFA code from authenticator app
+    """
+    data = request.get_json()
+    mfa_code = data.get("mfa_code", "")
+
+    if not mfa_code:
+        _audit_log("REAUTHENTICATE", False, "Missing MFA code")
+        return {"success": False, "error": "MFA code is required"}
+
+    result = await sync_service.reauthenticate(mfa_code)
+    _audit_log("REAUTHENTICATE", result.get("success", False), "")
+
+    if result.get("success"):
+        _update_activity()
+
+    return _sanitize_api_result(result, "Re-authentication failed.")
 
 
 @app.route("/auth/update-credentials", methods=["POST"])
@@ -1651,6 +1683,206 @@ def dismiss_security_alerts():
     """Dismiss security alert banner."""
     security_service.dismiss_security_alert()
     return {"success": True}
+
+
+# ---- MONTHLY NOTES ENDPOINTS ----
+
+from state.state_manager import NotesStateManager
+
+notes_manager = NotesStateManager()
+
+
+@app.route("/notes/month/<month_key>", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_month_notes(month_key: str):
+    """
+    Get all notes for a specific month with inheritance resolved.
+
+    Returns notes, general month note, and metadata.
+    """
+    # Validate month_key format (YYYY-MM)
+    if not re.match(r"^\d{4}-\d{2}$", month_key):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid month_key format. Expected YYYY-MM.")
+
+    return notes_manager.get_all_notes_for_month(month_key)
+
+
+@app.route("/notes/category", methods=["POST"])
+@api_handler(handle_mfa=False)
+def save_category_note():
+    """Save or update a note for a category or group."""
+    data = request.get_json()
+
+    category_type = data.get("category_type")
+    category_id = sanitize_id(data.get("category_id"))
+    category_name = sanitize_name(data.get("category_name"))
+    month_key = data.get("month_key")
+    content = data.get("content", "")
+    group_id = sanitize_id(data.get("group_id")) if data.get("group_id") else None
+    group_name = sanitize_name(data.get("group_name")) if data.get("group_name") else None
+
+    # Validate required fields
+    if not category_type or category_type not in ("group", "category"):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid category_type. Must be 'group' or 'category'.")
+
+    if not category_id or not category_name:
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Missing category_id or category_name.")
+
+    if not month_key or not re.match(r"^\d{4}-\d{2}$", month_key):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid month_key format. Expected YYYY-MM.")
+
+    note = notes_manager.save_note(
+        category_type=category_type,
+        category_id=category_id,
+        category_name=category_name,
+        month_key=month_key,
+        content=content,
+        group_id=group_id,
+        group_name=group_name,
+    )
+
+    return {
+        "success": True,
+        "note": notes_manager._serialize_note(note),
+    }
+
+
+@app.route("/notes/category/<note_id>", methods=["DELETE"])
+@api_handler(handle_mfa=False)
+def delete_category_note(note_id: str):
+    """Delete a category note by ID."""
+    note_id = sanitize_id(note_id)
+    if not note_id:
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid note_id.")
+
+    deleted = notes_manager.delete_note(note_id)
+    return {"success": deleted}
+
+
+@app.route("/notes/general/<month_key>", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_general_note(month_key: str):
+    """Get general note for a specific month."""
+    if not re.match(r"^\d{4}-\d{2}$", month_key):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid month_key format. Expected YYYY-MM.")
+
+    note = notes_manager.get_general_note(month_key)
+    if note:
+        return {"note": notes_manager._serialize_general_note(note)}
+    return {"note": None}
+
+
+@app.route("/notes/general", methods=["POST"])
+@api_handler(handle_mfa=False)
+def save_general_note():
+    """Save or update a general note for a month."""
+    data = request.get_json()
+
+    month_key = data.get("month_key")
+    content = data.get("content", "")
+
+    if not month_key or not re.match(r"^\d{4}-\d{2}$", month_key):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid month_key format. Expected YYYY-MM.")
+
+    note = notes_manager.save_general_note(month_key, content)
+    return {
+        "success": True,
+        "note": notes_manager._serialize_general_note(note),
+    }
+
+
+@app.route("/notes/general/<month_key>", methods=["DELETE"])
+@api_handler(handle_mfa=False)
+def delete_general_note(month_key: str):
+    """Delete general note for a month."""
+    if not re.match(r"^\d{4}-\d{2}$", month_key):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid month_key format. Expected YYYY-MM.")
+
+    deleted = notes_manager.delete_general_note(month_key)
+    return {"success": deleted}
+
+
+@app.route("/notes/archived", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_archived_notes():
+    """Get all archived notes."""
+    archived = notes_manager.get_archived_notes()
+    return {
+        "archived_notes": [notes_manager._serialize_archived(n) for n in archived]
+    }
+
+
+@app.route("/notes/archived/<note_id>", methods=["DELETE"])
+@api_handler(handle_mfa=False)
+def delete_archived_note(note_id: str):
+    """Permanently delete an archived note."""
+    note_id = sanitize_id(note_id)
+    if not note_id:
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid note_id.")
+
+    deleted = notes_manager.delete_archived_note(note_id)
+    return {"success": deleted}
+
+
+@app.route("/notes/sync-categories", methods=["POST"])
+@api_handler(handle_mfa=True)
+async def sync_notes_categories():
+    """
+    Sync known categories with current Monarch categories.
+
+    Detects deleted categories and archives their notes.
+    """
+    # Get current categories from Monarch
+    groups = await sync_service.get_category_groups()
+
+    # Extract all category IDs (both groups and categories)
+    current_ids = set()
+    for group in groups:
+        current_ids.add(group["id"])
+        # If the group has categories, add those too
+        if "categories" in group:
+            for cat in group["categories"]:
+                current_ids.add(cat["id"])
+
+    result = notes_manager.sync_categories(current_ids)
+    return {"success": True, **result}
+
+
+@app.route("/notes/history/<category_type>/<category_id>", methods=["GET"])
+@api_handler(handle_mfa=False)
+def get_note_history(category_type: str, category_id: str):
+    """Get revision history for a category or group's notes."""
+    if category_type not in ("group", "category"):
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid category_type. Must be 'group' or 'category'.")
+
+    category_id = sanitize_id(category_id)
+    if not category_id:
+        from core.exceptions import ValidationError
+
+        raise ValidationError("Invalid category_id.")
+
+    history = notes_manager.get_revision_history(category_type, category_id)
+    return {"history": history}
 
 
 # ---- UTILITY ENDPOINTS ----

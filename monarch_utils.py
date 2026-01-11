@@ -241,6 +241,43 @@ async def get_mm(email=None, password=None, mfa_secret_key=None):
     return mm
 
 
+async def get_mm_with_code(email: str, password: str, mfa_code: str):
+    """
+    Authenticate with a one-time MFA code instead of the secret.
+
+    This is used when users can't find their MFA secret key and prefer
+    to enter the 6-digit code from their authenticator app each time.
+
+    Args:
+        email: Monarch Money email
+        password: Monarch Money password
+        mfa_code: 6-digit one-time code from authenticator app
+
+    Returns:
+        Authenticated MonarchMoney client
+    """
+    mm = MonarchMoney(session_file=str(config.MONARCH_SESSION_FILE))
+
+    # Use browser-like user agent (per Monarch support guidance for firewall issues)
+    mm._headers["User-Agent"] = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    )
+
+    # First try login - this will fail with MFA error if MFA is enabled
+    try:
+        await mm.login(email=email, password=password)
+    except Exception as e:
+        error_lower = str(e).lower()
+        if "mfa" in error_lower or "multi-factor" in error_lower or "2fa" in error_lower:
+            # MFA required - authenticate with the one-time code
+            await mm.multi_factor_authenticate(email, password, mfa_code)
+        else:
+            # Some other error - re-raise
+            raise
+
+    return mm
+
+
 # Cache for savings goals
 _savings_goals_cache: TTLCache = TTLCache(maxsize=10, ttl=_CACHE_TTL)
 

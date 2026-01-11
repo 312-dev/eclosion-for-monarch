@@ -15,8 +15,8 @@ import os
 from typing import Any
 
 from core.error_detection import format_auth_response, is_rate_limit_error
-from monarch_utils import get_mm
-from state.state_manager import CredentialsManager
+from monarch_utils import get_mm, get_mm_with_code
+from state.state_manager import CredentialsManager, StateManager
 
 logger = logging.getLogger(__name__)
 
@@ -87,19 +87,39 @@ class CredentialsService:
         """Get the current session credentials if unlocked."""
         return CredentialsService._session_credentials
 
-    async def login(self, email: str, password: str, mfa_secret: str = "") -> dict[str, Any]:
+    async def login(
+        self,
+        email: str,
+        password: str,
+        mfa_secret: str = "",
+        mfa_mode: str = "secret",
+    ) -> dict[str, Any]:
         """
         Validate credentials by attempting to login to Monarch.
         Does NOT save credentials - returns needs_passphrase=True on success.
         Caller must then call set_passphrase() to encrypt and save.
+
+        Args:
+            email: Monarch email
+            password: Monarch password
+            mfa_secret: MFA secret key (for mfa_mode='secret') or 6-digit code (for mfa_mode='code')
+            mfa_mode: 'secret' for stored secret, 'code' for one-time 6-digit code
         """
         try:
-            await get_mm(email=email, password=password, mfa_secret_key=mfa_secret)
+            if mfa_mode == "code" and mfa_secret:
+                # Use one-time code authentication
+                await get_mm_with_code(email=email, password=password, mfa_code=mfa_secret)
+            else:
+                # Use stored secret authentication (or no MFA)
+                await get_mm(email=email, password=password, mfa_secret_key=mfa_secret)
+
             # Store temporarily until passphrase is set
+            # For code mode, don't store the code (it's one-time)
             CredentialsService._pending_credentials = {
                 "email": email,
                 "password": password,
-                "mfa_secret": mfa_secret,
+                "mfa_secret": mfa_secret if mfa_mode == "secret" else "",
+                "mfa_mode": mfa_mode,
             }
             return {
                 "success": True,
@@ -138,6 +158,13 @@ class CredentialsService:
             mfa_secret=CredentialsService._pending_credentials.get("mfa_secret", ""),
             passphrase=passphrase,
         )
+
+        # Save MFA mode to state
+        mfa_mode = CredentialsService._pending_credentials.get("mfa_mode", "secret")
+        state_manager = StateManager()
+        state = state_manager.load()
+        state.mfa_mode = mfa_mode
+        state_manager.save(state)
 
         # Move to session and clear pending
         CredentialsService._session_credentials = CredentialsService._pending_credentials
@@ -307,3 +334,30 @@ class CredentialsService:
         self.credentials_manager.clear()
         CredentialsService._session_credentials = None
         CredentialsService._pending_credentials = None
+
+    async def reauthenticate(self, mfa_code: str) -> dict[str, Any]:
+        """
+        Re-authenticate with a one-time MFA code.
+
+        Used when:
+        - User's Monarch session has expired
+        - User is in 'code' mode (using 6-digit codes instead of stored secret)
+
+        Returns:
+            success: True if re-authentication succeeded
+            error: Error message if re-authentication failed
+        """
+        if not CredentialsService._session_credentials:
+            return {"success": False, "error": "No session credentials. Please login first."}
+
+        email = CredentialsService._session_credentials.get("email")
+        password = CredentialsService._session_credentials.get("password")
+
+        if not email or not password:
+            return {"success": False, "error": "Invalid session credentials."}
+
+        try:
+            await get_mm_with_code(email=email, password=password, mfa_code=mfa_code)
+            return {"success": True, "message": "Re-authenticated successfully."}
+        except Exception as e:
+            return format_auth_response(e, has_mfa_secret=True)
