@@ -51,6 +51,7 @@ export function UpdateReadyBanner() {
       style={{
         backgroundColor: isBeta ? 'var(--monarch-accent)' : 'var(--monarch-success)',
         color: 'white',
+        flexShrink: 0,
       }}
     >
       <div className="flex items-center justify-between gap-4 px-4 py-2">

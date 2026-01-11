@@ -4,6 +4,7 @@ Recurring Service
 Fetches and parses recurring transactions from Monarch Money API.
 """
 
+import html
 import os
 import sys
 from dataclasses import dataclass
@@ -195,7 +196,9 @@ class RecurringService:
     def _extract_name(self, stream: dict) -> str:
         """Extract display name from recurring stream."""
         # Use stream name directly (it already has the merchant name or description)
-        return str(stream.get("name", "Unknown"))
+        # Decode HTML entities (e.g., "AT&amp;T" -> "AT&T")
+        name = str(stream.get("name", "Unknown"))
+        return html.unescape(name)
 
     async def get_recurring_by_id(self, recurring_id: str) -> RecurringItem | None:
         """Get a specific recurring item by ID."""

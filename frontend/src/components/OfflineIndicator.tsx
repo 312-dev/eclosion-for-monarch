@@ -43,6 +43,7 @@ export function OfflineIndicator() {
       style={{
         backgroundColor: 'var(--monarch-red)',
         color: 'white',
+        flexShrink: 0,
       }}
       role="alert"
       aria-live="polite"

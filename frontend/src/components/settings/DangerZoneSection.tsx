@@ -4,7 +4,7 @@
  * Destructive actions like resetting credentials and uninstalling.
  */
 
-import { AlertTriangle, Key, Database, Trash2, RefreshCw, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Key, Bomb, Trash2, RefreshCw, ChevronRight } from 'lucide-react';
 
 interface DangerZoneSectionProps {
   onShowResetModal: () => void;
@@ -35,9 +35,9 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
         >
           <div
             className="p-2.5 rounded-lg shrink-0"
-            style={{ backgroundColor: 'var(--monarch-orange-light)' }}
+            style={{ backgroundColor: 'var(--monarch-error-bg)' }}
           >
-            <Key size={20} style={{ color: 'var(--monarch-orange)' }} />
+            <Key size={20} style={{ color: 'var(--monarch-error)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -48,7 +48,7 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <RefreshCw size={16} style={{ color: 'var(--monarch-orange)' }} />
+            <RefreshCw size={16} style={{ color: 'var(--monarch-error)' }} />
             <ChevronRight size={16} style={{ color: 'var(--monarch-text-muted)' }} />
           </div>
         </button>
@@ -67,11 +67,11 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
             className="p-2.5 rounded-lg shrink-0"
             style={{ backgroundColor: 'var(--monarch-error-bg)' }}
           >
-            <Database size={20} style={{ color: 'var(--monarch-error)' }} />
+            <Bomb size={20} style={{ color: 'var(--monarch-error)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-              Uninstall / Delete All Data
+              Reset Completely
             </div>
             <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
               Remove categories from Monarch and delete all local data

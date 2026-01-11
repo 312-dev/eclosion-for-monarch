@@ -116,7 +116,7 @@ export function RecurringTab() {
   }
 
   return (
-    <div className="recurring-tab-layout tab-content-enter">
+    <div className="recurring-tab-layout tab-content-enter" data-testid="recurring-content">
       {/* Main content area */}
       <div className="recurring-tab-content">
         {/* Horizontal tabs */}

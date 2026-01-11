@@ -20,12 +20,12 @@ export function RecurringItemProgress({
   progressPercent,
 }: RecurringItemProgressProps) {
   // current_balance = current total balance (includes rollover + contributions this month)
-  // contributed_this_month = what's been contributed so far this month
-  // planned_budget = what's budgeted for this month
+  // contributed_this_month = what's been added to balance this month
   // rollover = current_balance - contributed_this_month (what was there at start of month)
+  // Note: rollover + contributed_this_month = current_balance (total saved)
   const totalSaved = item.current_balance;
   const rolloverAmount = Math.max(0, item.current_balance - item.contributed_this_month);
-  const budgetedThisMonth = item.planned_budget;
+  const budgetedThisMonth = item.contributed_this_month;
   const hasRollover = rolloverAmount > 0;
 
   if (!item.is_enabled) {

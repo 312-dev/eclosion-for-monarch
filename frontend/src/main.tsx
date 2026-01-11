@@ -4,6 +4,23 @@ import './index.css'
 import App from './App.tsx'
 import { initializeApi } from './api/core/fetchApi'
 import { isDesktopMode } from './utils/apiBase'
+import { setBetaModeOverride, getBetaModeOverride, isBetaEnvironment, initializeDesktopBetaDetection } from './utils/environment'
+
+// Expose beta mode helpers for local testing (accessible via browser console)
+// Usage: eclosion.setBeta(true) to enable beta mode, eclosion.setBeta(null) to reset
+declare global {
+  // eslint-disable-next-line no-var
+  var eclosion: {
+    setBeta: typeof setBetaModeOverride;
+    getBeta: typeof getBetaModeOverride;
+    isBeta: typeof isBetaEnvironment;
+  };
+}
+globalThis.eclosion = {
+  setBeta: setBetaModeOverride,
+  getBeta: getBetaModeOverride,
+  isBeta: isBetaEnvironment,
+};
 
 // Register service worker (web only, not desktop)
 if ('serviceWorker' in navigator && !isDesktopMode()) {
@@ -33,6 +50,9 @@ if (!rootElement) {
 // Initialize API for desktop mode (fetches backend port from Electron)
 // This must complete before rendering to ensure API calls work
 await initializeApi();
+
+// Detect if desktop app is running a beta build (sets localStorage flag for isBetaEnvironment)
+await initializeDesktopBetaDetection();
 
 createRoot(rootElement).render(
   <StrictMode>

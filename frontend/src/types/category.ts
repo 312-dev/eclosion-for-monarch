@@ -35,6 +35,7 @@ export interface DeletableCategory {
   name: string;
   group_name: string | null;
   is_rollup?: boolean;
+  planned_budget?: number;
 }
 
 export interface DeletableCategoriesResult {

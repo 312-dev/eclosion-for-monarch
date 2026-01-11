@@ -92,7 +92,7 @@ def calculate_frozen_target(
             frequency_months=frequency_months,
             months_until_due=months_until_due,
             current_balance=current_balance,
-            ideal_monthly_rate=ideal_monthly_rate,
+            _ideal_monthly_rate=ideal_monthly_rate,
         )
 
         state_manager.set_frozen_target(
@@ -133,21 +133,21 @@ def _calculate_target(
     frequency_months: float,
     months_until_due: float,
     current_balance: float,
-    ideal_monthly_rate: float,
+    _ideal_monthly_rate: float,
 ) -> float:
     """
     Calculate the monthly savings target based on subscription frequency.
 
-    For frequent subscriptions (monthly or more often):
-        Use the ideal monthly rate - no "saving up" needed.
+    For all subscriptions:
+        Target is the shortfall (what's still needed to reach the goal).
+        If already fully funded, target is 0.
 
     For infrequent subscriptions (quarterly, yearly, etc.):
-        Calculate catch-up rate based on shortfall and months remaining.
-        If already fully funded, target is 0.
+        Shortfall is spread across months remaining until due.
     """
     if frequency_months <= 1:
-        # Frequent subscriptions - use ideal rate (rounded up)
-        return math.ceil(ideal_monthly_rate)
+        # Monthly items: target is the shortfall (what's still needed)
+        return math.ceil(max(0, amount - current_balance))
     else:
         # Infrequent subscriptions - calculate catch-up rate
         shortfall = max(0, amount - current_balance)

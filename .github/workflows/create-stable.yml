@@ -3,6 +3,10 @@
 # Manually triggered workflow to create a stable release from the main branch.
 # This replaces release-please for more predictable changelog generation.
 #
+# VERSION SOURCE OF TRUTH: frontend/package.json
+# All other version files (desktop/package.json, docusaurus/package.json,
+# pyproject.toml) are updated from this source during the release process.
+#
 # Flow:
 #   1. Validate main branch
 #   2. Calculate next version based on bump type
@@ -143,6 +147,9 @@ jobs:
           # Update frontend/package.json
           jq --arg v "$VERSION" '.version = $v' frontend/package.json > tmp.json && mv tmp.json frontend/package.json
 
+          # Update desktop/package.json
+          jq --arg v "$VERSION" '.version = $v' desktop/package.json > tmp.json && mv tmp.json desktop/package.json
+
           # Update docusaurus/package.json
           jq --arg v "$VERSION" '.version = $v' docusaurus/package.json > tmp.json && mv tmp.json docusaurus/package.json
 
@@ -154,6 +161,7 @@ jobs:
 
           echo "### Updated Files" >> $GITHUB_STEP_SUMMARY
           echo "- frontend/package.json: $CURRENT -> $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- desktop/package.json: -> $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- docusaurus/package.json: -> $VERSION" >> $GITHUB_STEP_SUMMARY
           echo "- pyproject.toml: -> $VERSION" >> $GITHUB_STEP_SUMMARY
 
@@ -161,7 +169,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/package.json docusaurus/package.json pyproject.toml .release-please-manifest.json
+          git add frontend/package.json desktop/package.json docusaurus/package.json pyproject.toml .release-please-manifest.json
           git commit -m "chore: release ${{ needs.calculate-version.outputs.version }}"
           git push
 
@@ -192,28 +200,14 @@ jobs:
 
           echo "Generating notes from $LAST_TAG to HEAD"
 
-          # Get merged PRs since last release
-          PRS=$(gh pr list --state merged --base main --search "merged:>=$(git log -1 --format=%ci $LAST_TAG | cut -d' ' -f1)" --json number,title,labels --jq '
-            .[] | "- \(.title) (#\(.number))"
-          ' 2>/dev/null || true)
+          # Get commits since last release (clean, linear history now)
+          COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" | head -30)
 
-          # Fallback to commits if no PRs found
-          if [ -z "$PRS" ]; then
-            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" | head -30)
-          else
-            COMMITS=""
-          fi
-
-          # Categorize changes
-          if [ -n "$PRS" ]; then
-            CHANGES="$PRS"
-          else
-            CHANGES="$COMMITS"
-          fi
-
-          FEATURES=$(echo "$CHANGES" | grep -iE "feat|feature|add" || true)
-          FIXES=$(echo "$CHANGES" | grep -iE "fix|bug|patch" || true)
-          OTHER=$(echo "$CHANGES" | grep -viE "feat|feature|add|fix|bug|patch" || true)
+          # Categorize changes using anchored patterns to avoid duplicates
+          # A commit starting with "feat:" goes to Features, "fix:" goes to Fixes
+          FEATURES=$(echo "$COMMITS" | grep -E "^- feat" | sed 's/^- feat[:(]/- /' | sed 's/):/:/') || true
+          FIXES=$(echo "$COMMITS" | grep -E "^- fix" | sed 's/^- fix[:(]/- /' | sed 's/):/:/') || true
+          OTHER=$(echo "$COMMITS" | grep -vE "^- (feat|fix)" | grep -vE "^- (chore|docs|test|ci|build|refactor)" || true)
 
           # Build release notes
           cat > /tmp/release-notes.md << 'NOTESEOF'

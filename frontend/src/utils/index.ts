@@ -47,4 +47,6 @@ export {
   getDocsBaseUrl,
   getDocsUrl,
   getSiteBaseUrl,
+  setBetaModeOverride,
+  getBetaModeOverride,
 } from './environment';

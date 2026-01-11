@@ -451,6 +451,7 @@ const DEMO_RECURRING_ITEMS: RecurringItem[] = [
   // CATCH-UP EXAMPLE 3: Annual expense, mildly behind
   // User has $30 saved for $139 annual expense with 5 months to go
   // Needs $109 in 5 months = ~$22/mo vs ~$12/mo ideal
+  // current_balance = total ($30), contributed_this_month = $22, rollover = $8
   {
     id: 'item-amazon-prime',
     merchant_id: 'merchant-amazon',
@@ -472,16 +473,16 @@ const DEMO_RECURRING_ITEMS: RecurringItem[] = [
     planned_budget: 22,
     monthly_contribution: 22,
     over_contribution: 0,
-    progress_percent: 30,
-    status: 'behind',
+    progress_percent: 22,
+    status: 'on_track',
     is_enabled: true,
     ideal_monthly_rate: 12,
     amount_needed_now: 51,
     is_in_rollup: false,
     emoji: '📦',
     frozen_monthly_target: 22,
-    contributed_this_month: 11,
-    monthly_progress_percent: 50,
+    contributed_this_month: 22,
+    monthly_progress_percent: 100,
   },
 
   // ============================================================================

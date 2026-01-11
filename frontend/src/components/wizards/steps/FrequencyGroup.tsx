@@ -71,7 +71,7 @@ export function FrequencyGroup({
         </div>
 
         <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-          {formatCurrency(totalMonthly)}/mo
+          {formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo
         </div>
 
         <button

@@ -1,10 +1,14 @@
 # Create Beta Release
 #
-# Manually triggered workflow to create a beta pre-release from the develop branch.
+# Manually triggered workflow to create a beta pre-release from the main branch.
 # Beta versions use the format: v{current}-beta.{YYYYMMDD}.{sequence}
 #
+# VERSION SOURCE OF TRUTH: frontend/package.json
+# Beta versions are calculated from this file. The build-desktop workflow
+# sets desktop/package.json at build time (not committed for beta releases).
+#
 # Flow:
-#   1. Validate develop branch
+#   1. Validate main branch
 #   2. Calculate version
 #   3. Create draft pre-release
 #   4. Run release pipeline (security → build all → validate → publish)
@@ -16,8 +20,6 @@ name: "Release: Create Beta"
 
 on:
   workflow_dispatch:
-    branches:
-      - develop
 
 permissions:
   contents: write
@@ -34,21 +36,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require develop branch
+      - name: Require main branch
         run: |
-          if [ "${{ github.ref }}" != "refs/heads/develop" ]; then
-            echo "::error::This workflow can ONLY run from the develop branch."
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "::error::This workflow can ONLY run from the main branch."
             echo ""
             echo "Current branch: ${{ github.ref }}"
-            echo "Required branch: refs/heads/develop"
+            echo "Required branch: refs/heads/main"
             echo ""
             echo "To create a beta release:"
             echo "1. Go to Actions → Release: Create Beta"
             echo "2. Click 'Run workflow'"
-            echo "3. Select 'develop' from the branch dropdown"
+            echo "3. Select 'main' from the branch dropdown"
             exit 1
           fi
-          echo "✓ Running on develop branch"
+          echo "✓ Running on main branch"
 
   calculate-version:
     name: Calculate Version
@@ -62,7 +64,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: main
           fetch-depth: 0
 
       - name: Calculate beta version
@@ -94,7 +96,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: develop
+          ref: main
           fetch-depth: 0
 
       - name: Generate release notes
@@ -111,9 +113,11 @@ jobs:
           cat > /tmp/release-notes.md << 'NOTESEOF'
           ## What's New in This Beta
 
-          This is a pre-release build from the `develop` branch for testing new features before stable release.
+          This is a pre-release build for testing new features before stable release.
 
           NOTESEOF
+
+          sed -i 's/^          //' /tmp/release-notes.md
 
           if [ -n "$FEATURES" ]; then
             echo "### Features" >> /tmp/release-notes.md
@@ -145,12 +149,24 @@ jobs:
 
           sed -i 's/^          //' /tmp/release-notes.md
 
+      - name: Clean up any existing draft with same tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.calculate-version.outputs.tag }}"
+          # Check if a draft release with this tag already exists (from a failed previous run)
+          EXISTING_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null || echo "not_found")
+          if [ "$EXISTING_DRAFT" = "true" ]; then
+            echo "Found existing draft release $TAG from a previous failed run - deleting it"
+            gh release delete "$TAG" --yes --cleanup-tag || true
+          fi
+
       - name: Create draft pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create ${{ needs.calculate-version.outputs.tag }} \
-            --target develop \
+            --target main \
             --prerelease \
             --draft \
             --title "${{ needs.calculate-version.outputs.tag }}" \
@@ -195,7 +211,7 @@ jobs:
         run: |
           gh release edit ${{ needs.calculate-version.outputs.tag }} --draft=false
 
-          echo "### 🎉 Beta Release Published!" >> $GITHUB_STEP_SUMMARY
+          echo "### Beta Release Published!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Release:** [${{ needs.calculate-version.outputs.tag }}](https://github.com/${{ github.repository }}/releases/tag/${{ needs.calculate-version.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -222,6 +238,6 @@ jobs:
           # Delete the release (this also deletes the tag)
           gh release delete "$TAG" --yes --cleanup-tag || true
 
-          echo "### ⚠️ Release Failed" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Failed" >> $GITHUB_STEP_SUMMARY
           echo "Draft release $TAG has been deleted." >> $GITHUB_STEP_SUMMARY
           echo "Check the workflow logs for failure details." >> $GITHUB_STEP_SUMMARY

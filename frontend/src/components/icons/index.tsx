@@ -19,6 +19,8 @@ import {
   ChevronUp,
   ChevronRight,
   ChevronLeft,
+  ChevronsUp,
+  ChevronsDown,
   Check,
   X,
   Plus,
@@ -32,8 +34,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  TrendingUp,
-  TrendingDown,
   ArrowUp,
   ArrowDown,
   Menu,
@@ -134,8 +134,8 @@ export const AlertCircleIcon = AlertCircle;
 export const WarningIcon = AlertTriangle;
 export const CheckCircleIcon = CheckCircle;
 export const ClockIcon = Clock;
-export const TrendUpIcon = TrendingUp;
-export const TrendDownIcon = TrendingDown;
+export const TrendUpIcon = ChevronsUp;
+export const TrendDownIcon = ChevronsDown;
 export const ArrowUpIcon = ArrowUp;
 export const ArrowDownIcon = ArrowDown;
 export const MenuIcon = Menu;

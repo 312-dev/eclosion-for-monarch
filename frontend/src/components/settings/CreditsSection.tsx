@@ -4,7 +4,7 @@
  * Displays contributor attribution for Eclosion features as simple bullet points.
  */
 
-import { Heart, Package } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import {
   useAllContributors,
   useUniqueContributors,
@@ -98,10 +98,9 @@ export function CreditsSection() {
 
         {/* Open Source */}
         <h3
-          className="text-xs font-medium uppercase tracking-wide mb-2 flex items-center gap-1.5"
+          className="text-xs font-medium uppercase tracking-wide mb-2"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
-          <Package size={10} />
           Open Source
         </h3>
         <ul className="space-y-1.5 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>

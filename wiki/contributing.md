@@ -98,9 +98,9 @@ See [CONTRIBUTING.md](https://github.com/312-dev/eclosion/blob/main/CONTRIBUTING
 
 ## Pull Request Process
 
-This repository uses Git Flow. All changes go through the `develop` branch before reaching `main`:
+This repository uses GitHub Flow. All changes go directly to `main`:
 
-1. **Create a branch** from `develop`
+1. **Create a branch** from `main`
 2. **Make your changes** with clear commits
 3. **Run quality checks locally**:
    ```bash
@@ -114,19 +114,15 @@ This repository uses Git Flow. All changes go through the `develop` branch befor
    ruff check .
    ruff format --check .
    ```
-4. **Push and create a PR** targeting `develop` with a clear description
+4. **Push and create a PR** targeting `main` with a clear description
 5. **Address review feedback** promptly
-6. **Squash or rebase** if requested before merge
-7. **Changes are tested on beta.eclosion.app** before maintainers merge `develop` to `main`
+6. **Squash merge** when approved
 
 ### PR Requirements
 
 | Target Branch | CI Checks | Security Scans | Code Review |
 |---------------|-----------|----------------|-------------|
-| `develop` | Run | Run (visible) | None required |
 | `main` | Must pass | Must pass | 1 approval |
-
-> **Note**: PRs directly to `main` will be blocked. Always target `develop` first.
 
 For full CI/CD documentation including workflow standards, see [CONTRIBUTING.md](https://github.com/312-dev/eclosion/blob/main/CONTRIBUTING.md#github-actions-workflow-standards).
 

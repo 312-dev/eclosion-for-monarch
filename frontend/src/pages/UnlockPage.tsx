@@ -20,7 +20,7 @@ type UnlockStage = 'passphrase' | 'credential_update';
 export function UnlockPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authenticated, needsUnlock } = useAuth();
+  const { authenticated, needsUnlock, lockReason } = useAuth();
 
   // Stage management
   const [stage, setStage] = useState<UnlockStage>('passphrase');
@@ -92,6 +92,11 @@ export function UnlockPage() {
     );
   }
 
+  // Auto-prompt biometric unless this was a manual lock
+  // Manual lock = user clicked lock button, they should click Touch ID button to unlock
+  // Other cases (app startup, system lock, idle) = auto-prompt for convenience
+  const autoPromptBiometric = lockReason !== 'manual';
+
   // Default: render passphrase prompt
   return (
     <>
@@ -100,6 +105,7 @@ export function UnlockPage() {
         onSuccess={handleUnlockSuccess}
         onCredentialUpdateNeeded={handleCredentialUpdateNeeded}
         onResetApp={handleResetAppClick}
+        autoPromptBiometric={autoPromptBiometric}
       />
 
       <ResetAppModal

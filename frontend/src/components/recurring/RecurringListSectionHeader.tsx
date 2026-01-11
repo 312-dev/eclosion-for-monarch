@@ -6,14 +6,12 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
 interface RecurringListSectionHeaderProps {
-  readonly enabledCount: number;
   readonly disabledCount: number;
   readonly hideDisabled: boolean;
   readonly onToggleHide: () => void;
 }
 
 export function RecurringListSectionHeader({
-  enabledCount,
   disabledCount,
   hideDisabled,
   onToggleHide,
@@ -21,14 +19,9 @@ export function RecurringListSectionHeader({
   return (
     <div className="px-5 py-4 flex items-center justify-between bg-monarch-bg-card border-b border-monarch-border">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-monarch-text-dark leading-tight">
-            Dedicated Categories
-          </span>
-          <span className="text-xs text-monarch-text-muted leading-none self-center">
-            ({enabledCount})
-          </span>
-        </div>
+        <span className="text-lg font-semibold text-monarch-text-dark leading-tight">
+          Dedicated Categories
+        </span>
         <span className="text-sm text-monarch-text-light">
           Larger recurring transactions that get their own budget category for better tracking
         </span>

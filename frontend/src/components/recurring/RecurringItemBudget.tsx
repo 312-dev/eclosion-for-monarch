@@ -8,6 +8,8 @@
 import React, { useState } from 'react';
 import type { RecurringItem } from '../../types';
 import { formatCurrency, formatFrequencyShort } from '../../utils';
+import { TrendUpIcon, TrendDownIcon, AnchorIcon } from '../icons';
+import { Tooltip } from '../ui/Tooltip';
 
 interface RecurringItemBudgetProps {
   readonly item: RecurringItem;
@@ -56,7 +58,13 @@ export function RecurringItemBudget({
   };
 
   const target = Math.round(item.frozen_monthly_target);
+  const idealRate = Math.round(item.ideal_monthly_rate);
   const showInterval = item.frequency !== 'monthly';
+
+  // Rate adjustment indicators: catching up (higher than stable), ahead (lower than stable), or stable
+  const isCatchingUp = target > idealRate && idealRate > 0;
+  const isAhead = target < idealRate && target > 0;
+  const isStable = target === idealRate && target > 0;
 
   if (!item.is_enabled) {
     return (
@@ -71,6 +79,58 @@ export function RecurringItemBudget({
             className="w-16 text-right font-medium text-monarch-text-muted bg-transparent font-inherit cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <span className="text-monarch-text-muted ml-1">/ {target}</span>
+          {isCatchingUp && (
+            <Tooltip content={
+              <>
+                <div className="font-medium flex items-center gap-1"><TrendUpIcon size={12} strokeWidth={2.5} className="text-monarch-error" /> Catching Up</div>
+                <div>
+                  <span className="text-monarch-orange">{formatCurrency(target, { maximumFractionDigits: 0 })}/mo</span>
+                  <span className="text-monarch-text-muted"> → </span>
+                  <span className="text-monarch-success">{formatCurrency(idealRate, { maximumFractionDigits: 0 })}/mo</span>
+                </div>
+                <div className="text-monarch-text-muted text-xs mt-1">
+                  {item.frequency_months <= 1 ? 'Normalizes as buffer builds' : 'Normalizes next month'}
+                </div>
+              </>
+            }>
+              <span className="cursor-help text-monarch-error ml-1">
+                <TrendUpIcon size={10} strokeWidth={2.5} />
+              </span>
+            </Tooltip>
+          )}
+          {isAhead && (
+            <Tooltip content={
+              <>
+                <div className="font-medium flex items-center gap-1"><TrendDownIcon size={12} strokeWidth={2.5} className="text-monarch-success" /> Ahead of Schedule</div>
+                <div>
+                  <span className="text-monarch-success">{formatCurrency(target, { maximumFractionDigits: 0 })}/mo</span>
+                  <span className="text-monarch-text-muted"> → </span>
+                  <span className="text-monarch-orange">{formatCurrency(idealRate, { maximumFractionDigits: 0 })}/mo</span>
+                </div>
+                <div className="text-monarch-text-muted text-xs mt-1">
+                  {item.frequency_months <= 1 ? 'Normalizes as buffer depletes' : 'Normalizes next month'}
+                </div>
+              </>
+            }>
+              <span className="cursor-help text-monarch-success ml-1">
+                <TrendDownIcon size={10} strokeWidth={2.5} />
+              </span>
+            </Tooltip>
+          )}
+          {isStable && (
+            <Tooltip content={
+              <>
+                <div className="font-medium flex items-center gap-1"><AnchorIcon size={12} strokeWidth={2.5} className="text-monarch-text-muted" /> Stable Target</div>
+                <div className="text-monarch-text-muted text-xs">
+                  This is the stable monthly target for this expense
+                </div>
+              </>
+            }>
+              <span className="cursor-help text-monarch-text-muted ml-1">
+                <AnchorIcon size={10} strokeWidth={2.5} />
+              </span>
+            </Tooltip>
+          )}
         </div>
         {showInterval && (
           <div className="text-xs text-monarch-text-muted text-right mt-0.5">
@@ -96,6 +156,58 @@ export function RecurringItemBudget({
           className="w-16 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
         <span className="text-monarch-text-muted ml-1">/ {target}</span>
+        {isCatchingUp && (
+          <Tooltip content={
+            <>
+              <div className="font-medium flex items-center gap-1"><TrendUpIcon size={12} strokeWidth={2.5} className="text-monarch-error" /> Catching Up</div>
+              <div>
+                <span className="text-monarch-orange">{formatCurrency(target, { maximumFractionDigits: 0 })}/mo</span>
+                <span className="text-monarch-text-muted"> → </span>
+                <span className="text-monarch-success">{formatCurrency(idealRate, { maximumFractionDigits: 0 })}/mo</span>
+              </div>
+              <div className="text-monarch-text-muted text-xs mt-1">
+                {item.frequency_months <= 1 ? 'Normalizes as buffer builds' : 'Normalizes next month'}
+              </div>
+            </>
+          }>
+            <span className="cursor-help text-monarch-error ml-1">
+              <TrendUpIcon size={10} strokeWidth={2.5} />
+            </span>
+          </Tooltip>
+        )}
+        {isAhead && (
+          <Tooltip content={
+            <>
+              <div className="font-medium flex items-center gap-1"><TrendDownIcon size={12} strokeWidth={2.5} className="text-monarch-success" /> Ahead of Schedule</div>
+              <div>
+                <span className="text-monarch-success">{formatCurrency(target, { maximumFractionDigits: 0 })}/mo</span>
+                <span className="text-monarch-text-muted"> → </span>
+                <span className="text-monarch-orange">{formatCurrency(idealRate, { maximumFractionDigits: 0 })}/mo</span>
+              </div>
+              <div className="text-monarch-text-muted text-xs mt-1">
+                {item.frequency_months <= 1 ? 'Normalizes as buffer depletes' : 'Normalizes next month'}
+              </div>
+            </>
+          }>
+            <span className="cursor-help text-monarch-success ml-1">
+              <TrendDownIcon size={10} strokeWidth={2.5} />
+            </span>
+          </Tooltip>
+        )}
+        {isStable && (
+          <Tooltip content={
+            <>
+              <div className="font-medium flex items-center gap-1"><AnchorIcon size={12} strokeWidth={2.5} className="text-monarch-text-muted" /> Stable Target</div>
+              <div className="text-monarch-text-muted text-xs">
+                This is the stable monthly target for this expense
+              </div>
+            </>
+          }>
+            <span className="cursor-help text-monarch-text-muted ml-1">
+              <AnchorIcon size={10} strokeWidth={2.5} />
+            </span>
+          </Tooltip>
+        )}
       </div>
       {showInterval && (
         <div className="text-xs text-monarch-text-light text-right mt-0.5">

@@ -87,10 +87,10 @@ export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendi
         )}
         <div>
           <div className="font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
-            {formatCurrency(item.monthly_contribution)}/mo
+            {formatCurrency(item.monthly_contribution, { maximumFractionDigits: 0 })}/mo
           </div>
           <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-            {formatCurrency(item.amount)} {formatFrequency(item.frequency).toLowerCase()}
+            {formatCurrency(item.amount, { maximumFractionDigits: 0 })} {formatFrequency(item.frequency).toLowerCase()}
           </div>
         </div>
       </div>

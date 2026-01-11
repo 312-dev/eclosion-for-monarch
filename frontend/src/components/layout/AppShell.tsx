@@ -186,18 +186,6 @@ export function AppShell() {
                 lastSync={data.last_sync}
                 compact
               />
-              {/* Hide security info button on desktop - only relevant for web deployments */}
-              {!isDesktop && (
-                <button
-                  type="button"
-                  onClick={() => setShowSecurityInfo(true)}
-                  className="app-header-btn hidden sm:flex"
-                  style={{ color: 'var(--monarch-text-muted)' }}
-                  aria-label="View security information"
-                >
-                  <ShieldCheck className="app-header-icon" aria-hidden="true" />
-                </button>
-              )}
               <HelpDropdown hasTour={hasTour} onStartTour={() => setShowTour(true)} />
             </div>
           </div>
@@ -270,7 +258,7 @@ export function AppShell() {
                 href="https://thenounproject.com/rosa991/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline"
+                className="hover:text-[var(--monarch-text-dark)] transition-colors"
               >
                 Rosa Lia
               </a>
@@ -279,18 +267,30 @@ export function AppShell() {
                 href="https://thenounproject.com/icon/butterfly-7666562/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline"
+                className="hover:text-[var(--monarch-text-dark)] transition-colors"
               >
                 Noun Project
               </a>
             </span>
           </div>
-          {/* Version indicator - desktop app only, bottom right */}
-          {isDesktop && (
-            <div className="ml-auto">
-              <VersionIndicator />
-            </div>
-          )}
+          {/* Right side: security info (web only) and version (desktop only) */}
+          <div className="ml-auto flex items-center gap-3">
+            {/* Security info button - only relevant for web deployments */}
+            {!isDesktop && (
+              <button
+                type="button"
+                onClick={() => setShowSecurityInfo(true)}
+                className="flex items-center gap-1 text-xs cursor-pointer hover:text-[var(--monarch-text-dark)] transition-colors"
+                style={{ color: 'var(--monarch-text-muted)' }}
+                aria-label="View security information"
+              >
+                <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+                Secured
+              </button>
+            )}
+            {/* Version indicator - desktop app only */}
+            {isDesktop && <VersionIndicator />}
+          </div>
         </footer>
       </div>
     </TourProvider>

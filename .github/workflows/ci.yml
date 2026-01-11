@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths-ignore:
       - '*.md'
       - 'docusaurus/**'
@@ -10,14 +10,14 @@ on:
       - '.github/workflows/generate-docs.yml'
       - '.github/workflows/sync-wiki.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths-ignore:
       - '*.md'
       - 'docusaurus/**'
       - 'scripts/docs-gen/**'
       - '.github/workflows/generate-docs.yml'
       - '.github/workflows/sync-wiki.yml'
-  # Allow manual trigger for PRs created by GITHUB_TOKEN (e.g., release-please)
+  # Allow manual trigger
   workflow_dispatch:
     inputs:
       head_sha:
@@ -93,6 +93,18 @@ jobs:
       - name: Test
         run: npm test -- --run
 
+      - name: Test with Coverage
+        run: npm run test:coverage
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
   # Backend checks
   backend:
     name: Backend
@@ -126,6 +138,18 @@ jobs:
       - name: Test
         run: pytest
 
+      - name: Test with Coverage
+        run: pytest --cov=. --cov-report=html --cov-report=xml
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: htmlcov/
+          retention-days: 7
+
   # Desktop checks
   desktop:
     name: Desktop
@@ -157,6 +181,58 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # E2E tests
+  e2e:
+    name: E2E Tests
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.desktop == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: desktop
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: desktop
+        run: npm run test:e2e -- --project=chromium
+        continue-on-error: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: desktop/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: desktop/test-results/
+          retention-days: 7
 
   # Desktop build validation (runs on macOS to verify full build works)
   desktop-build:
@@ -246,13 +322,13 @@ jobs:
     name: CI Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [frontend, backend, desktop, desktop-build]
+    needs: [frontend, backend, desktop, desktop-build, e2e]
     if: always()
     steps:
       - name: Check CI results
         id: check
         run: |
-          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.desktop.result }} ${{ needs.desktop-build.result }}"
+          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.desktop.result }} ${{ needs.desktop-build.result }} ${{ needs.e2e.result }}"
           echo "Job results: $results"
           if echo "$results" | grep -qE '(failure|cancelled)'; then
             echo "::error::One or more CI jobs failed or were cancelled"

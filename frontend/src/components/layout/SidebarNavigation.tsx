@@ -14,6 +14,7 @@ import { Portal } from '../Portal';
 import { Tooltip } from '../ui/Tooltip';
 import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
+import { useMediaQuery } from '../../hooks';
 import { getComingSoonFeatures } from '../../data/features';
 import { isDesktopMode } from '../../utils/apiBase';
 
@@ -70,9 +71,9 @@ function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSett
   );
 }
 
-function ComingSoonNavItem({ label, icon }: Readonly<{ label: string; icon: React.ReactNode }>) {
+function ComingSoonNavItem({ label, icon, isMobile }: Readonly<{ label: string; icon: React.ReactNode; isMobile: boolean }>) {
   return (
-    <Tooltip content="Coming Soon" side="right" delayDuration={100}>
+    <Tooltip content="Coming Soon" side={isMobile ? 'top' : 'right'} delayDuration={100}>
       <span
         className="sidebar-nav-item sidebar-nav-item-disabled"
         aria-label={`${label} - Coming Soon`}
@@ -88,6 +89,7 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const navigate = useNavigate();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
   const comingSoonFeatures = getComingSoonFeatures();
@@ -141,18 +143,24 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
                   <NavItemLink item={item} onSettingsClick={handleSettingsClick} />
                 </li>
               ))}
-              {comingSoonFeatures.map((feature) => {
-                const IconComponent = Icons[feature.icon];
-                return (
-                  <li key={feature.id}>
-                    <ComingSoonNavItem
-                      label={feature.name}
-                      icon={<IconComponent size={20} />}
-                    />
-                  </li>
-                );
-              })}
             </ul>
+            {/* Coming soon features - scrollable on mobile */}
+            <div className="sidebar-coming-soon-wrapper">
+              <ul className="sidebar-nav-list sidebar-coming-soon-list">
+                {comingSoonFeatures.map((feature) => {
+                  const IconComponent = Icons[feature.icon];
+                  return (
+                    <li key={feature.id}>
+                      <ComingSoonNavItem
+                        label={feature.name}
+                        icon={<IconComponent size={20} />}
+                        isMobile={isMobile}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
           <div className="sidebar-nav-divider" aria-hidden="true" />
         </div>
@@ -168,20 +176,22 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
         ))}
       </div>
 
-      {/* Footer - at the bottom (desktop only) */}
-      <div className="sidebar-nav-footer sidebar-desktop-only">
-        <div className="sidebar-nav-list">
-          <button
-            type="button"
-            onClick={onLock}
-            className="sidebar-nav-item sidebar-lock"
-            aria-label="Lock Eclosion"
-          >
-            <span className="sidebar-nav-icon" aria-hidden="true"><Lock size={20} /></span>
-            <span className="sidebar-nav-label">Lock</span>
-          </button>
+      {/* Footer - at the bottom (desktop only, not in demo mode) */}
+      {!isDemo && (
+        <div className="sidebar-nav-footer sidebar-desktop-only">
+          <div className="sidebar-nav-list">
+            <button
+              type="button"
+              onClick={onLock}
+              className="sidebar-nav-item sidebar-lock"
+              aria-label="Lock Eclosion"
+            >
+              <span className="sidebar-nav-icon" aria-hidden="true"><Lock size={20} /></span>
+              <span className="sidebar-nav-label">Lock</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Ideas Modal - rendered via Portal to escape sidebar stacking context */}
       <Portal>

@@ -1,0 +1,166 @@
+# Electron Builder Configuration for Beta Releases
+#
+# This configuration is used for beta builds and differs from the stable
+# config (electron-builder.yml) in the following ways:
+# - Different appId to prevent conflicts with production installation
+# - Different productName to clearly identify beta builds
+# - Different shortcut names on Windows
+#
+# Usage: electron-builder --config electron-builder.beta.yml
+
+appId: com.eclosion.desktop.beta
+productName: Eclosion (Beta)
+copyright: Copyright (c) 2026
+
+# Build directories
+directories:
+  output: release
+  buildResources: assets
+
+# Files to include in the app
+files:
+  - dist/**/*
+  - "!node_modules/**/*"
+
+# Extra resources (not in asar)
+extraResources:
+  # Frontend build
+  - from: ../frontend/dist
+    to: frontend
+    filter:
+      - "**/*"
+  # Python backend executable
+  - from: pyinstaller/dist/eclosion-backend
+    to: backend
+    filter:
+      - "**/*"
+  # Tray icons (needed at runtime for menu bar)
+  - from: assets/tray
+    to: assets/tray
+    filter:
+      - "**/*"
+
+# Publish to GitHub Releases (prereleases for beta)
+publish:
+  provider: github
+  owner: 312-dev
+  repo: eclosion
+  releaseType: prerelease
+
+# Protocol handler (deep links)
+# Using same scheme - users typically won't have both versions installed
+protocols:
+  - name: Eclosion Beta
+    schemes:
+      - eclosion
+
+# Pre-sign hook for Python.framework (fixes ambiguous bundle format)
+afterPack: afterPack.js
+
+# macOS configuration
+mac:
+  category: public.app-category.finance
+  target:
+    - dmg
+    - zip
+  icon: assets/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: entitlements.mac.plist
+  entitlementsInherit: entitlements.mac.plist
+  darkModeSupport: true
+  # afterPack.js pre-signs backend with --no-strict (required for PyInstaller)
+  # signIgnore prevents electron-builder from re-signing and breaking those signatures
+  # NOTE: These are regex patterns, not glob patterns
+  signIgnore:
+    - ".*backend.*"
+    - ".*Python\\.framework.*"
+
+# macOS code signing
+afterSign: notarize.js
+
+# DMG configuration
+dmg:
+  sign: false
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+
+# Windows configuration
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.ico
+
+# NSIS installer configuration
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Eclosion (Beta)
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  differentialPackage: true
+  # Include custom uninstaller script that prompts for data cleanup
+  include: installer/uninstaller.nsh
+
+# Linux configuration
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: rpm
+      arch:
+        - x64
+        - arm64
+  category: Finance
+  icon: assets/icon.png
+  maintainer: grayson@eclosion.app
+  vendor: Eclosion
+  synopsis: Recurring expense tracker for Monarch Money (Beta)
+  description: A self-hosted toolkit that expands what's possible with Monarch Money - Beta channel
+
+# AppImage configuration
+appImage:
+  artifactName: ${productName}-${version}.${ext}
+
+# Debian package configuration
+deb:
+  depends:
+    - gconf2
+    - gconf-service
+    - libnotify4
+    - libappindicator1
+    - libxtst6
+    - libnss3
+
+# RPM package configuration (Fedora/RHEL)
+rpm:
+  depends:
+    - GConf2
+    - libnotify
+    - libappindicator-gtk3
+    - libXtst
+    - nss
+
+# Auto-update configuration
+# electron-updater will look for these manifest files
+# latest.yml (Windows), latest-mac.yml (macOS), latest-linux.yml (Linux)

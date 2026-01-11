@@ -331,7 +331,7 @@ All checks must pass before committing.
 
 ## Branch Naming
 
-**Branch names are enforced by CI.** Only these prefixes are allowed for PRs to `develop`:
+**Branch names are enforced by CI.** Only these prefixes are allowed for PRs to `main`:
 
 | Prefix | Use for | Example |
 |--------|---------|---------|
@@ -353,7 +353,7 @@ git checkout -b update/readme
 git checkout -b feature/new-dashboard
 ```
 
-PRs to `main` must come from the `develop` branch only (enforced by `require-develop.yml`), **except for docs-only changes** (markdown files, docusaurus, docs-gen scripts) which can go directly to `main`.
+Docs-only changes (markdown files, docusaurus, docs-gen scripts) can skip CI builds.
 
 ## Demo Mode Compatibility
 
@@ -595,7 +595,7 @@ npm run docusaurus docs:version X.Y
 - Beta versions use date-based format: `v{current}-beta.{YYYYMMDD}.{sequence}`
 - No version snapshots are created for beta releases
 - No version dropdown (single version)
-- Beta releases are created via the "Create Beta Release" workflow (manual dispatch on develop)
+- Beta releases are created via the "Create Beta Release" workflow (manual dispatch on main)
 
 ### Environment-Aware Configuration
 

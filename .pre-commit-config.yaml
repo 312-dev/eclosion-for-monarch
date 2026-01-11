@@ -5,25 +5,36 @@
 default_language_version:
   python: python3.11
 
+# Tip: Use `pre-commit run --hook-stage manual gitleaks` for full repo scan
+# Normal commits only scan staged changes (much faster)
+
 repos:
-  # General file checks
+  # General file checks (fast - run first for fail-fast)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
-      - id: trailing-whitespace
-        exclude: ^frontend/
-      - id: end-of-file-fixer
-        exclude: ^frontend/
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: detect-private-key
       - id: check-yaml
         args: [--unsafe]
       - id: check-json
         exclude: ^frontend/
-      - id: check-added-large-files
-        args: ["--maxkb=1000"]
-      - id: check-merge-conflict
-      - id: detect-private-key
+      - id: trailing-whitespace
+        exclude: ^frontend/
+      - id: end-of-file-fixer
+        exclude: ^frontend/
 
-  # Ruff - Python linting and formatting (replaces black, isort, flake8)
+  # Gitleaks - Secret detection
+  # Runs on staged files during commits; full scan happens in CI
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+        args: [protect, --staged, --redact]
+
+  # Ruff - Python linting and formatting (very fast)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.4
     hooks:
@@ -37,7 +48,7 @@ repos:
         types_or: [python, pyi]
         exclude: ^frontend/
 
-  # Type checking (runs on staged files only for speed)
+  # Type checking and frontend checks
   - repo: local
     hooks:
       - id: mypy
@@ -50,15 +61,15 @@ repos:
         pass_filenames: true
         require_serial: true
 
-      # Frontend linting
+      # Frontend linting - only changed files for speed
       - id: frontend-lint
         name: frontend-lint
-        entry: bash -c 'cd frontend && npm run lint'
+        entry: npx eslint --max-warnings=0 -c frontend/eslint.config.js
         language: system
-        files: ^frontend/.*\.(ts|tsx)$
-        pass_filenames: false
+        files: ^frontend/src/.*\.(ts|tsx)$
+        pass_filenames: true
 
-      # Frontend type checking
+      # Frontend type checking (must check whole project for type coherence)
       - id: frontend-typecheck
         name: frontend-typecheck
         entry: bash -c 'cd frontend && npm run type-check'

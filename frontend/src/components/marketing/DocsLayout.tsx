@@ -236,7 +236,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                   href="https://monarchmoney.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--monarch-orange)] hover:underline"
+                  className="text-[var(--monarch-orange)] hover:text-[var(--monarch-text-dark)] transition-colors"
                 >
                   Monarch Money
                 </a>

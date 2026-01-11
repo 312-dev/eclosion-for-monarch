@@ -91,14 +91,13 @@ Copy `.env.example` to `.env` and configure:
 
 ## Branching Strategy
 
-This project uses a **Git Flow** workflow where all code changes flow through `develop` before reaching `main`. Documentation-only changes can go directly to `main`.
+This project uses **GitHub Flow** — a simple workflow where all changes go directly to `main`.
 
 ### Branch Types
 
 | Branch | Purpose | Deploys to |
 |--------|---------|------------|
-| `main` | Production-ready code | [eclosion.app](https://eclosion.app) |
-| `develop` | Integration branch for features | [beta.eclosion.app](https://beta.eclosion.app) (via pre-release) |
+| `main` | Single source of truth | [eclosion.app](https://eclosion.app) (stable) |
 | `feature/*` | New features, enhancements | — |
 | `update/*` | Fixes, refactors, docs, chores | — |
 
@@ -106,11 +105,12 @@ This project uses a **Git Flow** workflow where all code changes flow through `d
 
 ```
 feature/your-branch ──┐
-                      ├──► develop ──► (beta release) ──► beta.eclosion.app
-update/your-branch ───┘        │
-                               ▼
-                             main ──► (release) ──► eclosion.app
+                      ├──► main ──► (tag) ──► eclosion.app / beta.eclosion.app
+update/your-branch ───┘
 ```
+
+- **Beta releases**: Pre-release tags on `main` → deploys to beta.eclosion.app
+- **Stable releases**: Release tags on `main` → deploys to eclosion.app
 
 ### Branch Naming
 
@@ -181,22 +181,19 @@ Migration guide available in docs/migration-v2.md.
 
 ### Why This Matters
 
-[release-please](https://github.com/googleapis/release-please) automatically:
-- Reads your commit messages when `develop` is merged to `main`
-- Determines the appropriate version bump
-- Generates the changelog
-- Creates a release PR
-
-Using the correct commit type ensures accurate versioning and a useful changelog for users.
+Using the correct commit type ensures:
+- Accurate version bumps (feat = minor, fix = patch)
+- Clean, categorized changelogs
+- Easy tracking of what changed between releases
 
 ## Pull Request Process
 
 ### Creating a PR
 
-1. **Create a branch from `develop`**
+1. **Create a branch from `main`**
    ```bash
-   git checkout develop
-   git pull origin develop
+   git checkout main
+   git pull origin main
    git checkout -b feature/your-feature
    ```
 
@@ -217,32 +214,29 @@ Using the correct commit type ensures accurate versioning and a useful changelog
    pytest
    ```
 
-4. **Push and create a PR to `develop`** (not main)
+4. **Push and create a PR to `main`**
    ```bash
    git push -u origin feature/your-feature
    ```
-   Then create a PR targeting the `develop` branch.
+   Then create a PR targeting the `main` branch.
 
 5. **Address review feedback** promptly
 
 ### PR Requirements
 
-| Target Branch | CI Checks | Security Scans | Code Review | Vulnerability Threshold |
-|---------------|-----------|----------------|-------------|------------------------|
-| `develop` | Run | Run (visible) | None required | — |
-| `main` | Must pass | Must pass | 1 approval | Medium+ blocks merge |
+| Target Branch | CI Checks | Security Scans | Code Review |
+|---------------|-----------|----------------|-------------|
+| `main` | Must pass | Must pass | 1 approval |
 
-> **Note**: Code PRs directly to `main` will be blocked. Always target `develop` first.
->
-> **Exception**: Documentation-only PRs (markdown files, `docusaurus/`, `scripts/docs-gen/`) can go directly to `main` and skip CI builds.
+> **Note**: Documentation-only PRs (markdown files, `docusaurus/`, `scripts/docs-gen/`) can skip CI builds.
 
 ### Security Thresholds
 
 | Action | Threshold | What's Checked |
 |--------|-----------|----------------|
-| PR to `develop` | None (informational) | CodeQL, npm audit, pip-audit, Trivy, ZAP |
-| **Beta release** | **High+ blocks** | CodeQL, npm audit, pip-audit, Trivy (full scan, no DAST) |
-| PR to `main` | Medium+ blocks | All security scans must pass |
+| PR to `main` | Medium+ blocks | CodeQL, npm audit, pip-audit, Trivy, ZAP |
+| **Beta release** | **High+ blocks** | Full security scan suite |
+| **Stable release** | **Medium+ blocks** | Full security scan suite |
 
 **Security scans include:** CodeQL (SAST), dependency audit (npm/pip), container scan (Trivy), DAST (OWASP ZAP)
 
@@ -425,138 +419,98 @@ Workflows called via `workflow_call` should remain generic and reusable:
 
 This project uses two versioning schemes:
 
-**Production releases** — Semantic versioning managed by release-please
+**Stable releases** — Semantic versioning
 - Format: `vX.Y.Z` (e.g., `v1.2.0`)
-- Version determined automatically from conventional commits
+- Created manually via workflow dispatch
+- Version bump type (patch/minor/major) chosen at release time
 
 **Beta releases** — Date-based versioning
 - Format: `v{current}-beta.{YYYYMMDD}.{sequence}`
 - Example: `v1.1.0-beta.20260104.1`
-- Created via manual workflow dispatch
+- Created manually via workflow dispatch
 
 ### Deployment Environments
 
-| Environment | URL | Trigger | Approval |
-|-------------|-----|---------|----------|
-| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Beta pre-release created | Required |
-| **Production** | [eclosion.app](https://eclosion.app) | Release published | Required |
+| Environment | URL | Trigger |
+|-------------|-----|---------|
+| **Beta** | [beta.eclosion.app](https://beta.eclosion.app) | Beta pre-release tag |
+| **Production** | [eclosion.app](https://eclosion.app) | Stable release tag |
 
 ### Release Flow
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    DEVELOP BRANCH                       │
-│  Features merged via PRs                                │
-│  CI runs on each push                                   │
+│                      MAIN BRANCH                        │
+│  Features merged via PRs (squash merge)                 │
+│  CI + Security runs on each push                        │
 └─────────────────────┬───────────────────────────────────┘
                       │
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│        MANUAL: Run "Create Beta Release" workflow       │
-│  → Runs security scan (HIGH+ blocks)                    │
-│  → Reads version from package.json (e.g., 1.1.0)        │
-│  → Creates tag: v1.1.0-beta.20260104.1                  │
-│  → Creates GitHub pre-release                           │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│              AUTOMATIC: prereleased event               │
-│  → Deploys to beta.eclosion.app                         │
-│  → Builds Docker image with beta tag                    │
-│  → Builds desktop apps for all platforms                │
-└─────────────────────────────────────────────────────────┘
-                      │
-                      │ (when ready for production)
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│                 PR: develop → main                      │
-│  → CI + Security checks must pass                       │
-│  → Requires maintainer approval                         │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│            AUTOMATIC: release-please runs               │
-│  → Analyzes commits since last release                  │
-│  → Determines version bump (patch/minor/major)          │
-│  → Creates release PR with changelog                    │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│              MERGE: Release PR                          │
-│  → GitHub release created (e.g., v1.2.0)                │
-│  → Production deployment triggered                      │
-│  → Docker image published                               │
-│  → Desktop apps built and attached to release           │
-│  → Future betas use new version as base                 │
-└─────────────────────────────────────────────────────────┘
+        ┌─────────────┴─────────────┐
+        │                           │
+        ▼                           ▼
+┌───────────────────┐     ┌───────────────────┐
+│   BETA RELEASE    │     │  STABLE RELEASE   │
+│                   │     │                   │
+│ Actions → Create  │     │ Actions → Create  │
+│ Beta Release      │     │ Stable Release    │
+│                   │     │                   │
+│ → Security scan   │     │ → Version bump    │
+│ → Tag: v1.1.0-    │     │ → Tag: v1.2.0     │
+│   beta.20260104.1 │     │ → Changelog       │
+│ → Pre-release     │     │ → Release         │
+└─────────┬─────────┘     └─────────┬─────────┘
+          │                         │
+          ▼                         ▼
+   beta.eclosion.app         eclosion.app
+   Docker: beta tag          Docker: version tag
+   Desktop pre-release       Desktop release
 ```
 
 ### Creating a Beta Release
 
-When `develop` is ready for beta testing:
+When `main` is ready for beta testing:
 
-1. Go to **Actions** → **Create Beta Release**
+1. Go to **Actions** → **Release: Create Beta**
 2. Click **Run workflow**
-3. Select `develop` from the branch dropdown
+3. Select `main` from the branch dropdown
 4. Click **Run workflow**
 
 The workflow automatically:
-- **Runs full security scan** (CodeQL, npm audit, pip-audit, Trivy — HIGH+ blocks)
-- Reads the current version from `package.json`
+- Runs full security scan (HIGH+ blocks)
 - Creates a tag like `v1.1.0-beta.20260104.1`
 - Creates a GitHub pre-release with auto-generated notes
-- Triggers deployment to beta.eclosion.app
-- Builds and publishes a Docker image
-- Builds desktop apps for macOS (universal), Windows, and Linux
+- Deploys to beta.eclosion.app
+- Builds Docker image with beta tag
+- Builds desktop apps for all platforms
 
-> **Security Gate**: Beta releases run the full security scan suite against the develop branch. Any HIGH or CRITICAL vulnerabilities will block the release. DAST is skipped for faster execution.
+### Creating a Stable Release
 
-### How release-please Works
+When ready for production:
 
-When `develop` is merged to `main`:
+1. Go to **Actions** → **Release: Create Stable**
+2. Click **Run workflow**
+3. Select `main` from the branch dropdown
+4. Choose version bump type (**patch**, **minor**, or **major**)
+5. Click **Run workflow**
 
-1. **Commit analysis** — Scans all commits since the last release tag
-2. **Version calculation** — Determines bump from commit types:
-   - Any `feat!:` or `BREAKING CHANGE:` → major bump
-   - Any `feat:` → minor bump
-   - Only `fix:`/`perf:` → patch bump
-3. **PR creation** — Creates/updates a release PR with:
-   - Version bumps in `package.json`, `pyproject.toml`
-   - Updated `CHANGELOG.md`
-4. **Release** — When the PR is merged:
-   - GitHub release is created
-   - Production deployment triggers
-   - Docker image is published
+The workflow automatically:
+- Calculates the new version number
+- Updates version in all package files
+- Runs full security scan (MEDIUM+ blocks)
+- Creates a tag like `v1.2.0`
+- Generates changelog from commits since last release
+- Creates GitHub release with notes
+- Deploys to eclosion.app
+- Builds Docker image with version tag
+- Builds desktop apps for all platforms
 
-### Release PR Pipeline
+### Version Bump Guidelines
 
-When release-please creates a PR, several automated jobs run sequentially to enhance the PR:
-
-```
-release-please creates PR (GITHUB_TOKEN)
-       │
-       ▼
-generate-summary ─── Adds AI changelog summary (may push)
-       │
-       ▼
-generate-docs ─── Updates user documentation (may push)
-       │
-       ▼
-trigger-checks ─── Dispatches CI/Security/require-develop ONCE
-       │              with final HEAD SHA
-       ▼
-auto-merge ─── Sets up auto-merge (if no docs review needed)
-```
-
-**Key design principles:**
-
-1. **Single trigger point** — CI/Security are triggered exactly once by `trigger-checks` after all commits are done
-2. **Final SHA** — The trigger uses the HEAD SHA after all jobs have potentially pushed commits
-3. **No loops** — All pushes use `GITHUB_TOKEN` which doesn't trigger `on:push` events
-4. **Reusable workflows** — `generate-docs.yml` stays generic with no release-specific logic
+| Bump Type | When to Use | Example |
+|-----------|-------------|---------|
+| **patch** | Bug fixes, minor improvements | 1.2.0 → 1.2.1 |
+| **minor** | New features (backward compatible) | 1.2.0 → 1.3.0 |
+| **major** | Breaking changes | 1.2.0 → 2.0.0 |
 
 ## Code Style
 

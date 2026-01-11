@@ -144,7 +144,6 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
     return (
       <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
         <RecurringListSectionHeader
-          enabledCount={enabledCount}
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
           onToggleHide={() => setHideDisabled(!hideDisabled)}
@@ -166,7 +165,6 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
     <div>
       <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
         <RecurringListSectionHeader
-          enabledCount={enabledCount}
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
           onToggleHide={() => setHideDisabled(!hideDisabled)}

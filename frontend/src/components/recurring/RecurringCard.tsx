@@ -123,7 +123,7 @@ export const RecurringCard = memo(function RecurringCard({
       } ${!item.is_enabled ? 'opacity-75' : ''}`}
       data-tour={dataTourId}
     >
-      {/* Row 1: Header + Actions */}
+      {/* Row 1: Header + Status + Actions */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <RecurringItemHeader
@@ -140,39 +140,47 @@ export const RecurringCard = memo(function RecurringCard({
             showProgress={false}
           />
         </div>
-        {item.is_enabled ? (
-          <ActionsDropdown
+        <div className={`flex items-center gap-2 ${contentOpacity}`}>
+          <RecurringItemStatus
             item={item}
-            onToggle={handleToggle}
-            onLinkCategory={() => onLinkCategory(item)}
-            onRecreate={handleRecreate}
-            onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
-            onRefresh={handleRefresh}
-            onChangeGroup={handleChangeGroup}
-            isToggling={toggleAction.loading}
-            isRecreating={recreateAction.loading}
-            isAddingToRollup={addToRollupAction.loading}
-            isRefreshing={refreshAction.loading}
-            showCategoryGroup={showCategoryGroup}
+            displayStatus={displayStatus}
+            onAllocate={handleAllocateNeeded}
+            isAllocating={allocateAction.loading}
           />
-        ) : (
-          onAddToRollup && (
-            <Tooltip content="Add to rollup">
-              <button
-                onClick={handleAddToRollup}
-                disabled={addToRollupAction.loading}
-                aria-label="Add to rollup"
-                className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-black/10 disabled:opacity-50"
-              >
-                {addToRollupAction.loading ? (
-                  <SpinnerIcon size={16} color="var(--monarch-orange)" />
-                ) : (
-                  <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
-                )}
-              </button>
-            </Tooltip>
-          )
-        )}
+          {item.is_enabled ? (
+            <ActionsDropdown
+              item={item}
+              onToggle={handleToggle}
+              onLinkCategory={() => onLinkCategory(item)}
+              onRecreate={handleRecreate}
+              onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
+              onRefresh={handleRefresh}
+              onChangeGroup={handleChangeGroup}
+              isToggling={toggleAction.loading}
+              isRecreating={recreateAction.loading}
+              isAddingToRollup={addToRollupAction.loading}
+              isRefreshing={refreshAction.loading}
+              showCategoryGroup={showCategoryGroup}
+            />
+          ) : (
+            onAddToRollup && (
+              <Tooltip content="Add to rollup">
+                <button
+                  onClick={handleAddToRollup}
+                  disabled={addToRollupAction.loading}
+                  aria-label="Add to rollup"
+                  className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-black/10 disabled:opacity-50"
+                >
+                  {addToRollupAction.loading ? (
+                    <SpinnerIcon size={16} color="var(--monarch-orange)" />
+                  ) : (
+                    <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
+                  )}
+                </button>
+              </Tooltip>
+            )
+          )}
+        </div>
       </div>
 
       {/* Progress bar - aligned with text content (after icon + gap) */}
@@ -187,7 +195,7 @@ export const RecurringCard = memo(function RecurringCard({
       {/* Bottom section with darker background */}
       <div className="bg-monarch-bg-page -mx-4 -mb-4 px-4 py-3 rounded-b-lg">
         {/* Row 2: Date + Budget */}
-        <div className={`flex items-end justify-between mb-3 ${contentOpacity}`}>
+        <div className={`flex items-start justify-between ${contentOpacity}`}>
           <div>
             <span className="text-xs text-monarch-text-light">Due</span>
             <div className="text-monarch-text-dark">{date}</div>
@@ -205,16 +213,6 @@ export const RecurringCard = memo(function RecurringCard({
               isAllocating={allocateAction.loading}
             />
           </div>
-        </div>
-
-        {/* Row 3: Status (under budget) */}
-        <div className={`flex justify-end ${contentOpacity}`}>
-          <RecurringItemStatus
-            item={item}
-            displayStatus={displayStatus}
-            onAllocate={handleAllocateNeeded}
-            isAllocating={allocateAction.loading}
-          />
         </div>
       </div>
     </article>

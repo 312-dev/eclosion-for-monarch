@@ -33,7 +33,6 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
   const [cancelResult, setCancelResult] = useState<CancelSubscriptionResult | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [fullReset, setFullReset] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -65,7 +64,6 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
       setCancelResult(null);
       setConfirmed(false);
       setCategoryChoice('delete');
-      setFullReset(false);
     }
   }, [isOpen, fetchCategories, fetchDeploymentInfo]);
 
@@ -75,7 +73,7 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
     setCancelling(true);
     setError(null);
     try {
-      const result = await cancelSubscription(categoryChoice === 'delete', fullReset);
+      const result = await cancelSubscription(categoryChoice === 'delete', true);
 
       // On desktop, also clear local data folder
       if (isDesktopMode() && globalThis.electron) {
@@ -170,8 +168,6 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
                 onCategoryChoiceChange={setCategoryChoice}
                 confirmed={confirmed}
                 onConfirmedChange={setConfirmed}
-                fullReset={fullReset}
-                onFullResetChange={setFullReset}
                 cancelling={cancelling}
                 deploymentInfo={deploymentInfo}
               />

@@ -5,6 +5,7 @@
 import { SearchableSelect, type SelectGroup } from '../../SearchableSelect';
 import type { UnmappedCategory } from '../../../types';
 import { PackageIcon } from '../SetupWizardIcons';
+import { formatCurrency } from '../../../utils';
 
 interface RollupConfigStepProps {
   readonly mode: 'new' | 'existing';
@@ -45,9 +46,10 @@ export function RollupConfigStep({
     label: groupLabel,
     options: cats.map((cat) => {
       const icon = cat.icon ? cat.icon + ' ' : '';
+      const budget = formatCurrency(cat.planned_budget || 0, { maximumFractionDigits: 0 });
       return {
         value: cat.id,
-        label: `${icon}${cat.name} - $${cat.planned_budget || 0} budgeted`,
+        label: `${icon}${cat.name} - ${budget} budgeted`,
       };
     }),
   }));

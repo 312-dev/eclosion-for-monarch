@@ -53,7 +53,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -215,7 +215,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: desktop/package-lock.json
 
@@ -240,6 +240,12 @@ jobs:
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm ci
+
+      - name: Set version in package.json
+        working-directory: desktop
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "Set desktop/package.json version to ${{ inputs.version }}"
 
       - name: Build Electron main process
         working-directory: desktop
@@ -269,7 +275,13 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --mac --${{ matrix.arch }} --publish never
+        run: |
+          # Use beta config for beta builds, stable config otherwise
+          if [[ "${{ inputs.version }}" == *"beta"* ]]; then
+            npx electron-builder --mac --${{ matrix.arch }} --publish never --config electron-builder.beta.yml
+          else
+            npx electron-builder --mac --${{ matrix.arch }} --publish never
+          fi
 
       - name: Validate backend binary
         run: |
@@ -347,7 +359,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: desktop/package-lock.json
 
@@ -367,6 +379,15 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Set version in package.json
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json | ConvertFrom-Json
+          $pkg.version = "${{ inputs.version }}"
+          $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json
+          Write-Host "Set desktop/package.json version to ${{ inputs.version }}"
+
       - name: Build Electron main process
         working-directory: desktop
         run: npm run build:main
@@ -378,7 +399,14 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win --publish never
+        shell: pwsh
+        run: |
+          # Use beta config for beta builds, stable config otherwise
+          if ("${{ inputs.version }}" -like "*beta*") {
+            npx electron-builder --win --publish never --config electron-builder.beta.yml
+          } else {
+            npx electron-builder --win --publish never
+          }
 
       - name: Check binary sizes
         shell: pwsh
@@ -444,7 +472,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: desktop/package-lock.json
 
@@ -475,6 +503,12 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Set version in package.json
+        working-directory: desktop
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "Set desktop/package.json version to ${{ inputs.version }}"
+
       - name: Build Electron main process
         working-directory: desktop
         run: npm run build:main
@@ -488,7 +522,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Tell electron-builder to use system fpm instead of downloading
           USE_SYSTEM_FPM: 'true'
-        run: npx electron-builder --linux --${{ matrix.arch }} --publish never
+        run: |
+          # Use beta config for beta builds, stable config otherwise
+          if [[ "${{ inputs.version }}" == *"beta"* ]]; then
+            npx electron-builder --linux --${{ matrix.arch }} --publish never --config electron-builder.beta.yml
+          else
+            npx electron-builder --linux --${{ matrix.arch }} --publish never
+          fi
 
       - name: Check binary sizes
         run: |

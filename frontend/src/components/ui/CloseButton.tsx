@@ -56,20 +56,16 @@ export function CloseButton({
       aria-label={ariaLabel}
       className={`
         inline-flex items-center justify-center
-        rounded-md
-        transition-colors duration-150
-        focus:outline-none focus:ring-2 focus:ring-offset-2
-        hover:bg-gray-100 dark:hover:bg-gray-700
+        rounded-lg
+        transition-colors
+        hover:bg-monarch-bg-page
+        text-monarch-text-muted
         ${config.button}
         ${className}
       `}
       {...props}
     >
-      <XIcon
-        size={config.icon}
-        color="var(--monarch-text-muted)"
-        aria-hidden="true"
-      />
+      <XIcon size={config.icon} aria-hidden="true" />
     </button>
   );
 }

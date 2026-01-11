@@ -5,7 +5,7 @@ name: "Check: Branch Naming"
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   check-branch-name:

@@ -280,6 +280,8 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     if (process.platform === 'darwin' && app.dock) {
       if (enabled) {
         app.dock.hide();
+        // Re-focus window after dock hide (macOS loses focus as side effect)
+        getMainWindow()?.focus();
       } else {
         app.dock.show();
       }

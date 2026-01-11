@@ -81,7 +81,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   return (
     <div className={className}>
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         {summaryCards.map((card) => (
           <div
             key={card.label}

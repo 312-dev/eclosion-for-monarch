@@ -173,7 +173,7 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
               <div className="text-monarch-text-muted text-xs mt-1">{formatCurrency(untrackedCategories.total, { maximumFractionDigits: 0 })} in categories not linked to recurring items</div>
             </>
           }>
-            <span className="absolute top-3 right-3 cursor-help text-monarch-warning" data-tour="untracked-warning">
+            <span className="absolute top-3 right-3 cursor-help text-white" data-tour="untracked-warning">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -323,12 +323,13 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
           {/* Month rows section */}
           <div className="flex px-3 py-2">
             {/* Timeline track */}
-            <div className="w-6 flex flex-col items-center">
-              {timelineMonths.slice(0, -1).map((item, index) => (
-                <div key={`dot-${item.month}-${item.year}`} className="flex flex-col items-center">
-                  {index === 0 && <div className="w-px h-1 bg-neutral-200" />}
-                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-300 shrink-0" />
-                  <div className="w-px h-4 bg-neutral-200" />
+            <div className="w-6 flex flex-col items-center relative">
+              {/* Vertical line connecting all dots */}
+              <div className="absolute left-1/2 -translate-x-1/2 w-px bg-neutral-200 top-2.75 bottom-2.75" />
+              {/* Dots - each in a container matching row height */}
+              {timelineMonths.slice(0, -1).map((item) => (
+                <div key={`dot-${item.month}-${item.year}`} className="h-5.5 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-300 z-10" />
                 </div>
               ))}
             </div>
@@ -342,13 +343,16 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
               ))}
             </div>
           </div>
-          {/* Stabilization row with teal background - styled as link */}
-          <div className="flex items-center bg-teal-50 px-3 py-2 hover:bg-teal-100 transition-colors">
+          {/* Stabilization row with success background - styled as link */}
+          <div
+            className="flex items-center px-3 py-2 transition-colors"
+            style={{ backgroundColor: 'var(--monarch-success-bg)' }}
+          >
             <div className="w-6 flex justify-center">
-              <AnchorIcon size={14} className="text-teal-600" aria-hidden="true" />
+              <AnchorIcon size={14} className="text-monarch-success" aria-hidden="true" />
             </div>
-            <div className="flex-1 flex items-center justify-between text-teal-700">
-              <span className="text-xs font-medium underline decoration-teal-400 underline-offset-2">{stabilization.stabilizationDate}</span>
+            <div className="flex-1 flex items-center justify-between text-monarch-success">
+              <span className="text-xs font-medium underline underline-offset-2" style={{ textDecorationColor: 'var(--monarch-success)' }}>{stabilization.stabilizationDate}</span>
               <span className="text-sm font-semibold">
                 {formatCurrency(stabilization.stableMonthlyRate, { maximumFractionDigits: 0 })}/mo
               </span>

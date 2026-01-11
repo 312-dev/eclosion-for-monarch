@@ -922,6 +922,7 @@ class SyncService:
         """
         state = self.state_manager.load()
         all_category_info = await self.category_manager.get_all_category_info()
+        all_planned_budgets = await self.category_manager.get_all_planned_budgets()
 
         deletable: list[dict[str, Any]] = []
 
@@ -940,6 +941,9 @@ class SyncService:
                         "category_id": cat_state.monarch_category_id,
                         "name": cat_info.get("name", cat_state.name),
                         "group_name": cat_info.get("group_name"),
+                        "planned_budget": all_planned_budgets.get(
+                            cat_state.monarch_category_id, 0
+                        ),
                     }
                 )
 
@@ -954,6 +958,9 @@ class SyncService:
                         "name": rollup_info.get("name", state.rollup.category_name),
                         "group_name": rollup_info.get("group_name"),
                         "is_rollup": True,
+                        "planned_budget": all_planned_budgets.get(
+                            state.rollup.monarch_category_id, 0
+                        ),
                     }
                 )
 

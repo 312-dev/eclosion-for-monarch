@@ -34,7 +34,7 @@ export function RecurringItemCost({
           <Tooltip content={
             item.is_enabled ? (
               <>
-                <div className="font-medium">Underfunded</div>
+                <div className="font-medium flex items-center gap-1"><TrendUpIcon size={12} strokeWidth={2.5} className="text-monarch-error" /> Underfunded</div>
                 <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
                 <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
                 <div className="text-monarch-text-muted text-xs mt-1">
@@ -43,7 +43,7 @@ export function RecurringItemCost({
               </>
             ) : (
               <>
-                <div className="font-medium">Below Target</div>
+                <div className="font-medium flex items-center gap-1"><TrendUpIcon size={12} strokeWidth={2.5} className="text-monarch-text-muted" /> Below Target</div>
                 <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
                 <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
               </>
@@ -58,7 +58,7 @@ export function RecurringItemCost({
           <Tooltip content={
             item.is_enabled ? (
               <>
-                <div className="font-medium">Overfunded</div>
+                <div className="font-medium flex items-center gap-1"><TrendDownIcon size={12} strokeWidth={2.5} className="text-monarch-success" /> Overfunded</div>
                 <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
                 <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
                 <div className="text-monarch-text-muted text-xs mt-1">
@@ -67,7 +67,7 @@ export function RecurringItemCost({
               </>
             ) : (
               <>
-                <div className="font-medium">Above Target</div>
+                <div className="font-medium flex items-center gap-1"><TrendDownIcon size={12} strokeWidth={2.5} className="text-monarch-text-muted" /> Above Target</div>
                 <div className="text-monarch-text-dark">Budget: {formatCurrency(item.planned_budget, { maximumFractionDigits: 0 })}/mo</div>
                 <div className="text-monarch-text-dark">Target: {formatCurrency(item.frozen_monthly_target, { maximumFractionDigits: 0 })}/mo</div>
               </>

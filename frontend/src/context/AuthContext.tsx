@@ -24,6 +24,9 @@ import type { LoginResult, SetPassphraseResult, UnlockResult, UpdateCredentialsR
 // Types
 // ============================================================================
 
+/** Reason why the app was locked */
+export type LockReason = 'manual' | 'system-lock' | 'idle' | null;
+
 export interface AuthState {
   /** Whether user is authenticated (null = loading) */
   authenticated: boolean | null;
@@ -33,6 +36,8 @@ export interface AuthState {
   loading: boolean;
   /** Connection/API error if auth check failed */
   error: string | null;
+  /** Reason the app was locked (null = app startup, not a lock event) */
+  lockReason: LockReason;
 }
 
 export interface AuthActions {
@@ -76,6 +81,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasPendingSync, setHasPendingSync] = useState(false);
+  const [lockReason, setLockReason] = useState<LockReason>(null);
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
@@ -129,6 +135,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     // This preserves credentials, just requires re-authentication
     setAuthenticated(false);
     setNeedsUnlock(true);
+    setLockReason('manual');
+
+    // Trigger Electron lock if available (desktop app)
+    globalThis.electron?.lock?.lockApp();
   }, []);
 
   const logout = useCallback(async () => {
@@ -142,6 +152,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (result.success) {
       setAuthenticated(true);
       setNeedsUnlock(false);
+      setLockReason(null);
 
       // Execute pending sync if one was requested from menu
       if (hasPendingSync && globalThis.electron?.pendingSync) {
@@ -160,6 +171,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (result.success) {
       setAuthenticated(true);
       setNeedsUnlock(false);
+      setLockReason(null);
 
       // Execute pending sync if one was requested from menu
       if (hasPendingSync && globalThis.electron?.pendingSync) {
@@ -209,11 +221,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     if (!globalThis.electron?.lock?.onLocked) return;
 
-    const unsubscribe = globalThis.electron.lock.onLocked(() => {
+    const unsubscribe = globalThis.electron.lock.onLocked((data) => {
       // Only lock if we're currently authenticated
       if (authenticated) {
         setAuthenticated(false);
         setNeedsUnlock(true);
+        // Track the reason so we know whether to auto-prompt biometric
+        setLockReason(data.reason as LockReason);
       }
     });
 
@@ -242,6 +256,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     needsUnlock,
     loading,
     error,
+    lockReason,
     // Actions
     login,
     lock,

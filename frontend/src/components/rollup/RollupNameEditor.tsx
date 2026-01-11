@@ -14,7 +14,6 @@ interface RollupNameEditorProps {
   readonly isUpdating: boolean;
   readonly showAlternateName: boolean;
   readonly isHovering: boolean;
-  readonly itemCount: number;
   readonly onStartEdit: () => void;
   readonly onNameChange: (value: string) => void;
   readonly onSubmit: () => Promise<void>;
@@ -32,7 +31,6 @@ export function RollupNameEditor({
   isUpdating,
   showAlternateName,
   isHovering,
-  itemCount,
   onStartEdit,
   onNameChange,
   onSubmit,
@@ -78,50 +76,45 @@ export function RollupNameEditor({
   }
 
   return (
-    <>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={`Rollup category name: ${displayName}. Press Enter to edit`}
-        className="font-medium cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded -mx-1 grid text-monarch-text-dark"
-        style={{ perspective: '400px' }}
-        onClick={(e) => e.stopPropagation()}
-        onDoubleClick={(e) => {
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Rollup category name: ${displayName}. Press Enter to edit`}
+      className="font-medium cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded -mx-1 grid text-monarch-text-dark"
+      style={{ perspective: '400px' }}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onStartEdit();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.stopPropagation();
           onStartEdit();
+        }
+      }}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
+      onTouchEnd={onHoverEnd}
+    >
+      <span
+        className="col-start-1 row-start-1 transition-all duration-500"
+        style={{
+          transform: showAlternateName && !isHovering ? 'rotateX(90deg)' : 'rotateX(0deg)',
+          opacity: showAlternateName && !isHovering ? 0 : 1,
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.stopPropagation();
-            onStartEdit();
-          }
-        }}
-        onMouseEnter={onHoverStart}
-        onMouseLeave={onHoverEnd}
-        onTouchEnd={onHoverEnd}
       >
-        <span
-          className="col-start-1 row-start-1 transition-all duration-500"
-          style={{
-            transform: showAlternateName && !isHovering ? 'rotateX(90deg)' : 'rotateX(0deg)',
-            opacity: showAlternateName && !isHovering ? 0 : 1,
-          }}
-        >
-          {displayName}
-        </span>
-        <span
-          className="col-start-1 row-start-1 transition-all duration-500 whitespace-nowrap"
-          style={{
-            transform: showAlternateName && !isHovering ? 'rotateX(0deg)' : 'rotateX(-90deg)',
-            opacity: showAlternateName && !isHovering ? 1 : 0,
-          }}
-        >
-          Rollup Category
-        </span>
-      </div>
-      <span className="text-xs text-monarch-text-muted">
-        ({itemCount})
+        {displayName}
       </span>
-    </>
+      <span
+        className="col-start-1 row-start-1 transition-all duration-500 whitespace-nowrap"
+        style={{
+          transform: showAlternateName && !isHovering ? 'rotateX(0deg)' : 'rotateX(-90deg)',
+          opacity: showAlternateName && !isHovering ? 1 : 0,
+        }}
+      >
+        Rollup Category
+      </span>
+    </div>
   );
 }

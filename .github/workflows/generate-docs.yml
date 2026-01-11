@@ -6,7 +6,7 @@ on:
       branch:
         required: true
         type: string
-        default: 'develop'
+        default: 'main'
         description: Branch to commit generated docs to
       force:
         required: false

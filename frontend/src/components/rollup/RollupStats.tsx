@@ -86,7 +86,7 @@ export function RollupStats({
             {anyCatchingUp && (
               <Tooltip content={
                 <>
-                  <div className="font-medium">Catching Up</div>
+                  <div className="font-medium flex items-center gap-1"><TrendUpIcon size={12} strokeWidth={2.5} className="text-monarch-error" /> Catching Up</div>
                   <div className="text-monarch-text-dark">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
                   <div className="text-monarch-text-muted text-xs mt-1">Rate normalizes as billing cycles complete</div>
                 </>
@@ -99,7 +99,7 @@ export function RollupStats({
             {!anyCatchingUp && anyAhead && (
               <Tooltip content={
                 <>
-                  <div className="font-medium">Ahead of Schedule</div>
+                  <div className="font-medium flex items-center gap-1"><TrendDownIcon size={12} strokeWidth={2.5} className="text-monarch-success" /> Ahead of Schedule</div>
                   <div className="text-monarch-text-dark">{formatCurrency(totalMonthly, { maximumFractionDigits: 0 })}/mo → {formatCurrency(totalStable, { maximumFractionDigits: 0 })}/mo</div>
                   <div className="text-monarch-text-muted text-xs mt-1">Rate normalizes as billing cycles complete</div>
                 </>

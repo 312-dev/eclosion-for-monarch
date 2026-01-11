@@ -6,9 +6,33 @@
  */
 
 import { app, dialog, powerMonitor } from 'electron';
+import * as path from 'node:path';
+import { getAppDisplayName, getAppFolderName, getAppFolderNameLower, isBetaBuild } from './beta';
 
 // Set the display name for menus (overrides package.json "name")
-app.setName('Eclosion');
+// Must happen before any modules that use app.name are imported
+app.setName(getAppDisplayName());
+
+// Set userData path to isolate beta from production installations
+// This affects electron-store and other Electron internals
+// Must happen before any modules that use userData are imported
+const userDataPath = ((): string => {
+  switch (process.platform) {
+    case 'darwin':
+      return path.join(app.getPath('home'), 'Library', 'Application Support', getAppFolderName());
+    case 'win32':
+      return path.join(app.getPath('appData'), getAppFolderName());
+    default: // Linux
+      return path.join(app.getPath('home'), '.config', getAppFolderNameLower());
+  }
+})();
+app.setPath('userData', userDataPath);
+
+// Log beta status for debugging
+if (isBetaBuild()) {
+  console.log('Running as Eclosion (Beta)');
+  console.log(`userData path: ${userDataPath}`);
+}
 
 // Initialize Sentry as early as possible (before other imports that might crash)
 import { initSentry, captureException, addBreadcrumb, isSentryEnabled } from './sentry';

@@ -19,7 +19,7 @@ export function ToolTile({ name, description, icon, onClick }: ToolTileProps) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left p-5 rounded-xl group hover-tool-tile"
+      className="w-full text-left p-5 rounded-xl group hover-tool-tile cursor-pointer"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',

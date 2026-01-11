@@ -1,0 +1,19 @@
+{
+  "name": "screenshots-gen",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Automated screenshot generator with macOS window chrome for README",
+  "scripts": {
+    "generate": "tsx index.ts",
+    "generate:local": "tsx index.ts --local"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

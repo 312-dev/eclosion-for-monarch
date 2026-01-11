@@ -4,6 +4,7 @@ import { PassphrasePrompt } from './PassphrasePrompt';
 import { SecurityInfo } from './SecurityInfo';
 import { TermsModal, hasAcceptedTerms, setTermsAccepted } from './ui/TermsModal';
 import { getErrorMessage } from '../utils';
+import { isDesktopMode } from '../utils/apiBase';
 import { ElectronTitleBar } from './ElectronTitleBar';
 
 interface LoginFormProps {
@@ -236,7 +237,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 <ul className="mt-1 space-y-1 list-disc list-inside">
                   <li>Credentials are <strong>encrypted</strong> with a passphrase only you know</li>
                   <li>This is a <strong>dedicated single-user instance</strong> — not shared with other accounts</li>
-                  <li>Encrypted credentials are stored on this server</li>
+                  <li>Encrypted credentials are stored {isDesktopMode() ? 'locally within this app' : 'on this server'}</li>
                 </ul>
                 <button
                   type="button"

@@ -13,6 +13,8 @@ interface PassphrasePromptProps {
   onCredentialUpdateNeeded?: (passphrase: string) => void;
   /** Called when user clicks "Reset my app" */
   onResetApp?: () => void;
+  /** Whether to auto-prompt biometric on mount (default: true). Set to false for manual lock. */
+  autoPromptBiometric?: boolean;
 }
 
 /** Get cooldown duration based on failed attempts */
@@ -37,7 +39,7 @@ function validatePassphrase(passphrase: string): RequirementCheck[] {
   ];
 }
 
-export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, onResetApp }: PassphrasePromptProps) {
+export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, onResetApp, autoPromptBiometric = true }: Readonly<PassphrasePromptProps>) {
   const { setPassphrase, unlockCredentials } = useAuth();
   const [passphrase, setPassphraseValue] = useState('');
   const [confirmPassphrase, setConfirmPassphrase] = useState('');
@@ -137,9 +139,11 @@ export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, on
   }, [biometric, biometricLoading, loading, unlockCredentials, onSuccess, onCredentialUpdateNeeded]);
 
   // Auto-trigger biometric authentication on mount if enrolled (unlock mode only)
+  // Skip auto-prompt when user manually locked (they can click the button instead)
   useEffect(() => {
     if (
       mode === 'unlock' &&
+      autoPromptBiometric &&
       biometric.available &&
       biometric.enrolled &&
       !biometric.loading &&
@@ -148,7 +152,7 @@ export function PassphrasePrompt({ mode, onSuccess, onCredentialUpdateNeeded, on
       biometricAttempted.current = true;
       void handleBiometricUnlock();
     }
-  }, [mode, biometric.available, biometric.enrolled, biometric.loading, handleBiometricUnlock]);
+  }, [mode, autoPromptBiometric, biometric.available, biometric.enrolled, biometric.loading, handleBiometricUnlock]);
 
   /**
    * Store passphrase for background sync (on desktop).

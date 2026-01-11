@@ -2,8 +2,10 @@
  * UninstallFormContent - Form content for UninstallModal
  */
 
+import { useMemo } from 'react';
 import type { DeletableCategory } from '../../types';
 import type { DeploymentInfo } from '../../api/client';
+import { formatCurrency } from '../../utils';
 
 type CategoryChoice = 'delete' | 'keep';
 
@@ -14,8 +16,6 @@ interface UninstallFormContentProps {
   readonly onCategoryChoiceChange: (choice: CategoryChoice) => void;
   readonly confirmed: boolean;
   readonly onConfirmedChange: (confirmed: boolean) => void;
-  readonly fullReset: boolean;
-  readonly onFullResetChange: (fullReset: boolean) => void;
   readonly cancelling: boolean;
   readonly deploymentInfo: DeploymentInfo | null;
 }
@@ -27,11 +27,17 @@ export function UninstallFormContent({
   onCategoryChoiceChange,
   confirmed,
   onConfirmedChange,
-  fullReset,
-  onFullResetChange,
   cancelling,
   deploymentInfo,
 }: UninstallFormContentProps) {
+  const currentMonth = useMemo(() => {
+    return new Date().toLocaleString('default', { month: 'long' });
+  }, []);
+
+  const totalBudget = useMemo(() => {
+    return categories.reduce((sum, cat) => sum + (cat.planned_budget ?? 0), 0);
+  }, [categories]);
+
   return (
     <div className="space-y-4">
       <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--monarch-error-bg)' }}>
@@ -39,8 +45,15 @@ export function UninstallFormContent({
           This will permanently:
         </p>
         <ul className="text-sm space-y-1 ml-4 list-disc" style={{ color: 'var(--monarch-text-dark)' }}>
-          <li>Clear your stored credentials and app data</li>
-          <li>Log you out of the app</li>
+          <li>Clear your login credentials and log you out</li>
+          {categories.length > 0 && (
+            <li>
+              Delete all {categories.length} auto-created {categories.length === 1 ? 'category' : 'categories'}
+              {totalBudget > 0 && (
+                <>, freeing up {formatCurrency(totalBudget)} in {currentMonth}'s budget</>
+              )}
+            </li>
+          )}
         </ul>
       </div>
 
@@ -60,38 +73,26 @@ export function UninstallFormContent({
         </div>
       )}
 
-      <label className="flex items-start gap-3 cursor-pointer" aria-label="Full reset option">
+      <div className="space-y-2">
+        <label htmlFor="confirm-input" className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+          Type <span className="font-mono px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>DELETE ALL</span> to confirm
+        </label>
         <input
-          type="checkbox"
-          checked={fullReset}
-          onChange={(e) => onFullResetChange(e.target.checked)}
+          id="confirm-input"
+          type="text"
+          placeholder="DELETE ALL"
+          onChange={(e) => onConfirmedChange(e.target.value.toUpperCase() === 'DELETE ALL')}
           disabled={cancelling}
-          className="mt-1"
-          aria-describedby="full-reset-description"
+          className="w-full px-3 py-2 rounded-lg text-sm"
+          style={{
+            backgroundColor: 'var(--monarch-bg-page)',
+            border: confirmed ? '1px solid var(--monarch-error)' : '1px solid var(--monarch-border)',
+            color: 'var(--monarch-text-dark)',
+          }}
+          autoComplete="off"
+          spellCheck={false}
         />
-        <div>
-          <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-            Full reset
-          </span>
-          <p id="full-reset-description" className="text-xs mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
-            Also reset all recurring items and wizard state before uninstalling
-          </p>
-        </div>
-      </label>
-
-      <label className="flex items-start gap-3 cursor-pointer" aria-label="Confirm uninstall">
-        <input
-          type="checkbox"
-          checked={confirmed}
-          onChange={(e) => onConfirmedChange(e.target.checked)}
-          disabled={cancelling}
-          className="mt-1"
-          aria-describedby="confirm-description"
-        />
-        <span id="confirm-description" className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-          I understand this action is irreversible
-        </span>
-      </label>
+      </div>
     </div>
   );
 }

@@ -19,13 +19,8 @@ function calculateFrozenTarget(
   currentBalance: number
 ): number {
   if (frequencyMonths <= 1) {
-    // Monthly items: target is the amount (with catch-up if behind)
-    const ideal = Math.ceil(amount);
-    const shortfall = Math.max(0, ideal - currentBalance);
-    if (shortfall > 0) {
-      return ideal + Math.ceil(shortfall);
-    }
-    return ideal;
+    // Monthly items: target is the shortfall (what's still needed)
+    return Math.ceil(Math.max(0, amount - currentBalance));
   } else {
     // Non-monthly items: calculate catch-up rate
     const shortfall = Math.max(0, amount - currentBalance);
@@ -87,9 +82,12 @@ export async function toggleItemTracking(
 /**
  * Allocate funds to a recurring item.
  *
- * current_balance = rollover (start of month), doesn't change when allocating
- * contributed_this_month = what's been budgeted this month, increases when allocating
- * Total saved = current_balance + contributed_this_month
+ * current_balance = total balance (rollover + contributions this month)
+ * contributed_this_month = what's been budgeted this month
+ * rollover = current_balance - contributed_this_month (fixed at month start)
+ *
+ * When allocating, both current_balance and contributed_this_month increase,
+ * keeping rollover constant.
  */
 export async function allocateFunds(
   recurringId: string,
@@ -104,14 +102,16 @@ export async function allocateFunds(
       items: state.dashboard.items.map((item) => {
         if (item.id !== recurringId) return item;
 
-        // current_balance is rollover (doesn't change), only contributed_this_month increases
+        // current_balance = total balance (rollover + contributions this month)
+        // When allocating, both current_balance and contributed_this_month increase
+        const newBalance = item.current_balance + amount;
         const newContributed = item.contributed_this_month + amount;
-        const totalSaved = item.current_balance + newContributed;
-        const newProgress = Math.min(100, Math.round((totalSaved / item.amount) * 100));
+        const newProgress = Math.min(100, Math.round((newBalance / item.amount) * 100));
 
         // Build updated item to calculate status using shared logic
         const updatedItem = {
           ...item,
+          current_balance: newBalance,
           contributed_this_month: newContributed,
           planned_budget: item.planned_budget + amount,
         };
@@ -133,7 +133,8 @@ export async function allocateFunds(
 
   const state = getDemoState();
   const item = state.dashboard.items.find((i) => i.id === recurringId);
-  const totalSaved = (item?.current_balance ?? 0) + (item?.contributed_this_month ?? 0);
+  // current_balance is the total saved (rollover + contributions)
+  const totalSaved = item?.current_balance ?? 0;
 
   return {
     success: true,

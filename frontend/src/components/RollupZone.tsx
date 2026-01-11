@@ -142,7 +142,7 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
         tabIndex={0}
         aria-expanded={!isCollapsed}
         aria-label={`Rollup category section. ${isCollapsed ? 'Click to expand' : 'Click to collapse'}`}
-        className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none bg-monarch-orange-light ${isCollapsed ? '' : 'border-b border-monarch-border'}`}
+        className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none bg-monarch-orange-light ${isCollapsed ? '' : 'border-b border-monarch-border'} relative`}
         onClick={toggleCollapsed}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -151,6 +151,16 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
           }
         }}
       >
+        <Tooltip content="A shared bucket for smaller recurring expenses not worth a dedicated category">
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-2 right-2 p-0.5 rounded hover:bg-black/5 transition-colors cursor-help flex items-center justify-center"
+            aria-label="Rollup category info"
+          >
+            <HelpIcon size={14} color="var(--monarch-text-muted)" aria-hidden="true" />
+          </button>
+        </Tooltip>
         <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
@@ -179,7 +189,6 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             isUpdating={isUpdatingName}
             showAlternateName={showAlternateName}
             isHovering={isHoveringName}
-            itemCount={rollup.items.length}
             onStartEdit={() => setIsEditingName(true)}
             onNameChange={setNameValue}
             onSubmit={handleNameSubmit}
@@ -187,16 +196,6 @@ export function RollupZone({ rollup, onRemoveItem, onBudgetChange, onEmojiChange
             onHoverStart={() => setIsHoveringName(true)}
             onHoverEnd={() => setIsHoveringName(false)}
           />
-          <Tooltip content="A shared bucket for smaller recurring expenses not worth a dedicated category">
-            <button
-              type="button"
-              onClick={(e) => e.stopPropagation()}
-              className="p-0.5 rounded hover:bg-black/5 transition-colors cursor-help flex items-center justify-center self-start mt-1"
-              aria-label="Rollup category info"
-            >
-              <HelpIcon size={14} color="var(--monarch-text-muted)" aria-hidden="true" />
-            </button>
-          </Tooltip>
         </div>
 
         <RollupStats

@@ -126,7 +126,7 @@ export function SettingsTab() {
   const totalItems = dedicatedItems.length + rollupItems.length;
 
   return (
-    <div className="max-w-2xl mx-auto tab-content-enter">
+    <div className="max-w-2xl mx-auto tab-content-enter" data-testid="settings-content">
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -146,6 +146,8 @@ export function SettingsTab() {
           </div>
         </div>
       </div>
+
+      {isDemo && <DemoModeSection />}
 
       {/* User-facing settings */}
       <AppearanceSettings />
@@ -183,8 +185,6 @@ export function SettingsTab() {
       <DataManagementSection onShowImportModal={() => setShowImportModal(true)} />
 
       {isDesktop && <LogViewerSection />}
-
-      {isDemo && <DemoModeSection />}
 
       <DangerZoneSection
         onShowResetModal={() => setShowResetModal(true)}

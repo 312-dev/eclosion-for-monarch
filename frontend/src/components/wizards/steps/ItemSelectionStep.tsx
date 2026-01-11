@@ -201,10 +201,10 @@ export function ItemSelectionStep({
         </div>
         <div className="text-right">
           <span className="font-semibold" style={{ color: 'var(--monarch-orange)' }}>
-            {formatCurrency(selectedMonthly)}
+            {formatCurrency(selectedMonthly, { maximumFractionDigits: 0 })}
           </span>
           <span className="text-sm ml-1" style={{ color: 'var(--monarch-text-muted)' }}>
-            / {formatCurrency(totalMonthly)} monthly
+            / {formatCurrency(totalMonthly, { maximumFractionDigits: 0 })} monthly
           </span>
         </div>
       </div>

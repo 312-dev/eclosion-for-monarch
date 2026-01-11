@@ -64,12 +64,12 @@ export function UninstallModalFooter({
         {cancelling ? (
           <>
             <SpinnerIcon size={16} />
-            Uninstalling...
+            Deleting...
           </>
         ) : (
           <>
             <TrashIcon size={16} />
-            Uninstall
+            Delete All
           </>
         )}
       </button>
