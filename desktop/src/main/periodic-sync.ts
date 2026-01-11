@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { BackendManager } from './backend';
 import { getStoredPassphrase } from './biometric';
-import { showNotification, updateTrayMenu, updateHealthStatus } from './tray';
+import { showNotification, updateTrayMenu, updateHealthStatus, isAuthError, showReauthNotification } from './tray';
 import { debugLog as log } from './logger';
 import { getStateDir } from './paths';
 
@@ -211,7 +211,12 @@ async function executePeriodicSync(): Promise<void> {
       showNotification('Sync Complete', 'Your recurring expenses are up to date.');
     } else {
       debugLog(`Periodic sync failed: ${result.error}`);
-      // Don't show notification for periodic sync failures to avoid notification spam
+      // Check if this is an auth error (session expired, MFA needed)
+      if (isAuthError(result.error)) {
+        // Show reauth notification - user needs to provide MFA code
+        showReauthNotification();
+      }
+      // Don't show generic notification for other periodic sync failures to avoid spam
       // User can check tray status or manually sync if needed
     }
   } catch (error) {

@@ -311,6 +311,15 @@ export interface ElectronAPI {
 
   // Pending Sync (for menu-triggered sync when locked)
   pendingSync: PendingSyncAPI;
+
+  // Re-authentication (for expired MFA sessions)
+  reauth: ReauthAPI;
+}
+
+/** Re-authentication API for handling expired MFA sessions */
+export interface ReauthAPI {
+  /** Listen for re-authentication requests from the main process */
+  onNeedsReauth: (callback: () => void) => () => void;
 }
 
 declare global {

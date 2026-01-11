@@ -269,6 +269,48 @@ export function showNotification(title: string, body: string): void {
 }
 
 /**
+ * Check if an error message indicates an auth/MFA failure.
+ */
+export function isAuthError(errorMessage: string | undefined): boolean {
+  if (!errorMessage) return false;
+  const lowerError = errorMessage.toLowerCase();
+  return (
+    lowerError.includes('mfa') ||
+    lowerError.includes('multi-factor') ||
+    lowerError.includes('2fa') ||
+    lowerError.includes('session') ||
+    lowerError.includes('expired') ||
+    lowerError.includes('authentication') ||
+    lowerError.includes('unauthorized')
+  );
+}
+
+/**
+ * Show a re-authentication notification.
+ * When clicked, opens the app and sends an IPC event to trigger the reauth modal.
+ */
+export function showReauthNotification(): void {
+  if (Notification.isSupported()) {
+    const notification = new Notification({
+      title: 'Re-authentication Required',
+      body: 'Your Monarch session has expired. Click to enter your MFA code.',
+      silent: false,
+    });
+
+    notification.on('click', () => {
+      showWindow();
+      // Send IPC event to trigger reauth modal in the frontend
+      const mainWindow = getMainWindow();
+      if (mainWindow) {
+        mainWindow.webContents.send('needs-reauth');
+      }
+    });
+
+    notification.show();
+  }
+}
+
+/**
  * Destroy the tray icon.
  */
 export function destroyTray(): void {

@@ -61,6 +61,8 @@ import {
   initializeDockVisibility,
   showNotification,
   updateHealthStatus,
+  isAuthError,
+  showReauthNotification,
 } from './tray';
 import { setupIpcHandlers } from './ipc';
 import { initializeUpdater, scheduleUpdateChecks } from './updater';
@@ -280,6 +282,9 @@ async function handleSyncClick(): Promise<void> {
     showNotification('Sync Complete', 'Your recurring expenses are up to date.');
     updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
     updateHealthStatus(true, syncTime);
+  } else if (isAuthError(result.error)) {
+    // Auth error (session expired, MFA needed) - show reauth notification
+    showReauthNotification();
   } else {
     showNotification('Sync Failed', result.error || 'Unable to sync. Please try again later.');
   }

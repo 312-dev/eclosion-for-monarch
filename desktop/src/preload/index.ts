@@ -542,6 +542,25 @@ const electronAPI = {
       return () => ipcRenderer.removeListener('sync:pending', handler);
     },
   },
+
+  // =========================================================================
+  // Re-authentication
+  // =========================================================================
+
+  /**
+   * Re-authentication API for handling expired MFA sessions.
+   */
+  reauth: {
+    /**
+     * Listen for re-authentication requests from the main process.
+     * Triggered when sync fails due to expired MFA session.
+     */
+    onNeedsReauth: (callback: () => void): (() => void) => {
+      const handler = (): void => callback();
+      ipcRenderer.on('needs-reauth', handler);
+      return () => ipcRenderer.removeListener('needs-reauth', handler);
+    },
+  },
 };
 
 // Expose the API to the renderer process
