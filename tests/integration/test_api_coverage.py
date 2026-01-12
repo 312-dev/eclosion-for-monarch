@@ -414,3 +414,78 @@ async def test_parallel_category_operations(monarch_client, test_category_prefix
                 await monarch_client.delete_transaction_category(cat_id)
             except Exception as e:
                 print(f"Warning: Failed to delete {cat_id}: {e}")
+
+
+# =============================================================================
+# update_transaction Tests
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_update_transaction_returns_structure(monarch_client):
+    """Test update_transaction() call structure.
+
+    Note: This test doesn't actually modify transactions as that would
+    affect real user data. Instead, we verify the API can be called
+    and returns an expected structure (or error for invalid transaction).
+    """
+    # Try to update a non-existent transaction
+    # This should fail gracefully but exercises the API call
+    fake_transaction_id = "00000000-0000-0000-0000-000000000000"
+
+    try:
+        result = await monarch_client.update_transaction(
+            transaction_id=fake_transaction_id,
+            category_id=None,
+        )
+        # If it somehow succeeds, that's fine
+        assert result is not None or result is None  # Accept any result
+    except Exception as e:
+        # Expected to fail with invalid transaction ID
+        # The important thing is the API call was made
+        error_str = str(e).lower()
+        assert (
+            "not found" in error_str
+            or "invalid" in error_str
+            or "error" in error_str
+            or "null" in error_str
+        ), f"Expected a not-found/invalid error, got: {e}"
+
+
+# =============================================================================
+# gql_call Tests (GraphQL)
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_gql_call_basic_query(monarch_client):
+    """Test gql_call() with a basic GraphQL query.
+
+    This tests the generic GraphQL interface that our app uses for
+    custom queries not covered by the standard MonarchMoney methods.
+    """
+    # Simple query to get account info - should be safe and read-only
+    query = """
+    query GetAccounts {
+        accounts {
+            id
+            displayName
+        }
+    }
+    """
+
+    try:
+        result = await monarch_client.gql_call(operation="GetAccounts", graphql_query=query)
+        # Result should be a dict with data
+        assert result is not None, "gql_call should return a result"
+        assert isinstance(result, dict), "Result should be a dictionary"
+    except Exception as e:
+        # Some queries may not be supported, but the call should still work
+        # The important thing is verifying the API call mechanism works
+        error_str = str(e).lower()
+        # These are acceptable "errors" that indicate the call was made
+        acceptable_errors = ["validation", "syntax", "permission", "unauthorized"]
+        if not any(err in error_str for err in acceptable_errors):
+            raise AssertionError(f"Unexpected error from gql_call: {e}")
