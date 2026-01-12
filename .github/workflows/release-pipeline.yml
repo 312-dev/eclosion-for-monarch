@@ -448,9 +448,10 @@ jobs:
           echo "Uploaded screenshots to release $TAG" >> $GITHUB_STEP_SUMMARY
 
   # Deploy to Cloudflare Pages
+  # Runs AFTER desktop and docker publishing to ensure all artifacts succeed before going live
   deploy-cloudflare:
     name: "Stage 4: Deploy Cloudflare"
-    needs: [validate-builds, build-frontend]
+    needs: [validate-builds, build-frontend, publish-docker, publish-desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: ${{ inputs.release_type }}
