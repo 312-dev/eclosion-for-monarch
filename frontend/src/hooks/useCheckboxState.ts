@@ -15,13 +15,13 @@ import {
 
 interface UseCheckboxStateOptions {
   /** Note ID for category/group notes */
-  noteId?: string;
+  noteId?: string | undefined;
   /** Month key for general notes */
-  generalNoteMonthKey?: string;
+  generalNoteMonthKey?: string | undefined;
   /** Current viewing month */
   viewingMonth: string;
   /** Whether to enable the query */
-  enabled?: boolean;
+  enabled?: boolean | undefined;
 }
 
 export interface UseCheckboxStateReturn {

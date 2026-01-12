@@ -105,6 +105,12 @@ export {
   syncNotesCategories,
   getNoteHistory,
   getNotesCategories,
+  getCheckboxStates,
+  getGeneralCheckboxStates,
+  updateCheckboxState,
+  getMonthCheckboxStates,
+  getNotesSettings,
+  updateNotesSettings,
   type AllNotesResponse,
 } from './notes';
 

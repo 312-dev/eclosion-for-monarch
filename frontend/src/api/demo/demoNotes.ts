@@ -115,11 +115,14 @@ function getEffectiveGeneralNote(
   // Find most recent note at or before target month
   for (const month of months) {
     if (month <= targetMonth) {
-      return {
-        note: generalNotes[month],
-        source_month: month,
-        is_inherited: month !== targetMonth,
-      };
+      const note = generalNotes[month];
+      if (note) {
+        return {
+          note,
+          source_month: month,
+          is_inherited: month !== targetMonth,
+        };
+      }
     }
   }
 
@@ -595,7 +598,7 @@ export async function getMonthCheckboxStates(
       // Check if scope matches current mode
       const scopeMatches = mode === 'persist' ? scope === 'global' : scope === monthKey;
 
-      if (scopeMatches) {
+      if (scopeMatches && noteId) {
         result[noteId] = states;
       }
     }

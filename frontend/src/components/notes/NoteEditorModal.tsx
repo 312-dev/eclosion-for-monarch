@@ -10,6 +10,7 @@ import { Portal } from '../Portal';
 import { RevisionHistoryModal } from './RevisionHistoryModal';
 import { NoteEditorMDX } from './NoteEditorMDX';
 import { useSaveCategoryNoteMutation, useDeleteCategoryNoteMutation } from '../../api/queries';
+import { useToast } from '../../context/ToastContext';
 import { formatErrorMessage } from '../../utils';
 import type { MonthKey } from '../../types/notes';
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Type declaration file for all Electron APIs */
 /**
  * Electron API Type Declarations
  *
@@ -275,6 +276,29 @@ export interface BiometricAuthResult {
   error?: string;
 }
 
+export interface StoredCredentials {
+  email: string;
+  password: string;
+  mfaSecret?: string;
+}
+
+export interface CredentialsAuthResult {
+  success: boolean;
+  credentials?: StoredCredentials;
+  error?: string;
+}
+
+export interface CredentialsAPI {
+  store: (credentials: StoredCredentials) => Promise<boolean>;
+  get: () => Promise<StoredCredentials | null>;
+  has: () => Promise<boolean>;
+  clear: () => Promise<void>;
+  getRequireTouchId: () => Promise<boolean>;
+  setRequireTouchId: (required: boolean) => Promise<void>;
+  authenticate: () => Promise<CredentialsAuthResult>;
+  clearAll: () => Promise<void>;
+}
+
 export interface BiometricAPI {
   isAvailable: () => Promise<boolean>;
   getType: () => Promise<BiometricType>;
@@ -363,6 +387,9 @@ export interface ElectronAPI {
 
   // Biometric Authentication
   biometric: BiometricAPI;
+
+  // Credentials Storage (desktop mode)
+  credentials: CredentialsAPI;
 
   // Lock Management
   lock: LockAPI;

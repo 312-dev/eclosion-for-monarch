@@ -24,7 +24,7 @@ interface GeneralMonthNotesProps {
   /** Effective general note (may be inherited from earlier month) */
   effectiveNote: EffectiveGeneralNote | null;
   /** Optional data-tour attribute for guided tour (only apply to one instance) */
-  dataTourId?: string;
+  dataTourId?: string | undefined;
 }
 
 /**
