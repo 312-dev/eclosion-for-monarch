@@ -123,17 +123,17 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@27fcff4ecb39e96348e7ceddcc2d9ef42308b6fc # v4
+        uses: github/codeql-action/init@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
         with:
           languages: ${{ matrix.language }}
           # Use extended query suite for more comprehensive analysis
           queries: security-extended
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@27fcff4ecb39e96348e7ceddcc2d9ef42308b6fc # v4
+        uses: github/codeql-action/autobuild@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@27fcff4ecb39e96348e7ceddcc2d9ef42308b6fc # v4
+        uses: github/codeql-action/analyze@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -270,7 +270,7 @@ jobs:
           trivy-config: trivy.yaml
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@27fcff4ecb39e96348e7ceddcc2d9ef42308b6fc # v4
+        uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
@@ -375,7 +375,7 @@ jobs:
           exit 1
 
       - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@6c5a007541891231cd9e0ddec25d4f25c59c9874 # v0.15.0
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         env:
           # Set X-Forwarded-Proto to bypass HTTPS redirect in the app
           # The app redirects HTTP to HTTPS in production unless this header is set
