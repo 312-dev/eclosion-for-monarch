@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "playwright": "^1.40.0",
-    "sharp": "^0.33.0"
+    "sharp": "^0.34.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
