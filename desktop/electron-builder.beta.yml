@@ -63,7 +63,7 @@ mac:
   target:
     - dmg
     - zip
-  icon: assets/icon.icns
+  icon: assets/icon-beta.icns
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: entitlements.mac.plist
@@ -99,7 +99,7 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: assets/icon.ico
+  icon: assets/icon-beta.ico
 
 # NSIS installer configuration
 nsis:
@@ -110,8 +110,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Eclosion (Beta)
-  installerIcon: assets/icon.ico
-  uninstallerIcon: assets/icon.ico
+  installerIcon: assets/icon-beta.ico
+  uninstallerIcon: assets/icon-beta.ico
   differentialPackage: true
   # Include custom uninstaller script that prompts for data cleanup
   include: installer/uninstaller.nsh
@@ -132,7 +132,7 @@ linux:
         - x64
         - arm64
   category: Finance
-  icon: assets/icon.png
+  icon: assets/icon-beta.png
   maintainer: grayson@eclosion.app
   vendor: Eclosion
   synopsis: Recurring expense tracker for Monarch Money (Beta)

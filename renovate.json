@@ -14,6 +14,14 @@
   "pinDigests": true,
   "packageRules": [
     {
+      "description": "Auto-merge non-major updates when CI passes",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true,
+      "automergeSchedule": ["before 6am on monday"]
+    },
+    {
       "description": "Python dependencies",
       "matchManagers": ["pip_requirements", "pip-compile"],
       "groupName": "python-all",
