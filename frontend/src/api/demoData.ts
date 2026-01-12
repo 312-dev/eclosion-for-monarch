@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Demo Data
  *
@@ -16,6 +17,7 @@ import type {
   GeneralMonthNote,
   ArchivedNote,
 } from '../types';
+import type { NotesCategoryGroup } from '../types/notes';
 
 // ============================================================================
 // Demo State Interface
@@ -1128,6 +1130,202 @@ const DEMO_UNMAPPED_CATEGORIES: UnmappedCategory[] = [
     group_order: 1,
     category_order: 2,
     planned_budget: 0,
+  },
+];
+
+// ============================================================================
+// All Notes Categories (simulates full Monarch category list)
+// ============================================================================
+
+/**
+ * Complete list of Monarch categories for the Notes feature.
+ * This simulates what a typical user would have in their budget.
+ */
+export const DEMO_NOTES_CATEGORIES: NotesCategoryGroup[] = [
+  {
+    id: 'group-income',
+    name: 'Income',
+    categories: [
+      { id: 'cat-income-salary', name: 'Salary', icon: '💰' },
+      { id: 'cat-income-bonus', name: 'Bonus', icon: '🎁' },
+      { id: 'cat-income-freelance', name: 'Freelance', icon: '💼' },
+      { id: 'cat-income-dividends', name: 'Dividends', icon: '📈' },
+      { id: 'cat-income-other', name: 'Other Income', icon: '💵' },
+    ],
+  },
+  {
+    id: 'group-housing',
+    name: 'Housing',
+    categories: [
+      { id: 'cat-housing-rent', name: 'Rent/Mortgage', icon: '🏠' },
+      { id: 'cat-housing-hoa', name: 'HOA Fees', icon: '🏢' },
+      { id: 'cat-housing-maintenance', name: 'Home Maintenance', icon: '🔧' },
+      { id: 'cat-housing-furniture', name: 'Furniture', icon: '🛋️' },
+      { id: 'cat-housing-supplies', name: 'Household Supplies', icon: '🧹' },
+    ],
+  },
+  {
+    id: 'group-food',
+    name: 'Food & Dining',
+    categories: [
+      { id: 'cat-food-groceries', name: 'Groceries', icon: '🛒' },
+      { id: 'cat-food-restaurants', name: 'Restaurants', icon: '🍽️' },
+      { id: 'cat-food-coffee', name: 'Coffee Shops', icon: '☕' },
+      { id: 'cat-food-delivery', name: 'Food Delivery', icon: '🚗' },
+      { id: 'cat-food-alcohol', name: 'Alcohol & Bars', icon: '🍺' },
+    ],
+  },
+  {
+    id: 'group-transportation',
+    name: 'Transportation',
+    categories: [
+      { id: 'cat-transport-gas', name: 'Gas', icon: '⛽' },
+      { id: 'cat-transport-parking', name: 'Parking', icon: '🅿️' },
+      { id: 'cat-transport-car-payment', name: 'Car Payment', icon: '🚗' },
+      { id: 'cat-transport-public', name: 'Public Transit', icon: '🚇' },
+      { id: 'cat-transport-rideshare', name: 'Uber/Lyft', icon: '🚕' },
+      { id: 'cat-transport-maintenance', name: 'Car Maintenance', icon: '🔧' },
+    ],
+  },
+  {
+    id: 'group-shopping',
+    name: 'Shopping',
+    categories: [
+      { id: 'cat-shop-amazon', name: 'Amazon', icon: '📦' },
+      { id: 'cat-shop-clothing', name: 'Clothing', icon: '👕' },
+      { id: 'cat-shop-electronics', name: 'Electronics', icon: '📱' },
+      { id: 'cat-shop-gifts', name: 'Gifts', icon: '🎁' },
+      { id: 'cat-shop-books', name: 'Books', icon: '📚' },
+      { id: 'cat-shop-hobbies', name: 'Hobbies', icon: '🎨' },
+    ],
+  },
+  {
+    id: 'group-health',
+    name: 'Health & Fitness',
+    categories: [
+      { id: 'cat-health-medical', name: 'Medical', icon: '🏥' },
+      { id: 'cat-health-dental', name: 'Dental', icon: '🦷' },
+      { id: 'cat-health-pharmacy', name: 'Pharmacy', icon: '💊' },
+      { id: 'cat-health-gym', name: 'Gym', icon: '💪' },
+      { id: 'cat-health-vision', name: 'Vision', icon: '👓' },
+    ],
+  },
+  {
+    id: 'group-personal',
+    name: 'Personal Care',
+    categories: [
+      { id: 'cat-personal-haircut', name: 'Haircut', icon: '💇' },
+      { id: 'cat-personal-beauty', name: 'Beauty & Spa', icon: '💅' },
+      { id: 'cat-personal-laundry', name: 'Laundry', icon: '👔' },
+    ],
+  },
+  {
+    id: 'group-entertainment',
+    name: 'Entertainment',
+    categories: [
+      { id: 'cat-ent-movies', name: 'Movies & Shows', icon: '🎬' },
+      { id: 'cat-ent-games', name: 'Games', icon: '🎮' },
+      { id: 'cat-ent-concerts', name: 'Concerts & Events', icon: '🎵' },
+      { id: 'cat-ent-sports', name: 'Sports', icon: '⚽' },
+    ],
+  },
+  {
+    id: 'group-travel',
+    name: 'Travel',
+    categories: [
+      { id: 'cat-travel-flights', name: 'Flights', icon: '✈️' },
+      { id: 'cat-travel-hotels', name: 'Hotels', icon: '🏨' },
+      { id: 'cat-travel-vacation', name: 'Vacation', icon: '🏖️' },
+      { id: 'cat-travel-rental', name: 'Car Rental', icon: '🚙' },
+    ],
+  },
+  {
+    id: 'group-pets',
+    name: 'Pets',
+    categories: [
+      { id: 'cat-pets-food', name: 'Pet Food', icon: '🐕' },
+      { id: 'cat-pets-vet', name: 'Vet', icon: '🏥' },
+      { id: 'cat-pets-supplies', name: 'Pet Supplies', icon: '🦴' },
+      { id: 'cat-pets-grooming', name: 'Grooming', icon: '🛁' },
+    ],
+  },
+  {
+    id: 'group-education',
+    name: 'Education',
+    categories: [
+      { id: 'cat-edu-tuition', name: 'Tuition', icon: '🎓' },
+      { id: 'cat-edu-courses', name: 'Online Courses', icon: '💻' },
+      { id: 'cat-edu-supplies', name: 'School Supplies', icon: '📝' },
+      { id: 'cat-edu-loans', name: 'Student Loans', icon: '📋' },
+    ],
+  },
+  {
+    id: 'group-savings',
+    name: 'Savings Goals',
+    categories: [
+      { id: 'cat-save-emergency', name: 'Emergency Fund', icon: '🚨' },
+      { id: 'cat-save-vacation', name: 'Vacation Fund', icon: '🌴' },
+      { id: 'cat-save-house', name: 'House Down Payment', icon: '🏡' },
+      { id: 'cat-save-retirement', name: 'Retirement', icon: '👴' },
+    ],
+  },
+  // Include the existing recurring-related groups
+  {
+    id: 'group-recurring',
+    name: 'Recurring Expenses',
+    categories: [
+      { id: 'cat-gym', name: 'Gym', icon: '💪' },
+      { id: 'cat-carwash', name: 'Car Wash', icon: '🚿' },
+    ],
+  },
+  {
+    id: 'group-subscriptions',
+    name: 'Subscriptions',
+    categories: [
+      { id: 'cat-netflix', name: 'Netflix', icon: '🎬' },
+      { id: 'cat-spotify', name: 'Spotify', icon: '🎵' },
+      { id: 'cat-disney', name: 'Disney+', icon: '✨' },
+      { id: 'cat-icloud', name: 'iCloud', icon: '☁️' },
+      { id: 'cat-hulu', name: 'Hulu', icon: '📺' },
+      { id: 'cat-amazon-prime', name: 'Amazon Prime', icon: '📦' },
+      { id: 'cat-hbo', name: 'Max', icon: '🎭' },
+      { id: 'cat-youtube', name: 'YouTube Premium', icon: '▶️' },
+      { id: 'cat-costco', name: 'Costco', icon: '🛒' },
+      { id: 'cat-playstation', name: 'PlayStation Plus', icon: '🎮' },
+      { id: 'cat-appletv', name: 'Apple TV+', icon: '🍎' },
+      { id: 'cat-peacock', name: 'Peacock', icon: '🦚' },
+      { id: 'cat-paramount', name: 'Paramount+', icon: '⛰️' },
+      { id: 'cat-nyt', name: 'NY Times', icon: '📰' },
+      { id: 'cat-applemusic', name: 'Apple Music', icon: '🎧' },
+      { id: 'cat-xbox', name: 'Xbox Game Pass', icon: '🎮' },
+      { id: 'uncat-streaming', name: 'Streaming Services', icon: '📺' },
+      { id: 'uncat-software', name: 'Software Subscriptions', icon: '💻' },
+    ],
+  },
+  {
+    id: 'group-insurance',
+    name: 'Insurance',
+    categories: [
+      { id: 'cat-car-insurance', name: 'Car Insurance', icon: '🚗' },
+      { id: 'cat-home-insurance', name: 'Home Insurance', icon: '🏠' },
+      { id: 'cat-renters', name: 'Renters Insurance', icon: '🏠' },
+      { id: 'cat-aaa', name: 'AAA', icon: '🚙' },
+      { id: 'cat-pet', name: 'Pet Insurance', icon: '🐕' },
+      { id: 'cat-health-insurance', name: 'Health Insurance', icon: '🏥' },
+      { id: 'cat-life-insurance', name: 'Life Insurance', icon: '❤️' },
+    ],
+  },
+  {
+    id: 'group-utilities',
+    name: 'Utilities',
+    categories: [
+      { id: 'cat-phone', name: 'Phone', icon: '📱' },
+      { id: 'cat-internet', name: 'Internet', icon: '📶' },
+      { id: 'cat-electric', name: 'Electric', icon: '⚡' },
+      { id: 'cat-water', name: 'Water', icon: '💧' },
+      { id: 'cat-trash', name: 'Trash', icon: '🗑️' },
+      { id: 'cat-gas-utility', name: 'Gas (Utility)', icon: '🔥' },
+    ],
   },
 ];
 

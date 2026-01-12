@@ -79,8 +79,10 @@ export {
 
 // Notes queries
 export {
+  useAllNotesQuery,
   useMonthNotesQuery,
   useArchivedNotesQuery,
+  useNotesCategoriesQuery,
   useNoteHistoryQuery,
   useSaveCategoryNoteMutation,
   useDeleteCategoryNoteMutation,
@@ -88,5 +90,11 @@ export {
   useDeleteGeneralNoteMutation,
   useDeleteArchivedNoteMutation,
   useSyncNotesCategoriesMutation,
+  useNotesSettingsQuery,
+  useUpdateNotesSettingsMutation,
   useInvalidateNotes,
+  useCheckboxStatesQuery,
+  useGeneralCheckboxStatesQuery,
+  useMonthCheckboxStatesQuery,
+  useUpdateCheckboxStateMutation,
 } from './notesQueries';

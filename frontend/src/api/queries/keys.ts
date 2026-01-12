@@ -22,6 +22,9 @@ export const queryKeys = {
   monthNotes: ['monthNotes'] as const,
   archivedNotes: ['archivedNotes'] as const,
   noteHistory: ['noteHistory'] as const,
+  checkboxStates: ['checkboxStates'] as const,
+  notesSettings: ['notesSettings'] as const,
+  notesCategories: ['notesCategories'] as const,
 };
 
 /**

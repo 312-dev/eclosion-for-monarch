@@ -84,6 +84,7 @@ export {
 // Notes
 export {
   getMonthNotes,
+  getAllNotes,
   saveCategoryNote,
   deleteCategoryNote,
   getGeneralNote,
@@ -93,4 +94,12 @@ export {
   deleteArchivedNote,
   syncNotesCategories,
   getNoteHistory,
+  getNotesCategories,
+  getCheckboxStates,
+  getGeneralCheckboxStates,
+  updateCheckboxState,
+  getMonthCheckboxStates,
+  getNotesSettings,
+  updateNotesSettings,
+  type AllNotesResponse,
 } from './demoNotes';

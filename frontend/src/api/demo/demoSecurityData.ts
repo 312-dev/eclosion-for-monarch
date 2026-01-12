@@ -15,7 +15,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 2,
@@ -55,7 +55,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 6,
@@ -85,7 +85,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '98.76.54.32',
     country: 'United States',
     city: 'New York',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 9,
@@ -105,7 +105,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 11,
@@ -135,7 +135,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 14,
@@ -155,7 +155,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 16,
@@ -175,7 +175,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 18,
@@ -195,7 +195,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 20,
@@ -205,7 +205,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 21,
@@ -225,7 +225,7 @@ export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
     ip_address: '73.45.123.89',
     country: 'United States',
     city: 'San Francisco',
-    details: 'User: dem***@example.com',
+    details: null,
   },
   {
     id: 23,

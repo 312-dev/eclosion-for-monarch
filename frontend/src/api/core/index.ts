@@ -92,6 +92,7 @@ export {
 // Notes
 export {
   getMonthNotes,
+  getAllNotes,
   saveCategoryNote,
   deleteCategoryNote,
   getGeneralNote,
@@ -101,6 +102,8 @@ export {
   deleteArchivedNote,
   syncNotesCategories,
   getNoteHistory,
+  getNotesCategories,
+  type AllNotesResponse,
 } from './notes';
 
 // Misc (auto-sync, deployment, notices, uninstall, migration)

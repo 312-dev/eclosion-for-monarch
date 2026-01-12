@@ -11,6 +11,7 @@ import type {
   ArchivedNote,
   SaveCategoryNoteRequest,
   NoteVersion,
+  NotesCategoryGroup,
 } from '../../types/notes';
 import { fetchApi } from './fetchApi';
 
@@ -29,7 +30,11 @@ interface MonthNotesResponse {
       is_inherited: boolean;
     }
   >;
-  general_note: GeneralMonthNote | null;
+  effective_general_note: {
+    note: GeneralMonthNote;
+    source_month: MonthKey;
+    is_inherited: boolean;
+  } | null;
 }
 
 interface SaveNoteResponse {
@@ -55,6 +60,15 @@ interface SyncCategoriesResponse {
   archived_count: number;
 }
 
+/**
+ * Response for bulk loading all notes.
+ */
+export interface AllNotesResponse {
+  notes: Note[];
+  general_notes: Record<MonthKey, GeneralMonthNote>;
+  month_last_updated: Record<MonthKey, string>;
+}
+
 // ============================================================================
 // Month Notes
 // ============================================================================
@@ -64,6 +78,16 @@ interface SyncCategoriesResponse {
  */
 export async function getMonthNotes(monthKey: MonthKey): Promise<MonthNotesResponse> {
   return fetchApi<MonthNotesResponse>(`/notes/month/${monthKey}`);
+}
+
+/**
+ * Get all notes data for bulk loading.
+ *
+ * Returns all raw notes and general notes so the frontend can compute
+ * effective notes for any month instantly without additional API calls.
+ */
+export async function getAllNotes(): Promise<AllNotesResponse> {
+  return fetchApi<AllNotesResponse>('/notes/all');
 }
 
 // ============================================================================
@@ -185,4 +209,119 @@ export async function getNoteHistory(
     `/notes/history/${categoryType}/${categoryId}`
   );
   return response.history;
+}
+
+// ============================================================================
+// Checkbox States
+// ============================================================================
+
+/**
+ * Get checkbox states for a category/group note.
+ */
+export async function getCheckboxStates(
+  noteId: string,
+  viewingMonth: string
+): Promise<boolean[]> {
+  const response = await fetchApi<{ states: boolean[] }>(
+    `/notes/checkboxes/${noteId}?viewing_month=${viewingMonth}`
+  );
+  return response.states;
+}
+
+/**
+ * Get checkbox states for a general note.
+ */
+export async function getGeneralCheckboxStates(
+  monthKey: string,
+  viewingMonth: string
+): Promise<boolean[]> {
+  const response = await fetchApi<{ states: boolean[] }>(
+    `/notes/checkboxes/general/${monthKey}?viewing_month=${viewingMonth}`
+  );
+  return response.states;
+}
+
+/**
+ * Update a checkbox state.
+ */
+export async function updateCheckboxState(params: {
+  noteId?: string;
+  generalNoteMonthKey?: string;
+  viewingMonth: string;
+  checkboxIndex: number;
+  isChecked: boolean;
+}): Promise<boolean[]> {
+  const response = await fetchApi<{ success: boolean; states: boolean[] }>(
+    '/notes/checkboxes',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        note_id: params.noteId,
+        general_note_month_key: params.generalNoteMonthKey,
+        viewing_month: params.viewingMonth,
+        checkbox_index: params.checkboxIndex,
+        is_checked: params.isChecked,
+      }),
+    }
+  );
+  return response.states;
+}
+
+/**
+ * Get all checkbox states for a month.
+ */
+export async function getMonthCheckboxStates(
+  monthKey: string
+): Promise<Record<string, boolean[]>> {
+  const response = await fetchApi<{ states: Record<string, boolean[]> }>(
+    `/notes/checkboxes/month/${monthKey}`
+  );
+  return response.states;
+}
+
+// ============================================================================
+// Notes Settings
+// ============================================================================
+
+/**
+ * Get notes settings including checkbox mode.
+ */
+export async function getNotesSettings(): Promise<{ checkboxMode: 'persist' | 'reset' }> {
+  const response = await fetchApi<{ settings: { checkbox_mode: string } }>(
+    '/notes/settings'
+  );
+  return { checkboxMode: response.settings.checkbox_mode as 'persist' | 'reset' };
+}
+
+/**
+ * Update notes settings.
+ */
+export async function updateNotesSettings(params: {
+  checkboxMode?: 'persist' | 'reset';
+}): Promise<{ checkboxMode: 'persist' | 'reset' }> {
+  const response = await fetchApi<{ success: boolean; settings: { checkbox_mode: string } }>(
+    '/notes/settings',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        checkbox_mode: params.checkboxMode,
+      }),
+    }
+  );
+  return { checkboxMode: response.settings.checkbox_mode as 'persist' | 'reset' };
+}
+
+// ============================================================================
+// Notes Categories
+// ============================================================================
+
+/**
+ * Get all Monarch categories organized by group.
+ *
+ * Returns all category groups with their categories for the Notes feature.
+ * This is not filtered by recurring expenses - it returns all categories.
+ */
+export async function getNotesCategories(): Promise<NotesCategoryGroup[]> {
+  const response = await fetchApi<{ groups: NotesCategoryGroup[] }>('/notes/categories');
+  return response.groups;
 }
