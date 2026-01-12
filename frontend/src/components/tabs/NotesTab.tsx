@@ -8,15 +8,16 @@
  * - PDF export capability
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Download } from 'lucide-react';
 import { CategoryTree, GeneralMonthNotes, MonthYearSelector, ExportNotesModal } from '../notes';
+import { EXPAND_FIRST_GROUP_EVENT } from '../layout/notesTourSteps';
 import {
   useAllNotesQuery,
   useMonthNotesQuery,
   useNotesCategoriesQuery,
 } from '../../api/queries';
-import { usePageTitle, useHiddenCategories } from '../../hooks';
+import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
 import { buildCategoryGroupsWithNotes, hasAnyNotes } from '../../utils';
 import type { MonthKey, EffectiveGeneralNote, CategoryGroupWithNotes } from '../../types/notes';
@@ -74,6 +75,36 @@ export function NotesTab() {
 
   // Check if there are any notes
   const hasNotes = useMemo(() => hasAnyNotes(groups, effectiveGeneralNote), [groups, effectiveGeneralNote]);
+
+  // Get tour state to auto-expand first group for tour
+  const { hasSeenTour } = useNotesTour();
+
+  // Track whether we've auto-expanded for the tour
+  const hasAutoExpanded = useRef(false);
+
+  // Auto-expand first group when tour hasn't been seen (so tour can highlight category)
+  // This is a one-time initialization based on async data, not a cascading render pattern
+  useEffect(() => {
+    if (!hasAutoExpanded.current && !hasSeenTour && groups.length > 0) {
+      hasAutoExpanded.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- One-time init from async data
+      setExpandedGroups(new Set([groups[0].id]));
+    }
+  }, [hasSeenTour, groups]);
+
+  // Listen for tour event to expand first group (in case user collapsed it during tour)
+  useEffect(() => {
+    const handleExpandFirstGroup = () => {
+      if (groups.length > 0) {
+        setExpandedGroups((prev) => new Set([...prev, groups[0].id]));
+      }
+    };
+
+    globalThis.addEventListener(EXPAND_FIRST_GROUP_EVENT, handleExpandFirstGroup);
+    return () => {
+      globalThis.removeEventListener(EXPAND_FIRST_GROUP_EVENT, handleExpandFirstGroup);
+    };
+  }, [groups]);
 
   // Group expansion handlers
   const handleToggleGroup = useCallback((groupId: string) => {
@@ -163,7 +194,7 @@ export function NotesTab() {
 
         {/* General month notes sidebar - desktop only (1/3 width) */}
         <div className="hidden lg:block lg:col-span-1">
-          <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} />
+          <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} dataTourId="general-notes" />
         </div>
       </div>
 

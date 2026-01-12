@@ -198,6 +198,68 @@ class CredentialsService:
         CredentialsService._session_credentials = None
         CredentialsService._pending_credentials = None
 
+    async def desktop_login(
+        self,
+        email: str,
+        password: str,
+        mfa_secret: str = "",
+    ) -> dict[str, Any]:
+        """
+        Desktop mode login: validate credentials and set directly in session.
+
+        Unlike regular login(), this does NOT require a passphrase step.
+        Credentials are stored in Electron's safeStorage, not on the Python side.
+        The backend only keeps them in memory for the session.
+
+        Args:
+            email: Monarch email
+            password: Monarch password
+            mfa_secret: MFA secret key (optional)
+
+        Returns:
+            Success/failure result
+        """
+        try:
+            # Validate credentials against Monarch API
+            await get_mm(email=email, password=password, mfa_secret_key=mfa_secret)
+
+            # Store directly in session (no encryption, no disk storage)
+            CredentialsService._session_credentials = {
+                "email": email,
+                "password": password,
+                "mfa_secret": mfa_secret,
+            }
+
+            logger.info("[DESKTOP_LOGIN] Credentials validated and session established")
+            return {
+                "success": True,
+                "message": "Login successful.",
+            }
+        except Exception as e:
+            logger.error(f"[DESKTOP_LOGIN] Failed: {e}")
+            return format_auth_response(e, has_mfa_secret=bool(mfa_secret))
+
+    def set_session_credentials_direct(
+        self,
+        email: str,
+        password: str,
+        mfa_secret: str = "",
+    ) -> None:
+        """
+        Set session credentials directly without validation.
+
+        Used by desktop mode when credentials have already been validated
+        or when restoring from Electron's safeStorage.
+
+        WARNING: This bypasses validation - only use for trusted sources.
+        """
+        CredentialsService._session_credentials = {
+            "email": email,
+            "password": password,
+            "mfa_secret": mfa_secret,
+        }
+        logger.debug("[CREDENTIALS] Session credentials set directly")
+
     def lock(self) -> None:
         """Lock the session without clearing stored credentials."""
         CredentialsService._session_credentials = None

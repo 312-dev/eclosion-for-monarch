@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { login } from '../api/client';
+import { login, desktopLogin } from '../api/client';
 import { PassphrasePrompt } from './passphrase';
 import { SecurityInfo } from './SecurityInfo';
 import { TermsModal, setTermsAccepted } from './ui/TermsModal';
@@ -18,6 +18,15 @@ import { getErrorMessage } from '../utils';
 import { isDesktopMode } from '../utils/apiBase';
 import { isBetaEnvironment } from '../utils/environment';
 import { ElectronTitleBar } from './ElectronTitleBar';
+
+/**
+ * Check if running in Electron desktop app with credential storage available.
+ */
+function isElectronDesktop(): boolean {
+  return typeof window !== 'undefined' &&
+    'electron' in window &&
+    window.electron?.credentials !== undefined;
+}
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -43,34 +52,67 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setError(null);
 
     try {
-      const result = await login(email, password, mfaSecret, mfaMode);
-      if (result.success) {
-        if (result.needs_passphrase) {
-          setStage('passphrase');
-        } else {
+      // Desktop mode: simplified flow without passphrase
+      if (isElectronDesktop()) {
+        // Validate credentials and establish backend session
+        const result = await desktopLogin(email, password, mfaSecret);
+
+        if (result.success) {
+          // Store credentials in Electron's safeStorage
+          const stored = await window.electron.credentials.store({
+            email,
+            password,
+            mfaSecret: mfaSecret || undefined,
+          });
+
+          if (!stored) {
+            setError('Failed to store credentials securely. Please try again.');
+            return;
+          }
+
+          // Success - no passphrase needed
           onSuccess();
+        } else {
+          handleLoginError(result.error);
         }
       } else {
-        const errorLower = result.error?.toLowerCase() || '';
-        const isMfaError = errorLower.includes('mfa') ||
-                          errorLower.includes('multi-factor') ||
-                          errorLower.includes('2fa') ||
-                          errorLower.includes('two-factor');
-        const isCredentialsError = errorLower.includes('404') ||
-                                   errorLower.includes('not found');
-        if (isMfaError && !showMfa) {
-          setShowMfa(true);
-          setError('MFA required. Please enter your TOTP secret key.');
-        } else if (isCredentialsError) {
-          setError('Incorrect email or password. Please check your credentials and try again.');
+        // Web/self-hosted mode: existing passphrase flow
+        const result = await login(email, password, mfaSecret, mfaMode);
+        if (result.success) {
+          if (result.needs_passphrase) {
+            setStage('passphrase');
+          } else {
+            onSuccess();
+          }
         } else {
-          setError(result.error || 'Login failed');
+          handleLoginError(result.error);
         }
       }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Handle login error messages, detecting MFA and credentials errors.
+   */
+  const handleLoginError = (errorMsg: string | undefined) => {
+    const errorLower = errorMsg?.toLowerCase() || '';
+    const isMfaError = errorLower.includes('mfa') ||
+                      errorLower.includes('multi-factor') ||
+                      errorLower.includes('2fa') ||
+                      errorLower.includes('two-factor');
+    const isCredentialsError = errorLower.includes('404') ||
+                               errorLower.includes('not found');
+    if (isMfaError && !showMfa) {
+      setShowMfa(true);
+      setError('MFA required. Please enter your TOTP secret key.');
+    } else if (isCredentialsError) {
+      setError('Incorrect email or password. Please check your credentials and try again.');
+    } else {
+      setError(errorMsg || 'Login failed');
     }
   };
 
@@ -224,9 +266,19 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
                   <p className="font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>How Your Data is Protected</p>
                   <ul className="mt-1 space-y-1 list-disc list-inside">
-                    <li>Credentials are <strong>encrypted</strong> with a passphrase only you know</li>
-                    <li>This is a <strong>dedicated single-user instance</strong> — not shared with other accounts</li>
-                    <li>Encrypted credentials are stored {isDesktopMode() ? 'locally within this app' : 'on this server'}</li>
+                    {isElectronDesktop() ? (
+                      <>
+                        <li>Credentials are <strong>encrypted</strong> by your operating system&apos;s secure storage</li>
+                        <li>Protected by your device&apos;s keychain or credential manager</li>
+                        <li>Stored <strong>locally</strong> on this device only</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>Credentials are <strong>encrypted</strong> with a passphrase only you know</li>
+                        <li>This is a <strong>dedicated single-user instance</strong> — not shared with other accounts</li>
+                        <li>Encrypted credentials are stored {isDesktopMode() ? 'locally within this app' : 'on this server'}</li>
+                      </>
+                    )}
                   </ul>
                   <button
                     type="button"

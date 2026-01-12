@@ -5,7 +5,7 @@ Welcome to the Eclosion documentation. Eclosion is a self-hosted toolkit that ex
 ## Features
 
 - **Recurring Expense Tracking** - Track and visualize your recurring bills and subscriptions
-- **Smart Savings Calculations** - Intelligent projections for your savings goals
+- **Monthly Notes** - Add notes to any Monarch category or group that carry forward each month
 - **Direct Monarch Sync** - Seamlessly sync with your Monarch Money account
 - **Self-Hosted** - Run on your own infrastructure for maximum privacy and control
 

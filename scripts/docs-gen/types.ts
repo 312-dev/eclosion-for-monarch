@@ -85,6 +85,8 @@ export interface DocMapping {
 //   - setup-wizard.mdx (sub-feature, sidebar_position: 2)
 //   - rollup-category.mdx (sub-feature, sidebar_position: 3)
 //   - category-linking.mdx (sub-feature, sidebar_position: 4)
+// - docs/notes/ (Monthly Notes feature)
+//   - overview.mdx (main feature overview, sidebar_position: 1)
 //
 // When adding new features:
 // 1. Create a new folder under docs/ (e.g., docs/savings/)
@@ -156,5 +158,22 @@ export const DOC_MAPPINGS: DocMapping[] = [
     userFlow: 'main-dashboard',
     parentFeature: 'recurring',
     sidebarPosition: 5,
+  },
+  // Notes feature
+  {
+    topic: 'notes-overview',
+    sourceFiles: [
+      'frontend/src/components/tabs/NotesTab.tsx',
+      'frontend/src/components/notes/NoteEditor.tsx',
+      'frontend/src/components/notes/NoteEditorMDX.tsx',
+      'frontend/src/components/notes/CategoryTree.tsx',
+      'frontend/src/components/notes/GeneralMonthNotes.tsx',
+      'frontend/src/components/notes/ExportNotesModal.tsx',
+      'frontend/src/components/layout/notesTourSteps.tsx',
+    ],
+    outputFile: 'docusaurus/docs/notes/overview.mdx',
+    feature: 'notes',
+    userFlow: 'main-dashboard',
+    sidebarPosition: 1,
   },
 ];

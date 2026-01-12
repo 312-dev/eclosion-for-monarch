@@ -26,11 +26,9 @@ interface CategoryRowProps {
   groupName: string;
   /** Current month being viewed */
   currentMonth: MonthKey;
-  /** Optional data-tour attribute for guided tour */
-  dataTourId?: string;
 }
 
-export function CategoryRow({ category, groupId, groupName, currentMonth, dataTourId }: CategoryRowProps) {
+export function CategoryRow({ category, groupId, groupName, currentMonth }: CategoryRowProps) {
   const { effectiveNote } = category;
   const hasNote = effectiveNote.note !== null;
   const noteContent = effectiveNote.note?.content ?? '';
@@ -161,7 +159,6 @@ export function CategoryRow({ category, groupId, groupName, currentMonth, dataTo
         className="flex items-start gap-3 px-4 py-3 border-t hover:bg-[var(--monarch-bg-hover)] transition-colors group"
         style={{ borderColor: 'var(--monarch-border)' }}
         onBlur={handleBlur}
-        data-tour={dataTourId}
       >
         {/* Category icon/name */}
         <div className="flex items-center gap-2 min-w-[140px] shrink-0">

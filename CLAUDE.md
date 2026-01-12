@@ -4,7 +4,7 @@ This file contains coding standards and guidelines for AI assistants working on 
 
 ## Project Overview
 
-Eclosion for Monarch is an open source desktop & web app that expands what's possible with Monarch Money. It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, smart savings calculations, and direct Monarch sync. The demo mode runs entirely in the browser with localStorage.
+Eclosion for Monarch is an open source desktop & web app that expands what's possible with Monarch Money. It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, monthly category notes, and direct Monarch sync. The demo mode runs entirely in the browser with localStorage.
 
 ## Code Standards
 

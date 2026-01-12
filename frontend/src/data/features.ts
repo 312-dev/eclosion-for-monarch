@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Feature data file; keeping all features together aids maintainability */
 /**
  * Feature Definitions
  *
@@ -231,9 +232,9 @@ export const FEATURES: FeatureDefinition[] = [
   {
     id: 'inbox-sync',
     name: 'Inbox Sync',
-    tagline: 'Automatic transaction splits from your inbox',
+    tagline: 'Automatic transaction splits—without cloud or third-party providers',
     description:
-      'Connect your email and automatically extract itemized receipts from Walmart, Costco, Uber, DoorDash, and more. Support for new merchants grows over time.',
+      'Connect your email and automatically extract itemized receipts from Walmart, Costco, Uber, DoorDash, and more—all processed locally without cloud or third-party providers.',
     icon: 'Inbox',
     status: 'coming-soon',
     benefits: [
@@ -262,6 +263,78 @@ export const FEATURES: FeatureDefinition[] = [
     ],
     appPath: '/inbox-sync',
     originIssue: 84,
+  },
+  {
+    id: 'shared-budget',
+    name: 'Shared Budget',
+    tagline: 'Track and split shared expenses each month',
+    description:
+      'Tag expenses you share with a roommate or partner—rent, utilities, groceries, date nights—and split them automatically each month. Set a default ratio, adjust individual transactions when needed, and settle up when you\'re ready.',
+    icon: 'Split',
+    status: 'coming-soon',
+    benefits: [
+      {
+        icon: 'Bookmark',
+        title: 'Tag Shared Expenses',
+        description:
+          'Mark transactions as shared—rent, utilities, groceries, date nights, or anything you split.',
+      },
+      {
+        icon: 'Split',
+        title: 'Automatic Ratio Splitting',
+        description:
+          'Set a default split ratio (50/50, 60/40, income-based) that applies to all tagged transactions.',
+      },
+      {
+        icon: 'Edit',
+        title: 'Adjust Per Transaction',
+        description:
+          'Override the ratio on specific transactions—you paid for dinner, they paid for the movie.',
+      },
+      {
+        icon: 'CheckCircle',
+        title: 'Settle Debt',
+        description:
+          'See who owes what at month\'s end and mark debts as settled when you square up.',
+      },
+    ],
+    appPath: '/shared-budget',
+  },
+  {
+    id: 'allowance',
+    name: 'Allowance',
+    tagline: 'Reward yourself for building good habits',
+    description:
+      'Award yourself an allowance based on completing habits and chores in real life. Connect your daily wins to your spending money and build financial discipline through positive reinforcement.',
+    icon: 'Wallet',
+    status: 'coming-soon',
+    benefits: [
+      {
+        icon: 'CheckCircle',
+        title: 'Habit Tracking',
+        description:
+          'Define habits and chores you want to complete—exercise, cleaning, reading, etc.',
+      },
+      {
+        icon: 'Coins',
+        title: 'Earn Your Allowance',
+        description:
+          'Complete habits to earn allowance credits that add up over time.',
+      },
+      {
+        icon: 'Target',
+        title: 'Flexible Rewards',
+        description:
+          'Set your own reward values—a workout might be worth $5, while deep cleaning earns $20.',
+      },
+      {
+        icon: 'TrendUp',
+        title: 'Positive Reinforcement',
+        description:
+          'Build financial discipline by connecting good habits to tangible spending power.',
+      },
+    ],
+    appPath: '/allowance',
   },
 ];
 

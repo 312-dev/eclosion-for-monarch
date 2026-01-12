@@ -1,15 +1,23 @@
 /**
- * Biometric Authentication
+ * Biometric Authentication & Credential Storage
  *
- * Provides biometric unlock functionality using Touch ID (macOS) and Windows Hello.
- * Uses Electron's safeStorage API to securely store the user's passphrase,
- * encrypted by the operating system's credential manager (Keychain/DPAPI).
+ * Two authentication models:
+ *
+ * 1. Desktop Mode (new, simplified):
+ *    - Monarch credentials stored directly in safeStorage
+ *    - No encryption passphrase required
+ *    - Optional Touch ID protection for unlock
+ *
+ * 2. Self-hosted Mode (legacy, passphrase-based):
+ *    - Uses passphrase to encrypt credentials on server
+ *    - Passphrase stored in safeStorage for biometric unlock
+ *    - Touch ID retrieves passphrase to decrypt credentials
  *
  * Security model:
- * - Passphrase is encrypted using OS-level encryption (Keychain on macOS, DPAPI on Windows)
- * - On macOS: Touch ID prompt required to access stored passphrase
+ * - All data encrypted using OS-level encryption (Keychain on macOS, DPAPI on Windows)
+ * - On macOS: Touch ID prompt can be required to access stored data
  * - On Windows: DPAPI ties encryption to user login session
- * - Passphrase is never stored in plaintext
+ * - Credentials never stored in plaintext
  */
 
 import { safeStorage, systemPreferences } from 'electron';
@@ -28,6 +36,21 @@ const PASSPHRASE_STORAGE_KEY = 'security.encryptedPassphrase';
  * Storage key for tracking biometric enrollment status.
  */
 const BIOMETRIC_ENABLED_KEY = 'security.biometricEnabled';
+
+// =============================================================================
+// Desktop Mode: Direct Credential Storage (New)
+// =============================================================================
+
+/**
+ * Storage key for encrypted Monarch credentials in desktop mode.
+ * Stores a JSON object with email, password, and optional mfaSecret.
+ */
+const MONARCH_CREDENTIALS_KEY = 'security.monarchCredentials';
+
+/**
+ * Storage key for "Require Touch ID to unlock" setting.
+ */
+const REQUIRE_TOUCH_ID_KEY = 'security.requireTouchId';
 
 /**
  * Biometric type available on this device.
@@ -335,4 +358,188 @@ export function getBiometricDisplayName(): string {
     default:
       return 'Biometric';
   }
+}
+
+// =============================================================================
+// Desktop Mode: Direct Credential Storage Functions
+// =============================================================================
+
+/**
+ * Monarch credentials structure for desktop mode.
+ */
+export interface MonarchCredentials {
+  email: string;
+  password: string;
+  mfaSecret?: string;
+}
+
+/**
+ * Result of credential retrieval with optional Touch ID.
+ */
+export interface CredentialAuthResult {
+  success: boolean;
+  credentials?: MonarchCredentials;
+  error?: string;
+}
+
+/**
+ * Store Monarch credentials directly in safeStorage (desktop mode).
+ * No passphrase required - credentials encrypted by OS keychain.
+ *
+ * @param credentials The Monarch credentials to store
+ * @returns true if storage was successful
+ */
+export function storeMonarchCredentials(credentials: MonarchCredentials): boolean {
+  if (!safeStorage.isEncryptionAvailable()) {
+    debugLog('Credentials: Cannot store - safeStorage not available');
+    return false;
+  }
+
+  try {
+    // Serialize credentials to JSON and encrypt
+    const json = JSON.stringify(credentials);
+    const encrypted = safeStorage.encryptString(json);
+    const base64 = encrypted.toString('base64');
+    store.set(MONARCH_CREDENTIALS_KEY, base64);
+
+    debugLog('Credentials: Monarch credentials stored successfully');
+    return true;
+  } catch (error) {
+    debugLog(`Credentials: Failed to store credentials: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Retrieve Monarch credentials from safeStorage (desktop mode).
+ * Does NOT prompt for Touch ID - use authenticateAndGetCredentials for that.
+ *
+ * @returns The stored credentials, or null if not found
+ */
+export function getMonarchCredentials(): MonarchCredentials | null {
+  try {
+    const base64 = store.get(MONARCH_CREDENTIALS_KEY) as string | undefined;
+    if (!base64) {
+      debugLog('Credentials: No stored credentials found');
+      return null;
+    }
+
+    // Decrypt and parse JSON
+    const encrypted = Buffer.from(base64, 'base64');
+    const json = safeStorage.decryptString(encrypted);
+    const credentials = JSON.parse(json) as MonarchCredentials;
+
+    debugLog('Credentials: Retrieved successfully');
+    return credentials;
+  } catch (error) {
+    debugLog(`Credentials: Failed to retrieve: ${error}`);
+    return null;
+  }
+}
+
+/**
+ * Check if Monarch credentials are stored (desktop mode).
+ */
+export function hasMonarchCredentials(): boolean {
+  const has = store.has(MONARCH_CREDENTIALS_KEY);
+  debugLog(`Credentials: hasMonarchCredentials: ${has}`);
+  return has;
+}
+
+/**
+ * Clear stored Monarch credentials (desktop mode).
+ * Used for logout or reset.
+ */
+export function clearMonarchCredentials(): void {
+  store.delete(MONARCH_CREDENTIALS_KEY);
+  debugLog('Credentials: Cleared');
+}
+
+/**
+ * Get the "Require Touch ID to unlock" setting.
+ */
+export function getRequireTouchId(): boolean {
+  return store.get(REQUIRE_TOUCH_ID_KEY, false) as boolean;
+}
+
+/**
+ * Set the "Require Touch ID to unlock" setting.
+ */
+export function setRequireTouchId(required: boolean): void {
+  store.set(REQUIRE_TOUCH_ID_KEY, required);
+  debugLog(`Credentials: Require Touch ID set to ${required}`);
+}
+
+/**
+ * Authenticate and retrieve credentials with optional Touch ID.
+ * If Touch ID is required (setting enabled), prompts for biometric.
+ * Otherwise, retrieves credentials directly.
+ *
+ * @returns Credentials on success, error on failure
+ */
+export async function authenticateAndGetCredentials(): Promise<CredentialAuthResult> {
+  if (!hasMonarchCredentials()) {
+    return {
+      success: false,
+      error: 'No credentials stored',
+    };
+  }
+
+  const requireTouchId = getRequireTouchId();
+
+  // If Touch ID is required and available, prompt for it
+  if (requireTouchId && process.platform === 'darwin') {
+    try {
+      const canPrompt = systemPreferences.canPromptTouchID();
+      if (canPrompt) {
+        await systemPreferences.promptTouchID('unlock Eclosion');
+        debugLog('Credentials: Touch ID authentication successful');
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      debugLog(`Credentials: Touch ID failed: ${errorMsg}`);
+
+      if (errorMsg.includes('cancel') || errorMsg.includes('Cancel')) {
+        return {
+          success: false,
+          error: 'Authentication cancelled',
+        };
+      }
+
+      return {
+        success: false,
+        error: 'Touch ID authentication failed',
+      };
+    }
+  }
+
+  // Retrieve credentials
+  const credentials = getMonarchCredentials();
+  if (!credentials) {
+    return {
+      success: false,
+      error: 'Failed to retrieve credentials',
+    };
+  }
+
+  return {
+    success: true,
+    credentials,
+  };
+}
+
+/**
+ * Clear all stored authentication data (both desktop and legacy modes).
+ * Used for full logout or factory reset.
+ */
+export function clearAllAuthData(): void {
+  // Clear desktop mode credentials
+  store.delete(MONARCH_CREDENTIALS_KEY);
+  store.delete(REQUIRE_TOUCH_ID_KEY);
+
+  // Clear legacy passphrase-based data
+  store.delete(PASSPHRASE_STORAGE_KEY);
+  store.set(BIOMETRIC_ENABLED_KEY, false);
+
+  debugLog('Credentials: All auth data cleared');
 }

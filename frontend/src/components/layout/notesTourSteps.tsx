@@ -14,11 +14,15 @@ export type NotesTourStepId =
   | 'general-notes'
   | 'export-notes';
 
+/** Custom event name for expanding first category group during tour */
+export const EXPAND_FIRST_GROUP_EVENT = 'eclosion:expand-first-category-group';
+
 interface TourStep {
   id: NotesTourStepId;
   selector: string;
   content: () => ReactNode;
   position: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  action?: () => void;
 }
 
 export const NOTES_TOUR_STEPS: TourStep[] = [
@@ -64,7 +68,11 @@ export const NOTES_TOUR_STEPS: TourStep[] = [
         </p>
       </div>
     ),
-    position: 'bottom',
+    position: 'center',
+    // Expand first group now so it's ready for the next step (Adding Notes)
+    action: () => {
+      globalThis.dispatchEvent(new CustomEvent(EXPAND_FIRST_GROUP_EVENT));
+    },
   },
   {
     id: 'category-note',
@@ -81,13 +89,13 @@ export const NOTES_TOUR_STEPS: TourStep[] = [
           Adding Notes
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Click any category to add a note. Notes support markdown formatting
-          and checkboxes. Your notes save automatically as you type and persist
-          to future months until you change them.
+          Click &ldquo;+ Add note&rdquo; next to any category. Notes support markdown
+          formatting and checkboxes. They save automatically and persist to
+          future months until you change them.
         </p>
       </div>
     ),
-    position: 'right',
+    position: 'bottom',
   },
   {
     id: 'general-notes',

@@ -123,6 +123,11 @@ export function NoteEditorMDX({
     // Signal to parent that this is a commit point (should save immediately)
     onCommit?.(newMarkdown);
     setMathSuggestion(null);
+
+    // Keep focus in the editor after accepting
+    requestAnimationFrame(() => {
+      editorRef.current?.focus();
+    });
   }, [mathSuggestion, onChange, onCommit]);
 
   // Handle keyboard events for math suggestions
@@ -220,13 +225,13 @@ export function NoteEditorMDX({
           contentEditableClassName="mdx-editor-content"
         />
 
-        {/* Math suggestion tooltip */}
+        {/* Math suggestion - Gmail-style inline ghost text */}
         {mathSuggestion && isFocused && (
-          <div className="note-editor-math-suggestion">
-            <span>
-              {mathSuggestion.expression} = <strong>{mathSuggestion.result}</strong>
+          <div className="note-editor-math-ghost">
+            <span className="note-editor-math-ghost-text">
+              ={mathSuggestion.result}
             </span>
-            <kbd>Tab</kbd>
+            <span className="note-editor-math-ghost-hint">Tab</span>
           </div>
         )}
       </div>

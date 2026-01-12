@@ -39,7 +39,6 @@ import {
   DataManagementSection,
   DangerZoneSection,
   CreditsSection,
-  SettingsSidebar,
 } from '../settings';
 
 export function SettingsTab() {
@@ -128,10 +127,7 @@ export function SettingsTab() {
   const totalItems = dedicatedItems.length + rollupItems.length;
 
   return (
-    <div className="settings-layout" data-testid="settings-content">
-      {/* Floating sidebar for quick navigation - hidden on mobile */}
-      <SettingsSidebar />
-
+    <div className="settings-page" data-testid="settings-content">
       {/* Main settings content */}
       <div className="settings-content tab-content-enter">
         {/* Page Header */}

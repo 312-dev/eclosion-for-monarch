@@ -26,7 +26,16 @@ const sidebars: SidebarsConfig = {
             'recurring/category-linking',
           ],
         },
-        // Future features go here as additional categories
+        {
+          type: 'category',
+          label: 'Monthly Notes',
+          collapsed: false,
+          link: {
+            type: 'doc',
+            id: 'notes/overview',
+          },
+          items: [],
+        },
       ],
     },
   ],

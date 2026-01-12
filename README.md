@@ -6,6 +6,9 @@
 
 <p align="center">
   <a href="https://github.com/312-dev/eclosion/actions/workflows/ci.yml"><img src="https://github.com/312-dev/eclosion/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/312-dev/eclosion/actions/workflows/security.yml"><img src="https://github.com/312-dev/eclosion/actions/workflows/security.yml/badge.svg" alt="Security"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/312-dev/eclosion"><img src="https://api.scorecard.dev/projects/github.com/312-dev/eclosion/badge" alt="OpenSSF Scorecard"></a>
+  <a href="https://www.bestpractices.dev/projects/11728"><img src="https://www.bestpractices.dev/projects/11728/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://github.com/312-dev/eclosion/releases/latest"><img src="https://img.shields.io/github/v/release/312-dev/eclosion?label=stable" alt="Stable Release"></a>
   <a href="https://github.com/312-dev/eclosion/releases"><img src="https://img.shields.io/github/v/release/312-dev/eclosion?include_prereleases&label=beta" alt="Beta Release"></a>
   <a href="https://github.com/312-dev/eclosion/blob/main/LICENSE"><img src="https://img.shields.io/github/license/312-dev/eclosion" alt="License"></a>
@@ -77,6 +80,15 @@ Never be caught off guard by a bill again. Automatically calculates monthly savi
 - **Progress Tracking** — See at a glance if you're on track, behind, or ahead on each expense
 - **Monarch Sync** — Syncs directly with your Monarch Money account to update budget targets
 
+### Monthly Notes *(Available)*
+
+Remember why you set each budget. Add notes to any Monarch category or category group that carry forward each month.
+
+- **Category Notes** — Attach notes to any category or group to remember why you set certain budgets
+- **Carry Forward Monthly** — Your notes automatically appear in future months until you change them
+- **Revision History** — See how your notes evolved over time and jump between versions
+- **Inline Math** — Type math expressions and press Tab to evaluate them inline
+
 ### Joint Goals *(Coming Soon)*
 
 Privacy-first shared goals. Collaborate on financial goals without merging accounts or sacrificing privacy.
@@ -100,6 +112,24 @@ Automatic transaction splits from your inbox. Connect your email and automatical
 - **Email Integration** — Securely connects to Gmail or Outlook with read-only access
 - **Smart Itemization** — Automatically splits transactions by item with accurate categories
 - **Growing Coverage** — Walmart, Costco, Uber, DoorDash, and more
+
+### Shared Budget *(Coming Soon)*
+
+Track and split shared expenses each month. Tag expenses you share with a roommate or partner and settle up when you're ready.
+
+- **Tag Shared Expenses** — Mark transactions as shared—rent, utilities, groceries, date nights, or anything you split
+- **Automatic Ratio Splitting** — Set a default split ratio (50/50, 60/40, income-based) that applies to all tagged transactions
+- **Adjust Per Transaction** — Override the ratio on specific transactions—you paid for dinner, they paid for the movie
+- **Settle Debt** — See who owes what at month's end and mark debts as settled when you square up
+
+### Allowance *(Coming Soon)*
+
+Reward yourself for building good habits. Award yourself an allowance based on completing habits and chores in real life.
+
+- **Habit Tracking** — Define habits and chores you want to complete—exercise, cleaning, reading, etc.
+- **Earn Your Allowance** — Complete habits to earn allowance credits that add up over time
+- **Flexible Rewards** — Set your own reward values—a workout might be worth $5, while deep cleaning earns $20
+- **Positive Reinforcement** — Build financial discipline by connecting good habits to tangible spending power
 
 ## Quick Start
 

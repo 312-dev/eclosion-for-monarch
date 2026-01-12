@@ -597,6 +597,45 @@ async def auth_login():
         return jsonify({"success": False, "error": "Login failed. Please try again."}), 500
 
 
+@app.route("/auth/desktop-login", methods=["POST"])
+@limiter.limit("5 per minute")
+@async_flask
+async def auth_desktop_login():
+    """
+    Desktop mode login: validate credentials and establish session directly.
+
+    Unlike /auth/login, this does NOT require a passphrase step.
+    Credentials are stored in Electron's safeStorage, not on the Python side.
+    The backend only keeps them in memory for the session.
+
+    Only available in desktop mode (ECLOSION_DESKTOP=1).
+    """
+    if not config.is_desktop_environment():
+        return jsonify({"success": False, "error": "Desktop mode only"}), 403
+
+    try:
+        data = request.get_json()
+        email = data.get("email")
+        password = data.get("password")
+        mfa_secret = data.get("mfa_secret", "")
+
+        if not email or not password:
+            _audit_log("DESKTOP_LOGIN", False, "Missing credentials")
+            return jsonify({"success": False, "error": "Email and password are required"}), 400
+
+        result = await sync_service.credentials_service.desktop_login(email, password, mfa_secret)
+        _audit_log("DESKTOP_LOGIN", result.get("success", False), "Desktop mode")
+
+        if result.get("success"):
+            _update_activity()
+
+        return jsonify(result)
+    except Exception as e:
+        _audit_log("DESKTOP_LOGIN", False, f"Exception: {type(e).__name__}")
+        logger.error(f"[DESKTOP_LOGIN] Exception: {e}")
+        return jsonify({"success": False, "error": "Login failed. Please try again."}), 500
+
+
 @app.route("/auth/set-passphrase", methods=["POST"])
 @limiter.limit("5 per minute")  # Rate limit passphrase attempts
 @api_handler(handle_mfa=False)

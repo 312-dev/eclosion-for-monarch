@@ -77,7 +77,13 @@ import {
 } from './deeplinks';
 import { recordMilestone, finalizeStartupMetrics } from './startup-metrics';
 import { initializeLockManager, cleanupLockManager, updateMainWindowRef } from './lock-manager';
-import { getStoredPassphrase } from './biometric';
+import {
+  getStoredPassphrase,
+  getMonarchCredentials,
+  hasMonarchCredentials,
+  isPassphraseStored,
+  clearStoredPassphrase,
+} from './biometric';
 import { setPendingSync } from './sync-pending';
 
 // Single instance lock - prevent multiple instances
@@ -155,6 +161,13 @@ async function initialize(): Promise<void> {
     setupIpcHandlers(backendManager);
     debugLog('IPC handlers set up');
 
+    // Clean up old passphrase-based credentials if new mode isn't set up yet
+    // This handles the upgrade path: users need to log in fresh with the new simplified flow
+    if (!hasMonarchCredentials() && isPassphraseStored()) {
+      debugLog('Cleaning up old passphrase-based credentials (upgrade to new auth flow)');
+      clearStoredPassphrase();
+    }
+
     // Initialize auto-updater (only in packaged builds - dev mode has no app-update.yml)
     if (app.isPackaged) {
       debugLog('Initializing updater...');
@@ -194,9 +207,30 @@ async function initialize(): Promise<void> {
       updateHealthStatus(true, formatRelativeTime(lastSyncIso));
     }
 
-    // Desktop auto-sync: if passphrase is stored in keychain, sync based on interval
-    // This bypasses the backend's auto_sync.enabled flag (designed for web flow)
-    const passphrase = getStoredPassphrase();
+    // Desktop auto-sync: restore session and sync if needed
+    // New mode: credentials stored directly in safeStorage
+    // Legacy mode: passphrase stored in safeStorage (for self-hosted)
+    let sessionRestored = false;
+
+    if (hasMonarchCredentials()) {
+      // New desktop mode: restore session from stored credentials
+      const credentials = getMonarchCredentials();
+      if (credentials) {
+        debugLog('Restoring session from stored credentials...');
+        const restoreResult = await backendManager.restoreSession(credentials);
+        if (restoreResult.success) {
+          debugLog('Session restored successfully');
+          sessionRestored = true;
+        } else {
+          debugLog(`Session restore failed: ${restoreResult.error}`);
+        }
+      }
+    }
+
+    // Check if sync is needed
+    // New mode: credentials already in session (no passphrase needed)
+    // Legacy mode: pass the passphrase to unlock
+    const passphrase = sessionRestored ? undefined : getStoredPassphrase();
     const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
     if (syncResult.synced) {
       if (syncResult.success) {

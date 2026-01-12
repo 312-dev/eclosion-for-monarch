@@ -6,7 +6,7 @@
  * Double-click to edit (except on checkboxes and links).
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
@@ -24,6 +24,21 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
+/**
+ * Create a checkbox index tracker that can be passed to useMemo
+ * This is a workaround for the issue where useMemo caches the closure
+ * and the index variable persists across re-renders
+ */
+function createCheckboxTracker() {
+  let index = 0;
+  return {
+    next: () => index++,
+    reset: () => {
+      index = 0;
+    },
+  };
+}
+
 export function MarkdownRenderer({
   content,
   checkboxStates = [],
@@ -31,17 +46,19 @@ export function MarkdownRenderer({
   onDoubleClick,
   className = '',
 }: MarkdownRendererProps) {
-  // Create components with memoized checkbox tracking
-  // We use a closure variable that gets reset when the component re-renders
-  const components: Components = useMemo(() => {
-    let checkboxIndex = 0;
+  // Create components fresh each render to ensure checkbox indices start at 0.
+  // We intentionally don't use useMemo here because the tracker's internal state
+  // would persist across re-renders, causing indices to drift.
+  // The performance impact is minimal since this only affects the component config,
+  // not the actual markdown parsing.
+  const tracker = createCheckboxTracker();
 
-    return {
-      // Override input to handle checkboxes
-      input: ({ type, checked, ...props }) => {
-        if (type === 'checkbox') {
-          const currentIndex = checkboxIndex++;
-          const isChecked = checkboxStates[currentIndex] ?? (checked ?? false);
+  const components: Components = {
+    // Override input to handle checkboxes
+    input: ({ type, checked, ...props }) => {
+      if (type === 'checkbox') {
+        const currentIndex = tracker.next();
+        const isChecked = checkboxStates[currentIndex] ?? (checked ?? false);
 
           return (
             <input
@@ -201,8 +218,7 @@ export function MarkdownRenderer({
         {children}
       </pre>
     ),
-    };
-  }, [checkboxStates, onCheckboxToggle]);
+  };
 
   // Handle double-click (but not on interactive elements)
   const handleDoubleClick = useCallback(

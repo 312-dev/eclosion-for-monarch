@@ -465,6 +465,75 @@ const electronAPI = {
   },
 
   // =========================================================================
+  // Desktop Mode: Direct Credential Storage
+  // =========================================================================
+
+  /**
+   * Credential storage API for desktop mode.
+   * Stores Monarch credentials directly in OS keychain (no passphrase needed).
+   */
+  credentials: {
+    /**
+     * Store Monarch credentials in secure storage.
+     */
+    store: (credentials: {
+      email: string;
+      password: string;
+      mfaSecret?: string;
+    }): Promise<boolean> => ipcRenderer.invoke('credentials:store', credentials),
+
+    /**
+     * Get stored Monarch credentials.
+     */
+    get: (): Promise<{
+      email: string;
+      password: string;
+      mfaSecret?: string;
+    } | null> => ipcRenderer.invoke('credentials:get'),
+
+    /**
+     * Check if Monarch credentials are stored.
+     */
+    has: (): Promise<boolean> => ipcRenderer.invoke('credentials:has'),
+
+    /**
+     * Clear stored Monarch credentials.
+     */
+    clear: (): Promise<void> => ipcRenderer.invoke('credentials:clear'),
+
+    /**
+     * Get the "Require Touch ID to unlock" setting.
+     */
+    getRequireTouchId: (): Promise<boolean> =>
+      ipcRenderer.invoke('credentials:get-require-touch-id'),
+
+    /**
+     * Set the "Require Touch ID to unlock" setting.
+     */
+    setRequireTouchId: (required: boolean): Promise<void> =>
+      ipcRenderer.invoke('credentials:set-require-touch-id', required),
+
+    /**
+     * Authenticate and get credentials with optional Touch ID.
+     * If "Require Touch ID" is enabled, prompts for biometric.
+     */
+    authenticate: (): Promise<{
+      success: boolean;
+      credentials?: {
+        email: string;
+        password: string;
+        mfaSecret?: string;
+      };
+      error?: string;
+    }> => ipcRenderer.invoke('credentials:authenticate'),
+
+    /**
+     * Clear all auth data (both desktop and legacy modes).
+     */
+    clearAll: (): Promise<void> => ipcRenderer.invoke('credentials:clear-all'),
+  },
+
+  // =========================================================================
   // Lock Management
   // =========================================================================
 

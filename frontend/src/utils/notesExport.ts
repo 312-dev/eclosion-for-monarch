@@ -223,6 +223,47 @@ function renderMarkdownToHtml(markdown: string, checkboxStates: boolean[]): stri
 }
 
 /**
+ * Look up checkbox states for a general note, trying multiple key formats.
+ * The bulk query returns keys as "general:{sourceMonth}" but we also need
+ * to handle cases where the key format might differ.
+ */
+function lookupGeneralCheckboxStates(
+  checkboxStates: Record<string, boolean[]>,
+  monthKey: string,
+  sourceMonth: string
+): boolean[] {
+  // Try the standard format first (what getMonthCheckboxStates returns)
+  const standardKey = `general:${sourceMonth}`;
+  if (checkboxStates[standardKey]) {
+    return checkboxStates[standardKey];
+  }
+
+  // Try with viewing month if different from source month
+  if (monthKey !== sourceMonth) {
+    const viewingKey = `general:${monthKey}`;
+    if (checkboxStates[viewingKey]) {
+      return checkboxStates[viewingKey];
+    }
+  }
+
+  // Try keys with scope suffix (in case backend returns different format)
+  const keysToTry = [
+    `general:${sourceMonth}:global`,
+    `general:${sourceMonth}:${monthKey}`,
+    `general:${monthKey}:global`,
+    `general:${monthKey}:${monthKey}`,
+  ];
+
+  for (const key of keysToTry) {
+    if (checkboxStates[key]) {
+      return checkboxStates[key];
+    }
+  }
+
+  return [];
+}
+
+/**
  * Build export HTML with markdown rendered and checkbox states
  */
 export function buildExportHtml(
@@ -491,13 +532,9 @@ export function buildExportHtml(
       if (effectiveGenNote.isInherited && effectiveGenNote.sourceMonth) {
         content += `<div class="inherited">from ${formatMonthShort(effectiveGenNote.sourceMonth)}</div>`;
       }
-      // Try multiple key formats for general note checkbox states
-      // The API returns "general:{month}" but we need to check both viewing and source months
+      // Look up checkbox states using helper that tries multiple key formats
       const sourceMonth = effectiveGenNote.sourceMonth ?? monthKey;
-      const states =
-        checkboxStates[`general:${monthKey}`] ??
-        checkboxStates[`general:${sourceMonth}`] ??
-        [];
+      const states = lookupGeneralCheckboxStates(checkboxStates, monthKey, sourceMonth);
       content += `<div class="md">${renderMarkdownToHtml(effectiveGenNote.note.content, states)}</div>`;
       content += `</div>\n`;
     }

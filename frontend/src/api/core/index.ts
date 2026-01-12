@@ -19,7 +19,9 @@ export {
   lockCredentials,
   logout,
   reauthenticate,
+  desktopLogin,
   type ReauthResult,
+  type DesktopLoginResult,
 } from './auth';
 
 // Security

@@ -72,6 +72,9 @@ export function AppShell() {
   const isNotesPage = location.pathname === '/notes' || location.pathname === '/demo/notes';
   const hasTour = isRecurringPage || isNotesPage;
 
+  // Check if recurring is configured (setup wizard completed)
+  const isRecurringConfigured = data?.config.target_group_id != null;
+
   // Get the correct tour state based on current page
   const currentTourSteps = isNotesPage ? notesTourSteps : recurringTourSteps;
   const hasSeenCurrentTour = isNotesPage ? hasSeenNotesTour : hasSeenRecurringTour;
@@ -79,11 +82,14 @@ export function AppShell() {
 
   // Auto-start tour on first visit to a page with a tour
   useEffect(() => {
+    // Don't start recurring tour if setup wizard is still showing
+    if (isRecurringPage && !isRecurringConfigured) return;
+
     if (hasTour && hasCurrentTourSteps && !hasSeenCurrentTour) {
       const timer = setTimeout(() => setShowTour(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [hasTour, hasCurrentTourSteps, hasSeenCurrentTour]);
+  }, [hasTour, hasCurrentTourSteps, hasSeenCurrentTour, isRecurringPage, isNotesPage, isRecurringConfigured]);
 
   // Handle tour close - mark as seen
   const handleTourClose = () => {
@@ -143,10 +149,15 @@ export function AppShell() {
     );
   }
 
+  // Key to force TourProvider remount when switching between tour types
+  const tourKey = isNotesPage ? 'notes-tour' : 'recurring-tour';
+
   return (
     <TourProvider
+      key={tourKey}
       steps={currentTourSteps}
       styles={appTourStyles}
+      padding={{ mask: 8, popover: [16, 16] }}
       onClickMask={handleTourClose}
       onClickClose={handleTourClose}
       afterOpen={() => {

@@ -339,7 +339,7 @@ export class BackendManager {
 
   /**
    * Trigger a manual sync via the backend.
-   * @param passphrase Optional passphrase to unlock credentials if locked
+   * @param passphrase Optional passphrase to unlock credentials if locked (legacy mode)
    */
   async triggerSync(passphrase?: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -363,6 +363,44 @@ export class BackendManager {
       }
 
       return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Restore credentials from Electron safeStorage to backend session.
+   * Used on app startup to establish session without user interaction.
+   *
+   * @param credentials Credentials from safeStorage
+   * @returns Success/failure of session restoration
+   */
+  async restoreSession(credentials: {
+    email: string;
+    password: string;
+    mfaSecret?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await fetch(`http://127.0.0.1:${this.port}/auth/desktop-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Desktop-Secret': this.desktopSecret,
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+          mfa_secret: credentials.mfaSecret || '',
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        return { success: false, error: data.error || 'Session restore failed' };
+      }
+
+      const result = await response.json() as { success: boolean; error?: string };
+      return result;
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
@@ -397,20 +435,13 @@ export class BackendManager {
   /**
    * Check if a sync is needed based on interval (for startup and wake-from-sleep).
    *
-   * On desktop, auto-sync works whenever a passphrase is available (stored in OS keychain).
-   * This bypasses the backend's auto_sync.enabled flag, which is designed for the web flow
-   * where server-encrypted credentials are needed.
+   * Desktop mode: Credentials should already be in session (via restoreSession).
+   * Legacy mode: Passphrase unlocks encrypted credentials.
    *
-   * @param passphrase Passphrase from keychain storage (required for desktop auto-sync)
+   * @param passphrase Passphrase for legacy mode (optional)
    * @returns Result indicating if sync was triggered and its outcome
    */
   async checkSyncNeeded(passphrase?: string): Promise<{ synced: boolean; success?: boolean; error?: string }> {
-    // Desktop auto-sync requires a stored passphrase
-    // If no passphrase is available, we can't sync automatically
-    if (!passphrase) {
-      return { synced: false };
-    }
-
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/recurring/auto-sync/status`, {
         headers: {
@@ -436,6 +467,8 @@ export class BackendManager {
 
           if (hoursSinceSync >= intervalHours) {
             console.log(`Desktop auto-sync: ${hoursSinceSync.toFixed(1)} hours since last sync (interval: ${intervalHours}h)`);
+            // For desktop mode, credentials are already in session
+            // For legacy mode, pass the passphrase
             const result = await this.triggerSync(passphrase);
             return { synced: true, success: result.success, error: result.error };
           }

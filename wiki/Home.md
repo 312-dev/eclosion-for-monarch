@@ -2,12 +2,12 @@
 
 Welcome to the Eclosion documentation.
 
-**Eclosion** is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarchmoney.com). It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, smart savings calculations, and direct Monarch sync.
+**Eclosion** is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarchmoney.com). It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, monthly category notes, and direct Monarch sync.
 
 ## Features
 
 - **Recurring Expense Tracking** - Track and visualize your recurring bills and subscriptions with burndown charts and spending insights
-- **Smart Savings Calculations** - Intelligent projections for your savings goals based on your actual spending patterns
+- **Monthly Notes** - Add notes to any Monarch category or group that carry forward each month with revision history
 - **Direct Monarch Sync** - Seamlessly sync categories and transactions with your Monarch Money account
 - **Self-Hosted** - Run on your own infrastructure for maximum privacy and control
 - **Demo Mode** - Try it instantly in your browser without installing anything

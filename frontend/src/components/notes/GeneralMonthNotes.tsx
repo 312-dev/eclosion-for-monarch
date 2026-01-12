@@ -23,6 +23,8 @@ interface GeneralMonthNotesProps {
   monthKey: MonthKey;
   /** Effective general note (may be inherited from earlier month) */
   effectiveNote: EffectiveGeneralNote | null;
+  /** Optional data-tour attribute for guided tour (only apply to one instance) */
+  dataTourId?: string;
 }
 
 /**
@@ -39,7 +41,7 @@ function formatMonth(monthKey: string): string {
 /**
  * Inner component that resets when monthKey changes via key prop
  */
-function GeneralMonthNotesInner({ monthKey, effectiveNote }: GeneralMonthNotesProps) {
+function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: GeneralMonthNotesProps) {
   const note = effectiveNote?.note ?? null;
   const noteContent = note?.content ?? '';
   const hasNote = !!note;
@@ -230,7 +232,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote }: GeneralMonthNotesPr
         border: '1px solid var(--monarch-border)',
       }}
       onBlur={handleBlur}
-      data-tour="general-notes"
+      data-tour={dataTourId}
     >
       {/* Header */}
       <div
@@ -251,7 +253,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote }: GeneralMonthNotesPr
 /**
  * Wrapper that uses key to reset state when month changes
  */
-export function GeneralMonthNotes({ monthKey, effectiveNote }: GeneralMonthNotesProps) {
+export function GeneralMonthNotes({ monthKey, effectiveNote, dataTourId }: GeneralMonthNotesProps) {
   // Using key forces remount when month changes, resetting all state
-  return <GeneralMonthNotesInner key={monthKey} monthKey={monthKey} effectiveNote={effectiveNote} />;
+  return <GeneralMonthNotesInner key={monthKey} monthKey={monthKey} effectiveNote={effectiveNote} dataTourId={dataTourId} />;
 }

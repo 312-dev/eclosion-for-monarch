@@ -98,3 +98,31 @@ export async function reauthenticate(mfaCode: string): Promise<ReauthResult> {
     body: JSON.stringify({ mfa_code: mfaCode }),
   });
 }
+
+/**
+ * Desktop mode login result.
+ */
+export interface DesktopLoginResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Desktop mode login: validate credentials and establish session directly.
+ * No passphrase required - credentials stored in Electron's safeStorage.
+ */
+export async function desktopLogin(
+  email: string,
+  password: string,
+  mfaSecret?: string
+): Promise<DesktopLoginResult> {
+  return fetchApi<DesktopLoginResult>('/auth/desktop-login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email,
+      password,
+      mfa_secret: mfaSecret || '',
+    }),
+  });
+}

@@ -6,8 +6,8 @@
  */
 
 import { useState } from 'react';
-import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { Settings, Lock, Lightbulb, LayoutDashboard } from 'lucide-react';
+import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
+import { Settings, Lock, Lightbulb, LayoutDashboard, Paintbrush, Wrench, User, Download, Heart, Zap, Monitor, Shield, Database, FileText, AlertTriangle, RotateCcw } from 'lucide-react';
 import { RecurringIcon, NotesIcon, AppIcon } from '../wizards/WizardComponents';
 import { IdeasModal } from '../IdeasModal';
 import { Portal } from '../Portal';
@@ -17,6 +17,30 @@ import { useDemo } from '../../context/DemoContext';
 import { useMediaQuery } from '../../hooks';
 import { getComingSoonFeatures } from '../../data/features';
 import { isDesktopMode } from '../../utils/apiBase';
+
+interface SettingsSection {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  showInDemo?: boolean;
+  desktopOnly?: boolean;
+  webOnly?: boolean;
+}
+
+const SETTINGS_SECTIONS: SettingsSection[] = [
+  { id: 'demo', label: 'Demo Mode', icon: <RotateCcw size={16} />, showInDemo: true },
+  { id: 'appearance', label: 'Appearance', icon: <Paintbrush size={16} /> },
+  { id: 'tool-settings', label: 'Tool Settings', icon: <Wrench size={16} /> },
+  { id: 'account', label: 'Account', icon: <User size={16} /> },
+  { id: 'updates', label: 'Updates', icon: <Download size={16} /> },
+  { id: 'credits', label: 'Credits', icon: <Heart size={16} /> },
+  { id: 'automation', label: 'Automation', icon: <Zap size={16} /> },
+  { id: 'desktop', label: 'Desktop', icon: <Monitor size={16} />, desktopOnly: true },
+  { id: 'security', label: 'Security', icon: <Shield size={16} />, webOnly: true },
+  { id: 'data', label: 'Data', icon: <Database size={16} /> },
+  { id: 'logs', label: 'Logs', icon: <FileText size={16} />, desktopOnly: true },
+  { id: 'danger', label: 'Danger Zone', icon: <AlertTriangle size={16} /> },
+];
 
 interface SidebarNavigationProps {
   onLock: () => void;
@@ -34,8 +58,8 @@ function getNavItems(isDemo: boolean): { dashboardItem: NavItem; toolkitItems: N
   return {
     dashboardItem: { path: `${prefix}/dashboard`, label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     toolkitItems: [
-      { path: `${prefix}/recurring`, label: 'Recurring', icon: <RecurringIcon size={20} />, settingsHash: '#recurring' },
       { path: `${prefix}/notes`, label: 'Notes', icon: <NotesIcon size={20} />, settingsHash: '#notes' },
+      { path: `${prefix}/recurring`, label: 'Recurring', icon: <RecurringIcon size={20} />, settingsHash: '#recurring' },
     ],
     otherItems: [
       { path: `${prefix}/settings`, label: 'Settings', icon: <Settings size={20} /> },
@@ -88,6 +112,7 @@ function ComingSoonNavItem({ label, icon, isMobile }: Readonly<{ label: string; 
 
 export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) {
   const navigate = useNavigate();
+  const location = useLocation();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -96,8 +121,29 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const comingSoonFeatures = getComingSoonFeatures();
   const prefix = isDemo ? '/demo' : '';
 
+  // Check if we're on the settings page
+  const isSettingsPage = location.pathname === `${prefix}/settings`;
+
+  // Filter settings sections based on context (only used when on settings page)
+  const visibleSettingsSections = SETTINGS_SECTIONS.filter((section) => {
+    if (section.showInDemo && !isDemo) return false;
+    if (section.desktopOnly && !isDesktop) return false;
+    if (section.webOnly && isDesktop) return false;
+    if (isDemo && section.id === 'demo') return true;
+    if (section.showInDemo) return isDemo;
+    return true;
+  });
+
   const handleSettingsClick = (hash: string) => {
     navigate(`${prefix}/settings${hash}`);
+  };
+
+  const handleSettingsSectionClick = (sectionId: string) => {
+    // Scroll to section on the settings page
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
@@ -172,11 +218,45 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
       {/* Separator - mobile only */}
       <div className="sidebar-nav-mobile-separator" aria-hidden="true" />
 
-      {/* Settings - fixed position on mobile */}
+      {/* Settings - fixed position on mobile, nested options on desktop when on settings page */}
       <div className="sidebar-nav-settings">
-        {otherItems.map((item) => (
-          <NavItemLink key={item.path} item={item} />
-        ))}
+        {isMobile ? (
+          /* Mobile: simple link */
+          otherItems.map((item) => (
+            <NavItemLink key={item.path} item={item} />
+          ))
+        ) : (
+          <div className="sidebar-settings-expandable">
+            {/* Settings main link */}
+            <NavLink
+              to={`${prefix}/settings`}
+              className={({ isActive }: { isActive: boolean }) =>
+                `sidebar-nav-item ${isActive ? 'sidebar-nav-item-active' : ''}`
+              }
+            >
+              <span className="sidebar-nav-icon" aria-hidden="true"><Settings size={20} /></span>
+              <span className="sidebar-nav-label">Settings</span>
+            </NavLink>
+
+            {/* Nested settings sections - only shown when on settings page */}
+            {isSettingsPage && (
+              <ul className="sidebar-settings-submenu">
+                {visibleSettingsSections.map((section) => (
+                  <li key={section.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSettingsSectionClick(section.id)}
+                      className="sidebar-settings-submenu-item"
+                    >
+                      <span className="sidebar-settings-submenu-icon" aria-hidden="true">{section.icon}</span>
+                      <span className="sidebar-settings-submenu-label">{section.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer - at the bottom (desktop only, not in demo mode) */}

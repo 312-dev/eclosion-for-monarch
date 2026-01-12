@@ -120,7 +120,7 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
         </p>
       </div>
     ),
-    position: 'top',
+    position: 'bottom',
   },
   {
     id: 'current-monthly',

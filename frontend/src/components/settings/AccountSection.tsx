@@ -2,13 +2,39 @@
  * Account Section
  *
  * Account management settings including lock.
+ * Lock button only appears when Touch ID is required (desktop mode) or in web mode.
  */
 
+import { useState, useEffect } from 'react';
 import { Lock, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+/**
+ * Check if running in Electron desktop with credentials API.
+ */
+function isElectronDesktop(): boolean {
+  return typeof window !== 'undefined' &&
+    'electron' in window &&
+    window.electron?.credentials !== undefined;
+}
+
 export function AccountSection() {
   const { lock } = useAuth();
+  const [showLockButton, setShowLockButton] = useState(!isElectronDesktop());
+
+  useEffect(() => {
+    // In desktop mode, only show lock button if Touch ID is required
+    if (isElectronDesktop()) {
+      window.electron.credentials.getRequireTouchId().then((required) => {
+        setShowLockButton(required);
+      });
+    }
+  }, []);
+
+  // Don't render anything if lock button should be hidden
+  if (!showLockButton) {
+    return null;
+  }
 
   return (
     <section className="mb-8">

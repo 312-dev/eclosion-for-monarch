@@ -43,6 +43,16 @@ import {
   getBiometricDisplayName,
   isPassphraseStored,
   storePassphraseForSync,
+  // Desktop mode: direct credential storage
+  storeMonarchCredentials,
+  getMonarchCredentials,
+  hasMonarchCredentials,
+  clearMonarchCredentials,
+  getRequireTouchId,
+  setRequireTouchId,
+  authenticateAndGetCredentials,
+  clearAllAuthData,
+  type MonarchCredentials,
 } from './biometric';
 import {
   getLockTrigger,
@@ -615,6 +625,66 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    */
   ipcMain.handle('biometric:store-for-sync', (_event, passphrase: string) => {
     return storePassphraseForSync(passphrase);
+  });
+
+  // =========================================================================
+  // Desktop Mode: Direct Credential Storage
+  // =========================================================================
+
+  /**
+   * Store Monarch credentials directly (desktop mode).
+   */
+  ipcMain.handle('credentials:store', (_event, credentials: MonarchCredentials) => {
+    return storeMonarchCredentials(credentials);
+  });
+
+  /**
+   * Get stored Monarch credentials (desktop mode).
+   */
+  ipcMain.handle('credentials:get', () => {
+    return getMonarchCredentials();
+  });
+
+  /**
+   * Check if Monarch credentials are stored (desktop mode).
+   */
+  ipcMain.handle('credentials:has', () => {
+    return hasMonarchCredentials();
+  });
+
+  /**
+   * Clear stored Monarch credentials (desktop mode).
+   */
+  ipcMain.handle('credentials:clear', () => {
+    clearMonarchCredentials();
+  });
+
+  /**
+   * Get the "Require Touch ID to unlock" setting.
+   */
+  ipcMain.handle('credentials:get-require-touch-id', () => {
+    return getRequireTouchId();
+  });
+
+  /**
+   * Set the "Require Touch ID to unlock" setting.
+   */
+  ipcMain.handle('credentials:set-require-touch-id', (_event, required: boolean) => {
+    setRequireTouchId(required);
+  });
+
+  /**
+   * Authenticate and get credentials with optional Touch ID.
+   */
+  ipcMain.handle('credentials:authenticate', async () => {
+    return authenticateAndGetCredentials();
+  });
+
+  /**
+   * Clear all auth data (both desktop and legacy modes).
+   */
+  ipcMain.handle('credentials:clear-all', () => {
+    clearAllAuthData();
   });
 
   // =========================================================================

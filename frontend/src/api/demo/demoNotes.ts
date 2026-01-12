@@ -582,9 +582,9 @@ export async function getMonthCheckboxStates(
       // Check if scope matches current mode
       const scopeMatches = mode === 'persist' ? scope === 'global' : scope === monthKey;
 
-      // For bulk fetch, we return states where source month matches viewing month
-      // (inherited notes would need individual fetches)
-      if (sourceMonth === monthKey && scopeMatches) {
+      // In persist mode, return all matching checkbox states (for inherited note support)
+      // In reset mode, only return states where source month matches viewing month
+      if (scopeMatches && (mode === 'persist' || sourceMonth === monthKey)) {
         result[`general:${sourceMonth}`] = states;
       }
     } else if (parts.length >= 2) {

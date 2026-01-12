@@ -83,6 +83,7 @@ export function CategoryTree({
                 border: '1px solid var(--monarch-border)',
                 animationDelay: `${index * 30}ms`,
               }}
+              data-tour={index === 0 ? 'category-note' : undefined}
             >
               {/* Group header section - lighter background for contrast */}
               <div
@@ -143,14 +144,13 @@ export function CategoryTree({
                   className="border-t"
                   style={{ borderColor: 'var(--monarch-border)' }}
                 >
-                  {group.categories.map((category, categoryIndex) => (
+                  {group.categories.map((category) => (
                     <CategoryRow
                       key={category.id}
                       category={category}
                       groupId={group.id}
                       groupName={group.name}
                       currentMonth={currentMonth}
-                      dataTourId={index === 0 && categoryIndex === 0 ? 'category-note' : undefined}
                     />
                   ))}
                 </div>

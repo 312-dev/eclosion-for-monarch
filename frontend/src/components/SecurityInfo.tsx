@@ -3,6 +3,15 @@ import { getSecurityStatus, getDeploymentInfo, type DeploymentInfo } from '../ap
 import { isDesktopMode } from '../utils/apiBase';
 import type { SecurityStatus } from '../types';
 
+/**
+ * Check if running in Electron desktop app with credential storage available.
+ */
+function isElectronDesktop(): boolean {
+  return typeof window !== 'undefined' &&
+    'electron' in window &&
+    window.electron?.credentials !== undefined;
+}
+
 interface SecurityInfoProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,6 +22,7 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
   const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const isDesktop = isDesktopMode();
+  const isElectron = isElectronDesktop();
 
   useEffect(() => {
     if (isOpen) {
@@ -66,7 +76,23 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--monarch-orange)' }}></div>
             </div>
-          ) : (
+          ) : (() => {
+            // Compute platform-specific text outside JSX to avoid nested ternaries
+            let storageTitle: string;
+            let storageDescription: string;
+
+            if (isElectron) {
+              storageTitle = 'Protected by Your Device';
+              storageDescription = 'This is a desktop application. Your credentials are stored in your operating system\'s secure storage (Keychain on macOS, Credential Manager on Windows) — protected by your device login and never sent to external servers.';
+            } else if (isDesktop) {
+              storageTitle = 'Stored Locally on Your Computer';
+              storageDescription = 'This is a desktop application. Your credentials are stored and processed entirely on your computer — nothing is sent to external servers.';
+            } else {
+              storageTitle = 'You Are Self-Hosting';
+              storageDescription = 'This application runs on your own infrastructure. Your credentials are stored and processed only on your self-hosted instance.';
+            }
+
+            return (
             <div className="space-y-6">
               {/* Encryption Status */}
               <section>
@@ -74,29 +100,52 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
                   <svg className="w-4 h-4" style={{ color: 'var(--monarch-success)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Your Credentials Are Encrypted
+                  Your Credentials Are Protected
                 </h3>
                 <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--monarch-bg-elevated)' }}>
-                  <dl className="space-y-4 text-sm">
-                    <div>
-                      <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Encryption Algorithm</dt>
-                      <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-                        {securityStatus?.encryption_algorithm || 'AES-256'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Key Derivation</dt>
-                      <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-                        {securityStatus?.key_derivation || 'PBKDF2-SHA256'}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>File Permissions</dt>
-                      <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-                        {securityStatus?.file_permissions || '0600'}
-                      </dd>
-                    </div>
-                  </dl>
+                  {isElectron ? (
+                    <dl className="space-y-4 text-sm">
+                      <div>
+                        <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Protection Method</dt>
+                        <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                          OS Secure Storage
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Encryption</dt>
+                        <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                          Keychain / Credential Manager
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Biometric Support</dt>
+                        <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                          Touch ID / Windows Hello
+                        </dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <dl className="space-y-4 text-sm">
+                      <div>
+                        <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Encryption Algorithm</dt>
+                        <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                          {securityStatus?.encryption_algorithm || 'AES-256'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Key Derivation</dt>
+                        <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                          {securityStatus?.key_derivation || 'PBKDF2-SHA256'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>File Permissions</dt>
+                        <dd className="font-mono text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                          {securityStatus?.file_permissions || '0600'}
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
                 </div>
               </section>
 
@@ -106,24 +155,49 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
                   How Your Data Is Protected
                 </h3>
                 <ul className="space-y-3 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-                  <li className="flex items-start gap-2">
-                    <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    <span>Your Monarch credentials are encrypted using <strong>your passphrase</strong> before being stored.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                    </svg>
-                    <span>Your credentials <strong>cannot be decrypted</strong> without your passphrase{isDesktop ? '.' : ' — not even by the server.'}</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                    </svg>
-                    <span>Your passphrase is used to derive an encryption key using <strong>480,000 PBKDF2 iterations</strong>.</span>
-                  </li>
+                  {isElectron ? (
+                    <>
+                      <li className="flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Your Monarch credentials are stored in your <strong>operating system&apos;s secure storage</strong> (Keychain on macOS, Credential Manager on Windows).</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <span>Credentials are <strong>encrypted by your OS</strong> and protected by your device login.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                        </svg>
+                        <span>Optional <strong>Touch ID or Windows Hello</strong> adds biometric protection when you enable &quot;Require biometric to unlock&quot; in settings.</span>
+                      </li>
+                    </>
+                  ) : (
+                    <>
+                      <li className="flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Your Monarch credentials are encrypted using <strong>your passphrase</strong> before being stored.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <span>Your credentials <strong>cannot be decrypted</strong> without your passphrase{isDesktop ? '.' : ' — not even by the server.'}</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <svg className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                        <span>Your passphrase is used to derive an encryption key using <strong>480,000 PBKDF2 iterations</strong>.</span>
+                      </li>
+                    </>
+                  )}
                 </ul>
               </section>
 
@@ -135,7 +209,9 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
                 <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
                   Monarch Money does not currently offer OAuth or API tokens for third-party integrations.
                   Direct authentication with your email and password is the only way to access your data.
-                  Your credentials are encrypted with your passphrase so that only you can access them.
+                  {isElectron
+                    ? ' Your credentials are securely stored in your operating system\'s credential manager.'
+                    : ' Your credentials are encrypted with your passphrase so that only you can access them.'}
                 </p>
               </section>
 
@@ -171,12 +247,10 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                     )}
                   </svg>
-                  {isDesktop ? 'Stored Locally on Your Computer' : 'You Are Self-Hosting'}
+                  {storageTitle}
                 </h3>
                 <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-                  {isDesktop
-                    ? 'This is a desktop application. Your credentials are stored and processed entirely on your computer — nothing is sent to external servers.'
-                    : 'This application runs on your own infrastructure. Your credentials are stored and processed only on your self-hosted instance.'}
+                  {storageDescription}
                 </p>
               </section>
 
@@ -222,7 +296,8 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
                 </section>
               )}
             </div>
-          )}
+          );
+          })()}
 
           <button
             onClick={onClose}

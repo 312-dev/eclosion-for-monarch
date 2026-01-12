@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Icon index file; splitting would hurt discoverability */
 /**
  * Icon Components
  *
@@ -96,6 +97,11 @@ import {
   Rainbow,
   Smile,
   Target,
+  Split,
+  Award,
+  PiggyBank,
+  Coins,
+  Wallet,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -197,6 +203,11 @@ export const CloudSunIcon = CloudSun;
 export const RainbowIcon = Rainbow;
 export const SmileIcon = Smile;
 export const TargetIcon = Target;
+export const SplitIcon = Split;
+export const AwardIcon = Award;
+export const PiggyBankIcon = PiggyBank;
+export const CoinsIcon = Coins;
+export const WalletIcon = Wallet;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -687,4 +698,11 @@ export const Icons = {
 
   // Goals
   Target: TargetIcon,
+
+  // Finance
+  Split: SplitIcon,
+  Award: AwardIcon,
+  PiggyBank: PiggyBankIcon,
+  Coins: CoinsIcon,
+  Wallet: WalletIcon,
 };

@@ -260,24 +260,13 @@ export function NoteEditor({
           aria-label="Note content"
         />
 
-        {/* Math suggestion tooltip */}
+        {/* Math suggestion - Gmail-style inline ghost text */}
         {mathSuggestion && (
-          <div
-            className="absolute bottom-2 right-2 px-2 py-1 rounded text-xs flex items-center gap-2"
-            style={{
-              backgroundColor: 'var(--monarch-bg-hover)',
-              color: 'var(--monarch-text-muted)',
-            }}
-          >
-            <span>
-              {mathSuggestion.expression} = <strong style={{ color: 'var(--monarch-orange)' }}>{mathSuggestion.result}</strong>
+          <div className="note-editor-math-ghost">
+            <span className="note-editor-math-ghost-text">
+              ={mathSuggestion.result}
             </span>
-            <kbd
-              className="px-1 py-0.5 rounded text-xs"
-              style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
-            >
-              Tab
-            </kbd>
+            <span className="note-editor-math-ghost-hint">Tab</span>
           </div>
         )}
       </div>

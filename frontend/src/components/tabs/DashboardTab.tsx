@@ -26,18 +26,18 @@ function getTools(isDemo: boolean) {
   const prefix = isDemo ? '/demo' : '';
   return [
     {
-      id: 'recurring',
-      name: 'Recurring',
-      description: 'Track and manage recurring expenses with smart category allocation',
-      icon: <RecurringIcon size={28} />,
-      path: `${prefix}/recurring`,
-    },
-    {
       id: 'notes',
       name: 'Notes',
       description: 'Add notes to categories that carry forward each month',
       icon: <NotesIcon size={28} />,
       path: `${prefix}/notes`,
+    },
+    {
+      id: 'recurring',
+      name: 'Recurring',
+      description: 'Track and manage recurring expenses with smart category allocation',
+      icon: <RecurringIcon size={28} />,
+      path: `${prefix}/recurring`,
     },
   ];
 }

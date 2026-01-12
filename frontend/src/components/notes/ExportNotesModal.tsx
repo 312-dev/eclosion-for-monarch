@@ -56,7 +56,7 @@ export function ExportNotesModal({
   const { data: allNotesData } = useAllNotesQuery();
 
   // Fetch checkbox states for the current month (for single month export)
-  const { data: checkboxStates } = useMonthCheckboxStatesQuery(
+  const { data: checkboxStates, isLoading: isLoadingCheckboxes } = useMonthCheckboxStatesQuery(
     startMonth === endMonth ? startMonth : currentMonth
   );
 
@@ -81,7 +81,7 @@ export function ExportNotesModal({
   }, [onClose]);
 
   const handleExport = useCallback(() => {
-    if (!allNotesData) return;
+    if (!allNotesData || isLoadingCheckboxes) return;
 
     const monthRange = getMonthRange(startMonth, endMonth);
     const htmlContent = buildExportHtml(
@@ -116,6 +116,7 @@ export function ExportNotesModal({
     onClose();
   }, [
     allNotesData,
+    isLoadingCheckboxes,
     startMonth,
     endMonth,
     groups,
@@ -263,9 +264,9 @@ export function ExportNotesModal({
             <button
               type="button"
               onClick={handleExport}
-              disabled={!hasSelection || !allNotesData}
+              disabled={!hasSelection || !allNotesData || isLoadingCheckboxes}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                hasSelection && allNotesData
+                hasSelection && allNotesData && !isLoadingCheckboxes
                   ? 'hover:opacity-90'
                   : 'opacity-50 cursor-not-allowed'
               }`}
