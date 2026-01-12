@@ -18,7 +18,6 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
       "automerge": true,
       "automergeType": "pr",
-      "platformAutomerge": true,
       "automergeSchedule": ["before 6am on monday"]
     },
     {
