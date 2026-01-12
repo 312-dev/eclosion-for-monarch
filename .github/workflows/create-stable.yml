@@ -62,9 +62,47 @@ jobs:
           fi
           echo "Running on main branch"
 
+  verify-ci:
+    name: Verify CI Passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      statuses: read
+    steps:
+      - name: Check CI status for commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA="${{ github.sha }}"
+          echo "Checking CI status for commit: $SHA"
+
+          # Get the CI Status check result
+          STATUS=$(gh api repos/${{ github.repository }}/commits/$SHA/status --jq '.statuses[] | select(.context == "CI Status") | .state' 2>/dev/null || echo "not_found")
+
+          if [ "$STATUS" = "success" ]; then
+            echo "✅ CI passed for this commit"
+            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+            echo "✅ CI Status: **success** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
+          elif [ "$STATUS" = "pending" ]; then
+            echo "::error::CI is still running for this commit. Wait for CI to complete before creating a release."
+            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+            echo "⏳ CI Status: **pending** - CI is still running" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          elif [ "$STATUS" = "not_found" ] || [ -z "$STATUS" ]; then
+            echo "::error::No CI status found for this commit. Ensure CI has run on main before creating a release."
+            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+            echo "❌ CI Status: **not found** - CI may not have run on this commit" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "::error::CI failed for this commit (status: $STATUS). Fix CI before creating a release."
+            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+            echo "❌ CI Status: **$STATUS**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
   calculate-version:
     name: Calculate Version
-    needs: check-branch
+    needs: [check-branch, verify-ci]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
