@@ -11,12 +11,12 @@
     "all": "tsx index.ts all"
   },
   "dependencies": {
-    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/parser": "^8.52.0",
     "@typescript-eslint/typescript-estree": "^8.0.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^25.0.6",
     "tsx": "^4.0.0"
   }
 }
