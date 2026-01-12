@@ -203,6 +203,7 @@ class CredentialsService:
         email: str,
         password: str,
         mfa_secret: str = "",
+        mfa_mode: str = "secret",
     ) -> dict[str, Any]:
         """
         Desktop mode login: validate credentials and set directly in session.
@@ -214,14 +215,20 @@ class CredentialsService:
         Args:
             email: Monarch email
             password: Monarch password
-            mfa_secret: MFA secret key (optional)
+            mfa_secret: MFA secret key (for mfa_mode='secret') or 6-digit code (for mfa_mode='code')
+            mfa_mode: 'secret' for stored secret, 'code' for one-time 6-digit code
 
         Returns:
             Success/failure result
         """
         try:
             # Validate credentials against Monarch API
-            await get_mm(email=email, password=password, mfa_secret_key=mfa_secret)
+            if mfa_mode == "code" and mfa_secret:
+                # Use one-time code authentication
+                await get_mm_with_code(email=email, password=password, mfa_code=mfa_secret)
+            else:
+                # Use stored secret authentication (or no MFA)
+                await get_mm(email=email, password=password, mfa_secret_key=mfa_secret)
 
             # Store directly in session (no encryption, no disk storage)
             CredentialsService._session_credentials = {

@@ -7,6 +7,7 @@
 import { BrowserWindow, shell, app, session } from 'electron';
 import path from 'node:path';
 import Store from 'electron-store';
+import { isBetaBuild } from './beta';
 
 // Lazy store initialization to ensure app.setPath('userData') is called first
 let store: Store | null = null;
@@ -30,8 +31,8 @@ function setupCSP(): void {
             "style-src 'self' 'unsafe-inline'", // Tailwind uses inline styles
             "img-src 'self' data: https:", // Allow external images (icons, etc.)
             "font-src 'self' data:",
-            // Allow backend API and GitHub raw for ideas.json fallback
-            "connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://raw.githubusercontent.com",
+            // Allow backend API, GitHub raw for ideas.json fallback, and GitHub API for beta changelog
+            "connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://raw.githubusercontent.com https://api.github.com",
           ].join('; '),
         ],
       },
@@ -156,6 +157,11 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+
+    // Enable dev tools for beta builds (helps with debugging pre-release issues)
+    if (isBetaBuild()) {
+      mainWindow?.webContents.openDevTools({ mode: 'detach' });
+    }
   });
 
   // Handle close - behavior depends on menuBarMode setting

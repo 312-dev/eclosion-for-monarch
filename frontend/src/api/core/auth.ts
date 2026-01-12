@@ -115,7 +115,8 @@ export interface DesktopLoginResult {
 export async function desktopLogin(
   email: string,
   password: string,
-  mfaSecret?: string
+  mfaSecret?: string,
+  mfaMode: 'secret' | 'code' = 'secret'
 ): Promise<DesktopLoginResult> {
   return fetchApi<DesktopLoginResult>('/auth/desktop-login', {
     method: 'POST',
@@ -123,6 +124,7 @@ export async function desktopLogin(
       email,
       password,
       mfa_secret: mfaSecret || '',
+      mfa_mode: mfaMode,
     }),
   });
 }

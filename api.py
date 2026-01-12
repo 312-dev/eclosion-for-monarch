@@ -618,13 +618,18 @@ async def auth_desktop_login():
         email = data.get("email")
         password = data.get("password")
         mfa_secret = data.get("mfa_secret", "")
+        mfa_mode = data.get("mfa_mode", "secret")  # 'secret' or 'code'
 
         if not email or not password:
             _audit_log("DESKTOP_LOGIN", False, "Missing credentials")
             return jsonify({"success": False, "error": "Email and password are required"}), 400
 
-        result = await sync_service.credentials_service.desktop_login(email, password, mfa_secret)
-        _audit_log("DESKTOP_LOGIN", result.get("success", False), "Desktop mode")
+        result = await sync_service.credentials_service.desktop_login(
+            email, password, mfa_secret, mfa_mode
+        )
+        _audit_log(
+            "DESKTOP_LOGIN", result.get("success", False), f"Desktop mode, MFA mode: {mfa_mode}"
+        )
 
         if result.get("success"):
             _update_activity()

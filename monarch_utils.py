@@ -176,6 +176,33 @@ def get_month_range() -> tuple[str, str]:
     return start, end
 
 
+def _extract_secret_from_otpauth(uri: str) -> str | None:
+    """
+    Extract the secret from an otpauth:// URI.
+
+    Format: otpauth://totp/Label?secret=JBSWY3DPEHPK3PXP&issuer=...
+
+    Args:
+        uri: The otpauth:// URI
+
+    Returns:
+        The extracted secret, or None if not found
+    """
+    from urllib.parse import parse_qs, urlparse
+
+    try:
+        parsed = urlparse(uri)
+        if parsed.scheme.lower() != "otpauth":
+            return None
+        params = parse_qs(parsed.query)
+        secrets = params.get("secret", [])
+        if secrets:
+            return secrets[0]
+    except Exception:
+        pass
+    return None
+
+
 def _sanitize_base32_secret(secret: str) -> str:
     """
     Sanitize a base32 secret key by fixing common transcription mistakes.
@@ -186,9 +213,17 @@ def _sanitize_base32_secret(secret: str) -> str:
     - 8 (eight) → B
 
     Also removes spaces and converts to uppercase.
+    Also handles otpauth:// URIs by extracting the embedded secret.
     """
     if not secret:
         return secret
+
+    # Check if it's an otpauth:// URI and extract the secret
+    if secret.lower().startswith("otpauth://"):
+        extracted = _extract_secret_from_otpauth(secret)
+        if extracted:
+            secret = extracted
+
     # Remove spaces and convert to uppercase
     secret = secret.replace(" ", "").upper()
     # Fix common mistakes

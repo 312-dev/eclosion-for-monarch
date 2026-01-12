@@ -55,7 +55,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       // Desktop mode: simplified flow without passphrase
       if (isElectronDesktop()) {
         // Validate credentials and establish backend session
-        const result = await desktopLogin(email, password, mfaSecret);
+        const result = await desktopLogin(email, password, mfaSecret, mfaMode);
 
         if (result.success) {
           // Store credentials in Electron's safeStorage

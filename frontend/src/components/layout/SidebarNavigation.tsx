@@ -5,7 +5,7 @@
  * Converts to bottom navigation on mobile screens.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Settings, Lock, Lightbulb, LayoutDashboard, Paintbrush, Wrench, User, Download, Heart, Zap, Monitor, Shield, Database, FileText, AlertTriangle, RotateCcw } from 'lucide-react';
 import { RecurringIcon, NotesIcon, AppIcon } from '../wizards/WizardComponents';
@@ -117,9 +117,19 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const isDesktop = isDesktopMode();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [ideasModalOpen, setIdeasModalOpen] = useState(false);
+  const [showLockButton, setShowLockButton] = useState(!isDesktop);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
   const comingSoonFeatures = getComingSoonFeatures();
   const prefix = isDemo ? '/demo' : '';
+
+  // In desktop mode, only show lock button if Touch ID is required
+  useEffect(() => {
+    if (isDesktop && window.electron?.credentials) {
+      window.electron.credentials.getRequireTouchId().then((required: boolean) => {
+        setShowLockButton(required);
+      });
+    }
+  }, [isDesktop]);
 
   // Check if we're on the settings page
   const isSettingsPage = location.pathname === `${prefix}/settings`;
@@ -259,8 +269,8 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
         )}
       </div>
 
-      {/* Footer - at the bottom (desktop only, not in demo mode) */}
-      {!isDemo && (
+      {/* Footer - at the bottom (desktop only, not in demo mode, only if lock is available) */}
+      {!isDemo && showLockButton && (
         <div className="sidebar-nav-footer sidebar-desktop-only">
           <div className="sidebar-nav-list">
             <button
