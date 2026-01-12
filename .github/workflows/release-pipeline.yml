@@ -50,7 +50,13 @@ on:
       APPLE_TEAM_ID:
         required: false
 
-permissions: read-all
+# Note: This workflow inherits permissions from the calling workflow.
+# Required permissions (must be granted by caller):
+#   contents: write     - For checkout and release operations
+#   packages: write     - For Docker image publishing
+#   id-token: write     - For Sigstore keyless signing
+#   security-events: write - For security scanning
+#   deployments: write  - For Cloudflare deployment
 
 jobs:
   # ===========================================================================
@@ -357,6 +363,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write  # Required for Sigstore keyless signing
     steps:
       - name: Download all desktop artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -378,6 +385,39 @@ jobs:
           rm -f artifacts/checksums-*.txt
           echo "Combined checksums:"
           cat artifacts/SHA256SUMS.txt
+
+      # Sign release artifacts with Sigstore cosign (keyless)
+      - name: Install cosign
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.0
+
+      - name: Sign release artifacts
+        run: |
+          echo "Signing release artifacts with Sigstore..."
+          cd artifacts
+
+          # Sign each binary artifact (skip metadata files)
+          for file in *.dmg *.zip *.exe *.AppImage *.deb *.rpm; do
+            if [ -f "$file" ]; then
+              echo "Signing: $file"
+              cosign sign-blob --yes "$file" --output-signature "${file}.sig" --output-certificate "${file}.pem"
+            fi
+          done
+
+          # Sign the checksums file
+          if [ -f "SHA256SUMS.txt" ]; then
+            echo "Signing: SHA256SUMS.txt"
+            cosign sign-blob --yes "SHA256SUMS.txt" --output-signature "SHA256SUMS.txt.sig" --output-certificate "SHA256SUMS.txt.pem"
+          fi
+
+          echo "## Release Artifact Signatures" >> $GITHUB_STEP_SUMMARY
+          echo "All artifacts signed with Sigstore (keyless)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Verify with:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "cosign verify-blob --signature <file>.sig --certificate <file>.pem \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\" >> $GITHUB_STEP_SUMMARY
+          echo "  --certificate-identity-regexp 'https://github.com/${{ github.repository }}/' <file>" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload to release
         env:
