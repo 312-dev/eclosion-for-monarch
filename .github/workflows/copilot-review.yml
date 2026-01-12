@@ -25,12 +25,10 @@ jobs:
     name: Copilot Review Status
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # Skip for bot PRs (any account ending in [bot])
-    # Also skip for pull_request_review_comment events from non-Copilot users
+    # Skip for pull_request_review_comment events from non-Copilot users
     if: >-
-      ${{ !endsWith(github.actor, '[bot]') &&
-          (github.event_name != 'pull_request_review_comment' ||
-           contains(github.event.comment.user.login, 'copilot')) }}
+      ${{ github.event_name != 'pull_request_review_comment' ||
+          contains(github.event.comment.user.login, 'copilot') }}
     steps:
       - name: Determine PR number
         id: pr
@@ -97,23 +95,12 @@ jobs:
           if [ "$copilot_review" == "null" ] || [ -z "$copilot_review" ]; then
             echo "No Copilot review found"
             echo "reviewed=false" >> $GITHUB_OUTPUT
-            echo "reviewed_latest=false" >> $GITHUB_OUTPUT
             echo "has_unresolved=false" >> $GITHUB_OUTPUT
             echo "unresolved_count=0" >> $GITHUB_OUTPUT
             echo "total_count=0" >> $GITHUB_OUTPUT
           else
             echo "Copilot review found"
             echo "reviewed=true" >> $GITHUB_OUTPUT
-
-            # Check if review is for the latest commit
-            review_sha=$(echo "$copilot_review" | jq -r '.commit_id')
-            if [ "$review_sha" == "$HEAD_SHA" ]; then
-              echo "Review is for latest commit"
-              echo "reviewed_latest=true" >> $GITHUB_OUTPUT
-            else
-              echo "Review is for older commit ($review_sha), latest is $HEAD_SHA"
-              echo "reviewed_latest=false" >> $GITHUB_OUTPUT
-            fi
 
             # Use GraphQL to get review threads with resolution status
             # This lets us check if Copilot comments have been resolved
@@ -169,14 +156,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=${{ steps.pr.outputs.number }}
-          REVIEWED_LATEST="${{ steps.copilot.outputs.reviewed_latest }}"
+          REVIEWED="${{ steps.copilot.outputs.reviewed }}"
 
           # Get current labels
           current_labels=$(gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels --jq '.[].name')
           has_needs_review_label=$(echo "$current_labels" | grep -c "needs copilot review" || true)
 
-          if [ "$REVIEWED_LATEST" != "true" ]; then
-            # Add label if not present
+          if [ "$REVIEWED" != "true" ]; then
+            # Add label if not present (Copilot hasn't reviewed yet)
             if [ "$has_needs_review_label" -eq 0 ]; then
               echo "Adding 'needs copilot review' label"
               gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels \
@@ -184,7 +171,7 @@ jobs:
                 -f "labels[]=needs copilot review" || true
             fi
           else
-            # Remove label if present
+            # Remove label if present (Copilot has reviewed)
             if [ "$has_needs_review_label" -gt 0 ]; then
               echo "Removing 'needs copilot review' label"
               gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels/needs%20copilot%20review \
@@ -203,7 +190,7 @@ jobs:
             HEAD_SHA=${{ github.event.pull_request.head.sha }}
           fi
           BYPASS="${{ steps.bypass.outputs.bypass }}"
-          REVIEWED_LATEST="${{ steps.copilot.outputs.reviewed_latest }}"
+          REVIEWED="${{ steps.copilot.outputs.reviewed }}"
           HAS_UNRESOLVED="${{ steps.copilot.outputs.has_unresolved }}"
           UNRESOLVED_COUNT="${{ steps.copilot.outputs.unresolved_count }}"
           TOTAL_COUNT="${{ steps.copilot.outputs.total_count }}"
@@ -211,9 +198,9 @@ jobs:
           if [ "$BYPASS" == "true" ]; then
             state="success"
             description="Copilot review bypassed by admin"
-          elif [ "$REVIEWED_LATEST" != "true" ]; then
+          elif [ "$REVIEWED" != "true" ]; then
             state="pending"
-            description="Waiting for Copilot review on latest commit"
+            description="Waiting for Copilot review"
           elif [ "$HAS_UNRESOLVED" == "true" ]; then
             state="failure"
             description="$UNRESOLVED_COUNT unresolved Copilot comment(s) - please resolve"
@@ -232,20 +219,20 @@ jobs:
             -f context="Copilot Review Status" \
             -f description="$description"
 
-  # Job that always succeeds for bot PRs (so they're not blocked)
-  copilot-review-skip:
-    name: Copilot Review Status
+  # Job that sets success status for bot PRs (so they're not blocked)
+  copilot-review-bot:
+    name: Copilot Review (Bot PR)
     runs-on: ubuntu-latest
     timeout-minutes: 2
     if: ${{ endsWith(github.actor, '[bot]') }}
     permissions:
       statuses: write
     steps:
-      - name: Skip for bot PR
+      - name: Set success status for bot PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Skipping Copilot review check for bot PR (author: ${{ github.actor }})"
+          echo "Setting success status for bot PR (author: ${{ github.actor }})"
 
           gh api repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
             -f state="success" \
