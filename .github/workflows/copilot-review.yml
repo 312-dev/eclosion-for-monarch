@@ -1,0 +1,170 @@
+name: Copilot Review
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  copilot-review-check:
+    name: Copilot Review Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Skip for bot PRs (any account ending in [bot])
+    if: ${{ !endsWith(github.actor, '[bot]') }}
+    steps:
+      - name: Check for admin bypass
+        id: bypass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          labels=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels --jq '.[].name')
+          if echo "$labels" | grep -q "skip-copilot-review"; then
+            echo "Admin bypass label found"
+            echo "bypass=true" >> $GITHUB_OUTPUT
+          else
+            echo "bypass=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get Copilot review status
+        if: steps.bypass.outputs.bypass != 'true'
+        id: copilot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          echo "Checking Copilot review for PR #$PR_NUMBER (commit: $HEAD_SHA)"
+
+          # Get all reviews on the PR
+          reviews=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews)
+
+          # Find Copilot's most recent review
+          copilot_review=$(echo "$reviews" | jq -r '
+            [.[] | select(.user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "github-copilot[bot]" or .user.type == "Bot" and (.user.login | contains("copilot")))]
+            | sort_by(.submitted_at)
+            | last
+          ')
+
+          if [ "$copilot_review" == "null" ] || [ -z "$copilot_review" ]; then
+            echo "No Copilot review found"
+            echo "reviewed=false" >> $GITHUB_OUTPUT
+            echo "reviewed_latest=false" >> $GITHUB_OUTPUT
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+          else
+            echo "Copilot review found"
+            echo "reviewed=true" >> $GITHUB_OUTPUT
+
+            # Check if review is for the latest commit
+            review_sha=$(echo "$copilot_review" | jq -r '.commit_id')
+            if [ "$review_sha" == "$HEAD_SHA" ]; then
+              echo "Review is for latest commit"
+              echo "reviewed_latest=true" >> $GITHUB_OUTPUT
+            else
+              echo "Review is for older commit ($review_sha), latest is $HEAD_SHA"
+              echo "reviewed_latest=false" >> $GITHUB_OUTPUT
+            fi
+
+            # Check for review comments (issues found)
+            review_id=$(echo "$copilot_review" | jq -r '.id')
+            comments=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/reviews/$review_id/comments)
+            comment_count=$(echo "$comments" | jq 'length')
+
+            if [ "$comment_count" -gt 0 ]; then
+              echo "Copilot found $comment_count issue(s)"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+              echo "issue_count=$comment_count" >> $GITHUB_OUTPUT
+            else
+              echo "Copilot found no issues"
+              echo "has_issues=false" >> $GITHUB_OUTPUT
+              echo "issue_count=0" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Manage labels
+        if: steps.bypass.outputs.bypass != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REVIEWED_LATEST="${{ steps.copilot.outputs.reviewed_latest }}"
+
+          # Get current labels
+          current_labels=$(gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels --jq '.[].name')
+          has_needs_review_label=$(echo "$current_labels" | grep -c "needs copilot review" || true)
+
+          if [ "$REVIEWED_LATEST" != "true" ]; then
+            # Add label if not present
+            if [ "$has_needs_review_label" -eq 0 ]; then
+              echo "Adding 'needs copilot review' label"
+              gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels \
+                --method POST \
+                -f "labels[]=needs copilot review" || true
+            fi
+          else
+            # Remove label if present
+            if [ "$has_needs_review_label" -gt 0 ]; then
+              echo "Removing 'needs copilot review' label"
+              gh api repos/${{ github.repository }}/issues/$PR_NUMBER/labels/needs%20copilot%20review \
+                --method DELETE || true
+            fi
+          fi
+
+      - name: Set status check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          BYPASS="${{ steps.bypass.outputs.bypass }}"
+          REVIEWED_LATEST="${{ steps.copilot.outputs.reviewed_latest }}"
+          HAS_ISSUES="${{ steps.copilot.outputs.has_issues }}"
+          ISSUE_COUNT="${{ steps.copilot.outputs.issue_count }}"
+
+          if [ "$BYPASS" == "true" ]; then
+            state="success"
+            description="Copilot review bypassed by admin"
+          elif [ "$REVIEWED_LATEST" != "true" ]; then
+            state="pending"
+            description="Waiting for Copilot review on latest commit"
+          elif [ "$HAS_ISSUES" == "true" ]; then
+            state="failure"
+            description="Copilot found $ISSUE_COUNT issue(s) - please address"
+          else
+            state="success"
+            description="Copilot review passed - no issues found"
+          fi
+
+          echo "Setting status: $state - $description"
+
+          gh api repos/${{ github.repository }}/statuses/$HEAD_SHA \
+            -f state="$state" \
+            -f context="Copilot Review Status" \
+            -f description="$description"
+
+  # Job that always succeeds for bot PRs (so they're not blocked)
+  copilot-review-skip:
+    name: Copilot Review Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: ${{ endsWith(github.actor, '[bot]') }}
+    permissions:
+      statuses: write
+    steps:
+      - name: Skip for bot PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Skipping Copilot review check for bot PR (author: ${{ github.actor }})"
+
+          gh api repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f state="success" \
+            -f context="Copilot Review Status" \
+            -f description="Skipped for automated PR"

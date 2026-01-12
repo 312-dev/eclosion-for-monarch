@@ -28,7 +28,7 @@ If applicable, add screenshots.
 
 ## Environment
 
-- Deployment: [Railway / Docker self-hosted / Local development]
+- Deployment: [Desktop app / Docker self-hosted / Local development]
 - Browser: [e.g., Chrome 120]
 - OS: [e.g., macOS 14.2]
 

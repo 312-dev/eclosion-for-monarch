@@ -125,7 +125,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
+          pip install pip==24.3.1
           pip install --require-hashes -r requirements-dev.txt
           pip install --no-deps -r requirements-vcs.txt
 
@@ -140,6 +140,9 @@ jobs:
 
       - name: Test
         run: pytest
+
+      - name: Check Monarch API integration test coverage
+        run: python scripts/check-monarch-api-coverage.py
 
       - name: Test with Coverage
         run: pytest --cov=. --cov-report=html --cov-report=xml
@@ -264,9 +267,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --upgrade pip
+          pip install pip==24.3.1
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller==6.11.1
 
       - name: Install frontend dependencies
         working-directory: frontend
