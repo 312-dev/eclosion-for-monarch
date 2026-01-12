@@ -1,6 +1,10 @@
 # OpenSSF Scorecard
 # Runs security health checks and publishes results to scorecard.dev
 # This enables the Scorecard badge in the README
+#
+# NOTE: Actions in this workflow use version tags instead of SHA hashes
+# because Scorecard's publish_results feature requires version tags for
+# workflow verification. See: https://github.com/ossf/scorecard-action#workflow-restrictions
 
 name: Scorecard
 
@@ -25,7 +29,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -37,6 +41,6 @@ jobs:
           publish_results: true
 
       - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@c37a8b7cd97e31de3fcbd9d84c401870edeb8d34 # v3
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
