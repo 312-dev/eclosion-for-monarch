@@ -83,8 +83,18 @@ export {
   type UseRecurringTourReturn,
 } from './useRecurringTour';
 
+export {
+  useNotesTour,
+  NOTES_TOUR_STATE_KEY,
+  type UseNotesTourReturn,
+} from './useNotesTour';
+
 export { useBiometric, type UseBiometricReturn } from './useBiometric';
 
 export { useSavingStates, type UseSavingStatesReturn } from './useSavingStates';
 
 export { useSelectKeyboard } from './useSelectKeyboard';
+
+export { useCheckboxState, type UseCheckboxStateReturn } from './useCheckboxState';
+
+export { useHiddenCategories } from './useHiddenCategories';

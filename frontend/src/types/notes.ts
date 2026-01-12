@@ -98,6 +98,19 @@ export interface EffectiveNote {
 }
 
 /**
+ * The effective general note for display, which may be inherited from an earlier month.
+ * Same concept as EffectiveNote but for general month notes.
+ */
+export interface EffectiveGeneralNote {
+  /** The general note content, or null if no note exists */
+  note: GeneralMonthNote | null;
+  /** Which month the note originates from */
+  sourceMonth: MonthKey | null;
+  /** True if note is inherited from an earlier month */
+  isInherited: boolean;
+}
+
+/**
  * A category group with its effective note and child categories
  */
 export interface CategoryGroupWithNotes {
@@ -139,8 +152,8 @@ export interface MonthNotesState {
   metadata: MonthMetadata;
   /** Category groups with their notes */
   groups: CategoryGroupWithNotes[];
-  /** General month note (not category-specific) */
-  generalNote: GeneralMonthNote | null;
+  /** Effective general month note (may be inherited from earlier month) */
+  effectiveGeneralNote: EffectiveGeneralNote | null;
   /** Archived notes from deleted categories */
   archivedNotes: ArchivedNote[];
 }
@@ -245,4 +258,131 @@ export interface GetMonthNotesResponse {
 export interface GetRevisionHistoryResponse {
   /** The revision history */
   history: NoteRevisionHistory;
+}
+
+// ============================================================================
+// Checkbox State Types
+// ============================================================================
+
+/**
+ * Checkbox persistence mode
+ *
+ * 'persist': Checkbox states carry over to future months viewing the same note
+ * 'reset': Each viewing month starts with fresh (unchecked) checkboxes
+ */
+export type CheckboxMode = 'persist' | 'reset';
+
+/**
+ * Checkbox states for a note
+ */
+export interface CheckboxStates {
+  /** Array of checked states, indexed by checkbox position in markdown */
+  states: boolean[];
+}
+
+/**
+ * Notes feature settings
+ */
+export interface NotesSettings {
+  /** How checkbox state persists across months */
+  checkboxMode: CheckboxMode;
+}
+
+/**
+ * Request to update a checkbox state
+ */
+export interface UpdateCheckboxRequest {
+  /** Note ID for category/group notes */
+  noteId?: string;
+  /** Month key for general notes */
+  generalNoteMonthKey?: string;
+  /** The month being viewed */
+  viewingMonth: string;
+  /** Checkbox position in the markdown (0-indexed) */
+  checkboxIndex: number;
+  /** New checked state */
+  isChecked: boolean;
+}
+
+/**
+ * Response from getting checkbox states
+ */
+export interface GetCheckboxStatesResponse {
+  /** Array of checkbox states */
+  states: boolean[];
+}
+
+/**
+ * Response from getting all checkbox states for a month
+ */
+export interface GetMonthCheckboxStatesResponse {
+  /** Map of note_id -> checkbox states */
+  states: Record<string, boolean[]>;
+}
+
+/**
+ * Response from updating checkbox state
+ */
+export interface UpdateCheckboxResponse {
+  success: boolean;
+  /** Updated checkbox states */
+  states: boolean[];
+}
+
+/**
+ * Response from getting notes settings
+ */
+export interface GetNotesSettingsResponse {
+  settings: NotesSettings;
+}
+
+/**
+ * Request to update notes settings
+ */
+export interface UpdateNotesSettingsRequest {
+  checkboxMode?: CheckboxMode;
+}
+
+/**
+ * Response from updating notes settings
+ */
+export interface UpdateNotesSettingsResponse {
+  success: boolean;
+  settings: NotesSettings;
+}
+
+// ============================================================================
+// Notes Categories Types
+// ============================================================================
+
+/**
+ * A category within a group for the notes feature
+ */
+export interface NotesCategory {
+  /** Monarch category ID */
+  id: string;
+  /** Category display name */
+  name: string;
+  /** Category icon/emoji if available */
+  icon?: string;
+}
+
+/**
+ * A category group with its categories for the notes feature
+ */
+export interface NotesCategoryGroup {
+  /** Monarch group ID */
+  id: string;
+  /** Group display name */
+  name: string;
+  /** Categories within this group */
+  categories: NotesCategory[];
+}
+
+/**
+ * Response from getting all notes categories
+ */
+export interface GetNotesCategoriesResponse {
+  /** All category groups with their categories */
+  groups: NotesCategoryGroup[];
 }

@@ -50,3 +50,7 @@ export {
   setBetaModeOverride,
   getBetaModeOverride,
 } from './environment';
+
+export { evaluateMathExpression } from './mathEvaluator';
+
+export { buildCategoryGroupsWithNotes, hasAnyNotes } from './notesTransform';
