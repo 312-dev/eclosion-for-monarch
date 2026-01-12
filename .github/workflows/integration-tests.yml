@@ -1,0 +1,115 @@
+# Integration Tests - Triggers tests in private repo
+#
+# IMPORTANT: This workflow is ONLY callable from other workflows (workflow_call).
+# It is NOT manually triggerable. Integration tests run exclusively as part of
+# the release process (beta and stable releases).
+#
+# Architecture:
+# 1. This workflow dispatches to a private repo (eclosion-integration-tests)
+# 2. The private repo runs tests against real Monarch API
+# 3. The private repo reports status back via commit status
+# 4. This workflow waits for and validates that status
+#
+# This ensures:
+# - Credentials are never exposed in public repo logs
+# - Contributors cannot manually run integration tests
+# - Integration tests gate releases but don't slow down PR CI
+
+name: Integration Tests
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: 'Commit SHA to test'
+        required: true
+        type: string
+    secrets:
+      INTEGRATION_DISPATCH_TOKEN:
+        description: 'PAT to trigger private repo workflow'
+        required: true
+
+jobs:
+  trigger-and-wait:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: read  # To read commit statuses
+    steps:
+      - name: Trigger private repo integration tests
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.INTEGRATION_DISPATCH_TOKEN }}
+          script: |
+            console.log('Triggering integration tests for SHA: ${{ inputs.sha }}');
+
+            await github.rest.repos.createDispatchEvent({
+              owner: '312-dev',
+              repo: 'eclosion-integration-tests',
+              event_type: 'run-integration-tests',
+              client_payload: {
+                sha: '${{ inputs.sha }}',
+                repository: '${{ github.repository }}',
+                run_id: '${{ github.run_id }}',
+                ref: '${{ github.ref }}',
+                actor: '${{ github.actor }}'
+              }
+            });
+
+            console.log('Dispatch sent successfully');
+
+      - name: Wait for integration tests to complete
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ inputs.sha }}';
+            const maxAttempts = 90; // 15 minutes max (90 * 10s)
+            const delay = 10000; // 10 seconds
+
+            console.log(`Waiting for integration test results on SHA: ${sha}`);
+            console.log(`Will check every ${delay/1000}s for up to ${maxAttempts * delay / 60000} minutes`);
+
+            // Give the private repo a moment to start
+            await new Promise(r => setTimeout(r, 5000));
+
+            for (let i = 0; i < maxAttempts; i++) {
+              try {
+                const { data: combinedStatus } = await github.rest.repos.getCombinedStatusForRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: sha
+                });
+
+                // Find the integration-tests status
+                const integrationStatus = combinedStatus.statuses.find(
+                  s => s.context === 'integration-tests'
+                );
+
+                if (integrationStatus) {
+                  console.log(`Found status: ${integrationStatus.state}`);
+
+                  if (integrationStatus.state === 'success') {
+                    console.log('Integration tests passed!');
+                    console.log(`Details: ${integrationStatus.target_url || 'No URL'}`);
+                    return;
+                  } else if (integrationStatus.state === 'failure') {
+                    core.setFailed(`Integration tests failed. See: ${integrationStatus.target_url || 'private repo logs'}`);
+                    return;
+                  } else if (integrationStatus.state === 'error') {
+                    core.setFailed(`Integration tests errored. See: ${integrationStatus.target_url || 'private repo logs'}`);
+                    return;
+                  }
+                  // If pending, continue waiting
+                  console.log(`Status is ${integrationStatus.state}, continuing to wait...`);
+                }
+              } catch (error) {
+                console.log(`Error checking status (attempt ${i + 1}): ${error.message}`);
+              }
+
+              if (i < maxAttempts - 1) {
+                console.log(`Waiting for integration tests... (${i + 1}/${maxAttempts})`);
+                await new Promise(r => setTimeout(r, delay));
+              }
+            }
+
+            core.setFailed('Integration tests timed out after 15 minutes. Check private repo for status.');
