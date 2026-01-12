@@ -23,7 +23,6 @@ from core import (
     sanitize_emoji,
     sanitize_id,
     sanitize_name,
-    sanitize_response,
 )
 from services.credentials_service import CredentialsService
 from services.security_service import SecurityService
@@ -906,7 +905,7 @@ async def set_config():
         raise ValidationError("Missing 'group_id' or 'group_name' in request body.")
 
     result = await sync_service.configure(group_id, group_name)
-    return sanitize_response(result)
+    return result
 
 
 @app.route("/recurring/groups", methods=["GET"])
@@ -932,7 +931,7 @@ async def toggle_item():
         raise ValidationError("Missing 'recurring_id'")
 
     result = await sync_service.toggle_item(recurring_id, enabled, item_data, initial_budget)
-    return sanitize_response(result)
+    return result
 
 
 @app.route("/recurring/settings", methods=["GET"])
@@ -1206,7 +1205,7 @@ async def change_category_group():
         raise ValidationError("Missing 'recurring_id' or 'group_id'")
 
     result = await sync_service.change_category_group(recurring_id, new_group_id, new_group_name)
-    return sanitize_response(result)
+    return result
 
 
 # ---- CATEGORY LINKING ENDPOINTS ----
@@ -1234,7 +1233,7 @@ async def link_category():
         raise ValidationError("Missing 'recurring_id' or 'category_id'")
 
     result = await sync_service.link_to_category(recurring_id, category_id, sync_name)
-    return sanitize_response(result)
+    return result
 
 
 @app.route("/recurring/clear-category-cache", methods=["POST"])
@@ -1335,7 +1334,7 @@ async def update_category_emoji():
         raise ValidationError("Missing 'recurring_id'")
 
     result = await sync_service.update_category_emoji(recurring_id, emoji)
-    return sanitize_response(result)
+    return result
 
 
 @app.route("/recurring/rollup/emoji", methods=["POST"])
@@ -1370,7 +1369,7 @@ async def update_category_name():
         raise ValidationError("Missing 'recurring_id' or 'name'")
 
     result = await sync_service.update_category_name(recurring_id, name)
-    return sanitize_response(result)
+    return result
 
 
 # ---- UNINSTALL ENDPOINTS ----

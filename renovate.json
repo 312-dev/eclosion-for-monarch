@@ -15,7 +15,7 @@
   "packageRules": [
     {
       "description": "Auto-merge non-major updates when CI passes",
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest", "pinDigest"],
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true,
