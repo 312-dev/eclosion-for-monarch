@@ -2,7 +2,7 @@
  * Get Started Modal
  *
  * Multi-step wizard for getting started with Eclosion:
- * 1. Choose deployment type (Desktop, Railway, Self-hosted)
+ * 1. Choose deployment type (Desktop or Self-hosted)
  * 2. Accept terms of service
  * 3. Navigate to appropriate destination
  */
@@ -26,7 +26,6 @@ interface GetStartedModalProps {
 }
 
 const EXTERNAL_URLS = {
-  railway: 'https://railway.app/template/eclosion',
   selfhosted: 'https://github.com/312-dev/eclosion/wiki',
 } as const;
 
@@ -48,8 +47,6 @@ export function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {
 
       if (type === 'desktop') {
         navigate('/download');
-      } else if (type === 'railway') {
-        window.open(EXTERNAL_URLS.railway, '_blank', 'noopener,noreferrer');
       } else if (type === 'selfhosted') {
         window.open(EXTERNAL_URLS.selfhosted, '_blank', 'noopener,noreferrer');
       }

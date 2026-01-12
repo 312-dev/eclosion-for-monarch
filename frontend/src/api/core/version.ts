@@ -27,12 +27,11 @@ export interface ReleasesResponse {
 }
 
 export interface UpdateInfo {
-  deployment_type: 'railway' | 'docker' | 'local' | 'electron';
+  deployment_type: 'docker' | 'local' | 'electron';
   current_version: string;
   current_channel: string;
   instructions: {
     steps: string[];
-    project_url?: string;
     example_compose?: string;
   };
 }

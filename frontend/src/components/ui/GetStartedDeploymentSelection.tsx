@@ -7,12 +7,10 @@
 
 import {
   MonitorIcon,
-  CloudIcon,
   ServerIcon,
   ZapIcon,
   GiftIcon,
   SyncIcon,
-  ClockIcon,
   ShieldIcon,
   RocketIcon,
   CheckIcon,
@@ -20,7 +18,7 @@ import {
 } from '../icons';
 import { useCoderModeSafe } from '../../context/CoderModeContext';
 
-export type DeploymentType = 'desktop' | 'railway' | 'selfhosted';
+export type DeploymentType = 'desktop' | 'selfhosted';
 
 interface Feature {
   text: string;
@@ -57,25 +55,6 @@ const DEPLOYMENT_OPTIONS: DeploymentOption[] = [
       { text: 'Local data storage', icon: ServerIcon },
       { text: 'Sync on-demand', icon: SyncIcon },
       { text: 'Auto-updates', icon: RocketIcon },
-    ],
-  },
-  {
-    id: 'railway',
-    icon: CloudIcon,
-    title: 'Cloud Hosted',
-    titleCoder: 'Railway Deploy',
-    description: 'Runs 24/7 in the cloud. Syncs automatically, even when you\'re away.',
-    descriptionCoder: 'Docker container on Railway. ~$5-7/mo. PostgreSQL backend.',
-    badge: '24/7 Sync',
-    features: [
-      { text: 'Always running', icon: ClockIcon },
-      { text: 'One-click setup', icon: ZapIcon },
-      { text: 'Automatic updates', icon: SyncIcon },
-    ],
-    featuresCoder: [
-      { text: 'Managed hosting', icon: CloudIcon },
-      { text: 'Auto-scaling', icon: ZapIcon },
-      { text: 'CI/CD deploys', icon: RocketIcon },
     ],
   },
   {
@@ -226,7 +205,6 @@ export function GetStartedDeploymentSelection({
   const isCoderMode = coderMode?.isCoderMode ?? false;
 
   const desktopOption = DEPLOYMENT_OPTIONS.find((o) => o.id === 'desktop')!;
-  const railwayOption = DEPLOYMENT_OPTIONS.find((o) => o.id === 'railway')!;
   const selfhostedOption = DEPLOYMENT_OPTIONS.find((o) => o.id === 'selfhosted')!;
 
   return (
@@ -249,31 +227,14 @@ export function GetStartedDeploymentSelection({
         onClick={() => onSelect('desktop')}
       />
 
-      {/* Web-based section label */}
-      <p
-        className="text-xs font-medium uppercase tracking-wider text-center pb-1"
-        style={{ color: 'var(--monarch-text-dark)' }}
-      >
-        Web-based options
-      </p>
-
-      {/* Railway and Self-hosted - Side by side */}
-      <div className="grid grid-cols-2 gap-3">
-        <DeploymentCard
-          option={railwayOption}
-          selected={selected === 'railway'}
-          recommended={!isCoderMode}
-          isCoderMode={isCoderMode}
-          onClick={() => onSelect('railway')}
-        />
-        <DeploymentCard
-          option={selfhostedOption}
-          selected={selected === 'selfhosted'}
-          recommended={false}
-          isCoderMode={isCoderMode}
-          onClick={() => onSelect('selfhosted')}
-        />
-      </div>
+      {/* Self-hosted option */}
+      <DeploymentCard
+        option={selfhostedOption}
+        selected={selected === 'selfhosted'}
+        recommended={false}
+        isCoderMode={isCoderMode}
+        onClick={() => onSelect('selfhosted')}
+      />
     </div>
   );
 }

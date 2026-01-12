@@ -4,8 +4,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { DeletableCategory } from '../../types';
-import { getDeletableCategories, cancelSubscription, getDeploymentInfo } from '../../api/client';
-import type { CancelSubscriptionResult, DeploymentInfo } from '../../api/client';
+import { getDeletableCategories, cancelSubscription } from '../../api/client';
+import type { CancelSubscriptionResult } from '../../api/client';
 import { getErrorMessage } from '../../utils';
 import { isDesktopMode } from '../../utils/apiBase';
 import { useToast } from '../../context/ToastContext';
@@ -29,7 +29,6 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [categoryChoice, setCategoryChoice] = useState<CategoryChoice>('delete');
 
-  const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   const [cancelResult, setCancelResult] = useState<CancelSubscriptionResult | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -47,25 +46,15 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
     }
   }, []);
 
-  const fetchDeploymentInfo = useCallback(async () => {
-    try {
-      const info = await getDeploymentInfo();
-      setDeploymentInfo(info);
-    } catch {
-      // Not critical if this fails
-    }
-  }, []);
-
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
-      fetchDeploymentInfo();
       setError(null);
       setCancelResult(null);
       setConfirmed(false);
       setCategoryChoice('delete');
     }
-  }, [isOpen, fetchCategories, fetchDeploymentInfo]);
+  }, [isOpen, fetchCategories]);
 
   const handleUninstall = async () => {
     if (!confirmed) return;
@@ -169,7 +158,6 @@ export function UninstallModal({ isOpen, onClose }: UninstallModalProps) {
                 confirmed={confirmed}
                 onConfirmedChange={setConfirmed}
                 cancelling={cancelling}
-                deploymentInfo={deploymentInfo}
               />
             )}
           </div>

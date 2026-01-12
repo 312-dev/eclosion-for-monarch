@@ -27,15 +27,11 @@ export async function getAutoSyncStatus(): Promise<AutoSyncStatus> {
  * Get deployment info.
  */
 export async function getDeploymentInfo(): Promise<{
-  is_railway: boolean;
-  railway_project_url: string | null;
-  railway_project_id: string | null;
+  deployment_type: 'docker' | 'desktop' | 'local';
 }> {
   await simulateDelay(50);
   return {
-    is_railway: false,
-    railway_project_url: null,
-    railway_project_id: null,
+    deployment_type: 'local',
   };
 }
 

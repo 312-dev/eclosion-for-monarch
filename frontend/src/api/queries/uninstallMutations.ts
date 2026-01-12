@@ -51,9 +51,7 @@ export function useCancelSubscriptionMutation() {
       ? async () => ({
           success: false,
           steps_completed: [],
-          railway_deletion_url: null,
           instructions: ['Not available in demo mode'],
-          is_railway: false,
           is_desktop: false,
         })
       : ({ deleteCategories, fullReset }: CancelSubscriptionParams = {}) =>

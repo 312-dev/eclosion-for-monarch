@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useChangelogQuery, useDeploymentInfoQuery } from '../api/queries';
+import { useChangelogQuery } from '../api/queries';
 import type { ChangelogEntry, ChangelogSection } from '../types';
 import { InfoIcon, CheckCircleIcon, CopyIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 import { isDesktopMode } from '../utils/apiBase';
@@ -21,7 +21,6 @@ const SECTION_CONFIG: Record<keyof ChangelogSection, { icon: string; label: stri
 
 export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = false }: ChangelogDisplayProps) {
   const { data, isLoading, error } = useChangelogQuery(limit);
-  const { data: deploymentInfo } = useDeploymentInfoQuery();
 
   if (isLoading) {
     return <div style={{ color: 'var(--monarch-text-muted)' }}>Loading changelog...</div>;
@@ -40,12 +39,7 @@ export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = 
 
   return (
     <div className="space-y-6">
-      {showUpdateInstructions && !isDesktop && (
-        <UpdateInstructions
-          isRailway={deploymentInfo?.is_railway ?? false}
-          railwayProjectUrl={deploymentInfo?.railway_project_url}
-        />
-      )}
+      {showUpdateInstructions && !isDesktop && <UpdateInstructions />}
 
       {entries.map((entry) => (
         <ChangelogEntryCard key={entry.version} entry={entry} />
@@ -54,7 +48,7 @@ export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = 
   );
 }
 
-function UpdateInstructions({ isRailway, railwayProjectUrl }: { isRailway: boolean; railwayProjectUrl?: string | null | undefined }) {
+function UpdateInstructions() {
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, id: string) => {
@@ -81,57 +75,31 @@ function UpdateInstructions({ isRailway, railwayProjectUrl }: { isRailway: boole
         How to Update
       </h4>
 
-      {isRailway ? (
-        <div className="space-y-3">
-          <ol className="list-decimal list-inside space-y-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-            <li>Open your Railway project dashboard</li>
-            <li>Click <strong>"Deploy"</strong> or <strong>"Redeploy"</strong> to pull the latest version</li>
-            <li>Wait for the deployment to complete (1-2 minutes)</li>
-            <li>Refresh this page to use the new version</li>
-          </ol>
-          <a
-            href={railwayProjectUrl || 'https://railway.app/dashboard'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: 'var(--monarch-orange)',
-              color: 'white',
-            }}
-          >
-            Open Railway Dashboard
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
-              <strong>1. Backup your data first (recommended):</strong>
-            </p>
-            <CopyableCommand
-              command={dockerCommands.backup}
-              copied={copiedCommand === 'backup'}
-              onCopy={() => copyToClipboard(dockerCommands.backup, 'backup')}
-            />
-          </div>
-          <div>
-            <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
-              <strong>2. Pull and restart:</strong>
-            </p>
-            <CopyableCommand
-              command={dockerCommands.update}
-              copied={copiedCommand === 'update'}
-              onCopy={() => copyToClipboard(dockerCommands.update, 'update')}
-            />
-          </div>
-          <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-            <strong>3.</strong> Refresh this page to use the new version.
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
+            <strong>1. Backup your data first (recommended):</strong>
           </p>
+          <CopyableCommand
+            command={dockerCommands.backup}
+            copied={copiedCommand === 'backup'}
+            onCopy={() => copyToClipboard(dockerCommands.backup, 'backup')}
+          />
         </div>
-      )}
+        <div>
+          <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
+            <strong>2. Pull and restart:</strong>
+          </p>
+          <CopyableCommand
+            command={dockerCommands.update}
+            copied={copiedCommand === 'update'}
+            onCopy={() => copyToClipboard(dockerCommands.update, 'update')}
+          />
+        </div>
+        <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+          <strong>3.</strong> Refresh this page to use the new version.
+        </p>
+      </div>
     </div>
   );
 }

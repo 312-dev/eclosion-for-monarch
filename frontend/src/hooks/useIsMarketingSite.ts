@@ -27,7 +27,7 @@ const MARKETING_HOSTNAMES = [
  * - localhost (development)
  *
  * Returns false on:
- * - Self-hosted Railway instances
+ * - Self-hosted Docker instances
  * - Custom deployment domains
  */
 export function useIsMarketingSite(): boolean {

@@ -53,7 +53,7 @@ export function MarketingDocsContent() {
                 Get Started
               </h3>
               <p className="text-sm text-[var(--monarch-text)]">
-                Deploy your own instance in under 5 minutes with Railway or Docker.
+                Deploy your own instance with the desktop app or Docker.
               </p>
             </div>
           </button>
@@ -153,7 +153,7 @@ export function MarketingDocsContent() {
           <div className="space-y-4">
             <FaqItem
               question="Is Eclosion free?"
-              answer="Eclosion is completely free. Download the desktop app or self-host with Docker at no cost. Railway hosting is available as an alternative (~$5-7/month for their infrastructure)."
+              answer="Eclosion is completely free. Download the desktop app or self-host with Docker at no cost."
             />
             <FaqItem
               question="Is my Monarch password safe?"
@@ -164,8 +164,8 @@ export function MarketingDocsContent() {
               answer="Eclosion connects to Monarch Money using the same methods as their web app. It's not an official integration, but it works reliably."
             />
             <FaqItem
-              question="Can I use this without Railway?"
-              answer="Absolutely! You can self-host with Docker on any server you control. See the self-hosting guide on GitHub Wiki for instructions."
+              question="How do I self-host Eclosion?"
+              answer="You can self-host with Docker on any server you control. See the self-hosting guide on GitHub Wiki for instructions."
             />
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getSecurityStatus, getDeploymentInfo, type DeploymentInfo } from '../api/client';
+import { getSecurityStatus } from '../api/client';
 import { isDesktopMode } from '../utils/apiBase';
 import type { SecurityStatus } from '../types';
 
@@ -19,7 +19,6 @@ interface SecurityInfoProps {
 
 export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
   const [securityStatus, setSecurityStatus] = useState<SecurityStatus | null>(null);
-  const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const isDesktop = isDesktopMode();
   const isElectron = isElectronDesktop();
@@ -28,13 +27,9 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
     if (isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading state for async fetch
       setLoading(true);
-      Promise.all([
-        getSecurityStatus(),
-        getDeploymentInfo()
-      ])
-        .then(([security, deployment]) => {
+      getSecurityStatus()
+        .then((security) => {
           setSecurityStatus(security);
-          setDeploymentInfo(deployment);
         })
         .catch(console.error)
         .finally(() => setLoading(false));
@@ -254,47 +249,6 @@ export function SecurityInfo({ isOpen, onClose }: SecurityInfoProps) {
                 </p>
               </section>
 
-              {/* Railway-specific disclosure */}
-              {deploymentInfo?.is_railway && (
-                <section className="rounded-lg p-4 border" style={{ backgroundColor: 'var(--monarch-bg-elevated)', borderColor: 'var(--monarch-border)' }}>
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--monarch-text-dark)' }}>
-                    <svg className="w-4 h-4" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Hosted on Railway
-                  </h3>
-                  <p className="text-sm mb-3" style={{ color: 'var(--monarch-text-muted)' }}>
-                    Your instance is deployed on Railway's infrastructure. While you control this deployment,
-                    Railway provides the underlying hosting. Review their policies for details on data handling.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <a
-                      href="https://railway.app/legal/privacy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm font-medium"
-                      style={{ color: 'var(--monarch-orange)' }}
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      Privacy Policy
-                    </a>
-                    <a
-                      href="https://railway.app/legal/terms"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm font-medium"
-                      style={{ color: 'var(--monarch-orange)' }}
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      Terms of Service
-                    </a>
-                  </div>
-                </section>
-              )}
             </div>
           );
           })()}

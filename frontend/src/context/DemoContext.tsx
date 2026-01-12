@@ -6,7 +6,7 @@
  * 2. URL path starts with /demo/* (route-based demo mode)
  *
  * Global demo mode (VITE_DEMO_MODE) is used for:
- * - The official demo site on Railway
+ * - The official demo site on Cloudflare Pages
  * - GitHub Pages documentation site
  */
 
