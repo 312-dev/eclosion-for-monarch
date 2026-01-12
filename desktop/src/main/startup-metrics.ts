@@ -8,7 +8,12 @@
 import Store from 'electron-store';
 import { debugLog } from './logger';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Store key for historical metrics.
@@ -102,7 +107,7 @@ export function calculateMetrics(version: string): StartupMetrics | null {
  * Save metrics to history.
  */
 export function saveMetricsToHistory(metrics: StartupMetrics): void {
-  const history = store.get(METRICS_HISTORY_KEY, []) as MetricsHistoryEntry[];
+  const history = getStore().get(METRICS_HISTORY_KEY, []) as MetricsHistoryEntry[];
 
   const entry: MetricsHistoryEntry = {
     ...metrics,
@@ -116,7 +121,7 @@ export function saveMetricsToHistory(metrics: StartupMetrics): void {
     history.splice(0, history.length - MAX_HISTORY_ENTRIES);
   }
 
-  store.set(METRICS_HISTORY_KEY, history);
+  getStore().set(METRICS_HISTORY_KEY, history);
   debugLog(`Saved startup metrics: ${metrics.totalStartup}ms total`);
 }
 
@@ -124,14 +129,14 @@ export function saveMetricsToHistory(metrics: StartupMetrics): void {
  * Get metrics history.
  */
 export function getMetricsHistory(): MetricsHistoryEntry[] {
-  return store.get(METRICS_HISTORY_KEY, []) as MetricsHistoryEntry[];
+  return getStore().get(METRICS_HISTORY_KEY, []) as MetricsHistoryEntry[];
 }
 
 /**
  * Clear metrics history.
  */
 export function clearMetricsHistory(): void {
-  store.delete(METRICS_HISTORY_KEY);
+  getStore().delete(METRICS_HISTORY_KEY);
   debugLog('Cleared startup metrics history');
 }
 

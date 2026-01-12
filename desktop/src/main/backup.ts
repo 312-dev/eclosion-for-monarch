@@ -14,7 +14,12 @@ import * as path from 'node:path';
 import { getStateDir } from './paths';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Backup file format version.
@@ -153,7 +158,7 @@ export async function createBackup(): Promise<{ success: boolean; path?: string;
     }
 
     // Get desktop settings
-    const settings = store.store;
+    const settings = getStore().store;
 
     // Build the backup manifest
     const backup: BackupManifest = {
@@ -311,7 +316,7 @@ export async function restoreBackup(): Promise<{
     let settingsRestored = false;
     if (backup.settings && Object.keys(backup.settings).length > 0) {
       for (const [key, value] of Object.entries(backup.settings)) {
-        store.set(key, value);
+        getStore().set(key, value);
       }
       settingsRestored = true;
     }

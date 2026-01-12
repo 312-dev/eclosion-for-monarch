@@ -8,7 +8,12 @@ import { BrowserWindow, shell, app, session } from 'electron';
 import path from 'node:path';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Setup Content Security Policy headers for renderer security.
@@ -62,7 +67,7 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   setupCSP();
 
   // Restore window bounds from previous session
-  const bounds = store.get('windowBounds', {
+  const bounds = getStore().get('windowBounds', {
     width: 1200,
     height: 800,
   }) as WindowBounds;
@@ -158,11 +163,11 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     // Save window bounds regardless of close behavior
     const currentBounds = mainWindow?.getBounds();
     if (currentBounds) {
-      store.set('windowBounds', currentBounds);
+      getStore().set('windowBounds', currentBounds);
     }
 
     if (!isQuitting) {
-      const menuBarMode = store.get('menuBarMode', false) as boolean;
+      const menuBarMode = getStore().get('menuBarMode', false) as boolean;
       if (menuBarMode) {
         // Hide to tray instead of quitting
         event.preventDefault();

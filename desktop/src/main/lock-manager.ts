@@ -14,7 +14,12 @@ import { powerMonitor, BrowserWindow } from 'electron';
 import Store from 'electron-store';
 import { debugLog } from './logger';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Lock trigger options.
@@ -72,7 +77,7 @@ let isInitialized = false;
  * Get the current lock trigger setting.
  */
 export function getLockTrigger(): LockTrigger {
-  const trigger = store.get(LOCK_TRIGGER_KEY, DEFAULT_LOCK_TRIGGER) as LockTrigger;
+  const trigger = getStore().get(LOCK_TRIGGER_KEY, DEFAULT_LOCK_TRIGGER) as LockTrigger;
   return trigger;
 }
 
@@ -82,7 +87,7 @@ export function getLockTrigger(): LockTrigger {
  */
 export function setLockTrigger(trigger: LockTrigger): void {
   const oldTrigger = getLockTrigger();
-  store.set(LOCK_TRIGGER_KEY, trigger);
+  getStore().set(LOCK_TRIGGER_KEY, trigger);
   debugLog(`Lock trigger changed: ${oldTrigger} -> ${trigger}`);
 
   // Restart idle detection if needed

@@ -8,7 +8,12 @@
 import { app } from 'electron';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Check if auto-start is enabled.
@@ -26,7 +31,7 @@ export function enableAutoStart(): void {
     openAtLogin: true,
     openAsHidden: true,
   });
-  store.set('autoStart', true);
+  getStore().set('autoStart', true);
   console.log('Auto-start enabled');
 }
 
@@ -38,7 +43,7 @@ export function disableAutoStart(): void {
     openAtLogin: false,
     openAsHidden: false,
   });
-  store.set('autoStart', false);
+  getStore().set('autoStart', false);
   console.log('Auto-start disabled');
 }
 

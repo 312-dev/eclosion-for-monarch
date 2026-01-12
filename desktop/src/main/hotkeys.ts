@@ -14,7 +14,12 @@ import { getMainWindow, showWindow } from './window';
 import { debugLog } from './logger';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Available hotkey actions.
@@ -57,7 +62,7 @@ const registeredShortcuts: string[] = [];
  * Get hotkey configuration from store or defaults.
  */
 export function getHotkeyConfig(action: HotkeyAction): HotkeyConfig {
-  const stored = store.get(`hotkeys.${action}`) as HotkeyConfig | undefined;
+  const stored = getStore().get(`hotkeys.${action}`) as HotkeyConfig | undefined;
   return stored ?? DEFAULT_HOTKEYS[action];
 }
 
@@ -86,7 +91,7 @@ export function setHotkeyConfig(action: HotkeyAction, config: HotkeyConfig): boo
   }
 
   // Save new config
-  store.set(`hotkeys.${action}`, config);
+  getStore().set(`hotkeys.${action}`, config);
 
   // Register new shortcut if enabled
   if (config.enabled) {
@@ -255,7 +260,7 @@ export function resetHotkeysToDefaults(): void {
   unregisterAllHotkeys();
 
   // Clear stored configs
-  store.delete('hotkeys');
+  getStore().delete('hotkeys');
 
   // Re-register defaults
   for (const action of Object.keys(DEFAULT_HOTKEYS) as HotkeyAction[]) {

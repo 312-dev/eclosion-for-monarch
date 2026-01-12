@@ -14,7 +14,12 @@ import { getStateDir, getLogsDir } from './paths';
 import { debugLog } from './logger';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Files and directories to clean up.
@@ -137,7 +142,7 @@ export function clearLogs(): CleanupResult {
  */
 export function clearDesktopSettings(): void {
   debugLog('Clearing desktop settings...');
-  store.clear();
+  getStore().clear();
   debugLog('Desktop settings cleared');
 }
 

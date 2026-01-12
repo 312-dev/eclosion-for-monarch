@@ -19,7 +19,7 @@ import {
 } from '../../api/queries';
 import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
-import { buildCategoryGroupsWithNotes, hasAnyNotes } from '../../utils';
+import { buildCategoryGroupsWithNotes, convertEffectiveGeneralNote, hasAnyNotes } from '../../utils';
 import type { MonthKey, EffectiveGeneralNote, CategoryGroupWithNotes } from '../../types/notes';
 
 /**
@@ -54,7 +54,7 @@ export function NotesTab() {
   const isLoading = notesLoading || categoriesLoading;
 
   // Extract data from responses
-  const effectiveGeneralNote: EffectiveGeneralNote | null = monthData?.effective_general_note ?? null;
+  const effectiveGeneralNote: EffectiveGeneralNote | null = convertEffectiveGeneralNote(monthData?.effective_general_note);
 
   // Build hierarchical structure from notes categories
   const allGroups: CategoryGroupWithNotes[] = useMemo(() => {
@@ -85,18 +85,20 @@ export function NotesTab() {
   // Auto-expand first group when tour hasn't been seen (so tour can highlight category)
   // This is a one-time initialization based on async data, not a cascading render pattern
   useEffect(() => {
-    if (!hasAutoExpanded.current && !hasSeenTour && groups.length > 0) {
+    const firstGroup = groups[0];
+    if (!hasAutoExpanded.current && !hasSeenTour && firstGroup) {
       hasAutoExpanded.current = true;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- One-time init from async data
-      setExpandedGroups(new Set([groups[0].id]));
+      setExpandedGroups(new Set([firstGroup.id]));
     }
   }, [hasSeenTour, groups]);
 
   // Listen for tour event to expand first group (in case user collapsed it during tour)
   useEffect(() => {
     const handleExpandFirstGroup = () => {
-      if (groups.length > 0) {
-        setExpandedGroups((prev) => new Set([...prev, groups[0].id]));
+      const firstGroup = groups[0];
+      if (firstGroup) {
+        setExpandedGroups((prev) => new Set([...prev, firstGroup.id]));
       }
     };
 

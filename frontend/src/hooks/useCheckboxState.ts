@@ -24,7 +24,7 @@ interface UseCheckboxStateOptions {
   enabled?: boolean;
 }
 
-interface UseCheckboxStateReturn {
+export interface UseCheckboxStateReturn {
   /** Array of checkbox states (true = checked) */
   checkboxStates: boolean[];
   /** Toggle a specific checkbox */
@@ -79,8 +79,8 @@ export function useCheckboxState({
   const toggleCheckbox = useCallback(
     (index: number, isChecked: boolean) => {
       updateMutation.mutate({
-        noteId,
-        generalNoteMonthKey,
+        ...(noteId !== undefined && { noteId }),
+        ...(generalNoteMonthKey !== undefined && { generalNoteMonthKey }),
         viewingMonth,
         checkboxIndex: index,
         isChecked,

@@ -7,6 +7,7 @@
 import type {
   CategoryGroupWithNotes,
   CategoryWithNotes,
+  EffectiveGeneralNote,
   EffectiveNote,
   GeneralMonthNote,
   MonthKey,
@@ -50,6 +51,22 @@ function createEmptyEffectiveNote(): EffectiveNote {
 function convertEffectiveNote(data: EffectiveNoteData | undefined): EffectiveNote {
   if (!data) {
     return createEmptyEffectiveNote();
+  }
+  return {
+    note: data.note,
+    sourceMonth: data.source_month,
+    isInherited: data.is_inherited,
+  };
+}
+
+/**
+ * Convert API effective general note data to EffectiveGeneralNote type
+ */
+export function convertEffectiveGeneralNote(
+  data: EffectiveGeneralNoteData | null | undefined
+): EffectiveGeneralNote | null {
+  if (!data) {
+    return null;
   }
   return {
     note: data.note,

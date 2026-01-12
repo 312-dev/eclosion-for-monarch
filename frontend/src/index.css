@@ -234,6 +234,11 @@ html, body {
   margin: 0;
 }
 
+html {
+  /* Prevent layout shift when scrollbar appears/disappears */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--monarch-font);
   color: var(--monarch-text-dark);

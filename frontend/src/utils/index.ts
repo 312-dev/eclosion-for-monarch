@@ -53,4 +53,8 @@ export {
 
 export { evaluateMathExpression } from './mathEvaluator';
 
-export { buildCategoryGroupsWithNotes, hasAnyNotes } from './notesTransform';
+export {
+  buildCategoryGroupsWithNotes,
+  convertEffectiveGeneralNote,
+  hasAnyNotes,
+} from './notesTransform';

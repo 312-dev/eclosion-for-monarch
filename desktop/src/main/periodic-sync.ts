@@ -20,7 +20,12 @@ function debugLog(msg: string): void {
   log(msg, '[PeriodicSync]');
 }
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 // Store keys for periodic sync settings
 const PERIODIC_SYNC_ENABLED_KEY = 'periodicSync.enabled';
@@ -119,8 +124,8 @@ function releaseLock(): void {
  */
 export function getPeriodicSyncSettings(): { enabled: boolean; intervalMinutes: number } {
   return {
-    enabled: store.get(PERIODIC_SYNC_ENABLED_KEY, false) as boolean,
-    intervalMinutes: store.get(PERIODIC_SYNC_INTERVAL_KEY, DEFAULT_INTERVAL_MINUTES) as number,
+    enabled: getStore().get(PERIODIC_SYNC_ENABLED_KEY, false) as boolean,
+    intervalMinutes: getStore().get(PERIODIC_SYNC_INTERVAL_KEY, DEFAULT_INTERVAL_MINUTES) as number,
   };
 }
 
@@ -128,7 +133,7 @@ export function getPeriodicSyncSettings(): { enabled: boolean; intervalMinutes: 
  * Set periodic sync enabled state.
  */
 export function setPeriodicSyncEnabled(enabled: boolean): void {
-  store.set(PERIODIC_SYNC_ENABLED_KEY, enabled);
+  getStore().set(PERIODIC_SYNC_ENABLED_KEY, enabled);
 
   if (enabled) {
     const { intervalMinutes } = getPeriodicSyncSettings();
@@ -148,7 +153,7 @@ export function setPeriodicSyncInterval(intervalMinutes: number): void {
     intervalMinutes = DEFAULT_INTERVAL_MINUTES;
   }
 
-  store.set(PERIODIC_SYNC_INTERVAL_KEY, intervalMinutes);
+  getStore().set(PERIODIC_SYNC_INTERVAL_KEY, intervalMinutes);
 
   // Restart timer if enabled
   const { enabled } = getPeriodicSyncSettings();

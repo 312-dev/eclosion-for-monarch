@@ -8,7 +8,12 @@
 import Store from 'electron-store';
 import { debugLog } from './logger';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Store key for tracking onboarding completion.
@@ -92,8 +97,8 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
  * - The onboarding version has increased since last completion
  */
 export function shouldShowOnboarding(): boolean {
-  const isComplete = store.get(ONBOARDING_COMPLETE_KEY, false) as boolean;
-  const completedVersion = store.get(ONBOARDING_VERSION_KEY, 0) as number;
+  const isComplete = getStore().get(ONBOARDING_COMPLETE_KEY, false) as boolean;
+  const completedVersion = getStore().get(ONBOARDING_VERSION_KEY, 0) as number;
 
   // Show if never completed
   if (!isComplete) {
@@ -114,8 +119,8 @@ export function shouldShowOnboarding(): boolean {
  * Mark onboarding as complete.
  */
 export function completeOnboarding(): void {
-  store.set(ONBOARDING_COMPLETE_KEY, true);
-  store.set(ONBOARDING_VERSION_KEY, CURRENT_ONBOARDING_VERSION);
+  getStore().set(ONBOARDING_COMPLETE_KEY, true);
+  getStore().set(ONBOARDING_VERSION_KEY, CURRENT_ONBOARDING_VERSION);
   debugLog('Onboarding: Marked as complete');
 }
 
@@ -123,8 +128,8 @@ export function completeOnboarding(): void {
  * Reset onboarding state (for testing or re-showing).
  */
 export function resetOnboarding(): void {
-  store.delete(ONBOARDING_COMPLETE_KEY);
-  store.delete(ONBOARDING_VERSION_KEY);
+  getStore().delete(ONBOARDING_COMPLETE_KEY);
+  getStore().delete(ONBOARDING_VERSION_KEY);
   debugLog('Onboarding: Reset');
 }
 

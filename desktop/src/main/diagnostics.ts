@@ -15,7 +15,12 @@ import { getStateDir } from './paths';
 import { isSentryEnabled } from './sentry';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Sensitive keys that should be redacted from settings export.
@@ -106,7 +111,7 @@ function getSystemInfo(): Record<string, unknown> {
  * Get sanitized desktop settings.
  */
 function getSanitizedSettings(): Record<string, unknown> {
-  const allSettings = store.store as Record<string, unknown>;
+  const allSettings = getStore().store as Record<string, unknown>;
   return sanitizeObject(allSettings) as Record<string, unknown>;
 }
 

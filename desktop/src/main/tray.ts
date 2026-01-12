@@ -9,7 +9,12 @@ import path from 'path';
 import { getMainWindow, showWindow, toggleWindow, setIsQuitting } from './window';
 import Store from 'electron-store';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 let tray: Tray | null = null;
 
@@ -172,7 +177,7 @@ export function updateTrayMenu(
 ): void {
   if (!tray) return;
 
-  const menuBarMode = store.get('menuBarMode', false) as boolean;
+  const menuBarMode = getStore().get('menuBarMode', false) as boolean;
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -205,7 +210,7 @@ export function updateTrayMenu(
       type: 'checkbox' as const,
       checked: menuBarMode,
       click: (menuItem: Electron.MenuItem): void => {
-        store.set('menuBarMode', menuItem.checked);
+        getStore().set('menuBarMode', menuItem.checked);
         // On macOS, also update dock visibility
         if (process.platform === 'darwin') {
           updateDockVisibility(menuItem.checked);

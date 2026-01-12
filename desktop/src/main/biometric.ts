@@ -24,7 +24,12 @@ import { safeStorage, systemPreferences } from 'electron';
 import Store from 'electron-store';
 import { debugLog } from './logger';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Storage key for the encrypted passphrase in electron-store.
@@ -132,8 +137,8 @@ export function getBiometricType(): BiometricType {
  * Check if biometric authentication is enrolled (passphrase is stored).
  */
 export function isBiometricEnrolled(): boolean {
-  const enabled = store.get(BIOMETRIC_ENABLED_KEY, false) as boolean;
-  const hasPassphrase = store.has(PASSPHRASE_STORAGE_KEY);
+  const enabled = getStore().get(BIOMETRIC_ENABLED_KEY, false) as boolean;
+  const hasPassphrase = getStore().has(PASSPHRASE_STORAGE_KEY);
 
   debugLog(`Biometric: Enrolled check - enabled: ${enabled}, hasPassphrase: ${hasPassphrase}`);
 
@@ -158,8 +163,8 @@ export function enrollBiometric(passphrase: string): boolean {
 
     // Store as base64 string (electron-store can't store Buffer directly)
     const base64 = encrypted.toString('base64');
-    store.set(PASSPHRASE_STORAGE_KEY, base64);
-    store.set(BIOMETRIC_ENABLED_KEY, true);
+    getStore().set(PASSPHRASE_STORAGE_KEY, base64);
+    getStore().set(BIOMETRIC_ENABLED_KEY, true);
 
     debugLog('Biometric: Enrollment successful');
     return true;
@@ -244,7 +249,7 @@ export async function authenticateWithBiometric(): Promise<BiometricAuthResult> 
  */
 export function getStoredPassphrase(): string | null {
   try {
-    const base64 = store.get(PASSPHRASE_STORAGE_KEY) as string | undefined;
+    const base64 = getStore().get(PASSPHRASE_STORAGE_KEY) as string | undefined;
     if (!base64) {
       debugLog('Biometric: No stored passphrase found');
       return null;
@@ -268,7 +273,7 @@ export function getStoredPassphrase(): string | null {
  * Used to determine if auto-sync can work.
  */
 export function isPassphraseStored(): boolean {
-  const hasPassphrase = store.has(PASSPHRASE_STORAGE_KEY);
+  const hasPassphrase = getStore().has(PASSPHRASE_STORAGE_KEY);
   debugLog(`Biometric: isPassphraseStored: ${hasPassphrase}`);
   return hasPassphrase;
 }
@@ -289,7 +294,7 @@ export function storePassphraseForSync(passphrase: string): boolean {
   try {
     const encrypted = safeStorage.encryptString(passphrase);
     const base64 = encrypted.toString('base64');
-    store.set(PASSPHRASE_STORAGE_KEY, base64);
+    getStore().set(PASSPHRASE_STORAGE_KEY, base64);
     // Note: We do NOT set BIOMETRIC_ENABLED_KEY here - that's only for biometric unlock
 
     debugLog('Biometric: Passphrase stored for sync');
@@ -305,8 +310,8 @@ export function storePassphraseForSync(passphrase: string): boolean {
  * Also clears biometric enrollment if enabled.
  */
 export function clearStoredPassphrase(): void {
-  store.delete(PASSPHRASE_STORAGE_KEY);
-  store.set(BIOMETRIC_ENABLED_KEY, false);
+  getStore().delete(PASSPHRASE_STORAGE_KEY);
+  getStore().set(BIOMETRIC_ENABLED_KEY, false);
   debugLog('Biometric: Stored passphrase cleared');
 }
 
@@ -314,8 +319,8 @@ export function clearStoredPassphrase(): void {
  * Clear biometric enrollment (remove stored passphrase).
  */
 export function clearBiometricEnrollment(): void {
-  store.delete(PASSPHRASE_STORAGE_KEY);
-  store.set(BIOMETRIC_ENABLED_KEY, false);
+  getStore().delete(PASSPHRASE_STORAGE_KEY);
+  getStore().set(BIOMETRIC_ENABLED_KEY, false);
   debugLog('Biometric: Enrollment cleared');
 }
 
@@ -335,7 +340,7 @@ export function updateStoredPassphrase(newPassphrase: string): boolean {
   try {
     const encrypted = safeStorage.encryptString(newPassphrase);
     const base64 = encrypted.toString('base64');
-    store.set(PASSPHRASE_STORAGE_KEY, base64);
+    getStore().set(PASSPHRASE_STORAGE_KEY, base64);
 
     debugLog('Biometric: Passphrase updated successfully');
     return true;
@@ -400,7 +405,7 @@ export function storeMonarchCredentials(credentials: MonarchCredentials): boolea
     const json = JSON.stringify(credentials);
     const encrypted = safeStorage.encryptString(json);
     const base64 = encrypted.toString('base64');
-    store.set(MONARCH_CREDENTIALS_KEY, base64);
+    getStore().set(MONARCH_CREDENTIALS_KEY, base64);
 
     debugLog('Credentials: Monarch credentials stored successfully');
     return true;
@@ -418,7 +423,7 @@ export function storeMonarchCredentials(credentials: MonarchCredentials): boolea
  */
 export function getMonarchCredentials(): MonarchCredentials | null {
   try {
-    const base64 = store.get(MONARCH_CREDENTIALS_KEY) as string | undefined;
+    const base64 = getStore().get(MONARCH_CREDENTIALS_KEY) as string | undefined;
     if (!base64) {
       debugLog('Credentials: No stored credentials found');
       return null;
@@ -441,7 +446,7 @@ export function getMonarchCredentials(): MonarchCredentials | null {
  * Check if Monarch credentials are stored (desktop mode).
  */
 export function hasMonarchCredentials(): boolean {
-  const has = store.has(MONARCH_CREDENTIALS_KEY);
+  const has = getStore().has(MONARCH_CREDENTIALS_KEY);
   debugLog(`Credentials: hasMonarchCredentials: ${has}`);
   return has;
 }
@@ -451,7 +456,7 @@ export function hasMonarchCredentials(): boolean {
  * Used for logout or reset.
  */
 export function clearMonarchCredentials(): void {
-  store.delete(MONARCH_CREDENTIALS_KEY);
+  getStore().delete(MONARCH_CREDENTIALS_KEY);
   debugLog('Credentials: Cleared');
 }
 
@@ -459,14 +464,14 @@ export function clearMonarchCredentials(): void {
  * Get the "Require Touch ID to unlock" setting.
  */
 export function getRequireTouchId(): boolean {
-  return store.get(REQUIRE_TOUCH_ID_KEY, false) as boolean;
+  return getStore().get(REQUIRE_TOUCH_ID_KEY, false) as boolean;
 }
 
 /**
  * Set the "Require Touch ID to unlock" setting.
  */
 export function setRequireTouchId(required: boolean): void {
-  store.set(REQUIRE_TOUCH_ID_KEY, required);
+  getStore().set(REQUIRE_TOUCH_ID_KEY, required);
   debugLog(`Credentials: Require Touch ID set to ${required}`);
 }
 
@@ -534,12 +539,12 @@ export async function authenticateAndGetCredentials(): Promise<CredentialAuthRes
  */
 export function clearAllAuthData(): void {
   // Clear desktop mode credentials
-  store.delete(MONARCH_CREDENTIALS_KEY);
-  store.delete(REQUIRE_TOUCH_ID_KEY);
+  getStore().delete(MONARCH_CREDENTIALS_KEY);
+  getStore().delete(REQUIRE_TOUCH_ID_KEY);
 
   // Clear legacy passphrase-based data
-  store.delete(PASSPHRASE_STORAGE_KEY);
-  store.set(BIOMETRIC_ENABLED_KEY, false);
+  getStore().delete(PASSPHRASE_STORAGE_KEY);
+  getStore().set(BIOMETRIC_ENABLED_KEY, false);
 
   debugLog('Credentials: All auth data cleared');
 }
