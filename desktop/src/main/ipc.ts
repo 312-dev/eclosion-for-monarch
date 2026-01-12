@@ -81,7 +81,12 @@ import Store from 'electron-store';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 /**
  * Setup all IPC handlers.
@@ -268,7 +273,7 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   ipcMain.handle('get-desktop-settings', () => {
     const autoStart = isAutoStartEnabled();
     return {
-      menuBarMode: store.get('menuBarMode', false) as boolean,
+      menuBarMode: getStore().get('menuBarMode', false) as boolean,
       autoStart,
     };
   });
@@ -285,7 +290,7 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    * - On macOS, shows in the Dock
    */
   ipcMain.handle('set-menu-bar-mode', (_event, enabled: boolean) => {
-    store.set('menuBarMode', enabled);
+    getStore().set('menuBarMode', enabled);
     // On macOS, also control dock visibility
     if (process.platform === 'darwin' && app.dock) {
       if (enabled) {

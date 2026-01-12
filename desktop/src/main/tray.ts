@@ -249,7 +249,7 @@ function updateDockVisibility(menuBarMode: boolean): void {
 export function initializeDockVisibility(): void {
   if (process.platform === 'darwin') {
     // Use menuBarMode setting (default false = show in dock)
-    const menuBarMode = store.get('menuBarMode', false) as boolean;
+    const menuBarMode = getStore().get('menuBarMode', false) as boolean;
     updateDockVisibility(menuBarMode);
   }
 }

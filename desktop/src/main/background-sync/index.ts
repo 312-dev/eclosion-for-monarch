@@ -24,7 +24,12 @@ function debugLog(msg: string): void {
   log(msg, '[BackgroundSync]');
 }
 
-const store = new Store();
+// Lazy store initialization to ensure app.setPath('userData') is called first
+let store: Store | null = null;
+function getStore(): Store {
+  store ??= new Store();
+  return store;
+}
 
 // Store keys for background sync settings
 const BACKGROUND_SYNC_ENABLED_KEY = 'backgroundSync.enabled';
@@ -76,8 +81,8 @@ export function getSyncCliPath(): string {
  */
 export function getBackgroundSyncSettings(): { enabled: boolean; intervalMinutes: number } {
   return {
-    enabled: store.get(BACKGROUND_SYNC_ENABLED_KEY, false) as boolean,
-    intervalMinutes: store.get(BACKGROUND_SYNC_INTERVAL_KEY, DEFAULT_INTERVAL_MINUTES) as number,
+    enabled: getStore().get(BACKGROUND_SYNC_ENABLED_KEY, false) as boolean,
+    intervalMinutes: getStore().get(BACKGROUND_SYNC_INTERVAL_KEY, DEFAULT_INTERVAL_MINUTES) as number,
   };
 }
 
@@ -120,8 +125,8 @@ export async function installBackgroundSync(intervalMinutes: number): Promise<bo
     await impl.install(intervalMinutes, syncCliPath);
 
     // Save settings
-    store.set(BACKGROUND_SYNC_ENABLED_KEY, true);
-    store.set(BACKGROUND_SYNC_INTERVAL_KEY, intervalMinutes);
+    getStore().set(BACKGROUND_SYNC_ENABLED_KEY, true);
+    getStore().set(BACKGROUND_SYNC_INTERVAL_KEY, intervalMinutes);
 
     debugLog('Background sync installed successfully');
     return true;
@@ -143,7 +148,7 @@ export async function uninstallBackgroundSync(): Promise<boolean> {
     await impl.uninstall();
 
     // Clear settings
-    store.set(BACKGROUND_SYNC_ENABLED_KEY, false);
+    getStore().set(BACKGROUND_SYNC_ENABLED_KEY, false);
 
     debugLog('Background sync uninstalled successfully');
     return true;
@@ -162,7 +167,7 @@ export async function updateBackgroundSyncInterval(intervalMinutes: number): Pro
   const { enabled } = getBackgroundSyncSettings();
   if (!enabled) {
     // Just update the stored interval without installing
-    store.set(BACKGROUND_SYNC_INTERVAL_KEY, intervalMinutes);
+    getStore().set(BACKGROUND_SYNC_INTERVAL_KEY, intervalMinutes);
     return true;
   }
 
