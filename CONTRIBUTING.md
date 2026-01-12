@@ -44,8 +44,8 @@ Please be respectful and constructive in all interactions. Contributors of all e
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
    # Install dependencies (hash-verified for supply chain security)
-   pip install -r requirements-git.txt                    # Git dependencies first
    pip install --require-hashes -r requirements-dev.txt   # PyPI packages with hash verification
+   pip install --no-deps -r requirements-vcs.txt          # VCS dependencies
 
    # Install pre-commit hooks
    pre-commit install
@@ -105,8 +105,7 @@ This project uses **hash-pinned dependencies** for supply chain security, follow
 | `requirements.txt` | Locked production deps with hashes | Auto-generated |
 | `requirements-dev.in` | Dev dependencies (version constraints) | Add dev packages here |
 | `requirements-dev.txt` | Locked dev deps with hashes | Auto-generated |
-| `requirements-git.txt` | VCS/Git dependencies (commit-pinned) | Edit directly |
-| `requirements-build.txt` | Build tools like PyInstaller (with hashes) | Edit directly |
+| `requirements-vcs.txt` | VCS/Git dependencies (branch-pinned) | Edit directly |
 
 ### Adding a New Dependency
 
@@ -131,12 +130,11 @@ This project uses **hash-pinned dependencies** for supply chain security, follow
    pip-compile --generate-hashes --allow-unsafe requirements-dev.in
    ```
 
-3. **For Git dependencies** — Add to `requirements-git.txt` with a commit SHA:
+3. **For Git dependencies** — Edit `requirements-vcs.txt` directly:
    ```bash
-   # Get the commit SHA
-   git ls-remote https://github.com/org/repo.git refs/heads/branch-name
-
-   # Add to requirements-git.txt (pin to specific commit)
+   # Add to requirements-vcs.txt (pin to branch or commit)
+   git+https://github.com/org/repo.git@branch-name
+   # Or pin to specific commit:
    git+https://github.com/org/repo.git@abc123def456
    ```
 
@@ -147,19 +145,13 @@ This project uses **hash-pinned dependencies** for supply chain security, follow
 - **Tamper detection**: If a package is modified on PyPI, the hash won't match
 - **OpenSSF compliance**: Required for high Scorecard ratings
 
-### Git Dependencies
+### VCS Dependencies
 
-Git dependencies (like our monarchmoney fork) cannot be hash-verified in the same way as PyPI packages. Instead, they are:
-- **Commit-pinned**: Locked to a specific commit SHA, not a branch
-- **Installed separately**: Before the hash-verified PyPI packages
+VCS dependencies (like our monarchmoney fork) cannot be hash-verified because they're not published to PyPI. Instead, they are:
+- **Branch or commit-pinned**: Locked to a specific branch or commit SHA
+- **Installed separately**: After the hash-verified PyPI packages with `--no-deps`
 
-To update a git dependency:
-```bash
-# Get latest commit from branch
-git ls-remote https://github.com/312-dev/monarchmoney.git refs/heads/flex-budget
-
-# Update requirements-git.txt with new SHA
-```
+To update a VCS dependency, edit `requirements-vcs.txt` directly.
 
 ## Branching Strategy
 
