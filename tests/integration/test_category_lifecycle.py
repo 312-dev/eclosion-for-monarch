@@ -8,7 +8,7 @@ All tests use temporary categories that are cleaned up after each test.
 from datetime import datetime
 
 import pytest
-from conftest import extract_categories, extract_category_id
+from helpers import extract_categories, extract_category_id
 
 
 @pytest.mark.integration

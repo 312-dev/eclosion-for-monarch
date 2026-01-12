@@ -25,27 +25,10 @@ from typing import Any, ClassVar
 
 import pytest
 import pytest_asyncio
+
+# Import helpers for use in fixtures
+from helpers import extract_category_id
 from monarchmoney import MonarchMoney
-
-# =============================================================================
-# API RESPONSE HELPERS
-# =============================================================================
-
-
-def extract_categories(result: dict) -> list:
-    """Extract categories list from get_transaction_categories response."""
-    if isinstance(result, dict):
-        return result.get("categories", [])
-    return result if isinstance(result, list) else []
-
-
-def extract_category_id(result: dict) -> str | None:
-    """Extract category ID from create_transaction_category response.
-
-    Public alias for _extract_category_id for use in test files.
-    """
-    return _extract_category_id(result)
-
 
 # =============================================================================
 # RATE LIMITING CONFIGURATION
@@ -389,21 +372,6 @@ async def test_cleanup_orphaned(monarch_client):
 # =============================================================================
 
 
-def _extract_category_id(result: Any) -> str | None:
-    """Extract category ID from various API response formats."""
-    if not isinstance(result, dict):
-        return str(result) if result else None
-
-    # Direct ID in result
-    if result.get("id"):
-        return str(result["id"])
-
-    # Nested in createCategory response
-    create_response = result.get("createCategory", {})
-    cat_id = create_response.get("category", {}).get("id")
-    return str(cat_id) if cat_id else None
-
-
 def _is_rate_limit_error(error: Exception) -> bool:
     """Check if an exception indicates a rate limit error."""
     error_str = str(error).lower()
@@ -430,7 +398,7 @@ async def create_test_category_with_retry(
                 transaction_category_name=name,
                 group_id=group_id,
             )
-            cat_id = _extract_category_id(result)
+            cat_id = extract_category_id(result)
             if cat_id:
                 return cat_id
 
