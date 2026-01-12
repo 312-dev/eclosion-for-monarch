@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [main]
 
+permissions: read-all
+
 jobs:
   check-branch-name:
     name: Check branch name

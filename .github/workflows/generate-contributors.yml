@@ -12,6 +12,8 @@ on:
   # Manual trigger
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   generate-contributors:
     runs-on: ubuntu-latest

@@ -28,6 +28,8 @@ on:
         default: false
         description: Force regeneration of all docs, ignoring manifest
 
+permissions: read-all
+
 jobs:
   generate-docs:
     runs-on: ubuntu-latest

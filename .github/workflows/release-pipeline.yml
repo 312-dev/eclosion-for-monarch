@@ -50,6 +50,8 @@ on:
       APPLE_TEAM_ID:
         required: false
 
+permissions: read-all
+
 jobs:
   # ===========================================================================
   # STAGE 1: SECURITY GATE

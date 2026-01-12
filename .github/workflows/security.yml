@@ -44,6 +44,8 @@ concurrency:
   group: security-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: read-all
+
 jobs:
   # ============================================================================
   # Detect which files changed - skip most scans if no security-relevant files

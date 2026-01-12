@@ -16,6 +16,8 @@ on:
       - 'pyproject.toml'
       - '.release-please-manifest.json'
 
+permissions: read-all
+
 jobs:
   check-versions:
     name: Check Version Consistency

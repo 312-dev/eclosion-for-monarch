@@ -29,6 +29,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: read-all
+
 jobs:
   # Detect which files changed
   changes:
@@ -324,6 +326,8 @@ jobs:
     timeout-minutes: 5
     needs: [frontend, backend, desktop, desktop-build, e2e]
     if: always()
+    permissions:
+      statuses: write
     steps:
       - name: Check CI results
         id: check
