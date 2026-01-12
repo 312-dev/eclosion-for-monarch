@@ -8,6 +8,7 @@
 # Core dependencies
 aiohttp>=3.13.3
 gql[aiohttp]>=3.4.0
+oathtool>=2.3.0
 pyotp>=2.9.0
 Flask==3.1.2
 flask-cors==6.0.2

@@ -152,6 +152,10 @@ attrs==25.4.0 \
     --hash=sha256:16d5969b87f0859ef33a48b35d55ac1be6e42ae49d5e853b597db70c35c57e11 \
     --hash=sha256:adcf7e2a1fb3b36ac48d97835bb6d8ade15b8dcce26aba8bf1d14847b57a3373
     # via aiohttp
+autocommand==2.2.2 \
+    --hash=sha256:710afe251075e038e19e815e25f8155cabe02196cfb545b2185e0d9c8b2b0459 \
+    --hash=sha256:878de9423c5596491167225c2a455043c3130fb5b7286ac83443d45e74955f34
+    # via oathtool
 backoff==2.2.1 \
     --hash=sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba \
     --hash=sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8
@@ -1030,6 +1034,10 @@ nodeenv==1.10.0 \
     --hash=sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827 \
     --hash=sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb
     # via pre-commit
+oathtool==2.4.0 \
+    --hash=sha256:43c0dc143d8ddf4805f0b000a8af78661a480f847f647c6cc403b407d9671138 \
+    --hash=sha256:9b49e35c220e591541e656dfd775cfabdb35e5664b1d0823b43f136510aeceb9
+    # via -r requirements.in
 ordered-set==4.1.0 \
     --hash=sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562 \
     --hash=sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8
@@ -1040,6 +1048,10 @@ packaging==25.0 \
     # via
     #   limits
     #   pytest
+path==17.1.1 \
+    --hash=sha256:2dfcbfec8b4d960f3469c52acf133113c2a8bf12ac7b98d629fa91af87248d42 \
+    --hash=sha256:ec7e136df29172e5030dd07e037d55f676bdb29d15bfa09b80da29d07d3b9303
+    # via oathtool
 pathspec==1.0.3 \
     --hash=sha256:bac5cf97ae2c2876e2d25ebb15078eb04d76e4b98921ee31c6f85ade8b59444d \
     --hash=sha256:e80767021c1cc524aa3fb14bedda9c34406591343cc42797b386ce7b9354fb6c
