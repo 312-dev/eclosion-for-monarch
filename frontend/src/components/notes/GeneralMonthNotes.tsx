@@ -1,58 +1,66 @@
 /**
- * Category Group Row
+ * General Month Notes
  *
- * Displays note content for a category group with inline editing.
- * Auto-saves on blur and with debounce.
+ * Right sidebar component for general notes about the month.
+ * Shows preview by default, editor on click. Auto-saves on blur.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, History } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { NoteEditorMDX } from './NoteEditorMDX';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { RevisionHistoryModal } from './RevisionHistoryModal';
-import { useSaveCategoryNoteMutation } from '../../api/queries';
+import { useSaveGeneralNoteMutation, useDeleteGeneralNoteMutation } from '../../api/queries';
 import { useCheckboxState } from '../../hooks';
-import type { CategoryGroupWithNotes, MonthKey } from '../../types/notes';
+import { formatErrorMessage } from '../../utils';
+import { useToast } from '../../context/ToastContext';
+import type { MonthKey, EffectiveGeneralNote } from '../../types/notes';
 
 /** Debounce delay for auto-save in ms */
 const AUTO_SAVE_DELAY = 1000;
 
-interface CategoryGroupRowProps {
-  /** The category group */
-  group: CategoryGroupWithNotes;
+interface GeneralMonthNotesProps {
   /** Current month being viewed */
-  currentMonth: MonthKey;
+  monthKey: MonthKey;
+  /** Effective general note (may be inherited from earlier month) */
+  effectiveNote: EffectiveGeneralNote | null;
 }
 
 /**
- * Format month key for display (e.g., "Oct 2024")
+ * Format month key for display
  */
-function formatSourceMonth(monthKey: string): string {
+function formatMonth(monthKey: string): string {
   const parts = monthKey.split('-').map(Number);
   const year = parts[0] ?? new Date().getFullYear();
   const month = parts[1] ?? 1;
   const date = new Date(year, month - 1, 1);
-  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps) {
-  const { effectiveNote } = group;
-  const hasNote = effectiveNote.note !== null;
-  const noteContent = effectiveNote.note?.content ?? '';
+/**
+ * Inner component that resets when monthKey changes via key prop
+ */
+function GeneralMonthNotesInner({ monthKey, effectiveNote }: GeneralMonthNotesProps) {
+  const note = effectiveNote?.note ?? null;
+  const noteContent = note?.content ?? '';
+  const hasNote = !!note;
+  const isInherited = effectiveNote?.isInherited ?? false;
+  const sourceMonth = effectiveNote?.sourceMonth ?? null;
 
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(noteContent);
-  const [showHistory, setShowHistory] = useState(false);
   const lastSavedRef = useRef(noteContent);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
 
-  const saveMutation = useSaveCategoryNoteMutation();
+  const saveMutation = useSaveGeneralNoteMutation();
+  const deleteMutation = useDeleteGeneralNoteMutation();
 
-  // Checkbox state management
+  // Checkbox state management for general notes
+  // Use source month for inherited notes to get the correct checkbox state
   const { checkboxStates, toggleCheckbox } = useCheckboxState({
-    noteId: effectiveNote.note?.id,
-    viewingMonth: currentMonth,
+    generalNoteMonthKey: sourceMonth ?? monthKey,
+    viewingMonth: monthKey,
     enabled: hasNote,
   });
 
@@ -68,22 +76,31 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
   // Auto-save function
   const saveNote = useCallback(async (newContent: string) => {
     const trimmedContent = newContent.trim();
-    if (trimmedContent === lastSavedRef.current.trim()) return;
-    if (!trimmedContent) return; // Don't save empty notes
 
+    // No changes
+    if (trimmedContent === lastSavedRef.current.trim()) return;
+
+    // If content is empty and there was a note, delete it
+    if (!trimmedContent) {
+      if (note) {
+        try {
+          await deleteMutation.mutateAsync(monthKey);
+          lastSavedRef.current = '';
+        } catch (err) {
+          toast.error(formatErrorMessage(err, 'Failed to delete note'));
+        }
+      }
+      return;
+    }
+
+    // Save the note
     try {
-      await saveMutation.mutateAsync({
-        categoryType: 'group',
-        categoryId: group.id,
-        categoryName: group.name,
-        monthKey: currentMonth,
-        content: trimmedContent,
-      });
+      await saveMutation.mutateAsync({ monthKey, content: trimmedContent });
       lastSavedRef.current = trimmedContent;
     } catch (err) {
-      console.error('Failed to save note:', err);
+      toast.error(formatErrorMessage(err, 'Failed to save note'));
     }
-  }, [saveMutation, group.id, group.name, currentMonth]);
+  }, [monthKey, note, saveMutation, deleteMutation, toast]);
 
   // Debounced auto-save on content change
   useEffect(() => {
@@ -147,49 +164,37 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
     setIsEditing(true);
   }, []);
 
-  // Render note content
-  const renderNoteContent = () => {
+  // Render content area
+  const renderContent = () => {
     if (isEditing) {
       return (
         <NoteEditorMDX
           value={content}
           onChange={handleContentChange}
-          placeholder={`Write a note for ${group.name} group...`}
+          placeholder="Write general notes for this month..."
+          minHeight={200}
           autoFocus
-          minHeight={80}
         />
       );
     }
 
     if (hasNote) {
       return (
-        <div className="relative group/note">
-          {/* Inheritance badge */}
-          {effectiveNote.isInherited && effectiveNote.sourceMonth && (
+        <div className="p-4">
+          {isInherited && sourceMonth && (
             <div
-              className="text-xs mb-1"
+              className="text-xs mb-2 italic"
               style={{ color: 'var(--monarch-text-muted)' }}
             >
-              from {formatSourceMonth(effectiveNote.sourceMonth)}
+              Inherited from {formatMonth(sourceMonth)}
             </div>
           )}
           <MarkdownRenderer
-            content={effectiveNote.note!.content}
+            content={note.content}
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={handleStartEdit}
           />
-          {/* History button - shows on hover */}
-          <button
-            type="button"
-            onClick={() => setShowHistory(true)}
-            className="absolute top-0 right-0 p-1 rounded opacity-0 group-hover/note:opacity-100 hover:bg-[var(--monarch-bg-card)] transition-opacity icon-btn-hover"
-            style={{ color: 'var(--monarch-text-muted)' }}
-            aria-label="View revision history"
-            title="History"
-          >
-            <History size={14} />
-          </button>
         </div>
       );
     }
@@ -198,45 +203,46 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
       <button
         type="button"
         onClick={handleStartEdit}
-        className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity icon-btn-hover"
-        style={{ color: 'var(--monarch-text-muted)' }}
-        aria-label={`Add note for ${group.name} group`}
+        className="w-full p-4 flex items-center justify-center gap-2 text-sm hover:bg-[var(--monarch-bg-hover)] transition-colors"
+        style={{ color: 'var(--monarch-text-muted)', minHeight: '100px' }}
       >
-        <Plus size={14} />
-        Add group note
+        <Plus size={16} />
+        Add month notes
       </button>
     );
   };
 
   return (
-    <>
+    <div
+      ref={containerRef}
+      className="rounded-xl overflow-hidden sticky top-18 section-enter"
+      style={{
+        backgroundColor: 'var(--monarch-bg-card)',
+        border: '1px solid var(--monarch-border)',
+      }}
+      onBlur={handleBlur}
+      data-tour="general-notes"
+    >
+      {/* Header */}
       <div
-        ref={containerRef}
-        className="px-4 py-3"
-        onBlur={handleBlur}
+        className="px-4 py-3 border-b"
+        style={{ borderColor: 'var(--monarch-border)' }}
       >
-        {/* Inner card for note content */}
-        <div
-          className="rounded-lg p-3 section-enter"
-          style={{
-            backgroundColor: 'var(--monarch-bg-card)',
-            border: '1px solid var(--monarch-border)',
-          }}
-        >
-          {renderNoteContent()}
-        </div>
+        <h3 className="font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
+          Notes for {formatMonth(monthKey)}
+        </h3>
       </div>
 
-      {/* Revision history modal */}
-      {showHistory && (
-        <RevisionHistoryModal
-          categoryType="group"
-          categoryId={group.id}
-          categoryName={group.name}
-          currentMonth={currentMonth}
-          onClose={() => setShowHistory(false)}
-        />
-      )}
-    </>
+      {/* Content area */}
+      {renderContent()}
+    </div>
   );
+}
+
+/**
+ * Wrapper that uses key to reset state when month changes
+ */
+export function GeneralMonthNotes({ monthKey, effectiveNote }: GeneralMonthNotesProps) {
+  // Using key forces remount when month changes, resetting all state
+  return <GeneralMonthNotesInner key={monthKey} monthKey={monthKey} effectiveNote={effectiveNote} />;
 }

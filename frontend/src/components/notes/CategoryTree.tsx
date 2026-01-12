@@ -5,7 +5,7 @@
  * Groups are expandable/collapsible.
  */
 
-import { ChevronDown, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CategoryGroupRow } from './CategoryGroupRow';
 import { CategoryRow } from './CategoryRow';
 import type { CategoryGroupWithNotes, MonthKey } from '../../types/notes';
@@ -34,7 +34,6 @@ export function CategoryTree({
   currentMonth,
 }: CategoryTreeProps) {
   const allExpanded = groups.length > 0 && groups.every(g => expandedGroups.has(g.id));
-  const allCollapsed = expandedGroups.size === 0;
 
   if (groups.length === 0) {
     return (
@@ -53,40 +52,21 @@ export function CategoryTree({
   }
 
   return (
-    <div className="space-y-2">
-      {/* Header with expand/collapse controls */}
+    <div className="space-y-2" data-tour="category-tree">
+      {/* Header with expand/collapse toggle */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'var(--monarch-text-muted)' }}>
           Category Notes
         </h2>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onExpandAll}
-            disabled={allExpanded}
-            className={`p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors ${
-              allExpanded ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            style={{ color: 'var(--monarch-text-muted)' }}
-            aria-label="Expand all groups"
-            title="Expand all"
-          >
-            <Maximize2 size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={onCollapseAll}
-            disabled={allCollapsed}
-            className={`p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors ${
-              allCollapsed ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            style={{ color: 'var(--monarch-text-muted)' }}
-            aria-label="Collapse all groups"
-            title="Collapse all"
-          >
-            <Minimize2 size={14} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={allExpanded ? onCollapseAll : onExpandAll}
+          className="px-2 py-1 text-xs rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          style={{ color: 'var(--monarch-text-muted)' }}
+          aria-label={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
+        >
+          {allExpanded ? 'Collapse All' : 'Expand All'}
+        </button>
       </div>
 
       {/* Category groups */}
@@ -104,46 +84,57 @@ export function CategoryTree({
                 animationDelay: `${index * 30}ms`,
               }}
             >
-              {/* Group header */}
-              <button
-                type="button"
-                onClick={() => onToggleGroup(group.id)}
-                className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--monarch-bg-hover)] transition-colors"
-                aria-expanded={isExpanded}
-                aria-controls={`group-${group.id}-categories`}
+              {/* Group header section - lighter background for contrast */}
+              <div
+                style={{
+                  backgroundColor: 'var(--monarch-bg-hover)',
+                }}
               >
-                <span style={{ color: 'var(--monarch-text-muted)' }}>
-                  {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                </span>
-                <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-                  {group.name}
-                </span>
-                <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-                  ({group.categories.length})
-                </span>
-                {group.effectiveNote.note && (
-                  <span
-                    className="ml-auto px-2 py-0.5 text-xs rounded-full"
-                    style={{
-                      backgroundColor: group.effectiveNote.isInherited
-                        ? 'var(--monarch-bg-hover)'
-                        : 'var(--monarch-orange-light)',
-                      color: group.effectiveNote.isInherited
-                        ? 'var(--monarch-text-muted)'
-                        : 'var(--monarch-orange)',
-                    }}
-                  >
-                    {group.effectiveNote.isInherited ? 'inherited' : 'note'}
+                {/* Clickable header row */}
+                <button
+                  type="button"
+                  onClick={() => onToggleGroup(group.id)}
+                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--monarch-bg-hover)] transition-colors"
+                  aria-expanded={isExpanded}
+                  aria-controls={`group-${group.id}-categories`}
+                >
+                  <span style={{ color: 'var(--monarch-text-muted)' }}>
+                    {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                   </span>
-                )}
-              </button>
+                  <span
+                    className="font-medium"
+                    style={{ color: 'var(--monarch-text-dark)' }}
+                  >
+                    {group.name}
+                  </span>
+                  <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+                    ({group.categories.length})
+                  </span>
+                  {group.effectiveNote.note && (
+                    <span
+                      className="ml-auto px-2 py-0.5 text-xs rounded-full"
+                      style={{
+                        backgroundColor: group.effectiveNote.isInherited
+                          ? 'var(--monarch-bg-hover)'
+                          : 'rgba(34, 197, 94, 0.15)',
+                        color: group.effectiveNote.isInherited
+                          ? 'var(--monarch-text-muted)'
+                          : '#22c55e',
+                      }}
+                    >
+                      {group.effectiveNote.isInherited ? 'inherited' : 'edited'}
+                    </span>
+                  )}
+                </button>
 
-              {/* Group note row */}
-              <CategoryGroupRow
-                group={group}
-                currentMonth={currentMonth}
-                isExpanded={isExpanded}
-              />
+                {/* Group note - only shown when expanded */}
+                {isExpanded && (
+                  <CategoryGroupRow
+                    group={group}
+                    currentMonth={currentMonth}
+                  />
+                )}
+              </div>
 
               {/* Categories */}
               {isExpanded && (
@@ -152,13 +143,14 @@ export function CategoryTree({
                   className="border-t"
                   style={{ borderColor: 'var(--monarch-border)' }}
                 >
-                  {group.categories.map(category => (
+                  {group.categories.map((category, categoryIndex) => (
                     <CategoryRow
                       key={category.id}
                       category={category}
                       groupId={group.id}
                       groupName={group.name}
                       currentMonth={currentMonth}
+                      dataTourId={index === 0 && categoryIndex === 0 ? 'category-note' : undefined}
                     />
                   ))}
                 </div>

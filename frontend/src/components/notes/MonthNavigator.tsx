@@ -25,7 +25,9 @@ interface MonthNavigatorProps {
  * Parse month key to Date object
  */
 function parseMonthKey(monthKey: MonthKey): Date {
-  const [year, month] = monthKey.split('-').map(Number);
+  const parts = monthKey.split('-').map(Number);
+  const year = parts[0] ?? new Date().getFullYear();
+  const month = parts[1] ?? 1;
   return new Date(year, month - 1, 1);
 }
 
