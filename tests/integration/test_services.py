@@ -170,12 +170,10 @@ async def test_category_manager_create_category_uses_correct_api(
 @pytest.mark.asyncio
 async def test_category_manager_set_budget_correct_parameters(category_manager, unique_test_name):
     """
-    Test that CategoryManager.set_budget() passes correct parameters to Monarch.
+    Test that CategoryManager.set_category_budget() passes correct parameters to Monarch.
 
     This validates our code correctly constructs the API request.
     """
-    from datetime import datetime
-
     groups = await category_manager.get_category_groups()
     if not groups:
         pytest.skip("No category groups available")
@@ -191,11 +189,9 @@ async def test_category_manager_set_budget_correct_parameters(category_manager, 
         )
 
         # Use our CategoryManager to set budget (tests our code)
-        current_month = datetime.now().strftime("%Y-%m")
-        await category_manager.set_budget(
+        await category_manager.set_category_budget(
             category_id=cat_id,
             amount=123,  # Distinctive amount we can verify
-            month=f"{current_month}-01",
         )
 
         # If we got here without exception, the API accepted our request
@@ -271,8 +267,6 @@ async def test_set_budget_only_affects_specified_category(category_manager, uniq
     This ensures our budget setting code doesn't accidentally modify
     other categories' budgets.
     """
-    from datetime import datetime
-
     groups = await category_manager.get_category_groups()
     if not groups:
         pytest.skip("No category groups available")
@@ -287,14 +281,10 @@ async def test_set_budget_only_affects_specified_category(category_manager, uniq
             group_id=group_id,
         )
 
-        # Get current budget state (for comparison)
-        current_month = datetime.now().strftime("%Y-%m")
-
         # Set budget on OUR test category only
-        await category_manager.set_budget(
+        await category_manager.set_category_budget(
             category_id=cat_id,
             amount=999,  # Distinctive amount
-            month=f"{current_month}-01",
         )
 
         # The key assertion is that no exception was raised
