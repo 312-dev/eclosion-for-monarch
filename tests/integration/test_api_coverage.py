@@ -45,9 +45,9 @@ async def test_get_budgets_returns_valid_structure(monarch_client):
     # Check for expected structure (may vary by Monarch version)
     has_budget_data = "budgetData" in budgets
     has_category_groups = "categoryGroups" in budgets
-    assert (
-        has_budget_data or has_category_groups
-    ), "Budget response should have budgetData or categoryGroups"
+    assert has_budget_data or has_category_groups, (
+        "Budget response should have budgetData or categoryGroups"
+    )
 
     # If categoryGroups exists, verify structure
     if has_category_groups:
@@ -181,9 +181,9 @@ async def test_create_and_delete_category_full_lifecycle(monarch_client, unique_
         result = await monarch_client.get_transaction_categories()
         categories = extract_categories(result)
         cat_names = {c["name"]: c["id"] for c in categories}
-        assert unique_test_name in cat_names or cat_id in [
-            c["id"] for c in categories
-        ], "Created category should appear in category list"
+        assert unique_test_name in cat_names or cat_id in [c["id"] for c in categories], (
+            "Created category should appear in category list"
+        )
 
     finally:
         # DELETE (always cleanup)

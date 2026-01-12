@@ -5,11 +5,12 @@ Helper functions for extracting data from Monarch API responses.
 from typing import Any
 
 
-def extract_categories(result: dict) -> list:
+def extract_categories(result: dict[str, Any]) -> list[Any]:
     """Extract categories list from get_transaction_categories response."""
     if isinstance(result, dict):
-        return result.get("categories", [])
-    return result if isinstance(result, list) else []
+        categories = result.get("categories", [])
+        return list(categories) if categories else []
+    return list(result) if isinstance(result, list) else []
 
 
 def extract_category_id(result: Any) -> str | None:

@@ -22,9 +22,9 @@ async def test_can_fetch_budgets(monarch_client):
 
     assert budgets is not None, "Budgets response should not be None"
     assert isinstance(budgets, dict), "Budgets should be a dictionary"
-    assert (
-        "budgetData" in budgets or "categoryGroups" in budgets
-    ), "Budget response should have expected structure"
+    assert "budgetData" in budgets or "categoryGroups" in budgets, (
+        "Budget response should have expected structure"
+    )
 
 
 @pytest.mark.integration
