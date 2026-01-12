@@ -87,9 +87,7 @@ class CredentialsRepository:
                 "email": enc.decrypt(creds.email_encrypted),
                 "password": enc.decrypt(creds.password_encrypted),
                 "mfa_secret": (
-                    enc.decrypt(creds.mfa_secret_encrypted)
-                    if creds.mfa_secret_encrypted
-                    else ""
+                    enc.decrypt(creds.mfa_secret_encrypted) if creds.mfa_secret_encrypted else ""
                 ),
             }
         except InvalidToken:
@@ -164,9 +162,7 @@ class CredentialsRepository:
                 "email": enc.decrypt(creds.email_encrypted),
                 "password": enc.decrypt(creds.password_encrypted),
                 "mfa_secret": (
-                    enc.decrypt(creds.mfa_secret_encrypted)
-                    if creds.mfa_secret_encrypted
-                    else ""
+                    enc.decrypt(creds.mfa_secret_encrypted) if creds.mfa_secret_encrypted else ""
                 ),
             }
         except InvalidToken:
