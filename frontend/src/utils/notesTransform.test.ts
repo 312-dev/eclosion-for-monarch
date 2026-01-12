@@ -134,7 +134,7 @@ describe('buildCategoryGroupsWithNotes', () => {
     expect(billsGroup?.effectiveNote.sourceMonth).toBe('2025-01');
   });
 
-  it('sorts categories alphabetically', () => {
+  it('preserves category order from Monarch (budget sheet order)', () => {
     const categories: NotesCategoryGroup[] = [
       {
         id: 'group-1',
@@ -150,9 +150,10 @@ describe('buildCategoryGroupsWithNotes', () => {
     const result = buildCategoryGroupsWithNotes(null, categories);
 
     const billsGroup = result.find((g) => g.name === 'Bills');
-    expect(billsGroup?.categories[0]?.name).toBe('Apple');
-    expect(billsGroup?.categories[1]?.name).toBe('Mango');
-    expect(billsGroup?.categories[2]?.name).toBe('Zebra');
+    // Order should be preserved as provided (Monarch's budget sheet order)
+    expect(billsGroup?.categories[0]?.name).toBe('Zebra');
+    expect(billsGroup?.categories[1]?.name).toBe('Apple');
+    expect(billsGroup?.categories[2]?.name).toBe('Mango');
   });
 
   it('creates empty effective note when no note data exists', () => {
