@@ -575,7 +575,7 @@ def print_operations():
 
 def print_summary():
     """Print operation summary."""
-    counts = {op_type: 0 for op_type in OpType}
+    counts = dict.fromkeys(OpType, 0)
     cleanup_count = 0
 
     for op in PLANNED_OPERATIONS:

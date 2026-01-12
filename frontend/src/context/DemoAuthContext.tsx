@@ -75,6 +75,10 @@ const mockClearSyncBlocked = (): void => {
   // No-op in demo mode
 };
 
+const mockClearMfaRequired = (): void => {
+  // No-op in demo mode
+};
+
 // ============================================================================
 // Provider
 // ============================================================================
@@ -90,6 +94,7 @@ export function DemoAuthProvider({ children }: Readonly<{ children: ReactNode }>
       lockReason: null,
       needsReauth: false,
       syncBlocked: false,
+      mfaRequiredData: null,
       // Actions - all no-ops or return success
       login: mockLogin,
       lock: mockLock,
@@ -104,6 +109,7 @@ export function DemoAuthProvider({ children }: Readonly<{ children: ReactNode }>
       reauthenticate: mockReauthenticate,
       triggerReauth: mockTriggerReauth,
       clearSyncBlocked: mockClearSyncBlocked,
+      clearMfaRequired: mockClearMfaRequired,
     }),
     []
   );
