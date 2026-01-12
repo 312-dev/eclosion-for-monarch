@@ -1,0 +1,16 @@
+# OpenSSF Scorecard Maintainer Annotations
+# https://github.com/ossf/scorecard/blob/main/config/README.md
+#
+# This file provides context for Scorecard checks that may not fully apply
+# to this project's situation.
+
+annotations:
+  - checks:
+      - code-review
+    reasons:
+      - reason: not-applicable
+        # This is a solo-maintainer project. Requiring code review from a
+        # second human reviewer is not feasible. All changes undergo:
+        # - Automated CI checks (linting, type-checking, tests, build)
+        # - GitHub Copilot code review (when available)
+        # - Self-review before merge

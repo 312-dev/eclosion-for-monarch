@@ -5,9 +5,15 @@
 * @312-dev/maintainers
 
 # Security-sensitive files require explicit review
+# These files can access secrets or affect the release pipeline
 /.github/workflows/ @312-dev/maintainers
+/.github/workflows/integration-tests.yml @312-dev/maintainers
+/.github/workflows/create-beta.yml @312-dev/maintainers
+/.github/workflows/create-stable.yml @312-dev/maintainers
 /core/encryption.py @312-dev/maintainers
 /SECURITY.md @312-dev/maintainers
+/tests/integration/ @312-dev/maintainers
+/scripts/check-monarch-api-coverage.py @312-dev/maintainers
 
 # Frontend
 /frontend/ @312-dev/maintainers

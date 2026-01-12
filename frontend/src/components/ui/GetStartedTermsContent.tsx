@@ -49,7 +49,7 @@ export function GetStartedTermsContent({ acknowledged, onAcknowledgeChange }: Te
           </h3>
           <table className="w-full text-sm">
             <tbody>
-              <TermsTableRow label="Hosting" value="You manage your own Railway/Docker instance" />
+              <TermsTableRow label="Hosting" value="You manage your own Docker instance" />
               <TermsTableRow label="Support" value="No customer support — this is a self-hosted tool" />
               <TermsTableRow label="Credentials" value="You secure and maintain your Monarch login" />
               <TermsTableRow label="Compliance" value="You accept risks of using Monarch's API" isWarning />
@@ -69,7 +69,7 @@ export function GetStartedTermsContent({ acknowledged, onAcknowledgeChange }: Te
           <ul className="text-sm space-y-1.5 list-disc list-inside" style={{ color: 'var(--monarch-text)' }}>
             <li>You're responsible for keeping your instance running</li>
             <li>There's no support team to call if something breaks</li>
-            <li>Railway or Docker issues should be directed to those providers</li>
+            <li>Docker issues should be directed to that provider</li>
             <li>Data backups and maintenance are your responsibility</li>
           </ul>
         </section>

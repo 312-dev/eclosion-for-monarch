@@ -12,14 +12,7 @@ import { app, dialog } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { getStateDir } from './paths';
-import Store from 'electron-store';
-
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
+import { getStore } from './store';
 
 /**
  * Backup file format version.

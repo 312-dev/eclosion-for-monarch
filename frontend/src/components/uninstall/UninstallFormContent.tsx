@@ -4,7 +4,6 @@
 
 import { useMemo } from 'react';
 import type { DeletableCategory } from '../../types';
-import type { DeploymentInfo } from '../../api/client';
 import { formatCurrency } from '../../utils';
 
 type CategoryChoice = 'delete' | 'keep';
@@ -17,7 +16,6 @@ interface UninstallFormContentProps {
   readonly confirmed: boolean;
   readonly onConfirmedChange: (confirmed: boolean) => void;
   readonly cancelling: boolean;
-  readonly deploymentInfo: DeploymentInfo | null;
 }
 
 export function UninstallFormContent({
@@ -28,7 +26,6 @@ export function UninstallFormContent({
   confirmed,
   onConfirmedChange,
   cancelling,
-  deploymentInfo,
 }: UninstallFormContentProps) {
   const currentMonth = useMemo(() => {
     return new Date().toLocaleString('default', { month: 'long' });
@@ -64,14 +61,6 @@ export function UninstallFormContent({
         onCategoryChoiceChange={onCategoryChoiceChange}
         cancelling={cancelling}
       />
-
-      {deploymentInfo?.is_railway && (
-        <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
-          <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-            After uninstalling, you'll get a direct link to delete your Railway project and stop all future charges.
-          </p>
-        </div>
-      )}
 
       <div className="space-y-2">
         <label htmlFor="confirm-input" className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>

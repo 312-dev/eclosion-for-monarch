@@ -5,20 +5,16 @@
  * Records timestamps at key points and calculates durations.
  */
 
-import Store from 'electron-store';
+import { getStore, type MetricsHistoryEntry } from './store';
 import { debugLog } from './logger';
 
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
+// Re-export MetricsHistoryEntry from store for backwards compatibility
+export type { MetricsHistoryEntry } from './store';
 
 /**
  * Store key for historical metrics.
  */
-const METRICS_HISTORY_KEY = 'startup.metricsHistory';
+const METRICS_HISTORY_KEY = 'startup.metricsHistory' as const;
 const MAX_HISTORY_ENTRIES = 50;
 
 /**
@@ -53,13 +49,7 @@ export interface StartupMetrics {
   version: string;
 }
 
-/**
- * Historical metrics entry.
- */
-interface MetricsHistoryEntry extends StartupMetrics {
-  /** Unique ID for this entry */
-  id: string;
-}
+// MetricsHistoryEntry is now imported from ./store
 
 /**
  * Current session's milestones.
@@ -107,7 +97,7 @@ export function calculateMetrics(version: string): StartupMetrics | null {
  * Save metrics to history.
  */
 export function saveMetricsToHistory(metrics: StartupMetrics): void {
-  const history = getStore().get(METRICS_HISTORY_KEY, []) as MetricsHistoryEntry[];
+  const history = getStore().get(METRICS_HISTORY_KEY, []);
 
   const entry: MetricsHistoryEntry = {
     ...metrics,
@@ -129,7 +119,7 @@ export function saveMetricsToHistory(metrics: StartupMetrics): void {
  * Get metrics history.
  */
 export function getMetricsHistory(): MetricsHistoryEntry[] {
-  return getStore().get(METRICS_HISTORY_KEY, []) as MetricsHistoryEntry[];
+  return getStore().get(METRICS_HISTORY_KEY, []);
 }
 
 /**

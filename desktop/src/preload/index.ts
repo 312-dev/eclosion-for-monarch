@@ -34,6 +34,36 @@ const electronAPI = {
     ipcRenderer.invoke('get-backend-status'),
 
   /**
+   * Check if backend startup has completed.
+   */
+  isBackendStartupComplete: (): Promise<boolean> =>
+    ipcRenderer.invoke('get-backend-startup-complete'),
+
+  /**
+   * Listen for backend startup status updates.
+   */
+  onBackendStartupStatus: (
+    callback: (status: {
+      phase: 'initializing' | 'spawning' | 'waiting_for_health' | 'ready' | 'failed';
+      message: string;
+      progress: number;
+      error?: string;
+    }) => void
+  ): (() => void) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      status: {
+        phase: 'initializing' | 'spawning' | 'waiting_for_health' | 'ready' | 'failed';
+        message: string;
+        progress: number;
+        error?: string;
+      }
+    ): void => callback(status);
+    ipcRenderer.on('backend-startup-status', handler);
+    return () => ipcRenderer.removeListener('backend-startup-status', handler);
+  },
+
+  /**
    * Trigger a manual sync.
    */
   triggerSync: (): Promise<{ success: boolean; error?: string }> =>
@@ -480,6 +510,7 @@ const electronAPI = {
       email: string;
       password: string;
       mfaSecret?: string;
+      mfaMode?: 'secret' | 'code';
     }): Promise<boolean> => ipcRenderer.invoke('credentials:store', credentials),
 
     /**
@@ -489,6 +520,7 @@ const electronAPI = {
       email: string;
       password: string;
       mfaSecret?: string;
+      mfaMode?: 'secret' | 'code';
     } | null> => ipcRenderer.invoke('credentials:get'),
 
     /**
@@ -629,6 +661,134 @@ const electronAPI = {
       ipcRenderer.on('needs-reauth', handler);
       return () => ipcRenderer.removeListener('needs-reauth', handler);
     },
+
+    /**
+     * Listen for MFA required events during session restore.
+     * Triggered when stored credentials need MFA re-entry (e.g., 6-digit code users on restart).
+     */
+    onMfaRequired: (
+      callback: (data: { email: string; mfaMode: 'secret' | 'code' }) => void
+    ): (() => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        data: { email: string; mfaMode: 'secret' | 'code' }
+      ): void => callback(data);
+      ipcRenderer.on('auth:mfa-required', handler);
+      return () => ipcRenderer.removeListener('auth:mfa-required', handler);
+    },
+
+    /**
+     * Submit MFA code to complete session restore.
+     * Used when session restore requires MFA re-entry.
+     */
+    submitMfaCode: (
+      mfaCode: string,
+      mfaMode: 'secret' | 'code'
+    ): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('auth:submit-mfa-code', mfaCode, mfaMode),
+  },
+
+  // =========================================================================
+  // Lockout State (failed login attempts)
+  // =========================================================================
+
+  /**
+   * Lockout state API for persisting failed login attempts across sessions.
+   */
+  lockout: {
+    /**
+     * Get current lockout state.
+     */
+    getState: (): Promise<{ failedAttempts: number; cooldownUntil: number | null }> =>
+      ipcRenderer.invoke('lockout:get-state'),
+
+    /**
+     * Set lockout state.
+     */
+    setState: (state: { failedAttempts: number; cooldownUntil: number | null }): Promise<void> =>
+      ipcRenderer.invoke('lockout:set-state', state),
+
+    /**
+     * Clear lockout state (reset failed attempts).
+     */
+    clear: (): Promise<void> => ipcRenderer.invoke('lockout:clear'),
+  },
+
+  // =========================================================================
+  // Periodic Sync (scheduled sync while app is running)
+  // =========================================================================
+
+  /**
+   * Periodic sync API for configuring scheduled sync intervals.
+   */
+  periodicSync: {
+    /**
+     * Get current periodic sync settings.
+     */
+    getSettings: (): Promise<{ enabled: boolean; intervalMinutes: number }> =>
+      ipcRenderer.invoke('periodic-sync:get-settings'),
+
+    /**
+     * Get available sync interval options.
+     */
+    getIntervals: (): Promise<Array<{ value: number; label: string }>> =>
+      ipcRenderer.invoke('periodic-sync:get-intervals'),
+
+    /**
+     * Enable or disable periodic sync.
+     */
+    setEnabled: (enabled: boolean): Promise<{ enabled: boolean; intervalMinutes: number }> =>
+      ipcRenderer.invoke('periodic-sync:set-enabled', enabled),
+
+    /**
+     * Set the sync interval.
+     */
+    setInterval: (intervalMinutes: number): Promise<{ enabled: boolean; intervalMinutes: number }> =>
+      ipcRenderer.invoke('periodic-sync:set-interval', intervalMinutes),
+  },
+
+  // =========================================================================
+  // Background Sync (sync when app is closed)
+  // =========================================================================
+
+  /**
+   * Background sync API for configuring system-level scheduled sync.
+   */
+  backgroundSync: {
+    /**
+     * Get current background sync status.
+     */
+    getStatus: (): Promise<{ installed: boolean; intervalMinutes: number }> =>
+      ipcRenderer.invoke('background-sync:get-status'),
+
+    /**
+     * Get available sync interval options.
+     */
+    getIntervals: (): Promise<Array<{ value: number; label: string }>> =>
+      ipcRenderer.invoke('background-sync:get-intervals'),
+
+    /**
+     * Enable background sync with the specified interval.
+     */
+    enable: (
+      intervalMinutes: number,
+      passphrase: string
+    ): Promise<{ success: boolean; intervalMinutes?: number; error?: string }> =>
+      ipcRenderer.invoke('background-sync:enable', intervalMinutes, passphrase),
+
+    /**
+     * Disable background sync.
+     */
+    disable: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('background-sync:disable'),
+
+    /**
+     * Set the sync interval (must be enabled first).
+     */
+    setInterval: (
+      intervalMinutes: number
+    ): Promise<{ success: boolean; intervalMinutes?: number; error?: string }> =>
+      ipcRenderer.invoke('background-sync:set-interval', intervalMinutes),
   },
 };
 

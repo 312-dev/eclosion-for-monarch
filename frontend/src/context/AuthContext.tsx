@@ -29,6 +29,12 @@ import type { LoginResult, SetPassphraseResult, UnlockResult, UpdateCredentialsR
 /** Reason why the app was locked */
 export type LockReason = 'manual' | 'system-lock' | 'idle' | null;
 
+/** Data for MFA re-authentication prompt (desktop mode) */
+export interface MfaRequiredData {
+  email: string;
+  mfaMode: 'secret' | 'code';
+}
+
 export interface AuthState {
   /** Whether user is authenticated (null = loading) */
   authenticated: boolean | null;
@@ -44,6 +50,8 @@ export interface AuthState {
   needsReauth: boolean;
   /** Whether sync is blocked due to auth issues */
   syncBlocked: boolean;
+  /** MFA required data for desktop mode (email and mode) */
+  mfaRequiredData: MfaRequiredData | null;
 }
 
 export interface AuthActions {
@@ -73,6 +81,8 @@ export interface AuthActions {
   triggerReauth: () => void;
   /** Clear sync blocked state */
   clearSyncBlocked: () => void;
+  /** Clear MFA required state (after successful re-auth or user cancels) */
+  clearMfaRequired: () => void;
 }
 
 export interface AuthContextValue extends AuthState, AuthActions {}
@@ -96,6 +106,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [lockReason, setLockReason] = useState<LockReason>(null);
   const [needsReauth, setNeedsReauth] = useState(false);
   const [syncBlocked, setSyncBlocked] = useState(false);
+  const [mfaRequiredData, setMfaRequiredData] = useState<MfaRequiredData | null>(null);
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
@@ -159,6 +170,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     await apiLogout();
     setAuthenticated(false);
     setNeedsUnlock(false);
+
+    // In desktop mode, also clear stored credentials from Electron's safeStorage
+    if (globalThis.electron?.credentials) {
+      await globalThis.electron.credentials.clearAll();
+    }
   }, []);
 
   const setPassphrase = useCallback(async (passphrase: string): Promise<SetPassphraseResult> => {
@@ -218,6 +234,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (result.success) {
       setAuthenticated(false);
       setNeedsUnlock(false);
+
+      // In desktop mode, also clear stored credentials from Electron's safeStorage
+      if (globalThis.electron?.credentials) {
+        await globalThis.electron.credentials.clearAll();
+      }
     }
     return result;
   }, []);
@@ -238,6 +259,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const clearSyncBlocked = useCallback(() => {
     setSyncBlocked(false);
+  }, []);
+
+  const clearMfaRequired = useCallback(() => {
+    setMfaRequiredData(null);
   }, []);
 
   // Initialize on mount
@@ -297,6 +322,20 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     };
   }, []);
 
+  // Listen for MFA required events from desktop (6-digit code users on restart)
+  useEffect(() => {
+    if (!globalThis.electron?.reauth?.onMfaRequired) return;
+
+    const unsubscribe = globalThis.electron.reauth.onMfaRequired((data) => {
+      // Store the MFA required data to show the re-auth prompt
+      setMfaRequiredData(data);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const value: AuthContextValue = {
     // State
     authenticated,
@@ -306,6 +345,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     lockReason,
     needsReauth,
     syncBlocked,
+    mfaRequiredData,
     // Actions
     login,
     lock,
@@ -320,6 +360,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     reauthenticate,
     triggerReauth,
     clearSyncBlocked,
+    clearMfaRequired,
   };
 
   return (

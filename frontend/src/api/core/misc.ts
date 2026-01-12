@@ -53,17 +53,13 @@ export async function dismissNotice(noticeId: string): Promise<{ success: boolea
 // Deployment info
 
 export interface DeploymentInfo {
-  is_railway: boolean;
-  railway_project_url: string | null;
-  railway_project_id: string | null;
+  deployment_type: 'docker' | 'desktop' | 'local';
 }
 
 export interface CancelSubscriptionResult {
   success: boolean;
   steps_completed: string[];
-  railway_deletion_url: string | null;
   instructions: string[];
-  is_railway: boolean;
   is_desktop: boolean;
 }
 

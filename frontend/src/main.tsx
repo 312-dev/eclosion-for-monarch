@@ -5,11 +5,11 @@ import App from './App.tsx'
 import { initializeApi } from './api/core/fetchApi'
 import { isDesktopMode } from './utils/apiBase'
 import { setBetaModeOverride, getBetaModeOverride, isBetaEnvironment, initializeDesktopBetaDetection } from './utils/environment'
+import { DesktopStartupWrapper } from './components/DesktopStartupWrapper'
 
 // Expose beta mode helpers for local testing (accessible via browser console)
 // Usage: eclosion.setBeta(true) to enable beta mode, eclosion.setBeta(null) to reset
 declare global {
-  // eslint-disable-next-line no-var
   var eclosion: {
     setBeta: typeof setBetaModeOverride;
     getBeta: typeof getBetaModeOverride;
@@ -47,15 +47,21 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
-// Initialize API for desktop mode (fetches backend port from Electron)
-// This must complete before rendering to ensure API calls work
-await initializeApi();
+// In desktop mode, the DesktopStartupWrapper handles initialization
+// after the backend is ready. In web mode, initialize immediately.
+if (!isDesktopMode()) {
+  // Web mode: Initialize API immediately (no backend to wait for)
+  await initializeApi();
+  await initializeDesktopBetaDetection();
+}
 
-// Detect if desktop app is running a beta build (sets localStorage flag for isBetaEnvironment)
-await initializeDesktopBetaDetection();
-
+// Render the app
+// Desktop mode: DesktopStartupWrapper shows loading screen and initializes when backend is ready
+// Web mode: DesktopStartupWrapper passes through immediately
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <DesktopStartupWrapper>
+      <App />
+    </DesktopStartupWrapper>
   </StrictMode>,
 );

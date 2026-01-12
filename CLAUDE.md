@@ -63,6 +63,118 @@ Semantic HTML:
 - All custom hooks must have tests
 - Critical user flows need integration tests
 
+## Testing Strategy
+
+This project uses a multi-layer testing approach to ensure reliability:
+
+### Test Pyramid
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 4: Integration Tests (tests/integration/)                 │
+│ Tests: Real Monarch API + our service code                      │
+│ When: Before releases only (gates beta/stable)                  │
+│ Coverage: CategoryManager, SyncService with real API            │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 3: E2E Tests (desktop/e2e/)                               │
+│ Tests: Full UI flows in demo mode                               │
+│ When: Every PR/push                                             │
+│ Coverage: Critical user journeys, accessibility                 │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 2: Unit Tests (tests/, frontend/src/**/*.test.*)          │
+│ Tests: Business logic with mocked dependencies                  │
+│ When: Every PR/push                                             │
+│ Coverage: Services, hooks, utilities, components                │
+└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 1: Static Analysis                                        │
+│ Tests: Types, linting, formatting                               │
+│ When: Every PR/push                                             │
+│ Coverage: All code                                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Structure?
+
+| Layer | What It Proves | Limitations |
+|-------|----------------|-------------|
+| **Unit tests** | Business logic is correct with expected inputs | Mocks might not match real API |
+| **E2E tests** | UI flows work end-to-end | Only tests demo mode, not real Monarch |
+| **Integration tests** | Our code + real Monarch API work together | Only runs before releases |
+
+The combination provides confidence that:
+1. Our logic is correct (unit tests)
+2. Users can complete tasks (E2E tests)
+3. Real-world Monarch API integration works (integration tests)
+
+### Integration Tests Deep Dive
+
+Integration tests live in `tests/integration/` and test against the **real Monarch API**:
+
+**Test Types:**
+
+| File | What It Tests |
+|------|---------------|
+| `test_api_coverage.py` | All Monarch API functions return expected structures |
+| `test_services.py` | Our service classes (CategoryManager, etc.) work with real API |
+| `test_category_lifecycle.py` | Category CRUD operations |
+| `test_budget_operations.py` | Budget amount setting |
+| `test_sync_readonly.py` | Read-only sync operations |
+| `test_authentication.py` | Login and MFA handling |
+
+**Non-Destructive Pattern:**
+
+All write tests follow create → test → cleanup:
+
+```python
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_example(monarch_client, unique_test_name):
+    """Test with automatic cleanup."""
+    cat_id = None
+    try:
+        # Create temporary test data
+        cat_id = await monarch_client.create_transaction_category(
+            name=unique_test_name,  # "ECLOSION-TEST-20260112-123456"
+            group_id=group_id,
+        )
+
+        # Test our code
+        assert cat_id is not None
+
+    finally:
+        # Always cleanup
+        if cat_id:
+            await monarch_client.delete_transaction_category(cat_id)
+```
+
+**Adding New Monarch API Calls:**
+
+When you add new Monarch API usage to the app, you MUST add integration tests:
+
+1. Add the API call to your service code
+2. Add tests in `tests/integration/` that exercise the call
+3. The CI check `Check Monarch API integration test coverage` will fail if coverage is missing
+
+The coverage checker (`scripts/check-monarch-api-coverage.py`) automatically detects all `mm.method()` calls in services and ensures each has a corresponding test.
+
+**Safety Tests:**
+
+Integration tests include explicit safety verification:
+
+```python
+async def test_delete_only_deletes_specified_category():
+    """SAFETY: Verify delete doesn't affect other categories."""
+    # Count categories before
+    # Create test category
+    # Delete test category
+    # Verify count is back to original (nothing else deleted)
+```
+
+These tests ensure our code doesn't accidentally perform destructive operations on user data.
+
 ### Icons
 
 **Use the centralized icon system, not inline SVGs.**

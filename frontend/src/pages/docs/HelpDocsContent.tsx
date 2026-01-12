@@ -123,7 +123,7 @@ export function HelpDocsContent() {
           <div className="space-y-4">
             <FaqItem
               question="How do I update Eclosion?"
-              answer="If you're on Railway, updates are applied automatically when you merge them from the template. For Docker, run 'docker compose pull && docker compose up -d'."
+              answer="For Docker, run 'docker compose pull && docker compose up -d'. For the desktop app, updates are handled automatically."
             />
             <FaqItem
               question="How do I change my Monarch password?"
@@ -131,7 +131,7 @@ export function HelpDocsContent() {
             />
             <FaqItem
               question="How do I backup my data?"
-              answer="For Docker: 'docker compose cp eclosion:/app/state ./backup'. For Railway: Data is persisted in the volume automatically."
+              answer="For Docker: 'docker compose cp eclosion:/app/state ./backup'. For the desktop app, data is stored locally in your data folder."
             />
             <FaqItem
               question="How do I completely reset?"

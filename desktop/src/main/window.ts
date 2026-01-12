@@ -7,7 +7,6 @@
 import { BrowserWindow, shell, app, session } from 'electron';
 import path from 'node:path';
 import Store from 'electron-store';
-import { isBetaBuild } from './beta';
 
 // Lazy store initialization to ensure app.setPath('userData') is called first
 let store: Store | null = null;
@@ -157,11 +156,6 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
-
-    // Enable dev tools for beta builds (helps with debugging pre-release issues)
-    if (isBetaBuild()) {
-      mainWindow?.webContents.openDevTools({ mode: 'detach' });
-    }
   });
 
   // Handle close - behavior depends on menuBarMode setting

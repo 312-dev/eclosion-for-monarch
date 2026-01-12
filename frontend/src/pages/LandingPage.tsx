@@ -146,8 +146,8 @@ export function LandingPage() {
                 accentColor="#3B82F6"
                 title="Spin Your Cocoon"
               >
-                Get your own private copy. Download the desktop app, self-host with
-                Docker, or deploy to Railway.
+                Get your own private copy. Download the desktop app or self-host with
+                Docker on your own server.
               </HowItWorksStep>
 
               <HowItWorksStep

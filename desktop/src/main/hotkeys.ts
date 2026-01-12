@@ -12,27 +12,15 @@
 import { globalShortcut } from 'electron';
 import { getMainWindow, showWindow } from './window';
 import { debugLog } from './logger';
-import Store from 'electron-store';
+import { getStore, type HotkeyConfig } from './store';
 
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
+// Re-export HotkeyConfig from store for backwards compatibility
+export type { HotkeyConfig } from './store';
 
 /**
  * Available hotkey actions.
  */
 export type HotkeyAction = 'toggle-window' | 'trigger-sync';
-
-/**
- * Hotkey configuration structure.
- */
-export interface HotkeyConfig {
-  enabled: boolean;
-  accelerator: string;
-}
 
 /**
  * Default hotkey configurations.

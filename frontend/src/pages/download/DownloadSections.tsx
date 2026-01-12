@@ -386,6 +386,11 @@ export function FAQSection() {
       answer:
         'Absolutely. Eclosion only communicates with Monarch Money servers. There are no analytics, telemetry, or third-party services. Your financial data stays between you and Monarch.',
     },
+    {
+      question: 'What happens if Monarch releases a similar feature?',
+      answer:
+        "We deliberately focus on features outside Monarch's near-term roadmap. If Monarch does release comparable functionality, we'll provide a migration option so you can port your data to their native implementation. Our goal is to enhance your Monarch experience, not compete with it.",
+    },
   ];
 
   return (

@@ -249,15 +249,15 @@ export function createAppMenu(onSync?: () => Promise<void>): void {
     {
       label: 'View',
       submenu: [
-        // Developer tools only in development builds
-        ...(app.isPackaged
-          ? []
-          : [
+        // Developer tools available in development builds and beta releases
+        ...(!app.isPackaged || isBetaBuild()
+          ? [
               { role: 'reload' as const },
               { role: 'forceReload' as const },
               { role: 'toggleDevTools' as const },
               { type: 'separator' as const },
-            ]),
+            ]
+          : []),
         { role: 'resetZoom' as const },
         { role: 'zoomIn' as const },
         { role: 'zoomOut' as const },

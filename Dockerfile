@@ -79,7 +79,6 @@ COPY --chown=65532:65532 core/ ./core/
 # Copy state module with nonroot ownership (UID 65532) so app can write data files
 # Note: /app/state should be mounted as a volume for persistent data
 # Docker: docker run -v eclosion-data:/app/state ...
-# Railway: Configure via dashboard Settings → Volumes
 COPY --chown=65532:65532 state/ ./state/
 
 # Copy built frontend from builder stage (owned by nonroot user)

@@ -99,6 +99,15 @@ export interface BackendStatusChange {
   timestamp: string;
 }
 
+export type BackendStartupPhase = 'initializing' | 'spawning' | 'waiting_for_health' | 'ready' | 'failed';
+
+export interface BackendStartupStatus {
+  phase: BackendStartupPhase;
+  message: string;
+  progress: number;
+  error?: string;
+}
+
 export interface BackupResult {
   success: boolean;
   path?: string;
@@ -279,7 +288,10 @@ export interface BiometricAuthResult {
 export interface StoredCredentials {
   email: string;
   password: string;
+  /** TOTP secret (only stored if mfaMode is 'secret') */
   mfaSecret?: string;
+  /** MFA mode: 'secret' for TOTP secrets, 'code' for ephemeral 6-digit codes */
+  mfaMode?: 'secret' | 'code';
 }
 
 export interface CredentialsAuthResult {
@@ -319,6 +331,8 @@ export interface ElectronAPI {
   getBackendPort: () => Promise<number>;
   getDesktopSecret: () => Promise<string>;
   getBackendStatus: () => Promise<BackendStatus>;
+  isBackendStartupComplete: () => Promise<boolean>;
+  onBackendStartupStatus: (callback: (status: BackendStartupStatus) => void) => () => void;
   triggerSync: () => Promise<SyncResult>;
   getHealthStatus: () => Promise<HealthStatus>;
   onBackendStatusChanged: (callback: (status: BackendStatusChange) => void) => () => void;
@@ -410,10 +424,20 @@ export interface ElectronAPI {
   reauth: ReauthAPI;
 }
 
+/** Data sent when MFA is required during session restore */
+export interface MfaRequiredData {
+  email: string;
+  mfaMode: 'secret' | 'code';
+}
+
 /** Re-authentication API for handling expired MFA sessions */
 export interface ReauthAPI {
   /** Listen for re-authentication requests from the main process */
   onNeedsReauth: (callback: () => void) => () => void;
+  /** Listen for MFA required events during session restore (e.g., 6-digit code users on restart) */
+  onMfaRequired: (callback: (data: MfaRequiredData) => void) => () => void;
+  /** Submit MFA code to complete session restore */
+  submitMfaCode: (mfaCode: string, mfaMode: 'secret' | 'code') => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

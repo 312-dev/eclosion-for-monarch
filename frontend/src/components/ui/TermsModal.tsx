@@ -143,7 +143,7 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           </h3>
           <table className="w-full text-sm">
             <tbody>
-              <TableRow label={isDesktop ? 'Storage' : 'Hosting'} value={isDesktop ? 'Data stored locally on your computer' : 'You manage your own Railway/Docker instance'} />
+              <TableRow label={isDesktop ? 'Storage' : 'Hosting'} value={isDesktop ? 'Data stored locally on your computer' : 'You manage your own Docker instance'} />
               <TableRow label="Support" value={isDesktop ? 'No customer support — this is open-source software' : 'No customer support — this is a self-hosted tool'} />
               <TableRow label="Credentials" value="You secure and maintain your Monarch login" />
               <TableRow label="Compliance" value="You accept risks of using Monarch's API" isWarning />
@@ -174,7 +174,7 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
               <>
                 <li>You're responsible for keeping your instance running</li>
                 <li>There's no support team to call if something breaks</li>
-                <li>Railway or Docker issues should be directed to those providers</li>
+                <li>Docker or hosting issues should be directed to your provider</li>
                 <li>Data backups and maintenance are your responsibility</li>
               </>
             )}

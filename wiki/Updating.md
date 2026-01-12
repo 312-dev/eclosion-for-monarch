@@ -15,8 +15,6 @@ Always backup your data before major updates.
 docker compose cp eclosion:/app/state ./backup-$(date +%Y%m%d)
 ```
 
-**Railway:** Data is automatically persisted in your Railway volume. For extra safety, export your data from Settings if available.
-
 **Desktop:** Your data is stored locally in the app's data directory. The app creates automatic backups during updates.
 
 ---
@@ -56,19 +54,6 @@ docker compose up -d --build
 
 ---
 
-## Railway
-
-Railway automatically detects when updates are available from the upstream repository.
-
-1. Open your [Railway Dashboard](https://railway.app/dashboard)
-2. Click on your Eclosion project
-3. If updates are available, you'll see a prompt to redeploy
-4. Click **Deploy** to pull the latest version
-5. Wait 1-2 minutes for the deployment to complete
-6. Refresh the app to use the new version
-
----
-
 ## Rollback to a Previous Version
 
 If you need to revert to a specific version:
@@ -87,10 +72,6 @@ Then restart:
 ```bash
 docker compose up -d
 ```
-
-### Railway
-
-In your project settings, you can redeploy a previous deployment from the deployment history.
 
 ### Desktop
 

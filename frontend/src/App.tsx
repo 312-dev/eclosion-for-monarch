@@ -7,7 +7,7 @@
  */
 
 import { useEffect } from 'react';
-import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from './components/ui/Tooltip';
 import { ToastProvider } from './context/ToastContext';
@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { DemoProvider, isGlobalDemoMode } from './context/DemoContext';
 import { DemoAuthProvider } from './context/DemoAuthContext';
 import { AppShell } from './components/layout/AppShell';
+import { MacOSDragRegion } from './components/layout/MacOSDragRegion';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { LoginPage } from './pages/LoginPage';
 import { UnlockPage } from './pages/UnlockPage';
@@ -32,6 +33,7 @@ import { ErrorPage } from './components/ui/ErrorPage';
 import { useIsMarketingSite } from './hooks/useIsMarketingSite';
 import { useElectronNavigation } from './hooks/useElectronNavigation';
 import { BetaBanner } from './components/ui/BetaBanner';
+import { MfaReauthPrompt } from './components/MfaReauthPrompt';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
 
@@ -108,7 +110,8 @@ const queryClient = new QueryClient({
  * Production routes with authentication
  */
 function ProductionRoutes() {
-  const { loading, error, checkAuth } = useAuth();
+  const { loading, error, checkAuth, mfaRequiredData, clearMfaRequired, setAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   // Show error page if auth check failed
   if (!loading && error) {
@@ -118,6 +121,27 @@ function ProductionRoutes() {
         message={error}
         onRetry={() => {
           checkAuth();
+        }}
+      />
+    );
+  }
+
+  // Show MFA re-auth prompt if needed (desktop mode, 6-digit code users on restart)
+  if (mfaRequiredData) {
+    return (
+      <MfaReauthPrompt
+        email={mfaRequiredData.email}
+        initialMfaMode={mfaRequiredData.mfaMode}
+        onSuccess={() => {
+          clearMfaRequired();
+          setAuthenticated(true);
+          navigate(getLandingPage(), { replace: true });
+        }}
+        onUseOtherAccount={() => {
+          clearMfaRequired();
+          // Clear stored credentials so user can log in fresh
+          globalThis.electron?.credentials.clear();
+          navigate('/login', { replace: true });
         }}
       />
     );
@@ -286,7 +310,7 @@ function AppRouter() {
     return <Navigate to="/" replace />;
   }
 
-  // Global demo mode (Railway demo site): Serve demo at root paths
+  // Global demo mode (Cloudflare Pages demo site): Serve demo at root paths
   if (isGlobalDemoMode) {
     return <GlobalDemoRoutes />;
   }
@@ -315,6 +339,7 @@ export default function App() {
         <ToastProvider>
           <TooltipProvider>
             <Router>
+              <MacOSDragRegion />
               <ScrollToTop />
               <DemoProvider>
                 <AppRouter />

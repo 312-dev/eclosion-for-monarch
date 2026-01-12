@@ -351,6 +351,22 @@ input[type="radio"] {
   -webkit-app-region: no-drag;
 }
 
+/**
+ * Persistent drag region for macOS Electron.
+ * Allows window dragging even when modals cover the header.
+ * Sits at the very top edge of the window, above all content.
+ */
+.macos-drag-region {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  z-index: 9999;
+  -webkit-app-region: drag;
+  background: transparent;
+}
+
 .app-header-content {
   max-width: 1400px;
   margin: 0 auto;

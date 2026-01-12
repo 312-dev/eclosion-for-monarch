@@ -74,11 +74,14 @@ describe('IPC module', () => {
   it('should register IPC handlers when called', async () => {
     const ipcModule = await import('./ipc');
 
-    // Create a mock BackendManager
+    // Create a mock BackendManager (extends EventEmitter)
     const mockBackendManager = {
       getPort: vi.fn(() => 5001),
       isRunning: vi.fn(() => true),
       triggerSync: vi.fn().mockResolvedValue({ success: true }),
+      isStartupComplete: vi.fn(() => false),
+      on: vi.fn(), // EventEmitter method
+      emit: vi.fn(), // EventEmitter method
     };
 
     ipcModule.setupIpcHandlers(mockBackendManager as never);
@@ -90,6 +93,7 @@ describe('IPC module', () => {
     const registeredChannels = mockHandle.mock.calls.map((call) => call[0]);
     expect(registeredChannels).toContain('get-backend-port');
     expect(registeredChannels).toContain('get-backend-status');
+    expect(registeredChannels).toContain('get-backend-startup-complete');
     expect(registeredChannels).toContain('trigger-sync');
     expect(registeredChannels).toContain('get-autostart-status');
     expect(registeredChannels).toContain('set-autostart');
@@ -98,5 +102,32 @@ describe('IPC module', () => {
     expect(registeredChannels).toContain('get-app-info');
     expect(registeredChannels).toContain('is-desktop');
     expect(registeredChannels).toContain('get-desktop-settings');
+
+    // New handlers for MFA re-auth and lockout state
+    expect(registeredChannels).toContain('auth:submit-mfa-code');
+    expect(registeredChannels).toContain('lockout:get-state');
+    expect(registeredChannels).toContain('lockout:set-state');
+    expect(registeredChannels).toContain('lockout:clear');
+  });
+
+  it('should register startup-status event listener on backend manager', async () => {
+    const ipcModule = await import('./ipc');
+
+    const mockBackendManager = {
+      getPort: vi.fn(() => 5001),
+      isRunning: vi.fn(() => true),
+      triggerSync: vi.fn().mockResolvedValue({ success: true }),
+      isStartupComplete: vi.fn(() => false),
+      on: vi.fn(),
+      emit: vi.fn(),
+    };
+
+    ipcModule.setupIpcHandlers(mockBackendManager as never);
+
+    // Verify that the startup-status event listener was registered
+    expect(mockBackendManager.on).toHaveBeenCalledWith(
+      'startup-status',
+      expect.any(Function)
+    );
   });
 });

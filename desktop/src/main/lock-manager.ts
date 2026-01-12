@@ -11,31 +11,16 @@
  */
 
 import { powerMonitor, BrowserWindow } from 'electron';
-import Store from 'electron-store';
+import { getStore, type LockTrigger } from './store';
 import { debugLog } from './logger';
 
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
-
-/**
- * Lock trigger options.
- */
-export type LockTrigger =
-  | 'system-lock'
-  | 'idle-1'
-  | 'idle-5'
-  | 'idle-15'
-  | 'idle-30'
-  | 'never';
+// Re-export LockTrigger from store for backwards compatibility
+export type { LockTrigger } from './store';
 
 /**
  * Storage key for lock trigger setting.
  */
-const LOCK_TRIGGER_KEY = 'security.lockTrigger';
+const LOCK_TRIGGER_KEY = 'security.lockTrigger' as const;
 
 /**
  * Default lock trigger.
@@ -77,8 +62,7 @@ let isInitialized = false;
  * Get the current lock trigger setting.
  */
 export function getLockTrigger(): LockTrigger {
-  const trigger = getStore().get(LOCK_TRIGGER_KEY, DEFAULT_LOCK_TRIGGER) as LockTrigger;
-  return trigger;
+  return getStore().get(LOCK_TRIGGER_KEY, DEFAULT_LOCK_TRIGGER);
 }
 
 /**

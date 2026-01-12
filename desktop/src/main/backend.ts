@@ -11,9 +11,24 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { app, dialog } from 'electron';
 import getPort from 'get-port';
+import { EventEmitter } from 'node:events';
 import { debugLog as log, getLogDir } from './logger';
 import { updateHealthStatus } from './tray';
 import { getStateDir } from './paths';
+
+/** Status updates emitted during backend startup */
+export interface BackendStartupStatus {
+  phase: 'initializing' | 'spawning' | 'waiting_for_health' | 'ready' | 'failed';
+  message: string;
+  progress: number; // 0-100
+  error?: string;
+}
+
+/**
+ * Maximum time to wait for the backend to become healthy (3 minutes).
+ * This matches the loading screen timeout in StartupLoadingScreen.tsx.
+ */
+const BACKEND_HEALTH_TIMEOUT_MS = 180000;
 
 // Wrapper to add [Backend] prefix to all log messages
 function debugLog(msg: string): void {
@@ -88,19 +103,38 @@ function closeBackendLog(): void {
   }
 }
 
-export class BackendManager {
+export class BackendManager extends EventEmitter {
   private process: ChildProcess | null = null;
   private port = 0;
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private restartAttempts = 0;
   private readonly maxRestarts = 3;
   private isShuttingDown = false;
+  private startupComplete = false;
   /**
    * Runtime secret token for API authentication.
    * Generated fresh on each app start to prevent unauthorized access.
    * Only the Electron app knows this secret.
    */
   private desktopSecret: string = '';
+
+  constructor() {
+    super();
+  }
+
+  /**
+   * Emit a startup status update to listeners.
+   */
+  private emitStartupStatus(status: BackendStartupStatus): void {
+    this.emit('startup-status', status);
+  }
+
+  /**
+   * Check if initial startup has completed.
+   */
+  isStartupComplete(): boolean {
+    return this.startupComplete;
+  }
 
   /**
    * Get the path to the backend executable based on platform.
@@ -117,12 +151,19 @@ export class BackendManager {
 
   /**
    * Start the Python backend subprocess.
+   * Emits 'startup-status' events during the process for UI feedback.
    */
   async start(): Promise<void> {
     if (this.process) {
       console.log('Backend already running');
       return;
     }
+
+    this.emitStartupStatus({
+      phase: 'initializing',
+      message: 'Finding available port...',
+      progress: 10,
+    });
 
     // Find available port
     // Expanded port range (5001-5100) to handle cases where other apps use these ports
@@ -140,6 +181,12 @@ export class BackendManager {
     debugLog(`Backend path: ${backendPath}`);
     debugLog(`Backend exists: ${fs.existsSync(backendPath)}`);
     debugLog(`State directory: ${stateDir}`);
+
+    this.emitStartupStatus({
+      phase: 'spawning',
+      message: 'Starting backend server...',
+      progress: 25,
+    });
 
     // Initialize backend-specific log file
     initBackendLog();
@@ -188,10 +235,29 @@ export class BackendManager {
     this.process.on('error', (err) => {
       console.error('Failed to start backend:', err);
       this.process = null;
+      this.emitStartupStatus({
+        phase: 'failed',
+        message: 'Failed to start backend process',
+        progress: 0,
+        error: err.message,
+      });
+    });
+
+    this.emitStartupStatus({
+      phase: 'waiting_for_health',
+      message: 'Waiting for server to respond...',
+      progress: 40,
     });
 
     // Wait for backend to be ready
     await this.waitForHealth();
+
+    this.startupComplete = true;
+    this.emitStartupStatus({
+      phase: 'ready',
+      message: 'Backend is ready!',
+      progress: 100,
+    });
 
     // Start health monitoring
     this.startHealthCheck();
@@ -199,10 +265,12 @@ export class BackendManager {
 
   /**
    * Wait for the backend health endpoint to respond.
+   * Emits progress updates during the wait.
    */
-  private async waitForHealth(timeout = 30000): Promise<void> {
+  private async waitForHealth(timeout = BACKEND_HEALTH_TIMEOUT_MS): Promise<void> {
     const startTime = Date.now();
     const healthUrl = `http://127.0.0.1:${this.port}/health`;
+    let lastProgressEmit = 0;
 
     while (Date.now() - startTime < timeout) {
       try {
@@ -214,8 +282,29 @@ export class BackendManager {
       } catch {
         // Backend not ready yet
       }
+
+      // Emit progress updates every second (2 poll cycles)
+      const elapsed = Date.now() - startTime;
+      if (elapsed - lastProgressEmit >= 1000) {
+        // Progress from 40% to 95% over the timeout period
+        const healthProgress = Math.min(95, 40 + (elapsed / timeout) * 55);
+        this.emitStartupStatus({
+          phase: 'waiting_for_health',
+          message: 'Waiting for server to respond...',
+          progress: Math.round(healthProgress),
+        });
+        lastProgressEmit = elapsed;
+      }
+
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
+
+    this.emitStartupStatus({
+      phase: 'failed',
+      message: 'Backend failed to start within timeout',
+      progress: 0,
+      error: 'Server did not respond within 3 minutes',
+    });
 
     throw new Error('Backend failed to start within timeout');
   }
@@ -373,13 +462,14 @@ export class BackendManager {
    * Used on app startup to establish session without user interaction.
    *
    * @param credentials Credentials from safeStorage
-   * @returns Success/failure of session restoration
+   * @returns Success/failure of session restoration, with mfaRequired flag if MFA needed
    */
   async restoreSession(credentials: {
     email: string;
     password: string;
     mfaSecret?: string;
-  }): Promise<{ success: boolean; error?: string }> {
+    mfaMode?: 'secret' | 'code';
+  }): Promise<{ success: boolean; error?: string; mfaRequired?: boolean }> {
     try {
       const response = await fetch(`http://127.0.0.1:${this.port}/auth/desktop-login`, {
         method: 'POST',
@@ -391,6 +481,7 @@ export class BackendManager {
           email: credentials.email,
           password: credentials.password,
           mfa_secret: credentials.mfaSecret || '',
+          mfa_mode: credentials.mfaMode || 'secret',
         }),
       });
 
@@ -400,6 +491,19 @@ export class BackendManager {
       }
 
       const result = await response.json() as { success: boolean; error?: string };
+
+      // Check if the error indicates MFA is required
+      if (!result.success && result.error) {
+        const errorLower = result.error.toLowerCase();
+        const isMfaError = errorLower.includes('mfa') ||
+                          errorLower.includes('multi-factor') ||
+                          errorLower.includes('2fa') ||
+                          errorLower.includes('two-factor');
+        if (isMfaError) {
+          return { success: false, error: result.error, mfaRequired: true };
+        }
+      }
+
       return result;
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };

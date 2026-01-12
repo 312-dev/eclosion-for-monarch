@@ -120,6 +120,12 @@ let backendManager: BackendManager;
 let updateCheckInterval: NodeJS.Timeout | null = null;
 
 /**
+ * Port value passed to createWindow() when the backend is not yet ready.
+ * The frontend uses this to know it should show the loading screen.
+ */
+const BACKEND_NOT_READY_PORT = 0;
+
+/**
  * Format an ISO timestamp as a relative time string.
  */
 function formatRelativeTime(timestamp: string): string {
@@ -138,6 +144,7 @@ function formatRelativeTime(timestamp: string): string {
 
 /**
  * Initialize the application.
+ * Creates the window immediately for fast perceived startup, then starts backend in parallel.
  */
 async function initialize(): Promise<void> {
   debugLog('Initialize function called');
@@ -156,7 +163,7 @@ async function initialize(): Promise<void> {
     backendManager = new BackendManager();
     debugLog('BackendManager created');
 
-    // Setup IPC handlers
+    // Setup IPC handlers (needed before window creation)
     debugLog('Setting up IPC handlers...');
     setupIpcHandlers(backendManager);
     debugLog('IPC handlers set up');
@@ -177,19 +184,13 @@ async function initialize(): Promise<void> {
       debugLog('Skipping updater initialization (development mode)');
     }
 
-    // Start Python backend
-    debugLog('Starting backend...');
-    recordMilestone('backendStarting');
-    await backendManager.start();
-    recordMilestone('backendStarted');
-    debugLog(`Backend started on port ${backendManager.getPort()}`);
-
     // Initialize dock visibility (macOS menu bar mode)
     initializeDockVisibility();
 
-    // Create main window
+    // Create main window IMMEDIATELY (before backend starts)
+    // The frontend will show a loading screen while backend initializes
     console.log('Creating main window...');
-    await createWindow(backendManager.getPort());
+    await createWindow(BACKEND_NOT_READY_PORT);
     recordMilestone('windowCreated');
 
     // Create application menu (adds Settings, Sync, Lock to menu bar)
@@ -198,50 +199,6 @@ async function initialize(): Promise<void> {
     // Create system tray
     console.log('Creating system tray...');
     createTray(handleSyncClick);
-
-    // Fetch last sync time and check if sync is needed on startup
-    const lastSyncIso = await backendManager.fetchLastSyncTime();
-    if (lastSyncIso) {
-      const syncStatus = `Last sync: ${formatRelativeTime(lastSyncIso)}`;
-      updateTrayMenu(handleSyncClick, syncStatus);
-      updateHealthStatus(true, formatRelativeTime(lastSyncIso));
-    }
-
-    // Desktop auto-sync: restore session and sync if needed
-    // New mode: credentials stored directly in safeStorage
-    // Legacy mode: passphrase stored in safeStorage (for self-hosted)
-    let sessionRestored = false;
-
-    if (hasMonarchCredentials()) {
-      // New desktop mode: restore session from stored credentials
-      const credentials = getMonarchCredentials();
-      if (credentials) {
-        debugLog('Restoring session from stored credentials...');
-        const restoreResult = await backendManager.restoreSession(credentials);
-        if (restoreResult.success) {
-          debugLog('Session restored successfully');
-          sessionRestored = true;
-        } else {
-          debugLog(`Session restore failed: ${restoreResult.error}`);
-        }
-      }
-    }
-
-    // Check if sync is needed
-    // New mode: credentials already in session (no passphrase needed)
-    // Legacy mode: pass the passphrase to unlock
-    const passphrase = sessionRestored ? undefined : getStoredPassphrase();
-    const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
-    if (syncResult.synced) {
-      if (syncResult.success) {
-        const syncTime = new Date().toLocaleTimeString();
-        showNotification('Synced on Startup', 'Your recurring expenses are up to date.');
-        updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
-        updateHealthStatus(true, syncTime);
-      } else {
-        showNotification('Sync Failed', syncResult.error || 'Unable to sync. Please try again later.');
-      }
-    }
 
     // Initialize global hotkeys
     initializeHotkeys(handleSyncClick);
@@ -266,12 +223,17 @@ async function initialize(): Promise<void> {
     // Handle deep link if app was opened via eclosion:// URL
     handleInitialDeepLink();
 
-    // Record startup metrics
-    recordMilestone('initialized');
-    finalizeStartupMetrics(app.getVersion());
+    // Start Python backend in background (doesn't block window display)
+    debugLog('Starting backend in background...');
+    recordMilestone('backendStarting');
+    startBackendAndInitialize().catch((error) => {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      debugLog(`Backend startup failed: ${errorMessage}`);
+      // Error is handled by the backend manager's event emission
+    });
 
-    addBreadcrumb({ category: 'lifecycle', message: 'App initialized successfully' });
-    console.log('Initialization complete');
+    addBreadcrumb({ category: 'lifecycle', message: 'Window created, backend starting in background' });
+    console.log('Window initialization complete, backend starting...');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Failed to initialize:', errorMessage);
@@ -283,6 +245,86 @@ async function initialize(): Promise<void> {
 
     app.quit();
   }
+}
+
+/**
+ * Start the backend and complete initialization once it's ready.
+ * This runs in the background while the window displays the loading screen.
+ */
+async function startBackendAndInitialize(): Promise<void> {
+  // Start Python backend
+  await backendManager.start();
+  recordMilestone('backendStarted');
+  debugLog(`Backend started on port ${backendManager.getPort()}`);
+
+  // Fetch last sync time and check if sync is needed on startup
+  const lastSyncIso = await backendManager.fetchLastSyncTime();
+  if (lastSyncIso) {
+    const syncStatus = `Last sync: ${formatRelativeTime(lastSyncIso)}`;
+    updateTrayMenu(handleSyncClick, syncStatus);
+    updateHealthStatus(true, formatRelativeTime(lastSyncIso));
+  }
+
+  // Desktop auto-sync: restore session and sync if needed
+  // New mode: credentials stored directly in safeStorage
+  // Legacy mode: passphrase stored in safeStorage (for self-hosted)
+  let sessionRestored = false;
+  let mfaRequired = false;
+
+  if (hasMonarchCredentials()) {
+    // New desktop mode: restore session from stored credentials
+    const credentials = getMonarchCredentials();
+    if (credentials) {
+      debugLog('Restoring session from stored credentials...');
+      const restoreResult = await backendManager.restoreSession(credentials);
+      if (restoreResult.success) {
+        debugLog('Session restored successfully');
+        sessionRestored = true;
+      } else {
+        debugLog(`Session restore failed: ${restoreResult.error}`);
+
+        // Check if MFA is required (session expired for 6-digit code users)
+        if (restoreResult.mfaRequired) {
+          debugLog('MFA required for session restore - will prompt user');
+          mfaRequired = true;
+
+          // Notify renderer that MFA is needed
+          const mainWindow = getMainWindow();
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('auth:mfa-required', {
+              email: credentials.email,
+              mfaMode: credentials.mfaMode || 'code',
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Check if sync is needed (skip if MFA is required - user must authenticate first)
+  // New mode: credentials already in session (no passphrase needed)
+  // Legacy mode: pass the passphrase to unlock
+  if (!mfaRequired) {
+    const passphrase = sessionRestored ? undefined : getStoredPassphrase();
+    const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
+    if (syncResult.synced) {
+      if (syncResult.success) {
+        const syncTime = new Date().toLocaleTimeString();
+        showNotification('Synced on Startup', 'Your recurring expenses are up to date.');
+        updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+        updateHealthStatus(true, syncTime);
+      } else {
+        showNotification('Sync Failed', syncResult.error || 'Unable to sync. Please try again later.');
+      }
+    }
+  }
+
+  // Record startup metrics
+  recordMilestone('initialized');
+  finalizeStartupMetrics(app.getVersion());
+
+  addBreadcrumb({ category: 'lifecycle', message: 'App initialized successfully' });
+  console.log('Backend initialization complete');
 }
 
 /**

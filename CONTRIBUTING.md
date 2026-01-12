@@ -301,6 +301,13 @@ Using the correct commit type ensures:
 
 > **Note**: Documentation-only PRs (markdown files, `docusaurus/`, `scripts/docs-gen/`) can skip CI builds.
 
+**Automated code review:**
+- **GitHub Copilot review** — PRs are automatically reviewed by Copilot for code quality issues
+- Copilot adds a "needs copilot review" label until review completes
+- Issues found by Copilot must be addressed before merging
+- Admins can add the `skip-copilot-review` label to bypass (use sparingly)
+- Bot PRs (Dependabot, etc.) are automatically skipped
+
 ### Security Thresholds
 
 | Action | Threshold | What's Checked |
@@ -406,6 +413,50 @@ Recommended timeouts by job type:
 | Build/test jobs | 10-15 min |
 | Security scans, DAST | 15-20 min |
 | Docker multi-arch builds | 30 min |
+
+#### Workflow Permissions
+
+Follow the principle of least privilege by declaring permissions at the job level, not workflow level:
+
+```yaml
+# GOOD - Minimal permissions at workflow level, specific permissions per job
+permissions: {}  # Deny all at workflow level
+
+jobs:
+  check-branch:
+    permissions: {}  # Jobs that don't need permissions
+    steps: ...
+
+  calculate-version:
+    permissions:
+      contents: read  # Only what this job needs
+    steps: ...
+
+  create-release:
+    permissions:
+      contents: write  # Only what this job needs
+    steps: ...
+
+# BAD - Broad permissions at workflow level
+permissions:
+  contents: write
+  packages: write
+  security-events: write
+  # All jobs inherit these even if they don't need them
+```
+
+Common permission patterns:
+
+| Job Type | Permissions |
+|----------|-------------|
+| Branch/input validation | `permissions: {}` |
+| Read-only operations (checkout, version calc) | `contents: read` |
+| Create releases/tags | `contents: write` |
+| Push Docker images | `packages: write` |
+| Security scan results | `security-events: write` |
+| Sigstore signing | `id-token: write` |
+
+This pattern is required for OpenSSF Scorecard compliance and reduces the blast radius if a job is compromised.
 
 #### Error Logging
 
@@ -642,6 +693,60 @@ export function Component({ title, onAction }: ComponentProps) {
 - Use Tailwind's responsive prefixes for mobile support
 
 ## Testing
+
+### Test Architecture
+
+This project has multiple test layers:
+
+| Test Type | Location | What It Tests | When It Runs |
+|-----------|----------|---------------|--------------|
+| **Unit tests** | `tests/`, `frontend/src/**/*.test.*` | Individual functions/components | Every PR |
+| **E2E tests** | `desktop/e2e/` | UI flows (demo mode) | Every PR |
+| **Integration tests** | `tests/integration/` | Real Monarch API | Before releases only |
+
+### Integration Tests (Monarch API)
+
+Integration tests verify that the app works correctly with the real Monarch Money API. These tests:
+
+- **Run automatically** before beta and stable releases
+- **Use temporary data** that is created and cleaned up during tests
+- **Don't run on PRs** — they only gate releases to avoid unnecessary API usage
+- **Are not manually runnable** by contributors
+
+**If you add new Monarch API calls**, you must add corresponding integration tests:
+
+1. Add test cases to `tests/integration/` (see existing tests for patterns)
+2. Use the `test_category_prefix` fixture for any categories you create
+3. Always clean up test data in a `finally` block
+4. The CI check `Check Monarch API integration test coverage` will fail if you miss any
+
+**Example pattern for new API tests:**
+
+```python
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_new_api_function(monarch_client, unique_test_name):
+    """Test the new API function."""
+    # Create test data
+    result = await monarch_client.new_api_function(unique_test_name)
+
+    try:
+        # Verify behavior
+        assert result is not None
+    finally:
+        # Always cleanup (if applicable)
+        await monarch_client.cleanup_function(result["id"])
+```
+
+**Running locally** (for maintainers only — requires credentials):
+
+```bash
+INTEGRATION_TEST=true \
+MONARCH_EMAIL=your@email.com \
+MONARCH_PASSWORD=your-password \
+MFA_SECRET_KEY=your-totp-secret \
+pytest tests/integration/ -v
+```
 
 ### Backend Tests
 

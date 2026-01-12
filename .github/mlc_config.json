@@ -1,16 +1,7 @@
 {
   "ignorePatterns": [
     {
-      "pattern": "^https://railway.com"
-    },
-    {
-      "pattern": "^https://railway.app"
-    },
-    {
       "pattern": "^http://localhost"
-    },
-    {
-      "pattern": "^https://your-app.railway.app"
     },
     {
       "pattern": "^https://eclosion.yourdomain.com"

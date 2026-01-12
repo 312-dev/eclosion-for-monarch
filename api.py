@@ -1376,14 +1376,6 @@ async def update_category_name():
 # ---- UNINSTALL ENDPOINTS ----
 
 
-def _get_railway_project_url() -> str | None:
-    """Get the Railway project deletion URL if running on Railway."""
-    project_id = os.environ.get("RAILWAY_PROJECT_ID")
-    if project_id:
-        return f"https://railway.app/project/{project_id}/settings/danger"
-    return None
-
-
 @app.route("/recurring/reset-dedicated", methods=["POST"])
 @api_handler(handle_mfa=True)
 async def reset_dedicated_categories():
@@ -1463,7 +1455,6 @@ async def cancel_subscription():
     1. Optionally delete all Monarch categories created by this tool
     2. Clear all local state and credentials
     3. Reset config to trigger setup wizard on next visit
-    4. Return Railway project deletion URL for final step
     """
     from typing import Any
 
@@ -1511,15 +1502,6 @@ async def cancel_subscription():
     except Exception as e:
         logger.warning(f"[CANCEL] Failed to reset config: {e}")
 
-    # Step 4: Get Railway deletion URL
-    railway_url = _get_railway_project_url()
-    result: dict[str, Any] = {
-        "success": True,
-        "steps_completed": steps_completed,
-        "railway_deletion_url": railway_url,
-        "instructions": instructions,
-    }
-
     if "full_reset_completed" in steps_completed:
         categories_msg = "All recurring data and categories have been reset."
     elif "monarch_categories_deleted" in steps_completed:
@@ -1530,29 +1512,23 @@ async def cancel_subscription():
     is_desktop = config.is_desktop_environment()
     data_cleared_msg = "App data has been cleared."
 
-    if railway_url:
+    result: dict[str, Any] = {
+        "success": True,
+        "steps_completed": steps_completed,
+        "instructions": instructions,
+        "is_desktop": is_desktop,
+    }
+
+    if is_desktop:
         result["instructions"] = [
             categories_msg,
             data_cleared_msg,
-            "To stop billing, click the link below to delete your Railway project.",
         ]
-        result["is_railway"] = True
-        result["is_desktop"] = False
-    elif is_desktop:
-        result["instructions"] = [
-            categories_msg,
-            data_cleared_msg,
-        ]
-        result["is_railway"] = False
-        result["is_desktop"] = True
     else:
         result["instructions"] = [
             categories_msg,
             data_cleared_msg,
-            "Delete the deployment from your cloud provider's dashboard to stop billing.",
         ]
-        result["is_railway"] = False
-        result["is_desktop"] = False
 
     _audit_log("CANCEL_SUBSCRIPTION", True, f"Steps: {steps_completed}")
 
@@ -1563,11 +1539,18 @@ async def cancel_subscription():
 @api_handler(handle_mfa=False)
 def get_deployment_info():
     """Get information about the current deployment for cancellation UI."""
-    railway_url = _get_railway_project_url()
+    is_desktop = config.is_desktop_environment()
+    is_container = config.is_container_environment()
+
+    if is_desktop:
+        deployment_type = "desktop"
+    elif is_container:
+        deployment_type = "docker"
+    else:
+        deployment_type = "local"
+
     return {
-        "is_railway": railway_url is not None,
-        "railway_project_url": railway_url,
-        "railway_project_id": os.environ.get("RAILWAY_PROJECT_ID"),
+        "deployment_type": deployment_type,
     }
 
 
@@ -2436,18 +2419,15 @@ def get_update_info():
     """
     Get deployment-specific update instructions.
 
-    Detects deployment type (Desktop/Railway/Docker/Local) and provides
+    Detects deployment type (Desktop/Docker/Local) and provides
     appropriate instructions for updating.
     """
     is_desktop = config.is_desktop_environment()
-    is_railway = os.environ.get("RAILWAY_PROJECT_ID") is not None
     is_container = config.is_container_environment()
 
     # Desktop apps use electron-updater, check first
     if is_desktop:
         deployment_type = "electron"
-    elif is_railway:
-        deployment_type = "railway"
     elif is_container:
         deployment_type = "docker"
     else:
@@ -2460,18 +2440,6 @@ def get_update_info():
                 "When ready, click 'Restart Now' to install the update",
                 "The app will restart with the new version",
             ],
-        },
-        "railway": {
-            "steps": [
-                "Open your Railway project dashboard",
-                "Click on your Eclosion service",
-                "Go to Settings > Source",
-                "Change the Docker image tag to the desired version",
-                "Railway will automatically redeploy",
-            ],
-            "project_url": f"https://railway.app/project/{os.environ.get('RAILWAY_PROJECT_ID', '')}"
-            if is_railway
-            else None,
         },
         "docker": {
             "steps": [

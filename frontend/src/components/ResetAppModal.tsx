@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { getDeploymentInfo } from '../api/client';
-import type { DeploymentInfo } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { getErrorMessage } from '../utils';
@@ -13,10 +11,7 @@ interface ResetAppModalProps {
   onReset: () => void;
 }
 
-function DataLocationMessage({ deploymentInfo }: { readonly deploymentInfo: DeploymentInfo | null }) {
-  if (deploymentInfo?.is_railway) {
-    return <>Your configuration data is safely stored on Railway and will be preserved.</>;
-  }
+function DataLocationMessage() {
   if (isDesktopMode()) {
     return <>Your configuration data is stored in your local data folder and will be preserved.</>;
   }
@@ -26,25 +21,14 @@ function DataLocationMessage({ deploymentInfo }: { readonly deploymentInfo: Depl
 export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) {
   const { resetApp } = useAuth();
   const toast = useToast();
-  const [deploymentInfo, setDeploymentInfo] = useState<DeploymentInfo | null>(null);
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setError(null);
-      fetchDeploymentInfo();
     }
   }, [isOpen]);
-
-  const fetchDeploymentInfo = async () => {
-    try {
-      const info = await getDeploymentInfo();
-      setDeploymentInfo(info);
-    } catch {
-      // Not critical if this fails - assume non-Railway
-    }
-  };
 
   const handleReset = async () => {
     setResetting(true);
@@ -145,7 +129,7 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
           {/* Deployment-specific info */}
           <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-elevated)' }}>
             <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-              <DataLocationMessage deploymentInfo={deploymentInfo} />
+              <DataLocationMessage />
             </p>
           </div>
 

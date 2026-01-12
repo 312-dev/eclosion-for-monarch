@@ -27,26 +27,6 @@ export function UninstallSuccessContent({ cancelResult }: UninstallSuccessConten
         </ul>
       </div>
 
-      {cancelResult.railway_deletion_url && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-            Final Step: Delete Your Railway Project
-          </p>
-          <a
-            href={cancelResult.railway_deletion_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full px-4 py-3 text-center text-white rounded-lg transition-colors hover:opacity-90"
-            style={{ backgroundColor: 'var(--monarch-error)' }}
-          >
-            Open Railway Project Settings
-          </a>
-          <p className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-            Click the button above, then scroll down and click "Delete Project" to stop all future charges.
-          </p>
-        </div>
-      )}
-
       {isDesktop && (
         <div className="space-y-3">
           <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>

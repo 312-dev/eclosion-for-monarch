@@ -5,21 +5,14 @@
  * The actual UI is rendered in the frontend; this module handles state and content.
  */
 
-import Store from 'electron-store';
+import { getStore } from './store';
 import { debugLog } from './logger';
-
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
 
 /**
  * Store key for tracking onboarding completion.
  */
-const ONBOARDING_COMPLETE_KEY = 'onboarding.complete';
-const ONBOARDING_VERSION_KEY = 'onboarding.version';
+const ONBOARDING_COMPLETE_KEY = 'onboarding.complete' as const;
+const ONBOARDING_VERSION_KEY = 'onboarding.version' as const;
 
 /**
  * Current onboarding version. Increment when adding significant new features
@@ -97,8 +90,8 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
  * - The onboarding version has increased since last completion
  */
 export function shouldShowOnboarding(): boolean {
-  const isComplete = getStore().get(ONBOARDING_COMPLETE_KEY, false) as boolean;
-  const completedVersion = getStore().get(ONBOARDING_VERSION_KEY, 0) as number;
+  const isComplete = getStore().get(ONBOARDING_COMPLETE_KEY, false);
+  const completedVersion = getStore().get(ONBOARDING_VERSION_KEY, 0);
 
   // Show if never completed
   if (!isComplete) {

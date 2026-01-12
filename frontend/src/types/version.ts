@@ -54,7 +54,5 @@ export interface MarkChangelogReadResult {
 }
 
 export interface DeploymentInfo {
-  is_railway: boolean;
-  railway_project_url: string | null;
-  railway_project_id: string | null;
+  deployment_type: 'docker' | 'desktop' | 'local';
 }

@@ -2,7 +2,7 @@
  * UpdateModal - Shows deployment-specific instructions for updating to a new version
  *
  * For desktop apps: Shows live update status with download progress and restart button
- * For web deployments: Shows static instructions for Railway, Docker, or local
+ * For web deployments: Shows static instructions for Docker or local
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -23,15 +23,6 @@ interface UpdateModalProps {
 
 function DeploymentIcon({ deploymentType }: { readonly deploymentType: string | undefined }) {
   const iconClass = "w-5 h-5";
-
-  if (deploymentType === 'railway') {
-    // Cloud icon for Railway
-    return (
-      <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
-      </svg>
-    );
-  }
 
   if (deploymentType === 'electron') {
     // Monitor icon for Desktop
@@ -134,7 +125,6 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
   const getDeploymentLabel = () => {
     if (isDesktop) return 'Desktop';
     switch (updateInfo?.deployment_type) {
-      case 'railway': return 'Railway';
       case 'docker': return 'Docker';
       case 'electron': return 'Desktop';
       default: return 'Local';
@@ -264,18 +254,6 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
                 </code>
               </pre>
             </div>
-          )}
-
-          {updateInfo?.deployment_type === 'railway' && updateInfo?.instructions.project_url && (
-            <a
-              href={updateInfo.instructions.project_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full p-3 rounded-lg text-center font-medium transition-colors"
-              style={{ backgroundColor: 'var(--monarch-accent)', color: 'white' }}
-            >
-              Open Railway Dashboard
-            </a>
           )}
         </div>
       )}

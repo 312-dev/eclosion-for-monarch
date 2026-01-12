@@ -274,6 +274,9 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
+          # Use explicit category to ensure consistent configuration name regardless of
+          # whether this workflow runs directly or via workflow_call from release pipelines
+          category: "trivy-container-scan"
 
   # ============================================================================
   # DAST - Dynamic Application Security Testing with OWASP ZAP

@@ -69,6 +69,23 @@ describe('BackendManager', () => {
     expect(typeof manager.isRunning).toBe('function');
     expect(typeof manager.triggerSync).toBe('function');
     expect(typeof manager.checkSyncNeeded).toBe('function');
+    expect(typeof manager.isStartupComplete).toBe('function');
+  });
+
+  it('should extend EventEmitter', async () => {
+    const { BackendManager } = await import('./backend');
+    const { EventEmitter } = await import('node:events');
+    const manager = new BackendManager();
+
+    expect(manager).toBeInstanceOf(EventEmitter);
+    expect(typeof manager.on).toBe('function');
+    expect(typeof manager.emit).toBe('function');
+  });
+
+  it('should report startup not complete initially', async () => {
+    const { BackendManager } = await import('./backend');
+    const manager = new BackendManager();
+    expect(manager.isStartupComplete()).toBe(false);
   });
 
   it('should return port 0 before starting', async () => {

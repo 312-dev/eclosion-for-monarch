@@ -21,26 +21,19 @@
  */
 
 import { safeStorage, systemPreferences } from 'electron';
-import Store from 'electron-store';
+import { getStore } from './store';
 import { debugLog } from './logger';
-
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
 
 /**
  * Storage key for the encrypted passphrase in electron-store.
  * The value is a base64-encoded encrypted buffer from safeStorage.
  */
-const PASSPHRASE_STORAGE_KEY = 'security.encryptedPassphrase';
+const PASSPHRASE_STORAGE_KEY = 'security.encryptedPassphrase' as const;
 
 /**
  * Storage key for tracking biometric enrollment status.
  */
-const BIOMETRIC_ENABLED_KEY = 'security.biometricEnabled';
+const BIOMETRIC_ENABLED_KEY = 'security.biometricEnabled' as const;
 
 // =============================================================================
 // Desktop Mode: Direct Credential Storage (New)
@@ -50,12 +43,12 @@ const BIOMETRIC_ENABLED_KEY = 'security.biometricEnabled';
  * Storage key for encrypted Monarch credentials in desktop mode.
  * Stores a JSON object with email, password, and optional mfaSecret.
  */
-const MONARCH_CREDENTIALS_KEY = 'security.monarchCredentials';
+const MONARCH_CREDENTIALS_KEY = 'security.monarchCredentials' as const;
 
 /**
  * Storage key for "Require Touch ID to unlock" setting.
  */
-const REQUIRE_TOUCH_ID_KEY = 'security.requireTouchId';
+const REQUIRE_TOUCH_ID_KEY = 'security.requireTouchId' as const;
 
 /**
  * Biometric type available on this device.
@@ -137,7 +130,7 @@ export function getBiometricType(): BiometricType {
  * Check if biometric authentication is enrolled (passphrase is stored).
  */
 export function isBiometricEnrolled(): boolean {
-  const enabled = getStore().get(BIOMETRIC_ENABLED_KEY, false) as boolean;
+  const enabled = getStore().get(BIOMETRIC_ENABLED_KEY, false);
   const hasPassphrase = getStore().has(PASSPHRASE_STORAGE_KEY);
 
   debugLog(`Biometric: Enrolled check - enabled: ${enabled}, hasPassphrase: ${hasPassphrase}`);
@@ -375,7 +368,10 @@ export function getBiometricDisplayName(): string {
 export interface MonarchCredentials {
   email: string;
   password: string;
+  /** TOTP secret (only stored if mfaMode is 'secret') */
   mfaSecret?: string;
+  /** MFA mode: 'secret' for TOTP secrets, 'code' for ephemeral 6-digit codes */
+  mfaMode?: 'secret' | 'code';
 }
 
 /**
@@ -464,7 +460,7 @@ export function clearMonarchCredentials(): void {
  * Get the "Require Touch ID to unlock" setting.
  */
 export function getRequireTouchId(): boolean {
-  return getStore().get(REQUIRE_TOUCH_ID_KEY, false) as boolean;
+  return getStore().get(REQUIRE_TOUCH_ID_KEY, false);
 }
 
 /**

@@ -18,6 +18,7 @@ import { getErrorMessage } from '../utils';
 import { isDesktopMode } from '../utils/apiBase';
 import { isBetaEnvironment } from '../utils/environment';
 import { ElectronTitleBar } from './ElectronTitleBar';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Check if running in Electron desktop app with credential storage available.
@@ -33,6 +34,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
+  const { setAuthenticated } = useAuth();
   const [stage, setStage] = useState<LoginStage>(getInitialStage);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,17 +61,25 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
         if (result.success) {
           // Store credentials in Electron's safeStorage
-          // window.electron is guaranteed to exist inside isElectronDesktop()
-          const stored = await window.electron!.credentials.store({
+          // - Always store email, password, and mfaMode
+          // - Only store mfaSecret if using 'secret' mode (TOTP secrets are reusable)
+          // - Don't store mfaSecret if using 'code' mode (6-digit codes are ephemeral)
+          // globalThis.electron is guaranteed to exist inside isElectronDesktop()
+          const stored = await globalThis.electron!.credentials.store({
             email,
             password,
-            ...(mfaSecret && { mfaSecret }),
+            mfaMode,
+            // Only store TOTP secrets, not ephemeral 6-digit codes
+            ...(mfaSecret && mfaMode === 'secret' && { mfaSecret }),
           });
 
           if (!stored) {
             setError('Failed to store credentials securely. Please try again.');
             return;
           }
+
+          // Mark as authenticated in React state before navigating
+          setAuthenticated(true);
 
           // Success - no passphrase needed
           onSuccess();

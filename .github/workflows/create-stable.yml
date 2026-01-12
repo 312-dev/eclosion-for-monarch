@@ -33,12 +33,7 @@ on:
           - major
         default: patch
 
-permissions:
-  contents: write
-  packages: write
-  security-events: write
-  deployments: write
-  id-token: write  # Required for Sigstore keyless container signing
+permissions: {}
 
 jobs:
   # ===========================================================================
@@ -48,6 +43,7 @@ jobs:
     name: Validate Branch
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}
     steps:
       - name: Require main branch
         run: |
@@ -71,6 +67,8 @@ jobs:
     needs: check-branch
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     outputs:
       current_version: ${{ steps.version.outputs.current }}
       version: ${{ steps.version.outputs.version }}
@@ -125,6 +123,8 @@ jobs:
     needs: calculate-version
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Generate app token
         id: app-token
@@ -174,11 +174,27 @@ jobs:
           git commit -m "chore: release ${{ needs.calculate-version.outputs.version }}"
           git push
 
+  # ===========================================================================
+  # INTEGRATION TESTS (gates release - runs against real Monarch API)
+  # ===========================================================================
+  integration-tests:
+    name: Integration Tests
+    needs: [calculate-version, update-versions]
+    permissions:
+      statuses: read
+    uses: ./.github/workflows/integration-tests.yml
+    with:
+      sha: ${{ github.sha }}
+    secrets:
+      INTEGRATION_DISPATCH_TOKEN: ${{ secrets.INTEGRATION_DISPATCH_TOKEN }}
+
   create-draft-release:
     name: Create Draft Release
-    needs: [calculate-version, update-versions]
+    needs: [calculate-version, update-versions, integration-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -277,6 +293,12 @@ jobs:
   release-pipeline:
     name: Release Pipeline
     needs: [calculate-version, create-draft-release]
+    permissions:
+      contents: write
+      packages: write
+      security-events: write
+      deployments: write
+      id-token: write  # Required for Sigstore keyless container signing
     uses: ./.github/workflows/release-pipeline.yml
     with:
       release_type: production
@@ -299,6 +321,8 @@ jobs:
     needs: [calculate-version, release-pipeline]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - name: Mark release as non-draft
         env:
@@ -322,6 +346,8 @@ jobs:
     if: failure()
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - name: Delete draft release and tag
         env:

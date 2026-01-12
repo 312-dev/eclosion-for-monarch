@@ -64,7 +64,7 @@
 
 ## How It Works
 
-1. **Get Started** — Download the desktop app, self-host with Docker, or deploy to Railway
+1. **Get Started** — Download the desktop app or self-host with Docker
 2. **Connect** — Sign in with your Monarch Money credentials (encrypted with a passphrase only you know)
 3. **Enable** — Pick the tools you want to use
 4. **Relax** — Eclosion syncs with Monarch and keeps everything updated
@@ -139,12 +139,6 @@ Reward yourself for building good habits. Award yourself an allowance based on c
 
 No server required—everything runs locally. See the [Desktop App wiki](https://github.com/312-dev/eclosion/wiki/Desktop-App) for build instructions and details.
 
-### One-Click Cloud Deploy
-
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/yE9Dgv?referralCode=epxV1E)
-
-Deploys automatically (~$5-7/month). Set `INSTANCE_SECRET` after deployment to protect your instance.
-
 ### Self-Host with Docker
 
 ```bash
@@ -180,7 +174,7 @@ docker compose up --build
 **Frontend**: React 19 · TypeScript · Vite · Tailwind CSS<br>
 **Backend**: Python 3.12 · Flask<br>
 **State**: JSON file-based (no database)<br>
-**Deployment**: Docker · Railway · Desktop (Electron + PyInstaller)
+**Deployment**: Docker · Desktop (Electron + PyInstaller)
 
 ## Contributing
 

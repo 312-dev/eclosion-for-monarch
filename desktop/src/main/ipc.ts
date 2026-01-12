@@ -5,7 +5,7 @@
  */
 
 import { ipcMain, dialog, app, shell, clipboard } from 'electron';
-import { BackendManager } from './backend';
+import { BackendManager, type BackendStartupStatus } from './backend';
 import { getMainWindow } from './window';
 import {
   isAutoStartEnabled,
@@ -77,16 +77,9 @@ import {
 import { getStateDir } from './paths';
 import { getAllLogFiles, getLogDir } from './logger';
 import { getHealthStatus } from './tray';
-import Store from 'electron-store';
+import { getStore } from './store';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-
-// Lazy store initialization to ensure app.setPath('userData') is called first
-let store: Store | null = null;
-function getStore(): Store {
-  store ??= new Store();
-  return store;
-}
 
 /**
  * Setup all IPC handlers.
@@ -95,6 +88,16 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   // =========================================================================
   // Backend Communication
   // =========================================================================
+
+  /**
+   * Forward backend startup status events to the renderer.
+   */
+  backendManager.on('startup-status', (status: BackendStartupStatus) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('backend-startup-status', status);
+    }
+  });
 
   /**
    * Get the port the backend is running on.
@@ -119,6 +122,14 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
       running: backendManager.isRunning(),
       port: backendManager.getPort(),
     };
+  });
+
+  /**
+   * Check if backend startup has completed.
+   * Used by frontend to determine if it should show loading screen.
+   */
+  ipcMain.handle('get-backend-startup-complete', () => {
+    return backendManager.isStartupComplete();
   });
 
   /**
@@ -273,7 +284,7 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   ipcMain.handle('get-desktop-settings', () => {
     const autoStart = isAutoStartEnabled();
     return {
-      menuBarMode: getStore().get('menuBarMode', false) as boolean,
+      menuBarMode: getStore().get('menuBarMode', false),
       autoStart,
     };
   });
@@ -757,5 +768,67 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     // Trigger sync with the provided passphrase
     const result = await backendManager.triggerSync(passphrase);
     return result;
+  });
+
+  // =========================================================================
+  // MFA Re-authentication (for session restore)
+  // =========================================================================
+
+  /**
+   * Submit MFA code to complete session restore.
+   * Used when session restore fails due to MFA requirement (e.g., 6-digit code users on restart).
+   */
+  ipcMain.handle(
+    'auth:submit-mfa-code',
+    async (_event, mfaCode: string, mfaMode: 'secret' | 'code') => {
+      // Get stored credentials
+      const credentials = getMonarchCredentials();
+      if (!credentials) {
+        return { success: false, error: 'No stored credentials' };
+      }
+
+      // Attempt to restore session with the new MFA code
+      const result = await backendManager.restoreSession({
+        email: credentials.email,
+        password: credentials.password,
+        mfaSecret: mfaCode,
+        mfaMode,
+      });
+
+      return result;
+    }
+  );
+
+  // =========================================================================
+  // Lockout State (failed login attempts)
+  // =========================================================================
+
+  /**
+   * Get current lockout state.
+   */
+  ipcMain.handle('lockout:get-state', () => {
+    return {
+      failedAttempts: getStore().get('lockout.failedAttempts', 0),
+      cooldownUntil: getStore().get('lockout.cooldownUntil', null),
+    };
+  });
+
+  /**
+   * Set lockout state.
+   */
+  ipcMain.handle(
+    'lockout:set-state',
+    (_event, state: { failedAttempts: number; cooldownUntil: number | null }) => {
+      getStore().set('lockout.failedAttempts', state.failedAttempts);
+      getStore().set('lockout.cooldownUntil', state.cooldownUntil);
+    }
+  );
+
+  /**
+   * Clear lockout state.
+   */
+  ipcMain.handle('lockout:clear', () => {
+    getStore().delete('lockout.failedAttempts');
+    getStore().delete('lockout.cooldownUntil');
   });
 }
