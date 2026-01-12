@@ -11,11 +11,15 @@ vi.mock('../context/AuthContext', () => ({
   })),
 }));
 
-vi.mock('../hooks', () => ({
-  usePageTitle: vi.fn(),
-}));
+vi.mock('../hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks')>();
+  return {
+    ...actual,
+    usePageTitle: vi.fn(),
+  };
+});
 
-vi.mock('../components/PassphrasePrompt', () => ({
+vi.mock('../components/passphrase', () => ({
   PassphrasePrompt: ({ mode, onSuccess, onResetApp }: {
     mode: string;
     onSuccess: () => void;
