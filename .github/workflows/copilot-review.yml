@@ -98,7 +98,9 @@ jobs:
             echo "No Copilot review found"
             echo "reviewed=false" >> $GITHUB_OUTPUT
             echo "reviewed_latest=false" >> $GITHUB_OUTPUT
-            echo "has_issues=false" >> $GITHUB_OUTPUT
+            echo "has_unresolved=false" >> $GITHUB_OUTPUT
+            echo "unresolved_count=0" >> $GITHUB_OUTPUT
+            echo "total_count=0" >> $GITHUB_OUTPUT
           else
             echo "Copilot review found"
             echo "reviewed=true" >> $GITHUB_OUTPUT
@@ -113,26 +115,51 @@ jobs:
               echo "reviewed_latest=false" >> $GITHUB_OUTPUT
             fi
 
-            # Check ALL PR review comments from Copilot (not just from the specific review)
-            # This catches inline comments that may be posted separately from the review
-            all_comments=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER/comments)
-            copilot_comments=$(echo "$all_comments" | jq '[.[] | select(
-              .user.login == "copilot-pull-request-reviewer[bot]" or
-              .user.login == "copilot-pull-request-reviewer" or
-              .user.login == "github-copilot[bot]" or
-              .user.login == "Copilot" or
-              (.user.type == "Bot" and (.user.login | contains("copilot")))
-            )]')
-            comment_count=$(echo "$copilot_comments" | jq 'length')
+            # Use GraphQL to get review threads with resolution status
+            # This lets us check if Copilot comments have been resolved
+            OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
+            REPO=$(echo "${{ github.repository }}" | cut -d'/' -f2)
 
-            if [ "$comment_count" -gt 0 ]; then
-              echo "Copilot found $comment_count issue(s)"
-              echo "has_issues=true" >> $GITHUB_OUTPUT
-              echo "issue_count=$comment_count" >> $GITHUB_OUTPUT
+            threads_response=$(gh api graphql -f query='
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    reviewThreads(first: 100) {
+                      nodes {
+                        isResolved
+                        comments(first: 1) {
+                          nodes {
+                            author {
+                              login
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ' -f owner="$OWNER" -f repo="$REPO" -F number="$PR_NUMBER")
+
+            # Count Copilot threads (total and unresolved)
+            copilot_threads=$(echo "$threads_response" | jq '[
+              .data.repository.pullRequest.reviewThreads.nodes[] |
+              select(.comments.nodes[0].author.login |
+                test("copilot"; "i")
+              )
+            ]')
+
+            total_count=$(echo "$copilot_threads" | jq 'length')
+            unresolved_count=$(echo "$copilot_threads" | jq '[.[] | select(.isResolved == false)] | length')
+
+            echo "Copilot threads: $total_count total, $unresolved_count unresolved"
+            echo "total_count=$total_count" >> $GITHUB_OUTPUT
+            echo "unresolved_count=$unresolved_count" >> $GITHUB_OUTPUT
+
+            if [ "$unresolved_count" -gt 0 ]; then
+              echo "has_unresolved=true" >> $GITHUB_OUTPUT
             else
-              echo "Copilot found no issues"
-              echo "has_issues=false" >> $GITHUB_OUTPUT
-              echo "issue_count=0" >> $GITHUB_OUTPUT
+              echo "has_unresolved=false" >> $GITHUB_OUTPUT
             fi
           fi
 
@@ -177,8 +204,9 @@ jobs:
           fi
           BYPASS="${{ steps.bypass.outputs.bypass }}"
           REVIEWED_LATEST="${{ steps.copilot.outputs.reviewed_latest }}"
-          HAS_ISSUES="${{ steps.copilot.outputs.has_issues }}"
-          ISSUE_COUNT="${{ steps.copilot.outputs.issue_count }}"
+          HAS_UNRESOLVED="${{ steps.copilot.outputs.has_unresolved }}"
+          UNRESOLVED_COUNT="${{ steps.copilot.outputs.unresolved_count }}"
+          TOTAL_COUNT="${{ steps.copilot.outputs.total_count }}"
 
           if [ "$BYPASS" == "true" ]; then
             state="success"
@@ -186,9 +214,12 @@ jobs:
           elif [ "$REVIEWED_LATEST" != "true" ]; then
             state="pending"
             description="Waiting for Copilot review on latest commit"
-          elif [ "$HAS_ISSUES" == "true" ]; then
+          elif [ "$HAS_UNRESOLVED" == "true" ]; then
             state="failure"
-            description="Copilot found $ISSUE_COUNT issue(s) - please address"
+            description="$UNRESOLVED_COUNT unresolved Copilot comment(s) - please resolve"
+          elif [ "$TOTAL_COUNT" -gt 0 ]; then
+            state="success"
+            description="Copilot reviewed - all $TOTAL_COUNT comment(s) resolved"
           else
             state="success"
             description="Copilot review passed - no issues found"
