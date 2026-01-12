@@ -1,0 +1,69 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "branchPrefix": "update/renovate-",
+  "commitMessagePrefix": "chore(deps):",
+  "prHourlyLimit": 3,
+  "prConcurrentLimit": 5,
+  "schedule": ["before 9am on monday"],
+  "timezone": "America/New_York",
+  "labels": ["dependencies"],
+  "pinDigests": true,
+  "packageRules": [
+    {
+      "description": "Python dependencies",
+      "matchManagers": ["pip_requirements", "pip-compile"],
+      "groupName": "python-all",
+      "addLabels": ["python"]
+    },
+    {
+      "description": "Frontend npm production dependencies",
+      "matchFileNames": ["frontend/package.json"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "npm-frontend-prod",
+      "addLabels": ["frontend"]
+    },
+    {
+      "description": "Frontend npm dev dependencies",
+      "matchFileNames": ["frontend/package.json"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "npm-frontend-dev",
+      "addLabels": ["frontend"]
+    },
+    {
+      "description": "Desktop npm dependencies",
+      "matchFileNames": ["desktop/package.json"],
+      "groupName": "npm-desktop-all",
+      "addLabels": ["desktop"]
+    },
+    {
+      "description": "Docusaurus npm dependencies",
+      "matchFileNames": ["docusaurus/package.json"],
+      "groupName": "npm-docusaurus-all",
+      "addLabels": ["docs"]
+    },
+    {
+      "description": "Scripts npm dependencies (monthly)",
+      "matchFileNames": ["scripts/**/package.json"],
+      "groupName": "npm-scripts-all",
+      "addLabels": ["scripts"],
+      "schedule": ["before 9am on the first day of the month"]
+    },
+    {
+      "description": "Docker base images",
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker-all",
+      "addLabels": ["docker"]
+    },
+    {
+      "description": "GitHub Actions - pin digests for supply chain security",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions-all",
+      "pinDigests": true,
+      "schedule": ["before 9am on the first day of the month"]
+    }
+  ]
+}
