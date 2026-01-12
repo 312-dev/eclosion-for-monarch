@@ -20,8 +20,8 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: |
 
-          # Allow these prefixes
-          if [[ "$BRANCH" =~ ^(feature|update)/ ]]; then
+          # Allow these prefixes (dependabot uses dependabot/ by default)
+          if [[ "$BRANCH" =~ ^(feature|update|dependabot)/ ]]; then
             echo "✅ Branch name '$BRANCH' follows naming convention"
             exit 0
           fi
