@@ -58,6 +58,8 @@ API_PATTERNS = [
     r"monarch_client\.delete_transaction_category",
     r"monarch_client\.set_budget_amount",
     r"monarch_client\.update_transaction",
+    r"monarch_client\.update_flexible_budget",
+    r"monarch_client\.gql_call",
 ]
 
 # Map of API methods to their canonical names (for reporting)
