@@ -1,0 +1,6 @@
+# VCS dependencies that cannot be hash-verified
+# Install separately after hash-verified dependencies:
+#   pip install --require-hashes -r requirements.txt
+#   pip install --no-deps -r requirements-vcs.txt
+
+git+https://github.com/312-dev/monarchmoney.git@flex-budget

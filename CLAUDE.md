@@ -329,6 +329,45 @@ frontend/src/
 
 All checks must pass before committing.
 
+## Dependency Management
+
+Python dependencies use **hash-pinned lockfiles** for supply chain security. When modifying dependencies:
+
+### File Structure
+
+| File | Purpose | Editable? |
+|------|---------|-----------|
+| `requirements.in` | Production deps (constraints) | Yes - add packages here |
+| `requirements.txt` | Locked deps with hashes | No - auto-generated |
+| `requirements-dev.in` | Dev deps (constraints) | Yes - add dev packages here |
+| `requirements-dev.txt` | Locked dev deps with hashes | No - auto-generated |
+| `requirements-git.txt` | Git/VCS dependencies | Yes - commit-pinned |
+| `requirements-build.txt` | Build tools (PyInstaller) | Yes - with hashes |
+
+### Adding Dependencies
+
+**PyPI packages:**
+```bash
+# 1. Add to .in file
+echo "new-package>=1.0.0" >> requirements.in
+
+# 2. Regenerate lockfile
+pip-compile --generate-hashes --allow-unsafe requirements.in
+```
+
+**Git dependencies:**
+```bash
+# Pin to specific commit (NOT branch)
+git+https://github.com/org/repo.git@abc123def456
+```
+
+### Why This Matters
+
+- All PyPI packages are verified via `pip install --require-hashes`
+- Git dependencies are installed separately (can't be hash-verified)
+- CI/CD uses `--require-hashes` flag for tamper detection
+- Dockerfile uses the same pattern for container builds
+
 ## Branch Naming
 
 **Branch names are enforced by CI.** Only these prefixes are allowed for PRs to `main`:

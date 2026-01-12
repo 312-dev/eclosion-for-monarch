@@ -6,6 +6,7 @@ Thank you for your interest in contributing to Eclosion! This guide will help yo
 
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
+- [Dependency Management](#dependency-management)
 - [Branching Strategy](#branching-strategy)
 - [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
@@ -42,8 +43,9 @@ Please be respectful and constructive in all interactions. Contributors of all e
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-   # Install dependencies
-   pip install -r requirements-dev.txt
+   # Install dependencies (hash-verified for supply chain security)
+   pip install --require-hashes -r requirements-dev.txt   # PyPI packages with hash verification
+   pip install --no-deps -r requirements-vcs.txt          # VCS dependencies
 
    # Install pre-commit hooks
    pre-commit install
@@ -51,6 +53,8 @@ Please be respectful and constructive in all interactions. Contributors of all e
    # Start the API server
    python app.py
    ```
+
+   > **Note:** See [Dependency Management](#dependency-management) for details on adding new packages.
 
 3. **Frontend setup**
    ```bash
@@ -88,6 +92,66 @@ Please be respectful and constructive in all interactions. Contributors of all e
 Copy `.env.example` to `.env` and configure:
 - `FLASK_DEBUG=1` - Enable debug mode for development
 - See `.env.example` for all available options
+
+## Dependency Management
+
+This project uses **hash-pinned dependencies** for supply chain security, following [OpenSSF Scorecard](https://securityscorecards.dev/) best practices.
+
+### File Structure
+
+| File | Purpose | How to Edit |
+|------|---------|-------------|
+| `requirements.in` | Production dependencies (version constraints) | Add packages here |
+| `requirements.txt` | Locked production deps with hashes | Auto-generated |
+| `requirements-dev.in` | Dev dependencies (version constraints) | Add dev packages here |
+| `requirements-dev.txt` | Locked dev deps with hashes | Auto-generated |
+| `requirements-vcs.txt` | VCS/Git dependencies (branch-pinned) | Edit directly |
+
+### Adding a New Dependency
+
+1. **For PyPI packages** — Add to the appropriate `.in` file:
+   ```bash
+   # Production dependency
+   echo "new-package>=1.0.0" >> requirements.in
+
+   # Development dependency
+   echo "new-dev-tool>=2.0.0" >> requirements-dev.in
+   ```
+
+2. **Regenerate the locked file with hashes:**
+   ```bash
+   # Install pip-tools if needed
+   pip install pip-tools
+
+   # Regenerate production dependencies
+   pip-compile --generate-hashes --allow-unsafe requirements.in
+
+   # Regenerate dev dependencies
+   pip-compile --generate-hashes --allow-unsafe requirements-dev.in
+   ```
+
+3. **For Git dependencies** — Edit `requirements-vcs.txt` directly:
+   ```bash
+   # Add to requirements-vcs.txt (pin to branch or commit)
+   git+https://github.com/org/repo.git@branch-name
+   # Or pin to specific commit:
+   git+https://github.com/org/repo.git@abc123def456
+   ```
+
+### Why Hash Pinning?
+
+- **Supply chain security**: Hashes ensure you get the exact package that was audited
+- **Reproducible builds**: Same hashes = same packages across all environments
+- **Tamper detection**: If a package is modified on PyPI, the hash won't match
+- **OpenSSF compliance**: Required for high Scorecard ratings
+
+### VCS Dependencies
+
+VCS dependencies (like our monarchmoney fork) cannot be hash-verified because they're not published to PyPI. Instead, they are:
+- **Branch or commit-pinned**: Locked to a specific branch or commit SHA
+- **Installed separately**: After the hash-verified PyPI packages with `--no-deps`
+
+To update a VCS dependency, edit `requirements-vcs.txt` directly.
 
 ## Branching Strategy
 
@@ -226,7 +290,14 @@ Using the correct commit type ensures:
 
 | Target Branch | CI Checks | Security Scans | Code Review |
 |---------------|-----------|----------------|-------------|
-| `main` | Must pass | Must pass | 1 approval |
+| `main` | Must pass | Must pass | 2 approvals |
+
+**Branch protection rules:**
+- **2 approving reviews required** — PRs need approval from two different reviewers
+- **Last push approval required** — The person who pushed the most recent commit cannot be the sole approver
+- **Up-to-date branches required** — Your branch must be rebased on the latest `main` before merging
+- **Admins cannot bypass** — These rules apply to everyone, including repository administrators
+- **Stale reviews dismissed** — New commits invalidate previous approvals
 
 > **Note**: Documentation-only PRs (markdown files, `docusaurus/`, `scripts/docs-gen/`) can skip CI builds.
 
@@ -351,15 +422,26 @@ echo "API Error: $ERROR"
 
 #### Action Versions
 
-Pin actions to specific versions, not branches:
+Pin actions to SHA hashes for supply chain security (following OpenSSF Scorecard best practices):
 
 ```yaml
-# BAD
+# BAD - mutable branch reference
 uses: some-org/some-action@master
 
-# GOOD
+# BETTER - version tag (still mutable)
 uses: some-org/some-action@v1.2.3
+
+# BEST - SHA hash with version comment (immutable)
+uses: some-org/some-action@abc123def456789... # v1.2.3
 ```
+
+To find the SHA for a version tag:
+```bash
+# Visit the action's releases page or use git
+git ls-remote https://github.com/actions/checkout refs/tags/v4
+```
+
+Dependabot will automatically update SHA-pinned actions and maintain the version comment.
 
 #### Centralized Trigger Pattern
 

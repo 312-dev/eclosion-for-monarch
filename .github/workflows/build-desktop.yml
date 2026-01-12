@@ -102,7 +102,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
           pip install pyinstaller
 
       - name: Build backend with PyInstaller
@@ -135,7 +136,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
           pip install pyinstaller
 
       - name: Build backend with PyInstaller
@@ -176,7 +178,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
           pip install pyinstaller
 
       - name: Build backend with PyInstaller
