@@ -373,15 +373,16 @@ async def test_cleanup_orphaned(monarch_client):
 def _extract_category_id(result: Any) -> str | None:
     """Extract category ID from various API response formats."""
     if not isinstance(result, dict):
-        return result
+        return str(result) if result else None
 
     # Direct ID in result
     if result.get("id"):
-        return result["id"]
+        return str(result["id"])
 
     # Nested in createCategory response
     create_response = result.get("createCategory", {})
-    return create_response.get("category", {}).get("id")
+    cat_id = create_response.get("category", {}).get("id")
+    return str(cat_id) if cat_id else None
 
 
 def _is_rate_limit_error(error: Exception) -> bool:
