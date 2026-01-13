@@ -20,6 +20,34 @@ logger = logging.getLogger(__name__)
 admin_bp = Blueprint("admin", __name__)
 
 
+def _safe_join_path(base_dir: Path, filename: str) -> Path | None:
+    """
+    Safely join a filename to a base directory, preventing path traversal.
+
+    Returns the resolved path if safe, None if the path would escape base_dir.
+    This uses os.path.commonpath which CodeQL recognizes as a path sanitization barrier.
+    """
+    # Reject any path-like characters in the filename
+    if ".." in filename or "/" in filename or "\\" in filename or os.sep in filename:
+        return None
+
+    # Construct and resolve the path
+    candidate = (base_dir / filename).resolve()
+    base_resolved = base_dir.resolve()
+
+    # Use commonpath to verify the candidate is within base_dir
+    # This is recognized by CodeQL as a proper path sanitization
+    try:
+        common = Path(os.path.commonpath([str(base_resolved), str(candidate)]))
+        if common != base_resolved:
+            return None
+    except ValueError:
+        # commonpath raises ValueError if paths are on different drives (Windows)
+        return None
+
+    return candidate
+
+
 # ---- HEALTH ENDPOINTS ----
 
 
@@ -437,9 +465,15 @@ def _create_db_backup(reason: str = "manual") -> Path | None:
 
     config.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Sanitize reason to prevent path injection (defense in depth)
+    safe_reason = re.sub(r"[^a-zA-Z0-9_-]", "", reason)[:20] or "backup"
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_filename = f"eclosion_{timestamp}_{reason}.db"
-    backup_path = config.BACKUP_DIR / backup_filename
+    backup_filename = f"eclosion_{timestamp}_{safe_reason}.db"
+
+    # Use safe path joining to construct backup path
+    backup_path = _safe_join_path(config.BACKUP_DIR, backup_filename)
+    if backup_path is None:
+        return None
 
     shutil.copy2(db_path, backup_path)
 
@@ -544,15 +578,7 @@ def restore_backup():
             }
         ), 400
 
-    # Validate filename format to prevent path traversal
-    if ".." in str(backup_filename) or "/" in str(backup_filename) or "\\" in str(backup_filename):
-        return jsonify(
-            {
-                "success": False,
-                "error": "Invalid backup filename format.",
-            }
-        ), 400
-
+    # Validate filename extension
     if not str(backup_filename).endswith(".db"):
         return jsonify(
             {
@@ -561,19 +587,13 @@ def restore_backup():
             }
         ), 400
 
-    backup_path = config.BACKUP_DIR / backup_filename
-
-    # Verify the resolved path is within backup directory (defense in depth)
-    try:
-        backup_path = backup_path.resolve()
-        backup_dir_resolved = config.BACKUP_DIR.resolve()
-        if not str(backup_path).startswith(str(backup_dir_resolved)):
-            raise ValueError("Path traversal detected")
-    except (ValueError, RuntimeError):
+    # Safely resolve path using CodeQL-recognized sanitization
+    backup_path = _safe_join_path(config.BACKUP_DIR, str(backup_filename))
+    if backup_path is None:
         return jsonify(
             {
                 "success": False,
-                "error": "Invalid backup path provided.",
+                "error": "Invalid backup filename format.",
             }
         ), 400
 

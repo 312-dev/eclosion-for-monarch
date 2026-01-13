@@ -1,7 +1,7 @@
 # Security blueprint
 # /security/* endpoints for security status and audit logs
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, jsonify, request
 from markupsafe import escape as markupsafe_escape
 
 from core import api_handler, config
@@ -80,23 +80,28 @@ def get_security_events():
 
     # Sanitize all string fields to prevent reflected XSS
     # Uses markupsafe.escape which CodeQL recognizes as a sanitization barrier
-    return {
-        "events": [
-            {
-                "id": e.id,
-                "event_type": str(markupsafe_escape(e.event_type)) if e.event_type else None,
-                "success": e.success,
-                "timestamp": e.timestamp,
-                "ip_address": str(markupsafe_escape(e.ip_address)) if e.ip_address else None,
-                "country": str(markupsafe_escape(e.country)) if e.country else None,
-                "city": str(markupsafe_escape(e.city)) if e.city else None,
-                "details": str(markupsafe_escape(e.details)) if e.details else None,
-            }
-            for e in events
-        ],
-        "limit": limit,
-        "offset": offset,
-    }
+    sanitized_events = [
+        {
+            "id": e.id,
+            "event_type": str(markupsafe_escape(e.event_type)) if e.event_type else None,
+            "success": e.success,
+            "timestamp": e.timestamp,
+            "ip_address": str(markupsafe_escape(e.ip_address)) if e.ip_address else None,
+            "country": str(markupsafe_escape(e.country)) if e.country else None,
+            "city": str(markupsafe_escape(e.city)) if e.city else None,
+            "details": str(markupsafe_escape(e.details)) if e.details else None,
+        }
+        for e in events
+    ]
+
+    # Return using jsonify with validated integer values
+    return jsonify(
+        {
+            "events": sanitized_events,
+            "limit": int(limit),
+            "offset": int(offset),
+        }
+    )
 
 
 @security_bp.route("/events/summary", methods=["GET"])
