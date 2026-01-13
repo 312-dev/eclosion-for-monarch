@@ -1,11 +1,12 @@
 /**
  * useCategoryGroups - Hook for category group selection in wizards
+ *
+ * Uses the shared category group store for consistent caching.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { CategoryGroup } from '../../types';
-import { getErrorMessage } from '../../utils';
-import { getCategoryGroups } from '../../api/client';
+import { useCategoryGroupsList } from '../../api/queries/categoryGroupStoreQueries';
 
 export interface UseCategoryGroupsResult {
   groups: CategoryGroup[];
@@ -19,25 +20,21 @@ export interface UseCategoryGroupsResult {
 }
 
 export function useCategoryGroups(): UseCategoryGroupsResult {
-  const [groups, setGroups] = useState<CategoryGroup[]>([]);
+  const { groups, isLoading, error } = useCategoryGroupsList();
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [selectedGroupName, setSelectedGroupName] = useState('');
-  const [loadingGroups, setLoadingGroups] = useState(false);
-  const [groupError, setGroupError] = useState<string | null>(null);
-  const [groupsFetched, setGroupsFetched] = useState(false);
 
+  // Derive groupsFetched from query state instead of setting in an effect
+  const groupsFetched = useMemo(
+    () => groups.length > 0 && !isLoading,
+    [groups.length, isLoading]
+  );
+
+  // fetchGroups is now a no-op since React Query handles fetching
+  // Kept for API compatibility with existing code
   const fetchGroups = useCallback(async () => {
-    setLoadingGroups(true);
-    setGroupError(null);
-    try {
-      const data = await getCategoryGroups();
-      setGroups(data);
-      setGroupsFetched(true);
-    } catch (err) {
-      setGroupError(getErrorMessage(err));
-    } finally {
-      setLoadingGroups(false);
-    }
+    // React Query automatically fetches on mount
+    // This function exists for API compatibility
   }, []);
 
   const handleSelectGroup = useCallback((id: string, name: string) => {
@@ -49,8 +46,8 @@ export function useCategoryGroups(): UseCategoryGroupsResult {
     groups,
     selectedGroupId,
     selectedGroupName,
-    loadingGroups,
-    groupError,
+    loadingGroups: isLoading,
+    groupError: error ? 'Failed to load category groups' : null,
     groupsFetched,
     fetchGroups,
     handleSelectGroup,

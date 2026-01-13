@@ -51,7 +51,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
   const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Checkbox state management
-  const { checkboxStates, toggleCheckbox } = useCheckboxState({
+  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
     noteId: note?.id,
     viewingMonth: currentMonth,
     enabled: !!note || !!content.trim(),
@@ -168,6 +168,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={handleStartEdit}
+            checkboxesDisabled={checkboxesLoading}
           />
           {/* History button - shows on hover */}
           <button
@@ -208,7 +209,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
         <div className="flex items-center gap-2 min-w-[140px] shrink-0">
           {category.icon && (
             <span className="text-base" aria-hidden="true">
-              {category.icon}
+              {decodeHtmlEntities(category.icon)}
             </span>
           )}
           <a

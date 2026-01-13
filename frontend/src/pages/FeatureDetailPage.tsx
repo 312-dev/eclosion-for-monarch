@@ -128,12 +128,12 @@ export function FeatureDetailPage() {
                     <ChevronRightIcon size={18} color="white" />
                   </Link>
                 )}
-                <Link
-                  to="/docs"
+                <a
+                  href="/docs"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-[var(--monarch-border)] text-[var(--monarch-text-dark)] font-medium hover:bg-[var(--monarch-bg-hover)] transition-colors"
                 >
                   View Documentation
-                </Link>
+                </a>
               </div>
             </div>
           </div>

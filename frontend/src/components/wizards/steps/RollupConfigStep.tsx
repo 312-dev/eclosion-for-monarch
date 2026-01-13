@@ -5,7 +5,7 @@
 import { SearchableSelect, type SelectGroup } from '../../SearchableSelect';
 import type { UnmappedCategory } from '../../../types';
 import { PackageIcon } from '../SetupWizardIcons';
-import { formatCurrency, decodeHtmlEntities } from '../../../utils';
+import { decodeHtmlEntities } from '../../../utils';
 
 interface RollupConfigStepProps {
   readonly mode: 'new' | 'existing';
@@ -49,10 +49,9 @@ export function RollupConfigStep({
     options: cats.map((cat) => {
       const icon = cat.icon ? decodeHtmlEntities(cat.icon) + ' ' : '';
       const name = decodeHtmlEntities(cat.name);
-      const budget = formatCurrency(cat.planned_budget || 0, { maximumFractionDigits: 0 });
       return {
         value: cat.id,
-        label: `${icon}${name} - ${budget} budgeted`,
+        label: `${icon}${name}`,
       };
     }),
   }));

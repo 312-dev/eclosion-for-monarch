@@ -54,6 +54,8 @@ export {
 
 export { evaluateMathExpression } from './mathEvaluator';
 
+export { calculateFrozenTarget } from './calculations';
+
 export {
   buildCategoryGroupsWithNotes,
   convertEffectiveGeneralNote,

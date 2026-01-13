@@ -1123,7 +1123,6 @@ const DEMO_UNMAPPED_CATEGORIES: UnmappedCategory[] = [
     icon: '📺',
     group_order: 1,
     category_order: 1,
-    planned_budget: 0,
   },
   {
     id: 'uncat-software',
@@ -1133,7 +1132,6 @@ const DEMO_UNMAPPED_CATEGORIES: UnmappedCategory[] = [
     icon: '💻',
     group_order: 1,
     category_order: 2,
-    planned_budget: 0,
   },
 ];
 

@@ -8,7 +8,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, EyeOff, Eye } from 'lucide-react';
 import { Portal } from '../Portal';
-import { useNotesCategoriesQuery } from '../../api/queries';
+import { useCategoriesByGroup } from '../../api/queries/categoryStoreQueries';
 import { decodeHtmlEntities } from '../../utils';
 import type { NotesCategoryGroup } from '../../types/notes';
 
@@ -32,8 +32,8 @@ export function HiddenCategoriesModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Fetch all Monarch categories using React Query
-  const { data: notesCategories, isLoading: loading, error: queryError } = useNotesCategoriesQuery();
+  // Fetch all Monarch categories from the shared category store
+  const { data: notesCategories, isLoading: loading, error: queryError } = useCategoriesByGroup();
   const error = queryError ? 'Failed to load categories' : null;
 
   // Filter groups by search query

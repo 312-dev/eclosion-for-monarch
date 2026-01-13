@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { UnmappedCategory, RecurringItem } from '../types';
-import { getUnmappedCategories, linkToCategory } from '../api/client';
+import { linkToCategory } from '../api/client';
+import { useUnmappedCategoriesList } from '../api/queries/categoryGroupStoreQueries';
 import { useToast } from '../context/ToastContext';
 import { useIsRateLimited } from '../context/RateLimitContext';
 import { handleApiError, decodeHtmlEntities } from '../utils';
@@ -25,37 +26,28 @@ interface LinkCategoryModalProps {
 }
 
 export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave = false, reservedCategories = new Map() }: LinkCategoryModalProps) {
-  const [categories, setCategories] = useState<UnmappedCategory[]>([]);
+  // Use React Query for unmapped categories (cached)
+  const { categories, isLoading: loading, error: queryError } = useUnmappedCategoriesList();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [syncName, setSyncName] = useState<boolean>(false);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const toast = useToast();
   const isRateLimited = useIsRateLimited();
 
+  // Reset selection state when modal opens
   useEffect(() => {
     if (isOpen) {
-      fetchCategories();
       setSelectedCategory('');
       setSyncName(false);
       setSearchQuery('');
+      setError(null);
     }
   }, [isOpen]);
 
-  const fetchCategories = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getUnmappedCategories();
-      setCategories(data);
-    } catch (err) {
-      setError(handleApiError(err, 'Loading categories'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Convert query error to display error
+  const displayError = error || (queryError ? handleApiError(queryError, 'Loading categories') : null);
 
   const handleLink = async () => {
     if (!selectedCategory) return;
@@ -168,9 +160,9 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {error && (
+          {displayError && (
             <div className="mb-4 p-3 rounded-lg text-sm error-message bg-monarch-error-bg text-monarch-error">
-              {error}
+              {displayError}
             </div>
           )}
 

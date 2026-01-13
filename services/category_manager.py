@@ -581,13 +581,14 @@ class CategoryManager:
             mapped_category_ids: List of category IDs already mapped to recurring items
 
         Returns:
-            List of unmapped categories with {id, name, group_id, group_name, planned_budget}
+            List of unmapped categories with {id, name, group_id, group_name}
         """
         categories = await self._get_categories_cached()
         mapped_set = set(mapped_category_ids)
 
-        # Get planned budgets for all categories
-        planned_budgets = await self.get_all_planned_budgets()
+        # Note: We intentionally don't fetch planned_budgets here to avoid
+        # an extra API call. The budget amount is not essential for category
+        # selection in the rollup dropdown.
 
         unmapped = []
         # Track group order as they appear (preserves budget sheet order)
@@ -615,8 +616,6 @@ class CategoryManager:
                         # Preserve original order from budget sheet
                         "group_order": group_order.get(group_id, 999),
                         "category_order": cat_index,
-                        # Include planned budget amount
-                        "planned_budget": planned_budgets.get(cat_id, 0),
                     }
                 )
 

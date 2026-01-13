@@ -468,7 +468,7 @@ async def update_rollup_emoji():
     """Update the emoji for the rollup category."""
     services = get_services()
     data = request.get_json()
-    emoji = data.get("emoji", "🔄")
+    emoji = sanitize_emoji(data.get("emoji", "🔄"))
     return await services.sync_service.update_rollup_emoji(emoji)
 
 

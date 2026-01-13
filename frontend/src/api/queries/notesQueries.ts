@@ -200,18 +200,6 @@ export function useArchivedNotesQuery() {
 }
 
 /**
- * Get all Monarch categories organized by group for the Notes feature.
- */
-export function useNotesCategoriesQuery() {
-  const isDemo = useDemo();
-  return useQuery({
-    queryKey: getQueryKey(queryKeys.notesCategories, isDemo),
-    queryFn: () => (isDemo ? demoApi.getNotesCategories() : api.getNotesCategories()),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-}
-
-/**
  * Get revision history for a category or group.
  */
 export function useNoteHistoryQuery(

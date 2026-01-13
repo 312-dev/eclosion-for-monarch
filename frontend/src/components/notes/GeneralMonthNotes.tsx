@@ -65,7 +65,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
   const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Checkbox state management for general notes
-  const { checkboxStates, toggleCheckbox } = useCheckboxState({
+  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
     generalNoteMonthKey: sourceMonth ?? monthKey,
     viewingMonth: monthKey,
     enabled: !!note || !!content.trim(),
@@ -177,6 +177,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={handleStartEdit}
+            checkboxesDisabled={checkboxesLoading}
           />
         </div>
       );

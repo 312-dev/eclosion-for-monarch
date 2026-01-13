@@ -2,6 +2,7 @@
  * Category Mutations
  *
  * Mutations for category operations: emoji, name, and linking.
+ * These mutations update the shared category store for cross-feature consistency.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +13,9 @@ import { queryKeys, getQueryKey } from './keys';
 
 /**
  * Update category emoji
+ *
+ * Updates the emoji/icon on the Monarch category. Invalidates both the
+ * dashboard (for recurring tab) and category store (for notes tab).
  */
 export function useUpdateCategoryEmojiMutation() {
   const isDemo = useDemo();
@@ -23,12 +27,16 @@ export function useUpdateCategoryEmojiMutation() {
         : api.updateCategoryEmoji(recurringId, emoji),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.dashboard, isDemo) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.categoryStore, isDemo) });
     },
   });
 }
 
 /**
  * Update category name
+ *
+ * Updates the name on the Monarch category. Invalidates both the
+ * dashboard (for recurring tab) and category store (for notes tab).
  */
 export function useUpdateCategoryNameMutation() {
   const isDemo = useDemo();
@@ -40,6 +48,7 @@ export function useUpdateCategoryNameMutation() {
         : api.updateCategoryName(recurringId, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.dashboard, isDemo) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.categoryStore, isDemo) });
     },
   });
 }

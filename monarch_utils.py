@@ -23,12 +23,33 @@ _BROWSER_USER_AGENT = (
 
 
 # Helper to strip leading emoji and space from a string
+# Handles multi-codepoint emoji:
+# - Basic emoji (single codepoint)
+# - Emoji with variation selector (❤️)
+# - Emoji with skin tone modifier (👋🏽)
+# - ZWJ sequences for compound emoji (👨‍👩‍👧, 👩‍💻)
+# - Flag emoji (regional indicators 🇺🇸) - two consecutive regional indicator symbols
+
+# Base emoji character ranges (excluding regional indicators which need special handling)
+_EMOJI_BASE = (
+    r"[\U0001F300-\U0001FAFF"  # Misc symbols, pictographs, emoticons
+    r"\U00002700-\U000027BF"  # Dingbats
+    r"\U0001F900-\U0001F9FF"  # Supplemental symbols
+    r"\U0001F600-\U0001F64F"  # Emoticons
+    r"\U0001F680-\U0001F6FF"  # Transport/map symbols
+    r"\u2600-\u26FF"  # Misc symbols
+    r"\u2700-\u27BF]"  # Dingbats
+)
+_EMOJI_MODIFIERS = r"[\uFE0F\U0001F3FB-\U0001F3FF]?"  # Variation selector, skin tones
+_EMOJI_ZWJ_SEQ = rf"(?:\u200D{_EMOJI_BASE}{_EMOJI_MODIFIERS})*"  # ZWJ sequences
+# Flag emoji: two consecutive regional indicator symbols (U+1F1E0 - U+1F1FF)
+_FLAG_EMOJI = r"[\U0001F1E0-\U0001F1FF]{2}"
+# Full pattern: either a flag emoji OR a regular emoji with modifiers/ZWJ
+_EMOJI_PATTERN = rf"^({_FLAG_EMOJI}|{_EMOJI_BASE}{_EMOJI_MODIFIERS}{_EMOJI_ZWJ_SEQ})\s*"
+
+
 def _strip_emoji_and_space(name):
-    return re.sub(
-        r"^([\U0001F300-\U0001FAFF\U00002700-\U000027BF\U0001F900-\U0001F9FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\u2600-\u26FF\u2700-\u27BF]|[\u200d\u2640-\u2642\u2695-\u2696\u2708-\u2709\u231a-\u231b\u23e9-\u23ef\u23f0-\u23f3\u25fd-\u25fe\u2614-\u2615\u2744-\u2747\u2753-\u2755\u2795-\u2797\u27b0\u27bf\u2b05-\u2b07\u2934-\u2935\u2b1b-\u2b1c\u2b50\u2b55\u3030\u303d\u3297\u3299])+\s*",
-        "",
-        name,
-    )
+    return re.sub(_EMOJI_PATTERN, "", name)
 
 
 # =============================================================================

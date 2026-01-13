@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Recurring Tool Settings
  *
@@ -13,14 +12,14 @@ import { SearchableSelect } from '../SearchableSelect';
 import { useToast } from '../../context/ToastContext';
 import { useDemo } from '../../context/DemoContext';
 import { useApiClient, useSavingStates, useHiddenCategories } from '../../hooks';
-import { useInvalidateDashboard } from '../../api/queries';
+import { useInvalidateDashboard, useCategoryGroupsQuery } from '../../api/queries';
 import { RecurringToolHeader } from './RecurringToolHeader';
 import { NotesToolSettings } from './NotesToolSettings';
 import { HiddenCategoriesModal } from './HiddenCategoriesModal';
 import { SettingsRow } from './SettingsRow';
 import { ToggleSwitch } from './ToggleSwitch';
 import { ThresholdInput } from './ThresholdInput';
-import type { DashboardData, CategoryGroup } from '../../types';
+import type { DashboardData } from '../../types';
 
 interface RecurringToolSettingsProps {
   dashboardData: DashboardData | null;
@@ -40,8 +39,8 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
     const client = useApiClient();
     const invalidateDashboard = useInvalidateDashboard();
 
-    const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
-    const [loadingGroups, setLoadingGroups] = useState(false);
+    // Use React Query for category groups (cached)
+    const { data: categoryGroups = [], isLoading: loadingGroups } = useCategoryGroupsQuery();
     const [showHiddenCategoriesModal, setShowHiddenCategoriesModal] = useState(false);
 
     // Hidden categories for notes
@@ -65,18 +64,6 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
     const totalCategories = dedicatedItems.length + (dashboardData?.rollup?.category_id ? 1 : 0);
     const totalItems = dedicatedItems.length + rollupItems.length;
     const hasAnythingToReset = isConfigured || totalCategories > 0 || totalItems > 0;
-
-    const fetchCategoryGroups = async () => {
-      setLoadingGroups(true);
-      try {
-        const groups = await client.getCategoryGroups();
-        setCategoryGroups(groups);
-      } catch {
-        toast.error('Failed to load category groups');
-      } finally {
-        setLoadingGroups(false);
-      }
-    };
 
     const handleGroupChange = async (groupId: string) => {
       const group = categoryGroups.find(g => g.id === groupId);
@@ -220,11 +207,6 @@ export const RecurringToolSettings = forwardRef<HTMLElement, RecurringToolSettin
                       searchPlaceholder="Search groups..."
                       disabled={isSaving('group')}
                       loading={loadingGroups}
-                      onOpen={() => {
-                        if (categoryGroups.length === 0) {
-                          fetchCategoryGroups();
-                        }
-                      }}
                       className="min-w-45"
                     />
                   </SettingsRow>

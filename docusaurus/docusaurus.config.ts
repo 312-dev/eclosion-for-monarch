@@ -64,6 +64,10 @@ const config: Config = {
     locales: ['en'],
   },
 
+  // Client modules for cross-system navigation
+  // Forces full page reload when navigating to paths outside Docusaurus (demo, landing page, etc.)
+  clientModules: [require.resolve('./src/clientModules/forcePageReload.ts')],
+
   presets: [
     [
       'classic',

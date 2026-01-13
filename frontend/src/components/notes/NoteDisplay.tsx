@@ -56,7 +56,7 @@ export function NoteDisplay({
   const { note, sourceMonth, isInherited } = effectiveNote;
 
   // Checkbox state management
-  const { checkboxStates, toggleCheckbox } = useCheckboxState({
+  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
     noteId: note?.id,
     viewingMonth: currentMonth,
     enabled: !!note,
@@ -100,6 +100,7 @@ export function NoteDisplay({
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={onEdit}
+            checkboxesDisabled={checkboxesLoading}
           />
         </div>
 

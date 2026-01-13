@@ -58,7 +58,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
   const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Checkbox state management
-  const { checkboxStates, toggleCheckbox } = useCheckboxState({
+  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
     noteId: note?.id,
     viewingMonth: currentMonth,
     enabled: !!note || !!content.trim(),
@@ -173,6 +173,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={handleStartEdit}
+            checkboxesDisabled={checkboxesLoading}
           />
           {/* History button - shows on hover */}
           <button
