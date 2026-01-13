@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
+import { AppIcon } from '../wizards/SetupWizardIcons';
 
 /** Message phases based on elapsed time */
 const MESSAGES = {
@@ -175,12 +176,7 @@ export function StartupLoadingScreen({
       <div className="flex flex-col items-center gap-6 max-w-md px-6 text-center">
         {/* Logo/Brand */}
         <div className="flex items-center gap-3 mb-4">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ backgroundColor: 'var(--monarch-orange)' }}
-          >
-            <span className="text-2xl font-bold text-white">E</span>
-          </div>
+          <AppIcon size={48} />
           <span
             className="text-2xl font-semibold"
             style={{

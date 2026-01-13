@@ -253,47 +253,43 @@ jobs:
         run: |
           # Find last stable tag
           LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v beta | head -1)
+          IS_FIRST_STABLE="false"
+
           if [ -z "$LAST_TAG" ]; then
-            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+            IS_FIRST_STABLE="true"
+            echo "No previous stable release found - this is the first stable release!"
           fi
 
-          echo "Generating notes from $LAST_TAG to HEAD"
+          if [ "$IS_FIRST_STABLE" = "true" ]; then
+            # First stable release - use comprehensive feature-based notes
+            cat > /tmp/release-notes.md << 'NOTESEOF'
+          ## Eclosion for Monarch - First Stable Release
 
-          # Get commits since last release (clean, linear history now)
-          COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" | head -30)
+          Eclosion is an open source desktop & web app that expands what's possible with Monarch Money. After extensive beta testing, we're excited to release our first stable version.
 
-          # Categorize changes using anchored patterns to avoid duplicates
-          # A commit starting with "feat:" goes to Features, "fix:" goes to Fixes
-          FEATURES=$(echo "$COMMITS" | grep -E "^- feat" | sed 's/^- feat[:(]/- /' | sed 's/):/:/') || true
-          FIXES=$(echo "$COMMITS" | grep -E "^- fix" | sed 's/^- fix[:(]/- /' | sed 's/):/:/') || true
-          OTHER=$(echo "$COMMITS" | grep -vE "^- (feat|fix)" | grep -vE "^- (chore|docs|test|ci|build|refactor)" || true)
+          ### Key Features
 
-          # Build release notes
-          cat > /tmp/release-notes.md << 'NOTESEOF'
-          ## What's Changed
+          #### Recurring Expense Tracking
+          - **Individual expense tracking** - Track yearly, quarterly, and monthly expenses with dedicated categories
+          - **Rollup categories** - Combine multiple subscriptions into a single category for budget simplicity
+          - **Smart status indicators** - Visual feedback showing if you're ahead, on track, or behind on savings
+          - **Automatic category sync** - Seamlessly syncs with your Monarch Money categories
 
-          NOTESEOF
+          #### Monthly Category Notes
+          - **Add notes to any category** - Document spending decisions, track promotions, or note unusual expenses
+          - **Month-by-month history** - Review past notes to understand spending patterns
+          - **Quick access** - Notes appear right in your category view
 
-          if [ -n "$FEATURES" ]; then
-            echo "### Features" >> /tmp/release-notes.md
-            echo "$FEATURES" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-          fi
+          #### Desktop App
+          - **Native experience** - Runs as a desktop app on macOS, Windows, and Linux
+          - **Secure credential storage** - Uses OS-level keychain for encrypted credential storage
+          - **Auto-sync** - Background synchronization keeps your data current
+          - **Global hotkeys** - Quick access to toggle window and trigger sync
 
-          if [ -n "$FIXES" ]; then
-            echo "### Bug Fixes" >> /tmp/release-notes.md
-            echo "$FIXES" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-          fi
-
-          if [ -n "$OTHER" ]; then
-            echo "### Other Changes" >> /tmp/release-notes.md
-            echo "$OTHER" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-          fi
-
-          cat >> /tmp/release-notes.md << INSTALLEOF
-          ---
+          #### Self-Hosted Option
+          - **Docker deployment** - Run your own instance with Docker Compose
+          - **Full data control** - Your financial data stays on your infrastructure
+          - **Instance protection** - Optional access code for shared environments
 
           ### Installation Notes
 
@@ -301,15 +297,63 @@ jobs:
 
           **Windows:** Click "More info" → "Run anyway" if SmartScreen appears.
 
-          **Linux:** Run \`chmod +x Eclosion-*.AppImage\` to make executable.
+          **Linux:** Run `chmod +x Eclosion-*.AppImage` to make executable.
 
           ---
 
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG}...${{ needs.calculate-version.outputs.tag }}
-          INSTALLEOF
+          Thank you to everyone who tested the beta releases and provided feedback!
+          NOTESEOF
 
-          # Remove leading whitespace from heredoc
-          sed -i 's/^          //' /tmp/release-notes.md
+            # Remove leading whitespace from heredoc
+            sed -i 's/^          //' /tmp/release-notes.md
+          else
+            echo "Generating notes from $LAST_TAG to HEAD"
+
+            # Get commits since last release (clean, linear history now)
+            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" | head -30)
+
+            # Categorize changes using anchored patterns to avoid duplicates
+            # A commit starting with "feat:" goes to Features, "fix:" goes to Fixes
+            FEATURES=$(echo "$COMMITS" | grep -E "^- feat" | sed 's/^- feat[:(]/- /' | sed 's/):/:/') || true
+            FIXES=$(echo "$COMMITS" | grep -E "^- fix" | sed 's/^- fix[:(]/- /' | sed 's/):/:/') || true
+            OTHER=$(echo "$COMMITS" | grep -vE "^- (feat|fix)" | grep -vE "^- (chore|docs|test|ci|build|refactor)" || true)
+
+            # Build release notes - use echo to avoid YAML parsing issues with ## markers
+            echo "## What's Changed" > /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+
+            if [ -n "$FEATURES" ]; then
+              echo "### Features" >> /tmp/release-notes.md
+              echo "$FEATURES" >> /tmp/release-notes.md
+              echo "" >> /tmp/release-notes.md
+            fi
+
+            if [ -n "$FIXES" ]; then
+              echo "### Bug Fixes" >> /tmp/release-notes.md
+              echo "$FIXES" >> /tmp/release-notes.md
+              echo "" >> /tmp/release-notes.md
+            fi
+
+            if [ -n "$OTHER" ]; then
+              echo "### Other Changes" >> /tmp/release-notes.md
+              echo "$OTHER" >> /tmp/release-notes.md
+              echo "" >> /tmp/release-notes.md
+            fi
+
+            echo "---" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "### Installation Notes" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**macOS:** Signed and notarized. Drag to Applications and launch." >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**Windows:** Click \"More info\" → \"Run anyway\" if SmartScreen appears." >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**Linux:** Run \\\`chmod +x Eclosion-*.AppImage\\\` to make executable." >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "---" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG}...${{ needs.calculate-version.outputs.tag }}" >> /tmp/release-notes.md
+          fi
 
       - name: Create tag
         run: |

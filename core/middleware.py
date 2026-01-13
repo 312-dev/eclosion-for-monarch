@@ -215,7 +215,7 @@ def enforce_instance_secret(services: "Services") -> tuple[Response, int] | None
     """
     from core.audit import audit_log  # Local import to avoid circular dependency
 
-    if not config.INSTANCE_SECRET or request.endpoint == "health_check":
+    if not config.INSTANCE_SECRET or request.endpoint == "admin.health_check":
         return None
     if check_instance_secret():
         return None
@@ -246,7 +246,7 @@ def enforce_desktop_secret(services: "Services") -> tuple[Response, int] | None:
         return None
 
     # Allow health check without secret (needed for backend startup)
-    if request.endpoint == "health_check":
+    if request.endpoint == "admin.health_check":
         return None
 
     # Check the X-Desktop-Secret header
