@@ -19,6 +19,7 @@ import {
 } from '../../api/queries';
 import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
+import { NotesEditorProvider } from '../../context/NotesEditorContext';
 import { buildCategoryGroupsWithNotes, convertEffectiveGeneralNote, hasAnyNotes } from '../../utils';
 import type { MonthKey, EffectiveGeneralNote, CategoryGroupWithNotes } from '../../types/notes';
 
@@ -148,66 +149,68 @@ export function NotesTab() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 tab-content-enter">
-      {/* Header with month navigation */}
-      <div className="flex items-center justify-between mb-4 lg:mb-6">
-        <MonthYearSelector
-          currentMonth={currentMonth}
-          onMonthChange={setCurrentMonth}
-        />
-
-        {/* Export button */}
-        <button
-          type="button"
-          onClick={handleOpenExportModal}
-          disabled={!hasNotes}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-            hasNotes
-              ? 'hover:bg-[var(--monarch-bg-hover)]'
-              : 'opacity-50 cursor-not-allowed'
-          }`}
-          style={{ color: 'var(--monarch-text-muted)' }}
-          title={hasNotes ? 'Export notes' : 'No notes to export'}
-          data-tour="export-notes"
-        >
-          <Download size={14} />
-          Export
-        </button>
-      </div>
-
-      {/* General month notes - mobile only (stacked below navigator) */}
-      <div className="block lg:hidden mb-6">
-        <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} />
-      </div>
-
-      {/* Main content */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Category tree (2/3 width on desktop, full width on mobile) */}
-        <div className="lg:col-span-2">
-          <CategoryTree
-            groups={groups}
-            expandedGroups={expandedGroups}
-            onToggleGroup={handleToggleGroup}
-            onExpandAll={handleExpandAll}
-            onCollapseAll={handleCollapseAll}
+    <NotesEditorProvider>
+      <div className="max-w-7xl mx-auto px-4 tab-content-enter">
+        {/* Header with month navigation */}
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <MonthYearSelector
             currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
           />
+
+          {/* Export button */}
+          <button
+            type="button"
+            onClick={handleOpenExportModal}
+            disabled={!hasNotes}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              hasNotes
+                ? 'hover:bg-[var(--monarch-bg-hover)]'
+                : 'opacity-50 cursor-not-allowed'
+            }`}
+            style={{ color: 'var(--monarch-text-muted)' }}
+            title={hasNotes ? 'Export notes' : 'No notes to export'}
+            data-tour="export-notes"
+          >
+            <Download size={14} />
+            Export
+          </button>
         </div>
 
-        {/* General month notes sidebar - desktop only (1/3 width) */}
-        <div className="hidden lg:block lg:col-span-1">
-          <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} dataTourId="general-notes" />
+        {/* General month notes - mobile only (stacked below navigator) */}
+        <div className="block lg:hidden mb-6">
+          <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} />
         </div>
+
+        {/* Main content */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Category tree (2/3 width on desktop, full width on mobile) */}
+          <div className="lg:col-span-2">
+            <CategoryTree
+              groups={groups}
+              expandedGroups={expandedGroups}
+              onToggleGroup={handleToggleGroup}
+              onExpandAll={handleExpandAll}
+              onCollapseAll={handleCollapseAll}
+              currentMonth={currentMonth}
+            />
+          </div>
+
+          {/* General month notes sidebar - desktop only (1/3 width) */}
+          <div className="hidden lg:block lg:col-span-1">
+            <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} dataTourId="general-notes" />
+          </div>
+        </div>
+
+        {/* Export Modal */}
+        {showExportModal && (
+          <ExportNotesModal
+            currentMonth={currentMonth}
+            groups={groups}
+            onClose={() => setShowExportModal(false)}
+          />
+        )}
       </div>
-
-      {/* Export Modal */}
-      {showExportModal && (
-        <ExportNotesModal
-          currentMonth={currentMonth}
-          groups={groups}
-          onClose={() => setShowExportModal(false)}
-        />
-      )}
-    </div>
+    </NotesEditorProvider>
   );
 }

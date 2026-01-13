@@ -2,7 +2,7 @@
  * General Month Notes
  *
  * Right sidebar component for general notes about the month.
- * Shows preview by default, editor on click. Auto-saves on blur.
+ * Shows preview by default, editor on click. Explicit save button.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -13,10 +13,9 @@ import { useSaveGeneralNoteMutation, useDeleteGeneralNoteMutation } from '../../
 import { useCheckboxState } from '../../hooks';
 import { formatErrorMessage } from '../../utils';
 import { useToast } from '../../context/ToastContext';
+import { useIsRateLimited } from '../../context/RateLimitContext';
+import { useNotesEditorOptional } from '../../context/NotesEditorContext';
 import type { MonthKey, EffectiveGeneralNote } from '../../types/notes';
-
-/** Debounce delay for auto-save in ms */
-const AUTO_SAVE_DELAY = 1000;
 
 interface GeneralMonthNotesProps {
   /** Current month being viewed */
@@ -44,152 +43,117 @@ function formatMonth(monthKey: string): string {
 function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: GeneralMonthNotesProps) {
   const note = effectiveNote?.note ?? null;
   const noteContent = note?.content ?? '';
-  const hasNote = !!note;
   const isInherited = effectiveNote?.isInherited ?? false;
   const sourceMonth = effectiveNote?.sourceMonth ?? null;
 
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(noteContent);
+  const [isSaving, setIsSaving] = useState(false);
   const lastSavedRef = useRef(noteContent);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const prevIsEditingRef = useRef(isEditing);
   const toast = useToast();
+  const isRateLimited = useIsRateLimited();
+  const notesEditor = useNotesEditorOptional();
 
   const saveMutation = useSaveGeneralNoteMutation();
   const deleteMutation = useDeleteGeneralNoteMutation();
 
+  // Unique editor ID for context coordination
+  const editorId = `general-${monthKey}`;
+
   // Checkbox state management for general notes
-  // Use source month for inherited notes to get the correct checkbox state
   const { checkboxStates, toggleCheckbox } = useCheckboxState({
     generalNoteMonthKey: sourceMonth ?? monthKey,
     viewingMonth: monthKey,
-    enabled: hasNote,
+    enabled: !!note || !!content.trim(),
   });
 
   // Sync content when note changes externally
   useEffect(() => {
-    if (!isEditing) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional sync from props
+    const justExitedEditing = prevIsEditingRef.current && !isEditing;
+    prevIsEditingRef.current = isEditing;
+
+    if (!isEditing && !justExitedEditing) {
       setContent(noteContent);
       lastSavedRef.current = noteContent;
     }
   }, [noteContent, isEditing]);
 
-  // Auto-save function
-  const saveNote = useCallback(async (newContent: string) => {
-    const trimmedContent = newContent.trim();
+  // Save function
+  const saveNote = useCallback(async () => {
+    const trimmedContent = content.trim();
 
     // No changes
-    if (trimmedContent === lastSavedRef.current.trim()) return;
+    if (trimmedContent === lastSavedRef.current.trim()) {
+      setIsEditing(false);
+      notesEditor?.closeEditor();
+      return;
+    }
 
-    // If content is empty and there was a note, delete it
-    if (!trimmedContent) {
-      if (note) {
-        try {
+    setIsSaving(true);
+
+    try {
+      // If content is empty and there was a note, delete it
+      if (!trimmedContent) {
+        if (note) {
           await deleteMutation.mutateAsync(monthKey);
           lastSavedRef.current = '';
-        } catch (err) {
-          toast.error(formatErrorMessage(err, 'Failed to delete note'));
         }
+      } else {
+        // Save the note
+        await saveMutation.mutateAsync({ monthKey, content: trimmedContent });
+        lastSavedRef.current = trimmedContent;
       }
-      return;
-    }
-
-    // Save the note
-    try {
-      await saveMutation.mutateAsync({ monthKey, content: trimmedContent });
-      lastSavedRef.current = trimmedContent;
+      setIsEditing(false);
+      notesEditor?.closeEditor();
     } catch (err) {
+      console.error('Failed to save note:', err);
       toast.error(formatErrorMessage(err, 'Failed to save note'));
+    } finally {
+      setIsSaving(false);
     }
-  }, [monthKey, note, saveMutation, deleteMutation, toast]);
-
-  // Debounced auto-save on content change
-  useEffect(() => {
-    if (!isEditing) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveNote(content);
-    }, AUTO_SAVE_DELAY);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [content, isEditing, saveNote]);
-
-  // Handle blur - save and exit edit mode
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Don't exit if focus is still within the container (e.g., toolbar)
-    if (containerRef.current?.contains(e.relatedTarget as Node)) {
-      return;
-    }
-
-    // Save immediately on blur
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveNote(content);
-    setIsEditing(false);
-  }, [content, saveNote]);
-
-  // Handle click outside - exit edit mode when clicking on non-focusable elements
-  useEffect(() => {
-    if (!isEditing) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-        saveNote(content);
-        setIsEditing(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isEditing, content, saveNote]);
+  }, [content, note, monthKey, saveMutation, deleteMutation, toast, notesEditor]);
 
   // Handle content change
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
   }, []);
 
-  // Handle immediate save (e.g., after math insertion)
-  const handleCommit = useCallback((newContent: string) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveNote(newContent);
-  }, [saveNote]);
+  // Enter edit mode (blocked when rate limited)
+  const handleStartEdit = useCallback(async () => {
+    if (isRateLimited) return;
 
-  // Enter edit mode
-  const handleStartEdit = useCallback(() => {
+    // If using context, request to open (auto-saves other editors)
+    if (notesEditor) {
+      const canOpen = await notesEditor.requestOpen(editorId, saveNote);
+      if (!canOpen) return;
+    }
+
     setIsEditing(true);
-  }, []);
+  }, [isRateLimited, notesEditor, editorId, saveNote]);
 
   // Render content area
+  const displayContent = content.trim();
+  const hasContent = !!note || !!displayContent;
+
   const renderContent = () => {
     if (isEditing) {
       return (
-        <NoteEditorMDX
-          value={content}
-          onChange={handleContentChange}
-          onCommit={handleCommit}
-          placeholder="Write general notes for this month..."
-          minHeight={200}
-          autoFocus
-        />
+        <div className="p-4">
+          <NoteEditorMDX
+            value={content}
+            onChange={handleContentChange}
+            onSave={saveNote}
+            isSaving={isSaving}
+            placeholder="Write general notes for this month..."
+            minHeight={200}
+            autoFocus
+          />
+        </div>
       );
     }
 
-    if (hasNote) {
+    if (hasContent) {
       return (
         <div className="p-4">
           {isInherited && sourceMonth && (
@@ -201,7 +165,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
             </div>
           )}
           <MarkdownRenderer
-            content={note.content}
+            content={displayContent || note?.content || ''}
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={handleStartEdit}
@@ -225,13 +189,11 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
 
   return (
     <div
-      ref={containerRef}
       className="rounded-xl overflow-hidden sticky top-18 section-enter"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',
       }}
-      onBlur={handleBlur}
       data-tour={dataTourId}
     >
       {/* Header */}
@@ -254,6 +216,5 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
  * Wrapper that uses key to reset state when month changes
  */
 export function GeneralMonthNotes({ monthKey, effectiveNote, dataTourId }: GeneralMonthNotesProps) {
-  // Using key forces remount when month changes, resetting all state
   return <GeneralMonthNotesInner key={monthKey} monthKey={monthKey} effectiveNote={effectiveNote} dataTourId={dataTourId} />;
 }

@@ -6,6 +6,7 @@
  */
 
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { decodeHtmlEntities } from '../../utils';
 import type { CategoryGroupWithNotes } from '../../types/notes';
 
 interface ExportGroupRowProps {
@@ -60,7 +61,7 @@ export function ExportGroupRow({
           className="text-sm font-medium"
           style={{ color: 'var(--monarch-text-dark)' }}
         >
-          {group.name}
+          {decodeHtmlEntities(group.name)}
         </span>
         {group.effectiveNote.note && (
           <span
@@ -94,7 +95,7 @@ export function ExportGroupRow({
               <span className="text-sm">
                 {category.icon && <span className="mr-1">{category.icon}</span>}
                 <span style={{ color: 'var(--monarch-text-dark)' }}>
-                  {category.name}
+                  {decodeHtmlEntities(category.name)}
                 </span>
               </span>
               {category.effectiveNote.note && (

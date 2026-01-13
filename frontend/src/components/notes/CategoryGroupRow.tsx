@@ -2,7 +2,7 @@
  * Category Group Row
  *
  * Displays note content for a category group with inline editing.
- * Auto-saves on blur and with debounce.
+ * Explicit save button instead of auto-save on blur.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -12,10 +12,10 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { RevisionHistoryModal } from './RevisionHistoryModal';
 import { useSaveCategoryNoteMutation, useDeleteCategoryNoteMutation } from '../../api/queries';
 import { useCheckboxState } from '../../hooks';
+import { decodeHtmlEntities } from '../../utils';
+import { useIsRateLimited } from '../../context/RateLimitContext';
+import { useNotesEditorOptional } from '../../context/NotesEditorContext';
 import type { CategoryGroupWithNotes, MonthKey } from '../../types/notes';
-
-/** Debounce delay for auto-save in ms */
-const AUTO_SAVE_DELAY = 1000;
 
 interface CategoryGroupRowProps {
   /** The category group */
@@ -37,157 +37,117 @@ function formatSourceMonth(monthKey: string): string {
 
 export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps) {
   const { effectiveNote } = group;
-  const hasNote = effectiveNote.note !== null;
-  const noteContent = effectiveNote.note?.content ?? '';
+  const note = effectiveNote.note;
+  const noteContent = note?.content ?? '';
 
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(noteContent);
+  const [isSaving, setIsSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const lastSavedRef = useRef(noteContent);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const isRateLimited = useIsRateLimited();
+  const notesEditor = useNotesEditorOptional();
 
   const saveMutation = useSaveCategoryNoteMutation();
   const deleteMutation = useDeleteCategoryNoteMutation();
 
+  // Unique editor ID for context coordination
+  const editorId = `group-${group.id}-${currentMonth}`;
+
   // Checkbox state management
   const { checkboxStates, toggleCheckbox } = useCheckboxState({
-    noteId: effectiveNote.note?.id,
+    noteId: note?.id,
     viewingMonth: currentMonth,
-    enabled: hasNote,
+    enabled: !!note || !!content.trim(),
   });
 
   // Sync content when note changes externally
   useEffect(() => {
     if (!isEditing) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional sync from props
       setContent(noteContent);
       lastSavedRef.current = noteContent;
     }
   }, [noteContent, isEditing]);
 
-  // Auto-save function
-  const saveNote = useCallback(async (newContent: string) => {
-    const trimmedContent = newContent.trim();
+  // Save function
+  const saveNote = useCallback(async () => {
+    const trimmedContent = content.trim();
 
     // No changes
-    if (trimmedContent === lastSavedRef.current.trim()) return;
+    if (trimmedContent === lastSavedRef.current.trim()) {
+      setIsEditing(false);
+      notesEditor?.closeEditor();
+      return;
+    }
 
-    // If content is empty and there was a note, delete it
-    if (!trimmedContent) {
-      const noteId = effectiveNote.note?.id;
-      if (noteId) {
-        try {
+    setIsSaving(true);
+
+    try {
+      // If content is empty and there was a note, delete it
+      if (!trimmedContent) {
+        const noteId = effectiveNote.note?.id;
+        if (noteId) {
           await deleteMutation.mutateAsync(noteId);
           lastSavedRef.current = '';
-        } catch (err) {
-          console.error('Failed to delete note:', err);
         }
+      } else {
+        // Save the note
+        await saveMutation.mutateAsync({
+          categoryType: 'group',
+          categoryId: group.id,
+          categoryName: group.name,
+          monthKey: currentMonth,
+          content: trimmedContent,
+        });
+        lastSavedRef.current = trimmedContent;
       }
-      return;
-    }
-
-    // Save the note
-    try {
-      await saveMutation.mutateAsync({
-        categoryType: 'group',
-        categoryId: group.id,
-        categoryName: group.name,
-        monthKey: currentMonth,
-        content: trimmedContent,
-      });
-      lastSavedRef.current = trimmedContent;
+      setIsEditing(false);
+      notesEditor?.closeEditor();
     } catch (err) {
       console.error('Failed to save note:', err);
+    } finally {
+      setIsSaving(false);
     }
-  }, [saveMutation, deleteMutation, effectiveNote.note?.id, group.id, group.name, currentMonth]);
-
-  // Debounced auto-save on content change
-  useEffect(() => {
-    if (!isEditing) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      saveNote(content);
-    }, AUTO_SAVE_DELAY);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [content, isEditing, saveNote]);
-
-  // Handle blur - save and exit edit mode
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    // Don't exit if focus is still within the container (e.g., toolbar)
-    if (containerRef.current?.contains(e.relatedTarget as Node)) {
-      return;
-    }
-
-    // Save immediately on blur
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveNote(content);
-    setIsEditing(false);
-  }, [content, saveNote]);
-
-  // Handle click outside - exit edit mode when clicking on non-focusable elements
-  useEffect(() => {
-    if (!isEditing) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-        saveNote(content);
-        setIsEditing(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isEditing, content, saveNote]);
+  }, [content, effectiveNote.note?.id, group.id, group.name, currentMonth, saveMutation, deleteMutation, notesEditor]);
 
   // Handle content change
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
   }, []);
 
-  // Handle immediate save (e.g., after math insertion)
-  const handleCommit = useCallback((newContent: string) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveNote(newContent);
-  }, [saveNote]);
+  // Enter edit mode (blocked when rate limited)
+  const handleStartEdit = useCallback(async () => {
+    if (isRateLimited) return;
 
-  // Enter edit mode
-  const handleStartEdit = useCallback(() => {
+    // If using context, request to open (auto-saves other editors)
+    if (notesEditor) {
+      const canOpen = await notesEditor.requestOpen(editorId, saveNote);
+      if (!canOpen) return;
+    }
+
     setIsEditing(true);
-  }, []);
+  }, [isRateLimited, notesEditor, editorId, saveNote]);
 
   // Render note content
+  const displayContent = content.trim();
+  const hasContent = !!note || !!displayContent;
+
   const renderNoteContent = () => {
     if (isEditing) {
       return (
         <NoteEditorMDX
           value={content}
           onChange={handleContentChange}
-          onCommit={handleCommit}
-          placeholder={`Write a note for ${group.name} group...`}
+          onSave={saveNote}
+          isSaving={isSaving}
+          placeholder={`Write a note for ${decodeHtmlEntities(group.name)} group...`}
           autoFocus
           minHeight={80}
         />
       );
     }
 
-    if (hasNote) {
+    if (hasContent) {
       return (
         <div className="relative group/note">
           {/* Inheritance badge */}
@@ -200,7 +160,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
             </div>
           )}
           <MarkdownRenderer
-            content={effectiveNote.note!.content}
+            content={displayContent || note?.content || ''}
             checkboxStates={checkboxStates}
             onCheckboxToggle={toggleCheckbox}
             onDoubleClick={handleStartEdit}
@@ -209,7 +169,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
           <button
             type="button"
             onClick={() => setShowHistory(true)}
-            className="absolute top-0 right-0 p-1 rounded opacity-0 group-hover/note:opacity-100 hover:bg-[var(--monarch-bg-card)] transition-opacity icon-btn-hover"
+            className="absolute top-0 right-0 p-1 rounded opacity-0 group-hover/note:opacity-100 hover:bg-(--monarch-bg-card) transition-opacity icon-btn-hover"
             style={{ color: 'var(--monarch-text-muted)' }}
             aria-label="View revision history"
             title="History"
@@ -226,7 +186,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
         onClick={handleStartEdit}
         className="flex items-center gap-1.5 text-sm hover:opacity-80 transition-opacity icon-btn-hover"
         style={{ color: 'var(--monarch-text-muted)' }}
-        aria-label={`Add note for ${group.name} group`}
+        aria-label={`Add note for ${decodeHtmlEntities(group.name)} group`}
       >
         <Plus size={14} />
         Add group note
@@ -236,11 +196,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
 
   return (
     <>
-      <div
-        ref={containerRef}
-        className="px-4 py-3"
-        onBlur={handleBlur}
-      >
+      <div className="px-4 py-3">
         {/* Inner card for note content */}
         <div
           className="rounded-lg p-3 section-enter"
