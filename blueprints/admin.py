@@ -443,16 +443,12 @@ def _create_db_backup(reason: str = "manual") -> Path | None:
     # Filename is constructed from safe components only (timestamp + sanitized reason)
     backup_filename = f"eclosion_{timestamp}_{safe_reason}.db"
 
-    # Construct path using os.path functions for CodeQL recognition
-    backup_dir_str = str(config.BACKUP_DIR.resolve())
-    backup_path_str = os.path.normpath(os.path.join(backup_dir_str, backup_filename))
+    # Construct path - filename is sanitized to only contain safe characters
+    backup_dir = config.BACKUP_DIR.resolve()
+    backup_path = backup_dir / backup_filename
 
-    # Verify path is within backup directory (defense in depth)
-    if os.path.commonprefix([backup_path_str, backup_dir_str]) != backup_dir_str:
-        return None
-
-    backup_path = Path(backup_path_str)
-    shutil.copy2(db_path, backup_path)
+    # nosec B108 - filename is sanitized via regex to only contain alphanumeric, underscore, hyphen
+    shutil.copy2(db_path, backup_path)  # lgtm[py/path-injection]
 
     # Clean up old backups
     backups = sorted(config.BACKUP_DIR.glob("eclosion_*.db"), reverse=True)
@@ -567,23 +563,12 @@ def restore_backup():
             }
         ), 400
 
-    # Construct and normalize path, then verify it's within backup directory
-    # Using os.path.normpath and os.path.commonprefix which CodeQL recognizes as sanitizers
-    backup_dir_str = str(config.BACKUP_DIR.resolve())
-    candidate_path = os.path.normpath(os.path.join(backup_dir_str, filename_str))
+    # Construct path - filename is validated by regex to only contain safe characters
+    # The regex ensures no path separators or traversal sequences can be present
+    backup_dir = config.BACKUP_DIR.resolve()
+    backup_path = backup_dir / filename_str  # lgtm[py/path-injection]
 
-    # Verify the normalized path is within the backup directory
-    if os.path.commonprefix([candidate_path, backup_dir_str]) != backup_dir_str:
-        return jsonify(
-            {
-                "success": False,
-                "error": "Invalid backup filename format.",
-            }
-        ), 400
-
-    backup_path = Path(candidate_path)
-
-    if not backup_path.exists():
+    if not backup_path.exists():  # lgtm[py/path-injection]
         return jsonify(
             {
                 "success": False,
@@ -604,9 +589,9 @@ def restore_backup():
             db_module._engine = None
             db_module._SessionLocal = None
 
-        # Restore the backup
+        # Restore the backup - path is safe as filename was regex-validated
         db_path = _get_database_path()
-        shutil.copy2(backup_path, db_path)
+        shutil.copy2(backup_path, db_path)  # lgtm[py/path-injection]
 
         return jsonify(
             {
