@@ -19,7 +19,7 @@ Usage:
 import threading
 from contextlib import contextmanager
 
-from state.state_manager_v2 import StateManager, TrackerState
+from state.state_manager import StateManager, TrackerState
 
 
 class RequestScopedStateCache:
