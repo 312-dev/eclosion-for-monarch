@@ -3,15 +3,20 @@
  */
 
 import { useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { RecurringItem } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useDemo } from '../context/DemoContext';
 import { useApiClient } from './useApiClient';
 import { formatCurrency, handleApiError } from '../utils';
 import { UI } from '../constants';
+import { queryKeys, getQueryKey } from '../api/queries/keys';
 
 export function useRecurringItemActions(onRefresh: () => void) {
   const toast = useToast();
   const client = useApiClient();
+  const queryClient = useQueryClient();
+  const isDemo = useDemo();
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [linkModalItem, setLinkModalItem] = useState<RecurringItem | null>(null);
 
@@ -71,11 +76,13 @@ export function useRecurringItemActions(onRefresh: () => void) {
     try {
       await client.updateCategoryEmoji(id, emoji);
       onRefresh();
+      // Invalidate category store so Notes screen reflects the new emoji
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.categoryStore, isDemo) });
       toast.success('Emoji updated');
     } catch (err) {
       toast.error(handleApiError(err, 'Failed to update emoji'));
     }
-  }, [client, onRefresh, toast]);
+  }, [client, onRefresh, queryClient, isDemo, toast]);
 
   const handleRefreshItem = useCallback(async (id: string) => {
     try {
@@ -91,11 +98,13 @@ export function useRecurringItemActions(onRefresh: () => void) {
     try {
       await client.updateCategoryName(id, name);
       onRefresh();
+      // Invalidate category store so Notes screen reflects the new name
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.categoryStore, isDemo) });
       toast.success('Name updated');
     } catch (err) {
       toast.error(handleApiError(err, 'Failed to update name'));
     }
-  }, [client, onRefresh, toast]);
+  }, [client, onRefresh, queryClient, isDemo, toast]);
 
   const handleLinkCategory = useCallback((item: RecurringItem) => {
     setLinkModalItem(item);

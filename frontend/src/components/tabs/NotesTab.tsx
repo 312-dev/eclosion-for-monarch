@@ -15,8 +15,8 @@ import { EXPAND_FIRST_GROUP_EVENT } from '../layout/notesTourSteps';
 import {
   useAllNotesQuery,
   useMonthNotesQuery,
-  useNotesCategoriesQuery,
 } from '../../api/queries';
+import { useCategoriesByGroup } from '../../api/queries/categoryStoreQueries';
 import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
 import { NotesEditorProvider } from '../../context/NotesEditorContext';
@@ -49,8 +49,8 @@ export function NotesTab() {
   // Fetch month notes data (will use cached data from preload)
   const { data: monthData, isLoading: notesLoading } = useMonthNotesQuery(currentMonth);
 
-  // Fetch all Monarch categories for the notes feature
-  const { data: notesCategories, isLoading: categoriesLoading } = useNotesCategoriesQuery();
+  // Fetch all Monarch categories from the shared category store
+  const { data: notesCategories, isLoading: categoriesLoading } = useCategoriesByGroup();
 
   const isLoading = notesLoading || categoriesLoading;
 

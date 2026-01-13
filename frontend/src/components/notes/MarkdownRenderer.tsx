@@ -20,6 +20,8 @@ interface MarkdownRendererProps {
   onCheckboxToggle?: (index: number, checked: boolean) => void;
   /** Callback when double-clicked (to edit) */
   onDoubleClick?: () => void;
+  /** Whether checkboxes are disabled (e.g., while loading) */
+  checkboxesDisabled?: boolean;
   /** Optional class name */
   className?: string;
 }
@@ -44,6 +46,7 @@ export function MarkdownRenderer({
   checkboxStates = [],
   onCheckboxToggle,
   onDoubleClick,
+  checkboxesDisabled = false,
   className = '',
 }: MarkdownRendererProps) {
   // Create components fresh each render to ensure checkbox indices start at 0.
@@ -64,12 +67,15 @@ export function MarkdownRenderer({
             <input
               type="checkbox"
               checked={isChecked}
+              disabled={checkboxesDisabled}
               onChange={(e) => {
                 e.stopPropagation();
-                onCheckboxToggle?.(currentIndex, e.target.checked);
+                if (!checkboxesDisabled) {
+                  onCheckboxToggle?.(currentIndex, e.target.checked);
+                }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="mr-2 cursor-pointer"
+              className={`mr-2 ${checkboxesDisabled ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}
               style={{
                 accentColor: 'var(--monarch-orange)',
                 width: '16px',
