@@ -3,6 +3,7 @@ import {
   formatCurrency,
   formatFrequency,
   formatPercent,
+  spacifyEmoji,
   FREQUENCY_LABELS,
 } from './formatters';
 
@@ -57,5 +58,35 @@ describe('formatPercent', () => {
 
   it('handles 100%', () => {
     expect(formatPercent(100)).toBe('100%');
+  });
+});
+
+describe('spacifyEmoji', () => {
+  it('adds space after emoji when missing', () => {
+    expect(spacifyEmoji('🙏Dining Out')).toBe('🙏 Dining Out');
+  });
+
+  it('preserves existing space after emoji', () => {
+    expect(spacifyEmoji('🙏 Dining Out')).toBe('🙏 Dining Out');
+  });
+
+  it('returns string unchanged if no leading emoji', () => {
+    expect(spacifyEmoji('Dining Out')).toBe('Dining Out');
+  });
+
+  it('handles emoji-only strings', () => {
+    expect(spacifyEmoji('🙏')).toBe('🙏');
+  });
+
+  it('handles empty string', () => {
+    expect(spacifyEmoji('')).toBe('');
+  });
+
+  it('handles compound emoji with ZWJ', () => {
+    expect(spacifyEmoji('👨‍👩‍👧Family')).toBe('👨‍👩‍👧 Family');
+  });
+
+  it('handles emoji with variation selector', () => {
+    expect(spacifyEmoji('❤️Love')).toBe('❤️ Love');
   });
 });

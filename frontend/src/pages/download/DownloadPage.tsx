@@ -190,6 +190,11 @@ export function DownloadPage() {
   const version = release ? getVersionFromTag(release.tag_name) : undefined;
   const primaryDownload = getDownloadInfo(activePlatform);
 
+  // Construct screenshot URL from the fetched release tag
+  const screenshotUrl = release
+    ? `https://github.com/312-dev/eclosion/releases/download/${release.tag_name}/screenshot-recurring.png`
+    : null;
+
   return (
     <DocsLayout>
       <HeroSection
@@ -200,6 +205,7 @@ export function DownloadPage() {
         {...(primaryDownload.architecture !== undefined && { architecture: primaryDownload.architecture })}
         loading={loading}
         downloadStatus={downloadStatus}
+        screenshotUrl={screenshotUrl}
       />
 
       {/* Loading/Error State */}

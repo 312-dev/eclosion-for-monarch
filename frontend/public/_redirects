@@ -9,6 +9,7 @@
 # These rules ensure direct URL access works for all SPA paths
 /demo/* /index.html 200
 /demo /index.html 200
+/download /index.html 200
 /login /index.html 200
 /unlock /index.html 200
 /dashboard /index.html 200
