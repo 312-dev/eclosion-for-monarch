@@ -335,19 +335,19 @@ export function listBackups(): BackupFileInfo[] {
       const filePath = path.join(settings.folderPath, filename);
 
       try {
-        const stats = fs.statSync(filePath);
-
-        // Read file to get created_at timestamp
+        // Read file content first to avoid TOCTOU race between stat and read
         const content = fs.readFileSync(filePath, 'utf8');
         const backup = JSON.parse(content) as EncryptedBackupFile;
-        const createdAt = backup.eclosion_encrypted_backup?.created_at || stats.mtime.toISOString();
+
+        // Get size from content length, use embedded timestamp or current time as fallback
+        const createdAt = backup.eclosion_encrypted_backup?.created_at || new Date().toISOString();
 
         backups.push({
           filename,
           filePath,
           date,
           createdAt,
-          sizeBytes: stats.size,
+          sizeBytes: Buffer.byteLength(content, 'utf8'),
         });
       } catch {
         // Skip files that can't be read

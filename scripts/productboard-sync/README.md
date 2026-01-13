@@ -6,10 +6,10 @@ Automated pipeline that syncs feature ideas from Monarch Money's ProductBoard to
 
 The sync pipeline runs weekly (Monday 9am UTC) via GitHub Actions and performs these steps:
 
-1. **Scrape** — Uses Playwright to scrape ideas from Monarch's public ProductBoard portal (500+ votes threshold)
-2. **Filter** — Uses Claude AI to evaluate which ideas are feasible for Eclosion to implement
-3. **Sync** — Creates GitHub Discussions for feasible ideas in the "Ideas" category
-4. **Export** — Generates `data/ideas.json` for frontend consumption
+1. **Scrape**: Uses Playwright to scrape ideas from Monarch's public ProductBoard portal (500+ votes threshold)
+2. **Filter**: Uses Claude AI to evaluate which ideas are feasible for Eclosion to implement
+3. **Sync**: Creates GitHub Discussions for feasible ideas in the "Ideas" category
+4. **Export**: Generates `data/ideas.json` for frontend consumption
 
 ## Files
 

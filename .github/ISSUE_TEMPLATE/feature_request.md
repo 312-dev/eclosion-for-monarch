@@ -24,6 +24,6 @@ Add any other context, mockups, or examples.
 
 ## Would you be willing to contribute this feature?
 
-- [ ] Yes, I'd like to submit a PR
+- [ ] Yes, I'd like to submit a PR (see [Adding Features wiki](https://github.com/312-dev/eclosion/wiki/Adding-Features))
 - [ ] No, but I can help test
 - [ ] No

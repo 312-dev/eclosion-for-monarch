@@ -4,6 +4,7 @@
 * [[Security]]
 * [[Changelog]]
 * [[Contributing]]
+* [[Adding Features|Adding-Features]]
 
 ### Desktop App
 

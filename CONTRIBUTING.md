@@ -109,7 +109,7 @@ This project uses **hash-pinned dependencies** for supply chain security, follow
 
 ### Adding a New Dependency
 
-1. **For PyPI packages** — Add to the appropriate `.in` file:
+1. **For PyPI packages**: Add to the appropriate `.in` file:
    ```bash
    # Production dependency
    echo "new-package>=1.0.0" >> requirements.in
@@ -130,7 +130,7 @@ This project uses **hash-pinned dependencies** for supply chain security, follow
    pip-compile --generate-hashes --allow-unsafe requirements-dev.in
    ```
 
-3. **For Git dependencies** — Edit `requirements-vcs.txt` directly:
+3. **For Git dependencies**: Edit `requirements-vcs.txt` directly:
    ```bash
    # Add to requirements-vcs.txt (pin to branch or commit)
    git+https://github.com/org/repo.git@branch-name
@@ -155,15 +155,15 @@ To update a VCS dependency, edit `requirements-vcs.txt` directly.
 
 ## Branching Strategy
 
-This project uses **GitHub Flow** — a simple workflow where all changes go directly to `main`.
+This project uses **GitHub Flow**: a simple workflow where all changes go directly to `main`.
 
 ### Branch Types
 
 | Branch | Purpose | Deploys to |
 |--------|---------|------------|
 | `main` | Single source of truth | [eclosion.app](https://eclosion.app) (stable) |
-| `feature/*` | New features, enhancements | — |
-| `update/*` | Fixes, refactors, docs, chores | — |
+| `feature/*` | New features, enhancements | : |
+| `update/*` | Fixes, refactors, docs, chores | : |
 
 ### Branch Flow
 
@@ -293,16 +293,16 @@ Using the correct commit type ensures:
 | `main` | Must pass | Must pass | 2 approvals |
 
 **Branch protection rules:**
-- **2 approving reviews required** — PRs need approval from two different reviewers
-- **Last push approval required** — The person who pushed the most recent commit cannot be the sole approver
-- **Up-to-date branches required** — Your branch must be rebased on the latest `main` before merging
-- **Admins cannot bypass** — These rules apply to everyone, including repository administrators
-- **Stale reviews dismissed** — New commits invalidate previous approvals
+- **2 approving reviews required**: PRs need approval from two different reviewers
+- **Last push approval required**: The person who pushed the most recent commit cannot be the sole approver
+- **Up-to-date branches required**: Your branch must be rebased on the latest `main` before merging
+- **Admins cannot bypass**: These rules apply to everyone, including repository administrators
+- **Stale reviews dismissed**: New commits invalidate previous approvals
 
 > **Note**: Documentation-only PRs (markdown files, `docusaurus/`, `scripts/docs-gen/`) can skip CI builds.
 
 **Automated code review:**
-- **GitHub Copilot review** — PRs are automatically reviewed by Copilot for code quality issues
+- **GitHub Copilot review**: PRs are automatically reviewed by Copilot for code quality issues
 - Copilot adds a "needs copilot review" label until review completes
 - Issues found by Copilot must be addressed before merging
 - Admins can add the `skip-copilot-review` label to bypass (use sparingly)
@@ -324,11 +324,11 @@ The following secrets are required for CI/CD workflows:
 
 | Secret | Purpose | Required Scopes |
 |--------|---------|-----------------|
-| `CI_TRIGGER_PAT` | Allow automated PRs to trigger CI workflows | `repo` (classic) or `contents:write` + `pull_requests:write` (fine-grained) |
-| `DISCUSSIONS_PAT` | Create GitHub Discussions from ProductBoard sync | `discussions:write` |
+| `CI_TRIGGER_PAT` | Automated PRs, GitHub Discussions, trigger CI workflows | `contents:write` + `pull_requests:write` + `discussions:write` (fine-grained) |
+| `INTEGRATION_DISPATCH_TOKEN` | Trigger integration test workflows | `actions:write` (fine-grained) |
 | `MODELS_TOKEN` | Access GitHub Models API for AI features | GitHub Models access |
 | `CLOUDFLARE_API_TOKEN` | Deploy to Cloudflare Pages | Cloudflare API token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | — |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account identifier | : |
 
 **Desktop Signing (macOS only - optional):**
 
@@ -552,12 +552,12 @@ Workflows called via `workflow_call` should remain generic and reusable:
 
 This project uses two versioning schemes:
 
-**Stable releases** — Semantic versioning
+**Stable releases**: Semantic versioning
 - Format: `vX.Y.Z` (e.g., `v1.2.0`)
 - Created manually via workflow dispatch
 - Version bump type (patch/minor/major) chosen at release time
 
-**Beta releases** — Date-based versioning
+**Beta releases**: Date-based versioning
 - Format: `v{current}-beta.{YYYYMMDD}.{sequence}`
 - Example: `v1.1.0-beta.20260104.1`
 - Created manually via workflow dispatch
@@ -654,14 +654,38 @@ The workflow automatically:
 - Keep functions focused and under 50 lines when possible
 
 ```python
-@app.route("/api/example", methods=["POST"])
-@async_flask
-async def example_route() -> Response:
+# Add routes to the appropriate blueprint in blueprints/
+# Example: blueprints/recurring.py
+
+from flask import Blueprint, request
+from core import api_handler, sanitize_id, sanitize_name
+from core.rate_limit import limiter
+from . import get_services
+
+recurring_bp = Blueprint("recurring", __name__, url_prefix="/recurring")
+
+@recurring_bp.route("/example", methods=["POST"])
+@limiter.limit("10 per minute")  # Rate limit write operations
+@api_handler(handle_mfa=False)
+async def example_route():
     """Brief description of what this route does."""
+    services = get_services()
     data = request.get_json()
-    result = await service.process(data)
-    return jsonify(result)
+
+    # Sanitize user inputs
+    item_id = sanitize_id(data.get("id"))
+    name = sanitize_name(data.get("name"))
+
+    result = await services.sync_service.process(item_id, name, data)
+    return result  # @api_handler wraps with jsonify() and sanitizes response
 ```
+
+**Key patterns:**
+- `@api_handler` handles async, error handling, and response XSS sanitization
+- Use `@limiter.limit()` on write operations (see `core/rate_limit.py`)
+- Sanitize inputs with `sanitize_id()`, `sanitize_name()` from `core`
+- Access services via `get_services()` from the blueprints module
+- Return raw dict/list - `@api_handler` wraps with `jsonify()`
 
 ### TypeScript (Frontend)
 
@@ -710,7 +734,7 @@ Integration tests verify that the app works correctly with the real Monarch Mone
 
 - **Run automatically** before beta and stable releases
 - **Use temporary data** that is created and cleaned up during tests
-- **Don't run on PRs** — they only gate releases to avoid unnecessary API usage
+- **Don't run on PRs**: they only gate releases to avoid unnecessary API usage
 - **Are not manually runnable** by contributors
 
 **If you add new Monarch API calls**, you must add corresponding integration tests:
@@ -738,7 +762,7 @@ async def test_new_api_function(monarch_client, unique_test_name):
         await monarch_client.cleanup_function(result["id"])
 ```
 
-**Running locally** (for maintainers only — requires credentials):
+**Running locally** (for maintainers only : requires credentials):
 
 ```bash
 INTEGRATION_TEST=true \
@@ -797,14 +821,27 @@ npm run type-check
 ### Backend Structure
 
 ```
-api.py              # Flask routes and app configuration
-app.py              # Application entry point
-core/               # Core utilities (logging, encryption, config)
+api.py              # Flask app setup and middleware
+blueprints/         # Flask blueprints (organized by domain)
+  __init__.py       # Services container and registration
+  auth.py           # Authentication endpoints
+  recurring.py      # Recurring expense tracking
+  notes.py          # Category notes management
+  security.py       # Security status and audit
+  settings.py       # Export/import settings
+  admin.py          # Health, version, migrations
+core/               # Core utilities
+  __init__.py       # Logging, encryption, config, decorators
+  middleware.py     # Security middleware functions
+  session.py        # Session timeout tracking
+  rate_limit.py     # Rate limiter instance
+  audit.py          # Audit logging
 services/           # Business logic services
   sync_service.py   # Main sync orchestration
   credentials_service.py  # Auth and encryption
 state/              # State management and persistence
-  state_manager.py  # JSON-based state persistence
+  db/               # SQLite database (SQLAlchemy ORM)
+  state_manager.py  # Legacy state manager (being migrated)
 tests/              # Backend tests
 ```
 
@@ -871,7 +908,7 @@ desktop/
 
 ### Key Patterns
 
-1. **State Management**: Use `StateManager` for persistence, never modify JSON directly
+1. **State Management**: Use repository classes in `state/db/` for persistence
 2. **API Calls**: Use typed functions from `frontend/src/api/client.ts`
 3. **Error Handling**: Return proper HTTP status codes with JSON error messages
 4. **Types**: Import from `../types` - types are organized by domain

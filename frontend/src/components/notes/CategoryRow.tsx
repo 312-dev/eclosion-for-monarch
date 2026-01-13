@@ -47,6 +47,9 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
   // Unique editor ID for context coordination
   const editorId = `category-${category.id}-${currentMonth}`;
 
+  // Ref to always hold the latest save function (for context coordination)
+  const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
   // Checkbox state management
   const { checkboxStates, toggleCheckbox } = useCheckboxState({
     noteId: note?.id,
@@ -105,6 +108,11 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
     }
   }, [content, effectiveNote.note?.id, category.id, category.name, groupId, groupName, currentMonth, saveMutation, deleteMutation, notesEditor]);
 
+  // Keep ref updated so context always calls latest save function
+  useEffect(() => {
+    saveNoteRef.current = saveNote;
+  }, [saveNote]);
+
   // Handle content change
   const handleContentChange = useCallback((newContent: string) => {
     setContent(newContent);
@@ -115,13 +123,14 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
     if (isRateLimited) return;
 
     // If using context, request to open (auto-saves other editors)
+    // Pass a stable wrapper that calls the ref to ensure latest content is saved
     if (notesEditor) {
-      const canOpen = await notesEditor.requestOpen(editorId, saveNote);
+      const canOpen = await notesEditor.requestOpen(editorId, () => saveNoteRef.current());
       if (!canOpen) return;
     }
 
     setIsEditing(true);
-  }, [isRateLimited, notesEditor, editorId, saveNote]);
+  }, [isRateLimited, notesEditor, editorId]);
 
   // Render note content area
   const displayContent = content.trim();

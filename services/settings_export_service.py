@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, ClassVar
 
-from state.state_manager import StateManager, TrackerState
+from state import StateManager, TrackerState
 
 
 @dataclass
@@ -277,7 +277,7 @@ class SettingsExportService:
         # Import category mappings
         categories = recurring_data.get("categories", {})
         if categories:
-            from state.state_manager import CategoryState
+            from state import CategoryState
 
             for recurring_id, cat_data in categories.items():
                 # Only import if we have the required fields
@@ -296,7 +296,7 @@ class SettingsExportService:
         # Import rollup config
         rollup_data = recurring_data.get("rollup", {})
         if rollup_data:
-            from state.state_manager import RollupState
+            from state import RollupState
 
             state.rollup = RollupState(
                 enabled=rollup_data.get("enabled", False),

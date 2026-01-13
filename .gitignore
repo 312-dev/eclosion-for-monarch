@@ -41,17 +41,13 @@ credentials.json
 .mm
 monarchmoney
 
-# State files (JSON - legacy)
-state/tracker_state.json
-state/credentials.json
-state/notes_state.json
-state/automation_credentials.json
-
-# State files (SQLite)
+# State files (SQLite database and related)
 state/*.db
 state/*.db-wal
 state/*.db-shm
 state/backups/
+state/automation_credentials.json
+state/tracker_state.json
 
 # Frontend
 frontend/dist

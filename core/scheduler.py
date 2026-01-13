@@ -2,7 +2,7 @@
 Background scheduler for automated sync tasks.
 
 Uses APScheduler with in-memory job store for background task execution.
-Jobs are recreated on startup from persisted state in tracker_state.json.
+Jobs are recreated on startup from persisted state in the SQLite database.
 """
 
 import asyncio

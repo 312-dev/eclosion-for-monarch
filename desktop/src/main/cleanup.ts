@@ -25,9 +25,8 @@ function getStore(): Store {
  * Files and directories to clean up.
  */
 const DATA_FILES = [
-  'credentials.json',
+  'eclosion.db',
   'mm_session.pickle',
-  'tracker_state.json',
   'security_events.db',
 ];
 

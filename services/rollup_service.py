@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from state.state_manager import StateManager
+    from state import StateManager
 
     from .category_manager import CategoryManager
     from .recurring_service import RecurringService

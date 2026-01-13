@@ -47,10 +47,8 @@ function getOrCreateSessionSecret(): string {
     // Generate new secret
     const newSecret = crypto.randomBytes(32).toString('hex');
 
-    // Ensure state directory exists
-    if (!fs.existsSync(stateDir)) {
-      fs.mkdirSync(stateDir, { recursive: true });
-    }
+    // Ensure state directory exists (mkdirSync with recursive is idempotent)
+    fs.mkdirSync(stateDir, { recursive: true });
 
     // Write with restrictive permissions (owner read/write only)
     fs.writeFileSync(secretPath, newSecret, { mode: 0o600 });

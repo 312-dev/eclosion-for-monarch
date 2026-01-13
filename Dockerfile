@@ -73,6 +73,7 @@ ENV PATH="/app/venv/bin:$PATH"
 
 # Copy Python source (owned by nonroot user)
 COPY --chown=65532:65532 *.py ./
+COPY --chown=65532:65532 blueprints/ ./blueprints/
 COPY --chown=65532:65532 services/ ./services/
 COPY --chown=65532:65532 core/ ./core/
 

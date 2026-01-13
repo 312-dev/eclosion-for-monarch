@@ -1,0 +1,359 @@
+name: "01 CI"
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docusaurus/**'
+      - '.github/workflows/41-gen-docs.yml'
+      - '.github/workflows/42-sync-wiki.yml'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - 'docusaurus/**'
+      - '.github/workflows/41-gen-docs.yml'
+      - '.github/workflows/42-sync-wiki.yml'
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      head_sha:
+        description: 'Commit SHA to post status to (for PR association)'
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  # Detect which files changed
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      desktop: ${{ steps.filter.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - '*.py'
+              - 'core/**'
+              - 'services/**'
+              - 'state/**'
+              - 'tests/**'
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+              - 'Dockerfile'
+            desktop:
+              - 'desktop/**'
+
+  # Frontend checks
+  frontend:
+    name: Frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test -- --run
+
+      - name: Test with Coverage
+        run: npm run test:coverage
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  # Backend checks
+  backend:
+    name: Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --require-hashes -r requirements-build.txt
+          pip install --require-hashes -r requirements-dev.txt
+          pip install --no-deps -r requirements-vcs.txt
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Format check with Ruff
+        run: ruff format --check .
+
+      - name: Type check with mypy
+        run: mypy .
+
+      - name: Test
+        run: pytest
+
+      - name: Check Monarch API integration test coverage
+        run: python scripts/check-monarch-api-coverage.py
+
+      - name: Test with Coverage
+        run: pytest --cov=. --cov-report=html --cov-report=xml
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: backend-coverage
+          path: htmlcov/
+          retention-days: 7
+
+  # Desktop checks
+  desktop:
+    name: Desktop
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Test
+        run: npm test
+
+  # E2E tests
+  e2e:
+    name: E2E Tests
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.desktop == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: desktop
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: desktop
+        run: npm run test:e2e -- --project=chromium
+        continue-on-error: true
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
+        with:
+          name: playwright-report
+          path: desktop/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: failure()
+        with:
+          name: test-results
+          path: desktop/test-results/
+          retention-days: 7
+
+  # Desktop build validation (runs on macOS to verify full build works)
+  desktop-build:
+    name: Desktop Build
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            frontend/package-lock.json
+            desktop/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-build.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build backend
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+
+      - name: Verify build outputs
+        run: |
+          echo "## Desktop Build Verification" >> $GITHUB_STEP_SUMMARY
+
+          # Check frontend build
+          if [ -d "frontend/dist" ]; then
+            echo "✅ Frontend build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend build missing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Check backend build
+          if [ -f "desktop/pyinstaller/dist/eclosion-backend/eclosion-backend" ]; then
+            echo "✅ Backend build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Backend build missing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Check Electron main process
+          if [ -f "desktop/dist/main/index.js" ]; then
+            echo "✅ Electron main process build successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Electron main process build missing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All desktop build components verified." >> $GITHUB_STEP_SUMMARY
+
+  # Final status check - always runs and reports aggregate result
+  # Configure branch protection to require only this check
+  ci:
+    name: CI Status
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [frontend, backend, desktop, desktop-build, e2e]
+    if: always()
+    permissions:
+      statuses: write
+    steps:
+      - name: Check CI results
+        id: check
+        run: |
+          results="${{ needs.frontend.result }} ${{ needs.backend.result }} ${{ needs.desktop.result }} ${{ needs.desktop-build.result }} ${{ needs.e2e.result }}"
+          echo "Job results: $results"
+          if echo "$results" | grep -qE '(failure|cancelled)'; then
+            echo "::error::One or more CI jobs failed or were cancelled"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=One or more CI jobs failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "All CI checks passed or were skipped"
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "description=All CI checks passed" >> $GITHUB_OUTPUT
+
+      # For workflow_dispatch, post status to the commit so it appears on PRs
+      - name: Post commit status
+        if: github.event_name == 'workflow_dispatch' && inputs.head_sha && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ inputs.head_sha }} \
+            -f state="${{ steps.check.outputs.result || 'success' }}" \
+            -f context="CI Status" \
+            -f description="${{ steps.check.outputs.description || 'CI checks passed' }}"
+          echo "Posted CI Status to commit ${{ inputs.head_sha }}"

@@ -351,6 +351,25 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     };
   }, []);
 
+  // Listen for auth-required events from API calls (e.g., 401 responses)
+  // This handles the case where local auth succeeds but Monarch token is expired
+  useEffect(() => {
+    const handleAuthRequired = () => {
+      // Mark as not authenticated to trigger redirect to login/unlock
+      setAuthenticated(false);
+      // If we're in desktop mode with stored credentials, go to unlock screen
+      // Otherwise, go to login screen (handled by ProtectedRoute)
+      if (globalThis.electron?.credentials) {
+        setNeedsUnlock(true);
+      }
+    };
+
+    globalThis.addEventListener('auth-required', handleAuthRequired);
+    return () => {
+      globalThis.removeEventListener('auth-required', handleAuthRequired);
+    };
+  }, []);
+
   const value: AuthContextValue = {
     // State
     authenticated,

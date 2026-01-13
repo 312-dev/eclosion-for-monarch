@@ -233,19 +233,53 @@ export function formatDateTime(isoString: string | null): string {
 }
 
 /**
+ * Map of common HTML entity names to their character equivalents.
+ * Covers the most frequently used entities in text content.
+ */
+const HTML_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: '\u00A0',
+  copy: '©',
+  reg: '®',
+  trade: '™',
+  mdash: '—',
+  ndash: '–',
+  lsquo: '\u2018',
+  rsquo: '\u2019',
+  ldquo: '\u201C',
+  rdquo: '\u201D',
+  bull: '•',
+  hellip: '…',
+};
+
+/**
  * Decode HTML entities in a string.
  *
- * Handles common entities like &#39; (apostrophe), &amp;, &lt;, &gt;, &quot;
- * Uses a textarea element to handle all HTML entity types including numeric.
+ * Handles common named entities (&amp;, &lt;, etc.) and numeric entities
+ * (&#39;, &#x27;). Uses a pure JavaScript implementation to avoid XSS
+ * concerns from DOM-based decoding.
  *
  * @param text - String potentially containing HTML entities
  * @returns Decoded string with entities replaced by actual characters
  */
 export function decodeHtmlEntities(text: string): string {
   if (!text?.includes('&')) return text;
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = text;
-  return textarea.value;
+
+  return text.replace(/&(#?[\w]+);/g, (match, entity: string) => {
+    // Numeric entity: &#123; or &#x7B;
+    if (entity.startsWith('#')) {
+      const code = entity.startsWith('#x')
+        ? parseInt(entity.slice(2), 16)
+        : parseInt(entity.slice(1), 10);
+      return Number.isNaN(code) ? match : String.fromCodePoint(code);
+    }
+    // Named entity: &amp;, &lt;, etc.
+    return HTML_ENTITIES[entity.toLowerCase()] ?? match;
+  });
 }
 
 /**

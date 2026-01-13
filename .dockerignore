@@ -42,8 +42,10 @@ frontend/dist/
 *~
 
 # State files (should be in mounted volume, not baked into image)
-state/tracker_state.json
-state/credentials.json
+state/*.db
+state/*.db-wal
+state/*.db-shm
+state/backups/
 
 # Docker
 docker-compose.override.yml

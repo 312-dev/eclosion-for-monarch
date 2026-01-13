@@ -1,0 +1,646 @@
+name: "23 Build: Desktop"
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version number for the release'
+        required: true
+        type: string
+      upload_to_release:
+        description: 'Upload artifacts to GitHub Release'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      APPLE_CERTIFICATE:
+        required: false
+      APPLE_CERTIFICATE_PASSWORD:
+        required: false
+      APPLE_ID:
+        required: false
+      APPLE_APP_SPECIFIC_PASSWORD:
+        required: false
+      APPLE_TEAM_ID:
+        required: false
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+        default: '1.0.0'
+      upload_to_release:
+        description: 'Upload to GitHub Release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # Build Frontend Once (shared by all packaging jobs)
+  # =========================================================================
+  build-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_DESKTOP_BUILD: 'true'
+          VITE_APP_VERSION: ${{ inputs.version }}
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  # =========================================================================
+  # Build Python Backend for macOS (both architectures)
+  # =========================================================================
+  build-backend-mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-build.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
+
+      - name: Build backend with PyInstaller
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: backend-mac-${{ matrix.arch }}
+          path: desktop/pyinstaller/dist/eclosion-backend
+          retention-days: 1
+
+  # =========================================================================
+  # Build Python Backend for Windows
+  # =========================================================================
+  build-backend-win:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-build.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
+
+      - name: Build backend with PyInstaller
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: backend-win-x64
+          path: desktop/pyinstaller/dist/eclosion-backend
+          retention-days: 1
+
+  # =========================================================================
+  # Build Python Backend for Linux (x64 and ARM64)
+  # =========================================================================
+  build-backend-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --require-hashes -r requirements-build.txt
+          pip install --require-hashes -r requirements.txt
+          pip install --no-deps -r requirements-vcs.txt
+
+      - name: Build backend with PyInstaller
+        working-directory: desktop
+        run: node scripts/build-backend.js
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: backend-linux-${{ matrix.arch }}
+          path: desktop/pyinstaller/dist/eclosion-backend
+          retention-days: 1
+
+  # =========================================================================
+  # Package for macOS (ARM64 and x64)
+  # =========================================================================
+  package-mac:
+    needs: [build-frontend, build-backend-mac]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+            backend_artifact: backend-mac-arm64
+          - runner: macos-15-intel
+            arch: x64
+            backend_artifact: backend-mac-x64
+    runs-on: ${{ matrix.runner }}
+    # Notarization alone can take 15-30 minutes waiting for Apple's servers
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ${{ matrix.backend_artifact }}
+          path: desktop/pyinstaller/dist/eclosion-backend
+
+      - name: Prepare backend
+        run: |
+          chmod +x desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+          echo "Backend binary:"
+          file desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Set version in package.json
+        working-directory: desktop
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "Set desktop/package.json version to ${{ inputs.version }}"
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+        env:
+          ECLOSION_VERSION: ${{ inputs.version }}
+          RELEASE_CHANNEL: ${{ contains(inputs.version, 'beta') && 'beta' || 'stable' }}
+
+      - name: Import Code Signing Certificate
+        if: env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          rm certificate.p12
+
+      - name: Package for macOS
+        working-directory: desktop
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Use beta config for beta builds, stable config otherwise
+          if [[ "${{ inputs.version }}" == *"beta"* ]]; then
+            npx electron-builder --mac --${{ matrix.arch }} --publish never --config electron-builder.beta.yml
+          else
+            npx electron-builder --mac --${{ matrix.arch }} --publish never
+          fi
+
+      - name: Validate backend binary
+        run: |
+          echo "## macOS Backend Binary Validation (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
+          BINARY_INFO=$(file desktop/pyinstaller/dist/eclosion-backend/eclosion-backend)
+          echo "Binary info: $BINARY_INFO"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$BINARY_INFO" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check binary sizes
+        id: sizes
+        run: |
+          echo "## macOS Artifact Sizes (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+
+          DMG_SIZE=0
+          ZIP_SIZE=0
+
+          for file in desktop/release/*.dmg desktop/release/*.zip; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat -f%z "$file")
+              SIZE_MB=$((SIZE / 1024 / 1024))
+              FILENAME=$(basename "$file")
+              echo "| $FILENAME | ${SIZE_MB}MB |" >> $GITHUB_STEP_SUMMARY
+
+              if [[ "$file" == *.dmg ]]; then
+                DMG_SIZE=$SIZE
+              fi
+            fi
+          done
+
+          echo "dmg_size=$DMG_SIZE" >> $GITHUB_OUTPUT
+
+          # Warn if DMG exceeds 300MB
+          if [ "$DMG_SIZE" -gt 314572800 ]; then
+            echo "::warning::macOS DMG size exceeds 300MB threshold (${SIZE_MB}MB)"
+          fi
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd desktop/release
+          echo "Generating SHA256 checksums for macOS (${{ matrix.arch }})..."
+          for file in *.dmg *.zip; do
+            if [ -f "$file" ]; then
+              shasum -a 256 "$file" >> checksums-macos-${{ matrix.arch }}.txt
+              echo "Generated checksum for $file"
+            fi
+          done
+          cat checksums-macos-${{ matrix.arch }}.txt
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: eclosion-macos-${{ matrix.arch }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+            desktop/release/latest-mac.yml
+            desktop/release/checksums-macos-${{ matrix.arch }}.txt
+          retention-days: 30
+
+  # =========================================================================
+  # Package for Windows
+  # =========================================================================
+  package-win:
+    needs: [build-frontend, build-backend-win]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: backend-win-x64
+          path: desktop/pyinstaller/dist/eclosion-backend
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Set version in package.json
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json | ConvertFrom-Json
+          $pkg.version = "${{ inputs.version }}"
+          $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json
+          Write-Host "Set desktop/package.json version to ${{ inputs.version }}"
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+        env:
+          ECLOSION_VERSION: ${{ inputs.version }}
+          RELEASE_CHANNEL: ${{ contains(inputs.version, 'beta') && 'beta' || 'stable' }}
+
+      - name: Package for Windows
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          # Use beta config for beta builds, stable config otherwise
+          if ("${{ inputs.version }}" -like "*beta*") {
+            npx electron-builder --win --publish never --config electron-builder.beta.yml
+          } else {
+            npx electron-builder --win --publish never
+          }
+
+      - name: Check binary sizes
+        shell: pwsh
+        run: |
+          echo "## Windows Artifact Sizes" >> $env:GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $env:GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $env:GITHUB_STEP_SUMMARY
+
+          Get-ChildItem -Path "desktop/release/*.exe" | ForEach-Object {
+            $sizeMB = [math]::Round($_.Length / 1MB, 2)
+            echo "| $($_.Name) | ${sizeMB}MB |" >> $env:GITHUB_STEP_SUMMARY
+
+            if ($_.Length -gt 314572800) {
+              echo "::warning::Windows installer size exceeds 300MB threshold (${sizeMB}MB)"
+            }
+          }
+
+      - name: Generate SHA256 checksums
+        shell: pwsh
+        run: |
+          Set-Location desktop/release
+          Write-Host "Generating SHA256 checksums for Windows..."
+          $checksumFile = "checksums-windows.txt"
+          Get-ChildItem -Path "*.exe" | ForEach-Object {
+            $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLower()
+            "$hash  $($_.Name)" | Out-File -Append -FilePath $checksumFile -Encoding utf8
+            Write-Host "Generated checksum for $($_.Name)"
+          }
+          Get-Content $checksumFile
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: eclosion-windows
+          path: |
+            desktop/release/*.exe
+            desktop/release/latest.yml
+            desktop/release/checksums-windows.txt
+          retention-days: 30
+
+  # =========================================================================
+  # Package for Linux (x64 and ARM64)
+  # Uses native fpm to avoid cross-architecture binary issues
+  # =========================================================================
+  package-linux:
+    needs: [build-frontend, build-backend-linux]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x64
+            backend_artifact: backend-linux-x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            backend_artifact: backend-linux-arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: ${{ matrix.backend_artifact }}
+          path: desktop/pyinstaller/dist/eclosion-backend
+
+      - name: Make backend executable
+        run: chmod +x desktop/pyinstaller/dist/eclosion-backend/eclosion-backend
+
+      # Install native fpm to avoid electron-builder downloading x86 binaries on ARM64
+      - name: Install native packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev build-essential rpm
+          sudo gem install fpm
+          echo "Installed fpm version: $(fpm --version)"
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Set version in package.json
+        working-directory: desktop
+        run: |
+          jq --arg v "${{ inputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          echo "Set desktop/package.json version to ${{ inputs.version }}"
+
+      - name: Build Electron main process
+        working-directory: desktop
+        run: npm run build:main
+        env:
+          ECLOSION_VERSION: ${{ inputs.version }}
+          RELEASE_CHANNEL: ${{ contains(inputs.version, 'beta') && 'beta' || 'stable' }}
+
+      - name: Package for Linux
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Tell electron-builder to use system fpm instead of downloading
+          USE_SYSTEM_FPM: 'true'
+        run: |
+          # Use beta config for beta builds, stable config otherwise
+          if [[ "${{ inputs.version }}" == *"beta"* ]]; then
+            npx electron-builder --linux --${{ matrix.arch }} --publish never --config electron-builder.beta.yml
+          else
+            npx electron-builder --linux --${{ matrix.arch }} --publish never
+          fi
+
+      - name: Check binary sizes
+        run: |
+          echo "## Linux Artifact Sizes (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+
+          for file in desktop/release/*.AppImage desktop/release/*.deb desktop/release/*.rpm; do
+            if [ -f "$file" ]; then
+              SIZE=$(stat --printf="%s" "$file")
+              SIZE_MB=$((SIZE / 1024 / 1024))
+              FILENAME=$(basename "$file")
+              echo "| $FILENAME | ${SIZE_MB}MB |" >> $GITHUB_STEP_SUMMARY
+
+              if [ "$SIZE" -gt 314572800 ]; then
+                echo "::warning::Linux artifact $FILENAME exceeds 300MB threshold (${SIZE_MB}MB)"
+              fi
+            fi
+          done
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd desktop/release
+          echo "Generating SHA256 checksums for Linux (${{ matrix.arch }})..."
+          for file in *.AppImage *.deb *.rpm; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" >> checksums-linux-${{ matrix.arch }}.txt
+              echo "Generated checksum for $file"
+            fi
+          done
+          cat checksums-linux-${{ matrix.arch }}.txt
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: eclosion-linux-${{ matrix.arch }}
+          path: |
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+            desktop/release/*.rpm
+            desktop/release/latest-linux.yml
+            desktop/release/checksums-linux-${{ matrix.arch }}.txt
+          retention-days: 30
+
+  # =========================================================================
+  # Upload to GitHub Release
+  # =========================================================================
+  upload-release:
+    if: inputs.upload_to_release
+    needs: [package-mac, package-win, package-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: eclosion-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: |
+          echo "Artifacts to upload:"
+          find artifacts -type f -exec ls -lh {} \;
+
+      - name: Combine checksums
+        run: |
+          echo "Combining all checksum files into SHA256SUMS.txt..."
+          # Combine all checksum files, removing duplicates and sorting
+          cat artifacts/checksums-*.txt 2>/dev/null | sort -k2 | uniq > artifacts/SHA256SUMS.txt || true
+          echo "Combined checksums:"
+          cat artifacts/SHA256SUMS.txt
+          # Remove individual checksum files (we only upload the combined file)
+          rm -f artifacts/checksums-*.txt
+
+      - name: Upload to Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="v${VERSION}"
+
+          echo "Uploading desktop artifacts to release ${TAG}..."
+
+          # Upload each file
+          for file in artifacts/*; do
+            if [ -f "$file" ]; then
+              echo "Uploading: $file"
+              gh release upload "$TAG" "$file" --clobber || echo "Failed to upload $file"
+            fi
+          done
+
+          echo "Upload complete!"
+
+  # =========================================================================
+  # Summary
+  # =========================================================================
+  summary:
+    needs: [package-mac, package-win, package-linux]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Desktop Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS (ARM64 + x64) | ${{ needs.package-mac.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows (x64) | ${{ needs.package-win.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux (x64 + ARM64) | ${{ needs.package-linux.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Version: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY

@@ -46,8 +46,8 @@ docker volume inspect eclosion_data
 ## Monarch API Errors
 
 ```bash
-# Check credentials are stored
-docker compose exec eclosion ls -la /app/state/credentials.json.enc
+# Check database exists
+docker compose exec eclosion ls -la /app/state/eclosion.db
 
 # View application logs for API errors
 docker compose logs eclosion | grep -i "monarch\|api\|error"

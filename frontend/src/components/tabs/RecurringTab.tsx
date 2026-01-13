@@ -10,7 +10,7 @@ import { ExternalLink } from 'lucide-react';
 import { RollupZone } from '../RollupZone';
 import { RecurringList } from '../RecurringList';
 import { ReadyToAssign, BurndownChart, calculateBurndownData } from '../ready-to-assign';
-import { formatCurrency, formatErrorMessage } from '../../utils';
+import { formatCurrency, handleApiError } from '../../utils';
 import { RecurringSetupWizard } from '../wizards/RecurringSetupWizard';
 import {
   useDashboardQuery,
@@ -74,7 +74,7 @@ export function RecurringTab() {
       await removeFromRollupMutation.mutateAsync(itemId);
       toast.success('Removed from rollup');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to remove from rollup'));
+      toast.error(handleApiError(err, 'Failed to remove from rollup'));
     }
   };
 
@@ -83,7 +83,7 @@ export function RecurringTab() {
       await rollupBudgetMutation.mutateAsync(amount);
       toast.success('Budget updated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update rollup budget'));
+      toast.error(handleApiError(err, 'Failed to update rollup budget'));
     }
   };
 
@@ -92,7 +92,7 @@ export function RecurringTab() {
       await rollupEmojiMutation.mutateAsync(emoji);
       toast.success('Emoji updated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update emoji'));
+      toast.error(handleApiError(err, 'Failed to update emoji'));
     }
   };
 
@@ -101,7 +101,7 @@ export function RecurringTab() {
       await rollupNameMutation.mutateAsync(name);
       toast.success('Name updated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update name'));
+      toast.error(handleApiError(err, 'Failed to update name'));
     }
   };
 

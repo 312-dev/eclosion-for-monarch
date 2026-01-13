@@ -28,6 +28,10 @@ from .sanitization import (
     sanitize_string,
 )
 from .scheduler import SyncScheduler
+from .session import SessionManager
+
+# Note: audit, middleware, and rate_limit are imported directly where needed
+# to avoid circular imports with services
 
 __all__ = [
     "AuthenticationError",
@@ -38,6 +42,7 @@ __all__ = [
     "MonarchAPIError",
     "MonarchTrackerError",
     "RateLimitError",
+    "SessionManager",
     "SyncScheduler",
     "ValidationError",
     "api_handler",

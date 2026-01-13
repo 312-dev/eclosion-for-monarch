@@ -41,7 +41,7 @@ Describe how you tested these changes:
 
 ## New Tool/Feature Checklist
 
-If adding a new tool or major feature, complete this section:
+If adding a new tool or major feature, complete this section. See the [Adding Features wiki](https://github.com/312-dev/eclosion/wiki/Adding-Features) for detailed guidance.
 
 ### Demo Mode
 - [ ] Demo mode implementation exists in `frontend/src/api/demoClient.ts`
@@ -57,9 +57,11 @@ If adding a new tool or major feature, complete this section:
 - [ ] No `console.log` or `any` types
 
 ### Backend (if applicable)
-- [ ] Routes defined in `api.py` with `@async_flask` decorator
+- [ ] Routes defined in `blueprints/{feature}.py` with `@api_handler` decorator
+- [ ] Blueprint registered in `blueprints/__init__.py`
 - [ ] Business logic in `services/` directory
 - [ ] State changes use `StateManager` methods
+- [ ] User inputs sanitized with `sanitize_id()`, `sanitize_name()` from `core`
 
 ## Screenshots (if applicable)
 

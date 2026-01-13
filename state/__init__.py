@@ -1,7 +1,6 @@
-# State Management
-# V2 uses SQLite via SQLAlchemy instead of JSON files
+# State Management - SQLite via SQLAlchemy
 from .state_cache import RequestScopedStateCache, state_cache
-from .state_manager_v2 import (
+from .state_manager import (
     CategoryState,
     CredentialsManager,
     NotesStateManager,

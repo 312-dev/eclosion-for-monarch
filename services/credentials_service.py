@@ -16,7 +16,7 @@ from typing import Any, Literal
 
 from core.error_detection import format_auth_response, is_rate_limit_error
 from monarch_utils import get_mm, get_mm_with_code
-from state.state_manager import CredentialsManager, StateManager
+from state import CredentialsManager, StateManager
 
 logger = logging.getLogger(__name__)
 
@@ -400,7 +400,7 @@ class CredentialsService:
         - User forgot their passphrase
         - User wants to re-login without losing their configuration
 
-        This deletes credentials.json but keeps tracker_state.json intact.
+        This clears encrypted credentials but keeps tracker state intact.
         """
         self.credentials_manager.clear()
         CredentialsService._session_credentials = None

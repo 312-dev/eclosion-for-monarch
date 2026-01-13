@@ -25,9 +25,8 @@ const BACKUP_FORMAT_VERSION = 1;
  * These are the core application data files.
  */
 const DATA_FILES = [
-  'credentials.json',
+  'eclosion.db',
   'mm_session.pickle',
-  'tracker_state.json',
   'security_events.db',
 ];
 

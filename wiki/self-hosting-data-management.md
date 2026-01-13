@@ -8,10 +8,10 @@ All application data is stored in `/app/state` inside the container:
 
 ```
 /app/state/
-├── credentials.json.enc    # Encrypted Monarch credentials
-├── settings.json           # User preferences
-├── mappings.json           # Category mappings
-└── sync_state.json         # Sync status and history
+├── eclosion.db             # SQLite database (all settings, credentials, state)
+├── backups/                # Database backups
+├── mm_session.pickle       # Monarch session cache (regenerated on login)
+└── .session_secret         # Flask session encryption key
 ```
 
 > **Important:** Always mount a volume to `/app/state` to persist data across container restarts.

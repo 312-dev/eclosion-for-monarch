@@ -58,7 +58,7 @@
 
 ### Architecture Patterns to Verify
 
-- **API Routes (Python)**: Must use `@async_flask` decorator for async operations
+- **API Routes (Python)**: Must be defined in `blueprints/` and use `@api_handler` decorator
 - **State Changes (Python)**: Must use `StateManager` methods, never modify JSON directly
 - **API Calls (React)**: Must use typed functions from `api/client.ts`, not raw `fetch`
 - **Business Logic (Python)**: Should reside in `services/` directory, not in route handlers
@@ -82,9 +82,12 @@ When reviewing PRs that add a new tool or major feature, verify:
 - [ ] API-mutating components respect rate limits (`useIsRateLimited` hook)
 
 ### Backend (if applicable)
-- [ ] Routes defined in `api.py` with `@async_flask` decorator
+- [ ] Routes defined in `blueprints/{feature}.py` with `@api_handler` decorator
+- [ ] Blueprint registered in `blueprints/__init__.py`
 - [ ] Business logic in `services/` directory
 - [ ] State changes use `StateManager` methods
+- [ ] User inputs sanitized with `sanitize_id()`, `sanitize_name()` from `core`
+- [ ] Write operations rate-limited with `@limiter.limit()`
 - [ ] Error handling returns proper HTTP status codes
 
 ### Testing (when test infrastructure exists)

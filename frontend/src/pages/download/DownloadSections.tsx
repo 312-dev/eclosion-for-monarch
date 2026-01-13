@@ -30,6 +30,7 @@ interface HeroSectionProps {
   loading?: boolean;
   downloadStatus?: DownloadStatus;
   screenshotUrl?: string | null;
+  checksumsUrl?: string | null;
 }
 
 export function HeroSection({
@@ -41,6 +42,7 @@ export function HeroSection({
   loading,
   downloadStatus = 'idle',
   screenshotUrl,
+  checksumsUrl,
 }: Readonly<HeroSectionProps>) {
   return (
     <section className="px-4 sm:px-6 pt-8 pb-0">
@@ -123,6 +125,20 @@ export function HeroSection({
                 Download not starting?{' '}
                 <a href={downloadUrl} className="text-[var(--monarch-orange)] hover:underline font-medium">
                   Click here
+                </a>
+              </p>
+            )}
+
+            {/* Verify download link */}
+            {checksumsUrl && !loading && (
+              <p className="mt-4 text-center text-sm text-[var(--monarch-text-muted)]">
+                <a
+                  href={checksumsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-(--monarch-orange) hover:underline transition-colors"
+                >
+                  Verify your download (SHA256)
                 </a>
               </p>
             )}

@@ -11,7 +11,7 @@ import { RevisionHistoryModal } from './RevisionHistoryModal';
 import { NoteEditorMDX } from './NoteEditorMDX';
 import { useSaveCategoryNoteMutation, useDeleteCategoryNoteMutation } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
-import { formatErrorMessage } from '../../utils';
+import { handleApiError } from '../../utils';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import type { MonthKey } from '../../types/notes';
 
@@ -114,7 +114,7 @@ export function NoteEditorModal({
       toast.success('Note saved');
       onClose();
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to save note'));
+      toast.error(handleApiError(err, 'Failed to save note'));
     }
   };
 

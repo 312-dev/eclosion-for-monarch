@@ -10,11 +10,10 @@ import type { RecurringItem, ItemStatus } from '../../types';
 import { EmojiPicker } from '../EmojiPicker';
 import { Tooltip } from '../ui/Tooltip';
 import { MerchantIcon } from '../ui';
-import { LinkedCategoryIcon } from './RecurringListIcons';
 import { StaleWarningPopover } from './StaleWarningPopover';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 import { RecurringItemProgress } from './RecurringItemProgress';
-import { SpinnerIcon, WarningFilledIcon, CheckFilledIcon, BlockedIcon } from '../icons';
+import { SpinnerIcon, WarningFilledIcon, CheckFilledIcon, BlockedIcon, ExternalLinkIcon } from '../icons';
 import { decodeHtmlEntities } from '../../utils';
 
 interface RecurringItemHeaderProps {
@@ -168,7 +167,7 @@ export function RecurringItemHeader({
                 className="shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-70! transition-opacity text-monarch-text-light"
                 onClick={(e) => e.stopPropagation()}
               >
-                <LinkedCategoryIcon />
+                <ExternalLinkIcon size={12} />
               </a>
             </Tooltip>
           )}

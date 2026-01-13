@@ -11,7 +11,7 @@ import { NoteEditorMDX } from './NoteEditorMDX';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useSaveGeneralNoteMutation, useDeleteGeneralNoteMutation } from '../../api/queries';
 import { useCheckboxState } from '../../hooks';
-import { formatErrorMessage } from '../../utils';
+import { handleApiError } from '../../utils';
 import { useToast } from '../../context/ToastContext';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import { useNotesEditorOptional } from '../../context/NotesEditorContext';
@@ -61,6 +61,9 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
   // Unique editor ID for context coordination
   const editorId = `general-${monthKey}`;
 
+  // Ref to always hold the latest save function (for context coordination)
+  const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
   // Checkbox state management for general notes
   const { checkboxStates, toggleCheckbox } = useCheckboxState({
     generalNoteMonthKey: sourceMonth ?? monthKey,
@@ -107,12 +110,16 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
       setIsEditing(false);
       notesEditor?.closeEditor();
     } catch (err) {
-      console.error('Failed to save note:', err);
-      toast.error(formatErrorMessage(err, 'Failed to save note'));
+      toast.error(handleApiError(err, 'Failed to save note'));
     } finally {
       setIsSaving(false);
     }
   }, [content, note, monthKey, saveMutation, deleteMutation, toast, notesEditor]);
+
+  // Keep ref updated so context always calls latest save function
+  useEffect(() => {
+    saveNoteRef.current = saveNote;
+  }, [saveNote]);
 
   // Handle content change
   const handleContentChange = useCallback((newContent: string) => {
@@ -124,13 +131,14 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
     if (isRateLimited) return;
 
     // If using context, request to open (auto-saves other editors)
+    // Pass a stable wrapper that calls the ref to ensure latest content is saved
     if (notesEditor) {
-      const canOpen = await notesEditor.requestOpen(editorId, saveNote);
+      const canOpen = await notesEditor.requestOpen(editorId, () => saveNoteRef.current());
       if (!canOpen) return;
     }
 
     setIsEditing(true);
-  }, [isRateLimited, notesEditor, editorId, saveNote]);
+  }, [isRateLimited, notesEditor, editorId]);
 
   // Render content area
   const displayContent = content.trim();

@@ -112,6 +112,10 @@ export async function fetchApi<T>(
 
         const error = await response.json().catch(() => ({}));
         if (error.auth_required || response.status === 401) {
+          // Emit custom event for global auth handling (AuthContext listens)
+          globalThis.dispatchEvent(new CustomEvent('auth-required', {
+            detail: { endpoint, mfaRequired: error.mfa_required },
+          }));
           throw new AuthRequiredError();
         }
         throw new Error(error.error || `API error: ${response.status}`);

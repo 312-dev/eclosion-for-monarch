@@ -1,0 +1,471 @@
+# Security Scanning Workflow
+# Runs SAST, dependency scanning, container scanning, and DAST on PRs
+# All tools are FREE for public repositories
+#
+# Policy: Vulnerabilities rated MEDIUM or higher block merges to main
+# Configure branch protection to require "Security Status" check
+#
+# Can be called from other workflows (e.g., create-beta.yml) via workflow_call
+
+name: "10 Security"
+
+on:
+  pull_request:
+    branches: [main]
+    # Note: No paths filter here - we always run to report status
+    # Individual jobs use dorny/paths-filter to skip when not needed
+  push:
+    branches: [main]
+  schedule:
+    # Weekly scan on Monday at midnight UTC to catch new CVEs
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+    inputs:
+      head_sha:
+        description: 'Commit SHA to post status to (for PR association)'
+        required: false
+        type: string
+
+  # Allow other workflows to call this one
+  workflow_call:
+    inputs:
+      severity:
+        description: 'Minimum severity to fail on (high or medium)'
+        required: false
+        default: 'medium'
+        type: string
+      skip_dast:
+        description: 'Skip DAST scan for faster execution'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+# Note: When called as a reusable workflow (workflow_call), permissions
+# are inherited from the calling workflow. When run standalone, the
+# default token permissions apply (usually read access to most resources).
+# Individual jobs specify additional write permissions where needed.
+
+jobs:
+  # ============================================================================
+  # Detect which files changed - skip most scans if no security-relevant files
+  # Note: CodeQL always runs (required by Code Scanning ruleset)
+  # ============================================================================
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      security_relevant: ${{ steps.result.outputs.security_relevant }}
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      # For workflow_dispatch and workflow_call, always run scans (explicit request)
+      # For push/pull_request, use paths-filter to skip if no security-relevant files changed
+      - name: Check if explicit trigger
+        id: explicit
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || \
+             [ "${{ github.event_name }}" = "workflow_call" ] || \
+             [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "is_explicit=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_explicit=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        if: steps.explicit.outputs.is_explicit == 'false'
+        with:
+          filters: |
+            security_relevant:
+              - '**.py'
+              - '**.ts'
+              - '**.tsx'
+              - '**.js'
+              - '**/package*.json'
+              - '**/requirements*.txt'
+              - 'Dockerfile'
+              - 'docker-compose.yml'
+              - '.github/**'
+
+      - name: Determine if scans should run
+        id: result
+        run: |
+          if [ "${{ steps.explicit.outputs.is_explicit }}" = "true" ]; then
+            echo "security_relevant=true" >> $GITHUB_OUTPUT
+            echo "Explicit trigger - running all scans"
+          else
+            echo "security_relevant=${{ steps.filter.outputs.security_relevant }}" >> $GITHUB_OUTPUT
+            echo "Paths filter result: ${{ steps.filter.outputs.security_relevant }}"
+          fi
+
+  # ============================================================================
+  # CodeQL - Static Application Security Testing (SAST)
+  # Scans for SQL injection, XSS, command injection, path traversal, etc.
+  # Results appear in GitHub Security tab
+  # ============================================================================
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    # Always run CodeQL - required by Code Scanning ruleset even for data-only changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, python]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
+        with:
+          languages: ${{ matrix.language }}
+          # Use extended query suite for more comprehensive analysis
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ============================================================================
+  # Secret Scanning with Gitleaks
+  # Detects hardcoded secrets, API keys, passwords in code
+  # Uses the free CLI instead of the paid GitHub Action
+  # ============================================================================
+  secret-scan:
+    name: Secret Scan
+    needs: changes
+    if: needs.changes.outputs.security_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          fetch-depth: 0 # Full history for scanning all commits
+
+      - name: Install Gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar xz
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks
+        run: gitleaks detect --source . --verbose --redact
+
+  # ============================================================================
+  # Dependency Scanning
+  # Checks npm and pip packages for known vulnerabilities
+  # ============================================================================
+  dependency-scan:
+    name: Dependency Scan
+    needs: changes
+    if: needs.changes.outputs.security_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: "20"
+
+      - name: Setup Python
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: frontend
+        # --audit-level controls minimum severity to fail on
+        # moderate = medium+, high = high+
+        run: |
+          LEVEL="${{ inputs.severity || 'medium' }}"
+          if [ "$LEVEL" = "high" ]; then
+            npm audit --audit-level=high
+          else
+            npm audit --audit-level=moderate
+          fi
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Run pip-audit
+        # --strict fails on any vulnerability, --desc shows descriptions
+        run: pip-audit --strict --desc -r requirements.txt
+
+  # ============================================================================
+  # Container Scanning with Trivy
+  # Scans Docker image for OS and application vulnerabilities
+  # ============================================================================
+  container-scan:
+    name: Container Scan
+    needs: changes
+    if: needs.changes.outputs.security_relevant == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: eclosion:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Determine severity threshold
+        id: severity
+        run: |
+          LEVEL="${{ inputs.severity || 'medium' }}"
+          if [ "$LEVEL" = "high" ]; then
+            echo "trivy_severity=HIGH,CRITICAL" >> $GITHUB_OUTPUT
+          else
+            echo "trivy_severity=MEDIUM,HIGH,CRITICAL" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        with:
+          image-ref: eclosion:scan
+          format: "table"
+          exit-code: "1"
+          severity: ${{ steps.severity.outputs.trivy_severity }}
+          ignore-unfixed: true
+          trivy-config: trivy.yaml
+
+      - name: Run Trivy and upload SARIF
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
+        if: always()
+        with:
+          image-ref: eclosion:scan
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: ${{ steps.severity.outputs.trivy_severity }}
+          trivy-config: trivy.yaml
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
+        # Skip SARIF upload when called via workflow_call (e.g., from release pipelines)
+        # to avoid creating duplicate configurations in GitHub Code Scanning.
+        # The table output above still shows pass/fail for the release gate.
+        if: always() && github.event_name != 'workflow_call'
+        with:
+          sarif_file: "trivy-results.sarif"
+          category: "trivy-container-scan"
+
+  # ============================================================================
+  # DAST - Dynamic Application Security Testing with OWASP ZAP
+  # Runs penetration testing against the running application
+  # Only runs on non-fork PRs to prevent abuse
+  # ============================================================================
+  dast:
+    name: DAST (OWASP ZAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [changes, container-scan]
+    # Only run DAST on:
+    # - Push events (trusted)
+    # - PRs from the same repo (not forks) to prevent abuse
+    # - Scheduled runs
+    # - Manual runs (not workflow_call with skip_dast=true)
+    if: |
+      needs.changes.outputs.security_relevant == 'true' &&
+      inputs.skip_dast != true && (
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'workflow_call' ||
+        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+      )
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: eclosion:test
+          cache-from: type=gha
+
+      - name: Start application
+        run: |
+          echo "Starting container..."
+          # Note: We don't set FLASK_DEBUG=1 because that changes app behavior
+          # Instead, ZAP will set X-Forwarded-Proto: https to bypass HTTPS redirect
+          # Note: We don't set INSTANCE_SECRET so ZAP can access all endpoints
+          docker run -d --name eclosion -p 5001:5001 \
+            eclosion:test
+          echo "Container started with ID: $(docker ps -q -f name=eclosion)"
+
+      - name: Wait for application to be healthy
+        run: |
+          echo "=== Container status ==="
+          docker ps -a
+
+          echo ""
+          echo "=== Waiting for application to start ==="
+          for i in {1..30}; do
+            echo "Attempt $i/30..."
+
+            # Check if container is still running
+            if ! docker ps -q -f name=eclosion | grep -q .; then
+              echo "ERROR: Container is not running!"
+              echo ""
+              echo "=== Container logs ==="
+              docker logs eclosion 2>&1 || echo "No logs available"
+              echo ""
+              echo "=== Container inspect ==="
+              docker inspect eclosion --format='{{.State.Status}} - {{.State.Error}}' || true
+              exit 1
+            fi
+
+            # Try the health check (with X-Forwarded-Proto to bypass HTTPS redirect)
+            if curl -sf -H "X-Forwarded-Proto: https" http://localhost:5001/health; then
+              echo ""
+              echo "Application is healthy!"
+              exit 0
+            fi
+
+            echo "  Health check failed, waiting 2s..."
+            sleep 2
+          done
+
+          echo ""
+          echo "=== TIMEOUT: Application failed to become healthy ==="
+          echo ""
+          echo "=== Container logs ==="
+          docker logs eclosion 2>&1
+          echo ""
+          echo "=== Container inspect ==="
+          docker inspect eclosion
+          echo ""
+          echo "=== Listening ports ==="
+          docker exec eclosion ss -tlnp 2>/dev/null || docker exec eclosion netstat -tlnp 2>/dev/null || echo "Unable to check ports"
+          echo ""
+          echo "=== Process list ==="
+          docker exec eclosion ps aux 2>/dev/null || echo "ps not available in container"
+          exit 1
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        env:
+          # Set X-Forwarded-Proto to bypass HTTPS redirect in the app
+          # The app redirects HTTP to HTTPS in production unless this header is set
+          ZAP_AUTH_HEADER: "X-Forwarded-Proto"
+          ZAP_AUTH_HEADER_VALUE: "https"
+        with:
+          target: "http://localhost:5001"
+          rules_file_name: ".zap/rules.tsv"
+          fail_action: true
+          # -a: Include alpha rules
+          # -j: Use AJAX spider (disabled for performance)
+          cmd_options: "-a"
+
+      - name: Stop application
+        if: always()
+        run: docker stop eclosion || true
+
+  # ============================================================================
+  # Security Status - Aggregates all security job results
+  # Configure branch protection to require this check
+  # ============================================================================
+  security-status:
+    name: Security Status
+    runs-on: ubuntu-latest
+    needs: [changes, codeql, secret-scan, dependency-scan, container-scan, dast]
+    if: always()
+    steps:
+      - name: Check security scan results
+        id: check
+        run: |
+          echo "=== Security Scan Results ==="
+          echo "Security-relevant files changed: ${{ needs.changes.outputs.security_relevant }}"
+          echo "CodeQL: ${{ needs.codeql.result }}"
+          echo "Secret Scan: ${{ needs.secret-scan.result }}"
+          echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
+          echo "Container Scan: ${{ needs.container-scan.result }}"
+          echo "DAST: ${{ needs.dast.result }}"
+          echo ""
+
+          # CodeQL always runs (required by Code Scanning ruleset)
+          if [ "${{ needs.codeql.result }}" = "failure" ] || [ "${{ needs.codeql.result }}" = "cancelled" ]; then
+            echo "::error::CodeQL scan failed"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=CodeQL scan failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # If no security-relevant files changed, other scans were skipped - that's OK
+          if [ "${{ needs.changes.outputs.security_relevant }}" != "true" ]; then
+            echo "✅ CodeQL passed, other scans skipped (no security-relevant files)"
+            echo "result=success" >> $GITHUB_OUTPUT
+            echo "description=CodeQL passed, no code changes to scan" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check other scans (DAST is allowed to be skipped for fork PRs)
+          results="${{ needs.secret-scan.result }} ${{ needs.dependency-scan.result }} ${{ needs.container-scan.result }}"
+          dast_result="${{ needs.dast.result }}"
+
+          if echo "$results" | grep -qE '(failure|cancelled)'; then
+            echo "::error::One or more security scans failed"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=One or more security scans failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # DAST failure should also fail, but skipped is OK
+          if [ "$dast_result" = "failure" ] || [ "$dast_result" = "cancelled" ]; then
+            echo "::error::DAST scan failed or was cancelled"
+            echo "result=failure" >> $GITHUB_OUTPUT
+            echo "description=DAST scan failed or was cancelled" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "✅ All security scans passed"
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "description=All security scans passed" >> $GITHUB_OUTPUT
+
+      # For workflow_dispatch, post status to the commit so it appears on PRs
+      - name: Post commit status
+        if: github.event_name == 'workflow_dispatch' && inputs.head_sha && always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}/statuses/${{ inputs.head_sha }} \
+            -f state="${{ steps.check.outputs.result || 'success' }}" \
+            -f context="Security Status" \
+            -f description="${{ steps.check.outputs.description || 'Security scans passed' }}"
+          echo "Posted Security Status to commit ${{ inputs.head_sha }}"

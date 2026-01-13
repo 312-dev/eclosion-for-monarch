@@ -496,7 +496,7 @@ Python dependencies use **hash-pinned lockfiles** for supply chain security. Whe
 | `requirements.txt` | Locked deps with hashes | No - auto-generated |
 | `requirements-dev.in` | Dev deps (constraints) | Yes - add dev packages here |
 | `requirements-dev.txt` | Locked dev deps with hashes | No - auto-generated |
-| `requirements-git.txt` | Git/VCS dependencies | Yes - commit-pinned |
+| `requirements-vcs.txt` | Git/VCS dependencies | Yes - commit-pinned |
 | `requirements-build.txt` | Build tools (PyInstaller) | Yes - with hashes |
 
 ### Adding Dependencies

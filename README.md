@@ -15,16 +15,8 @@
 </p>
 
 <p align="center">
-  <strong>Your budgeting, evolved.</strong>
-</p>
-
-<p align="center">
-  An open source desktop & web app that expands what's possible with Monarch Money.<br>
-  Each tool works independently with your account—enable only what you need.
-</p>
-
-<p align="center">
-  <em>Eclosion (n.): The moment a butterfly emerges.</em>
+  Open source desktop & web app that extends Monarch Money with additional budgeting tools.<br>
+  Runs locally or self-hosted. Each feature is modular; enable only what you need.
 </p>
 
 <p align="center">
@@ -56,105 +48,75 @@
   </tr>
 </table>
 
-## Why Eclosion?
+## Overview
 
-- **Fully Yours** — Your credentials stay encrypted locally—no one else can access them
-- **Always In Sync** — Changes sync to Monarch automatically
-- **Set It & Forget It** — Enable the tools you want and Eclosion handles the rest
-
-## How It Works
-
-1. **Get Started** — Download the desktop app or self-host with Docker
-2. **Connect** — Sign in with your Monarch Money credentials (encrypted with a passphrase only you know)
-3. **Enable** — Pick the tools you want to use
-4. **Relax** — Eclosion syncs with Monarch and keeps everything updated
+- **Local-first**: Credentials encrypted locally with Fernet (AES-128-CBC + HMAC-SHA256); server never sees your passphrase
+- **Monarch sync**: Reads and writes directly to your Monarch account via their GraphQL API
+- **Modular**: Each feature operates independently; enable/disable as needed
 
 ## Features
 
-### Recurring Expenses *(Available)*
+### Available
 
-Never be caught off guard by a bill again. Automatically calculates monthly savings for annual, quarterly, and semi-annual expenses.
+| Feature | Description |
+|---------|-------------|
+| **Recurring Expenses** | Monthly savings targets for non-monthly expenses (annual, quarterly, semi-annual). Calculates targets, tracks progress, syncs to Monarch. Supports rollup categories for aggregating subscriptions. |
+| **Monthly Notes** | Persistent notes for Monarch categories/groups. Auto-carry-forward, revision history, inline math evaluation. |
 
-- **Smart Savings Calculation** — Automatically calculates monthly savings targets for annual, semi-annual, and quarterly expenses
-- **Rollup Mode** — Combine small subscriptions into a single category for simplified budgeting
-- **Progress Tracking** — See at a glance if you're on track, behind, or ahead on each expense
-- **Monarch Sync** — Syncs directly with your Monarch Money account to update budget targets
+### Planned
 
-### Monthly Notes *(Available)*
-
-Remember why you set each budget. Add notes to any Monarch category or category group that carry forward each month.
-
-- **Category Notes** — Attach notes to any category or group to remember why you set certain budgets
-- **Carry Forward Monthly** — Your notes automatically appear in future months until you change them
-- **Revision History** — See how your notes evolved over time and jump between versions
-- **Inline Math** — Type math expressions and press Tab to evaluate them inline
-
-### Joint Goals *(Coming Soon)*
-
-Privacy-first shared goals. Collaborate on financial goals without merging accounts or sacrificing privacy.
-
-- **Keep Your Privacy** — Share goal progress without exposing transactions, balances, or spending habits
-- **No Account Merging** — Both partners keep separate Monarch accounts
-- **Combined Trajectory** — See when you'll reach goals together based on both contributions
-
-### Leaderboard *(Coming Soon)*
-
-Friendly competition with people you trust. Compete with friends and family on a shared spending category.
-
-- **Privacy by Design** — P2P encryption means you only share your score—never your transactions or balances
-- **Fair Scoring** — Income-adjusted scoring levels the playing field so everyone can compete meaningfully
-- **Multiple Timeframes** — Daily, weekly, and monthly leaderboards
-
-### Inbox Sync *(Coming Soon)*
-
-Automatic transaction splits from your inbox. Connect your email and automatically extract itemized receipts.
-
-- **Email Integration** — Securely connects to Gmail or Outlook with read-only access
-- **Smart Itemization** — Automatically splits transactions by item with accurate categories
-- **Growing Coverage** — Walmart, Costco, Uber, DoorDash, and more
-
-### Shared Budget *(Coming Soon)*
-
-Track and split shared expenses each month. Tag expenses you share with a roommate or partner and settle up when you're ready.
-
-- **Tag Shared Expenses** — Mark transactions as shared—rent, utilities, groceries, date nights, or anything you split
-- **Automatic Ratio Splitting** — Set a default split ratio (50/50, 60/40, income-based) that applies to all tagged transactions
-- **Adjust Per Transaction** — Override the ratio on specific transactions—you paid for dinner, they paid for the movie
-- **Settle Debt** — See who owes what at month's end and mark debts as settled when you square up
-
-### Allowance *(Coming Soon)*
-
-Reward yourself for building good habits. Award yourself an allowance based on completing habits and chores in real life.
-
-- **Habit Tracking** — Define habits and chores you want to complete—exercise, cleaning, reading, etc.
-- **Earn Your Allowance** — Complete habits to earn allowance credits that add up over time
-- **Flexible Rewards** — Set your own reward values—a workout might be worth $5, while deep cleaning earns $20
-- **Positive Reinforcement** — Build financial discipline by connecting good habits to tangible spending power
+| Feature | Description |
+|---------|-------------|
+| **Joint Goals** | Shared goal tracking between two Monarch accounts. Share progress without exposing transactions/balances. |
+| **Leaderboard** | Category spending competition with P2P encrypted score sharing. Income-adjusted scoring, multiple timeframes. |
+| **Inbox Sync** | Email integration for receipt itemization. Parses receipts from Walmart, Costco, Uber, DoorDash, etc. |
+| **Shared Budget** | Expense splitting and settlement tracking. Configurable split ratios with per-transaction overrides. |
+| **Allowance** | Habit-based allowance accumulation. Define habits with reward values, track completions. |
 
 ## Quick Start
 
-### Desktop App (Easiest)
+### Desktop App
 
 **[Download the latest release](https://github.com/312-dev/eclosion/releases/latest)** for macOS, Windows, or Linux.
 
-No server required—everything runs locally. See the [Desktop App wiki](https://github.com/312-dev/eclosion/wiki/Desktop-App) for build instructions and details.
+Runs locally with an embedded Python backend. See the [Desktop App wiki](https://github.com/312-dev/eclosion/wiki/Desktop-App) for build instructions.
 
-### Self-Host with Docker
+### Docker
+
+**From registry (recommended):**
+
+```bash
+export INSTANCE_SECRET=$(openssl rand -hex 16)
+docker run -d \
+  -p 5001:5001 \
+  -v eclosion-data:/app/data \
+  -e INSTANCE_SECRET=$INSTANCE_SECRET \
+  ghcr.io/312-dev/eclosion:stable
+# Access at http://localhost:5001?secret=YOUR_SECRET
+```
+
+**From source:**
 
 ```bash
 git clone https://github.com/312-dev/eclosion.git && cd eclosion
 export INSTANCE_SECRET=$(openssl rand -hex 16)
 docker compose up -d
-# Access at http://localhost:5001?secret=YOUR_SECRET
 ```
 
-See the [Self-Hosting wiki](https://github.com/312-dev/eclosion/wiki/Self-Hosting-Overview) for reverse proxy setup, environment variables, and platform-specific guides.
+See the [Self-Hosting wiki](https://github.com/312-dev/eclosion/wiki/Self-Hosting-Overview) for reverse proxy setup and environment variables.
 
 ## Security
 
-Your credentials are protected with Fernet encryption (AES-128-CBC + HMAC-SHA256), PBKDF2 key derivation with 480,000 iterations, and strong passphrase requirements. The server cannot decrypt your credentials without your passphrase.
+Credentials are encrypted with Fernet (AES-128-CBC + HMAC-SHA256) using PBKDF2 key derivation (480,000 iterations).
 
-See the [Security wiki](https://github.com/312-dev/eclosion/wiki/Security) for full details on instance access control, rate limiting, and security headers.
+|  | Desktop | Server/Docker |
+|--|---------|---------------|
+| **Data location** | Local machine only | Server filesystem |
+| **Access control** | None needed (localhost) | Instance secret required |
+| **Encryption key** | OS keychain (Touch ID / Keychain) | User-entered passphrase |
+| **Network exposure** | None | Requires HTTPS in production |
+
+See the [Security wiki](https://github.com/312-dev/eclosion/wiki/Security) for full details.
 
 ## Local Development
 
@@ -171,21 +133,26 @@ docker compose up --build
 
 ## Architecture
 
-**Frontend**: React 19 · TypeScript · Vite · Tailwind CSS<br>
-**Backend**: Python 3.12 · Flask<br>
-**State**: JSON file-based (no database)<br>
-**Deployment**: Docker · Desktop (Electron + PyInstaller)
+| Layer | Stack |
+|-------|-------|
+| **Frontend** | React 19, TypeScript 5, Vite 7, Tailwind CSS 4 |
+| **Backend** | Python 3.11+, Flask, APScheduler |
+| **Desktop** | Electron, PyInstaller (embedded Python) |
+| **State** | SQLite (SQLAlchemy ORM) |
+| **CI/CD** | GitHub Actions, Docker (GHCR), Cloudflare Pages |
 
 ## Contributing
 
-Contributions are welcome! See the [Contributing guide](https://github.com/312-dev/eclosion/wiki/Contributing).
+See the [Contributing guide](https://github.com/312-dev/eclosion/wiki/Contributing).
 
-- **Report bugs**: [GitHub Issues](https://github.com/312-dev/eclosion/issues)
-- **Ask questions**: [GitHub Discussions](https://github.com/312-dev/eclosion/discussions)
+- **Bugs**: [GitHub Issues](https://github.com/312-dev/eclosion/issues)
+- **Questions**: [GitHub Discussions](https://github.com/312-dev/eclosion/discussions)
 
 ## Maintainers
 
-Maintained by [312.dev](https://312.dev). This software is provided as-is for self-hosting.
+Created by [@GraysonCAdams](https://github.com/GraysonCAdams). Maintained by [312.dev](https://312.dev).
+
+See [contributors](https://github.com/312-dev/eclosion/graphs/contributors) for the full list.
 
 ## License
 

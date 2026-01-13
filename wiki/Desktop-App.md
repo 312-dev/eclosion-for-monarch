@@ -1,22 +1,22 @@
 # Desktop App
 
-Run Eclosion as a native desktop application on macOS, Windows, or Linux. No server required — everything runs locally on your computer.
+Run Eclosion as a native desktop application on macOS, Windows, or Linux. No server required : everything runs locally on your computer.
 
 ## Download
 
 **[Download the latest release](https://github.com/312-dev/eclosion/releases/latest)**
 
 Available for:
-- **macOS** — Universal binary (Intel and Apple Silicon)
-- **Windows** — Installer (.exe)
-- **Linux** — AppImage and .deb packages
+- **macOS**: Universal binary (Intel and Apple Silicon)
+- **Windows**: Installer (.exe)
+- **Linux**: AppImage and .deb packages
 
 ## Features
 
-- **System tray icon** — Quick access menu without opening the full app
-- **Auto-start on login** — Optional, configure in Settings
-- **Automatic updates** — Downloads and installs updates from GitHub Releases
-- **Local-only** — Runs entirely on localhost, no instance secret needed
+- **System tray icon**: Quick access menu without opening the full app
+- **Auto-start on login**: Optional, configure in Settings
+- **Automatic updates**: Downloads and installs updates from GitHub Releases
+- **Local-only**: Runs entirely on localhost, no instance secret needed
 
 ## Important Notes
 
@@ -41,9 +41,10 @@ npm install
 # Install frontend dependencies
 cd ../frontend && npm install && cd ../desktop
 
-# Install backend dependencies
-pip install -r ../requirements.txt
-pip install pyinstaller
+# Install backend dependencies (hash-verified for security)
+pip install --require-hashes -r ../requirements.txt
+pip install --no-deps -r ../requirements-vcs.txt
+pip install -r ../requirements-build.txt
 
 # Build for your platform
 npm run dist:mac     # macOS
@@ -69,5 +70,5 @@ The built application will be in `desktop/release/`.
 
 ## Next Steps
 
-- [[Updating & Rollback|Updating]] — Keep your app up to date
-- [[Security]] — How your credentials are protected
+- [[Updating & Rollback|Updating]] : Keep your app up to date
+- [[Security]] : How your credentials are protected

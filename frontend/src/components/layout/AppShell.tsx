@@ -277,7 +277,7 @@ export function AppShell() {
 
             {/* Notices - announced to screen readers */}
             {data.notices && data.notices.length > 0 && (
-              <section className="px-4 pt-2" aria-label="Notifications">
+              <section className="px-4 pt-6" aria-label="Notifications">
                 {data.notices.map((notice) => (
                   <NoticeBanner
                     key={notice.id}

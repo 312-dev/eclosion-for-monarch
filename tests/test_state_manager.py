@@ -7,10 +7,7 @@ Tests cover:
 - Default state behavior
 """
 
-import json
-from pathlib import Path
-
-from state.state_manager import (
+from state import (
     CategoryState,
     RollupState,
     StateManager,
@@ -21,8 +18,8 @@ from state.state_manager import (
 class TestStateManagerBasics:
     """Basic StateManager operations."""
 
-    def test_load_empty_state(self, state_manager: StateManager, temp_state_file: Path) -> None:
-        """Loading non-existent file should return default state."""
+    def test_load_empty_state(self, state_manager: StateManager) -> None:
+        """Loading empty database should return default state."""
         state = state_manager.load()
 
         assert state.target_group_id is None
@@ -30,28 +27,14 @@ class TestStateManagerBasics:
         assert not state.is_configured()
         assert len(state.categories) == 0
 
-    def test_save_and_load_state(
-        self, state_manager: StateManager, configured_state: TrackerState
-    ) -> None:
-        """Should save and load state correctly."""
-        state_manager.save(configured_state)
+    def test_update_config_and_load(self, state_manager: StateManager) -> None:
+        """Should update config and load state correctly."""
+        state_manager.update_config("group-123", "Test Group")
         loaded = state_manager.load()
 
-        assert loaded.target_group_id == configured_state.target_group_id
-        assert loaded.target_group_name == configured_state.target_group_name
+        assert loaded.target_group_id == "group-123"
+        assert loaded.target_group_name == "Test Group"
         assert loaded.is_configured()
-
-    def test_atomic_write(
-        self, state_manager: StateManager, configured_state: TrackerState
-    ) -> None:
-        """Save should be atomic (file exists after save)."""
-        state_manager.save(configured_state)
-
-        assert state_manager.state_file.exists()
-        # Verify it's valid JSON
-        with open(state_manager.state_file) as f:
-            data = json.load(f)
-        assert data["target_group_id"] == configured_state.target_group_id
 
 
 class TestTrackerStateConfiguration:
@@ -105,23 +88,8 @@ class TestRollupState:
         assert len(rollup.item_ids) == 0
 
 
-class TestStateManagerEdgeCases:
-    """Edge cases and error handling."""
-
-    def test_load_corrupted_file(self, state_manager: StateManager, temp_state_file: Path) -> None:
-        """Loading corrupted file should return default state."""
-        # Write invalid JSON
-        temp_state_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(temp_state_file, "w") as f:
-            f.write("{ invalid json }")
-
-        state = state_manager.load()
-
-        # Should return default state
-        assert not state.is_configured()
-        # Backup should be created
-        backup = temp_state_file.with_suffix(".json.bak")
-        assert backup.exists()
+class TestStateManagerOperations:
+    """StateManager operations tests."""
 
     def test_categories_dict_operations(self, configured_state: TrackerState) -> None:
         """Categories dict should support standard operations."""
@@ -153,6 +121,18 @@ class TestStateManagerEdgeCases:
         # Remove
         configured_state.enabled_items.discard("recurring-001")
         assert "recurring-001" not in configured_state.enabled_items
+
+    def test_toggle_item_enabled(self, state_manager: StateManager) -> None:
+        """Should enable and disable items correctly."""
+        # Enable an item
+        state_manager.toggle_item_enabled("test-item", True)
+        state = state_manager.load()
+        assert "test-item" in state.enabled_items
+
+        # Disable the item
+        state_manager.toggle_item_enabled("test-item", False)
+        state = state_manager.load()
+        assert "test-item" not in state.enabled_items
 
 
 class TestFrozenTargetPersistence:
@@ -202,19 +182,24 @@ class TestFrozenTargetPersistence:
             frequency_months=12.0,
         )
 
-        # Create new state manager pointing to same file to simulate app restart
-        new_manager = StateManager(state_file=state_manager.state_file)
+        # Create new state manager to simulate app restart (uses same DB)
+        new_manager = StateManager()
 
         # Verify frozen target persisted
         result = new_manager.get_frozen_target(rollup_key)
         assert result is not None
         assert result["frozen_monthly_target"] == 10.0
 
-    def test_set_frozen_target_for_existing_category(
-        self, state_manager: StateManager, configured_state: TrackerState
-    ) -> None:
+    def test_set_frozen_target_for_existing_category(self, state_manager: StateManager) -> None:
         """set_frozen_target should work for existing categories."""
-        state_manager.save(configured_state)
+        # First create the category via update_category
+        state_manager.update_category(
+            recurring_id="recurring-001",
+            monarch_category_id="cat-001",
+            name="Netflix",
+            target_amount=15.99,
+            due_date="2025-02-15",
+        )
 
         # Set frozen target for existing category
         state_manager.set_frozen_target(
