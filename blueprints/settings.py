@@ -2,10 +2,40 @@
 # /settings/* endpoints for export/import functionality
 
 from flask import Blueprint, request
+from markupsafe import escape as markupsafe_escape
 
-from core import api_handler, sanitize_response
+from core import api_handler
 
 from . import get_services
+
+
+def _sanitize_errors(errors: list[str]) -> list[str]:
+    """Sanitize error messages to prevent XSS.
+
+    Uses markupsafe.escape which CodeQL recognizes as a sanitization barrier.
+    """
+    return [str(markupsafe_escape(e)) for e in errors]
+
+
+def _sanitize_preview(preview: dict) -> dict:
+    """Sanitize preview data to prevent XSS.
+
+    Uses markupsafe.escape which CodeQL recognizes as a sanitization barrier.
+    """
+    sanitized: dict = {}
+    for key, value in preview.items():
+        if isinstance(value, str):
+            sanitized[key] = str(markupsafe_escape(value))
+        elif isinstance(value, dict):
+            sanitized[key] = _sanitize_preview(value)
+        elif isinstance(value, list):
+            sanitized[key] = [
+                str(markupsafe_escape(item)) if isinstance(item, str) else item for item in value
+            ]
+        else:
+            sanitized[key] = value
+    return sanitized
+
 
 settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 
@@ -88,12 +118,12 @@ def preview_import():
     # Validate first
     is_valid, errors = export_service.validate_import(export_data)
     if not is_valid:
-        # Sanitize error messages to prevent reflected XSS
-        return {"success": False, "valid": False, "errors": sanitize_response(errors)}, 400
+        # Sanitize error messages with markupsafe.escape for CodeQL recognition
+        return {"success": False, "valid": False, "errors": _sanitize_errors(errors)}, 400
 
     preview = export_service.get_export_preview(export_data)
-    # Explicit sanitization for CodeQL - prevents reflected XSS
-    return {"success": True, "valid": True, "preview": sanitize_response(preview)}
+    # Sanitize preview with markupsafe.escape for CodeQL recognition
+    return {"success": True, "valid": True, "preview": _sanitize_preview(preview)}
 
 
 @settings_bp.route("/export-encrypted", methods=["POST"])

@@ -8,6 +8,7 @@ from urllib.parse import quote, urlparse
 
 from flask import jsonify, make_response, redirect, request, session
 from flask.wrappers import Response
+from markupsafe import escape as markupsafe_escape
 from werkzeug.wrappers import Response as WerkzeugResponse
 
 from core import config
@@ -17,50 +18,69 @@ if TYPE_CHECKING:
     from blueprints import Services
 
 
+_SAFE_NUMERIC_FIELDS = (
+    "dedicated_deleted",
+    "dedicated_failed",
+    "rollup_deleted",
+    "items_disabled",
+    "deleted_count",
+    "failed_count",
+    "categories_created",
+    "categories_updated",
+    "items_synced",
+    "retry_after",
+    "categorized_count",
+    "skipped_count",
+)
+
+_ERROR_LIST_FIELDS = ("errors", "sync_errors", "failed")
+
+_SAFE_REASONS = ("disabled", "no_tracked_items", "no_changes", "success")
+
+
+def _copy_numeric_field(result: dict, sanitized: dict, key: str) -> None:
+    """Copy a numeric/boolean field with explicit type conversion."""
+    if key not in result:
+        return
+    val = result[key]
+    if isinstance(val, bool):
+        sanitized[key] = bool(val)
+    elif isinstance(val, int):
+        sanitized[key] = int(val)
+    elif isinstance(val, float):
+        sanitized[key] = float(val)
+
+
 def sanitize_api_result(result: dict, generic_error: str = "Operation failed.") -> dict:
     """Sanitize API result dict to prevent information exposure.
 
     Creates a NEW dict with only safe fields to ensure CodeQL recognizes
     the sanitization barrier. All error messages are replaced with generic
     ones to prevent stack traces from being exposed to users.
-    """
-    # Create a completely new dict to break taint tracking
-    sanitized: dict = {}
 
-    # Copy success status as explicit boolean
-    sanitized["success"] = bool(result.get("success", False))
+    Uses markupsafe.escape which CodeQL recognizes as a sanitization barrier.
+    """
+    sanitized: dict = {"success": bool(result.get("success", False))}
 
     # Replace error message with generic one on failure
     if not sanitized["success"]:
-        sanitized["error"] = generic_error
+        sanitized["error"] = str(markupsafe_escape(generic_error))
 
-    # Whitelist of safe numeric/boolean fields to copy (explicit type conversion)
-    safe_numeric_fields = (
-        "dedicated_deleted",
-        "dedicated_failed",
-        "rollup_deleted",
-        "items_disabled",
-        "deleted_count",
-        "failed_count",
-        "categories_created",
-        "categories_updated",
-        "items_synced",
-        "retry_after",
-    )
-    for key in safe_numeric_fields:
-        if key in result:
-            val = result[key]
-            if isinstance(val, bool):
-                sanitized[key] = bool(val)
-            elif isinstance(val, int):
-                sanitized[key] = int(val)
-            elif isinstance(val, float):
-                sanitized[key] = float(val)
+    # Copy whitelisted numeric/boolean fields
+    for key in _SAFE_NUMERIC_FIELDS:
+        _copy_numeric_field(result, sanitized, key)
 
     # For error lists, only expose count (not the actual error messages)
-    for key in ("errors", "sync_errors", "failed"):
+    for key in _ERROR_LIST_FIELDS:
         if key in result and isinstance(result[key], list):
             sanitized[f"{key}_count"] = len(result[key])
+
+    # Sanitize reason field if present
+    if "reason" in result and isinstance(result["reason"], str):
+        reason_val = result["reason"]
+        sanitized["reason"] = (
+            reason_val if reason_val in _SAFE_REASONS else str(markupsafe_escape(reason_val))
+        )
 
     return sanitized
 
