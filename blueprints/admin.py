@@ -576,8 +576,11 @@ def restore_backup():
             }
         ), 400
 
-    # Validate filename extension
-    if not str(backup_filename).endswith(".db"):
+    # Validate filename matches exact expected format: eclosion_YYYYMMDD_HHMMSS_reason.db
+    # This whitelist approach prevents any path traversal by only allowing known-safe patterns
+    backup_pattern = re.compile(r"^eclosion_\d{8}_\d{6}_[a-zA-Z0-9_-]{1,20}\.db$")
+    filename_str = str(backup_filename)
+    if not backup_pattern.match(filename_str):
         return jsonify(
             {
                 "success": False,
@@ -585,28 +588,9 @@ def restore_backup():
             }
         ), 400
 
-    # Sanitize filename using Path.name to extract only the filename component
-    # This is a CodeQL-recognized sanitization pattern that prevents path traversal
-    safe_filename = Path(str(backup_filename)).name
-    if safe_filename != str(backup_filename) or not safe_filename:
-        return jsonify(
-            {
-                "success": False,
-                "error": "Invalid backup filename format.",
-            }
-        ), 400
-
-    # Construct path using the sanitized filename within backup directory
-    backup_path = (config.BACKUP_DIR / safe_filename).resolve()
-
-    # Verify the path is still within backup directory (defense in depth)
-    if not str(backup_path).startswith(str(config.BACKUP_DIR.resolve())):
-        return jsonify(
-            {
-                "success": False,
-                "error": "Invalid backup filename format.",
-            }
-        ), 400
+    # Construct path - filename is now validated to contain only safe characters
+    backup_dir = config.BACKUP_DIR.resolve()
+    backup_path = backup_dir / filename_str
 
     if not backup_path.exists():
         return jsonify(
