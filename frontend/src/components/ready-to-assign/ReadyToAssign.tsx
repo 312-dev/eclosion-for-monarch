@@ -26,7 +26,7 @@ interface ReadyToAssignProps {
   variant?: 'mobile' | 'sidebar';
 }
 
-export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar' }: ReadyToAssignProps) {
+export function ReadyToAssign({ data, summary: _summary, items, rollup, variant = 'sidebar' }: ReadyToAssignProps) {
   const progressBarId = useId();
   const popoverId = useId();
 
@@ -39,8 +39,19 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
     infoDropdown.triggerRef.current?.focus();
   };
 
-  const currentMonthlyCost = summary.total_monthly_contribution;
-  const lowestMonthlyCost = items.filter((i) => i.is_enabled).reduce((sum, item) => sum + item.ideal_monthly_rate, 0);
+  // Calculate current and stable monthly costs - must include rollup to match chart
+  const currentMonthlyCost = useMemo(() => {
+    const enabledItems = items.filter(i => i.is_enabled && !i.is_in_rollup);
+    const itemsTotal = enabledItems.reduce((sum, item) => sum + item.frozen_monthly_target, 0);
+    const rollupTotal = rollup.enabled ? rollup.total_frozen_monthly : 0;
+    return itemsTotal + rollupTotal;
+  }, [items, rollup]);
+  const lowestMonthlyCost = useMemo(() => {
+    const enabledItems = items.filter(i => i.is_enabled && !i.is_in_rollup);
+    const itemsTotal = enabledItems.reduce((sum, item) => sum + item.ideal_monthly_rate, 0);
+    const rollupTotal = rollup.enabled ? rollup.total_ideal_rate : 0;
+    return itemsTotal + rollupTotal;
+  }, [items, rollup]);
 
   // Calculate stabilization point
   const stabilization = useMemo(() => calculateStabilizationPoint(items, rollup.enabled ? rollup : null), [items, rollup]);
@@ -49,18 +60,17 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
   const itemsBehind = items.filter((i) => i.is_enabled && i.progress_percent < 100);
 
   // Calculate monthly targets and progress for the widget
+  // "saved" = total budgeted this month (planned_budget), "to go" = target - saved
   const monthlyTargets = useMemo(() => {
-    const enabledItems = items.filter((i) => i.is_enabled);
+    const enabledItems = items.filter((i) => i.is_enabled && !i.is_in_rollup);
     const totalTargets =
       enabledItems.reduce((sum, item) => sum + item.frozen_monthly_target, 0) + (rollup.enabled ? rollup.total_frozen_monthly : 0);
-    const availableBalances =
-      enabledItems.filter((i) => !i.is_in_rollup).reduce((sum, item) => sum + item.current_balance, 0) +
-      (rollup.enabled ? rollup.current_balance : 0);
-    const contributedThisMonth =
-      enabledItems.filter((i) => !i.is_in_rollup).reduce((sum, item) => sum + item.contributed_this_month, 0) +
-      (rollup.enabled ? rollup.total_saved - rollup.current_balance : 0);
-    const amountNeeded = Math.max(0, totalTargets - availableBalances);
-    return { totalTargets, availableBalances, contributedThisMonth, amountNeeded };
+    // "saved" is total budgeted this month across all categories
+    const totalBudgeted =
+      enabledItems.reduce((sum, item) => sum + item.planned_budget, 0) +
+      (rollup.enabled ? rollup.budgeted : 0);
+    const toGo = Math.max(0, totalTargets - totalBudgeted);
+    return { totalTargets, totalBudgeted, toGo };
   }, [items, rollup]);
 
   // Calculate untracked (disabled) recurring total
@@ -134,26 +144,26 @@ export function ReadyToAssign({ data, summary, items, rollup, variant = 'sidebar
         <div className="text-sm text-monarch-text-dark">
           <span>Needed for {new Date().toLocaleDateString('en-US', { month: 'long' })}</span>
         </div>
-        {/* Progress bar showing amount saved this month vs amount needed */}
-        {monthlyTargets.amountNeeded > 0 && (
+        {/* Progress bar showing amount budgeted vs target */}
+        {monthlyTargets.totalTargets > 0 && (
           <div className="mt-3">
             <div
               role="progressbar"
-              aria-valuenow={Math.round((monthlyTargets.contributedThisMonth / monthlyTargets.amountNeeded) * 100)}
+              aria-valuenow={Math.round((monthlyTargets.totalBudgeted / monthlyTargets.totalTargets) * 100)}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label={`Monthly savings progress: ${formatCurrency(monthlyTargets.contributedThisMonth, { maximumFractionDigits: 0 })} saved of ${formatCurrency(monthlyTargets.amountNeeded, { maximumFractionDigits: 0 })} needed`}
+              aria-label={`Monthly savings progress: ${formatCurrency(monthlyTargets.totalBudgeted, { maximumFractionDigits: 0 })} saved of ${formatCurrency(monthlyTargets.totalTargets, { maximumFractionDigits: 0 })} needed`}
               aria-describedby={progressBarId}
               className="h-2 rounded-full overflow-hidden bg-monarch-orange/20"
             >
               <div
                 className="h-full rounded-full transition-all bg-monarch-orange"
-                style={{ width: `${Math.min(100, (monthlyTargets.contributedThisMonth / monthlyTargets.amountNeeded) * 100)}%` }}
+                style={{ width: `${Math.min(100, (monthlyTargets.totalBudgeted / monthlyTargets.totalTargets) * 100)}%` }}
               />
             </div>
             <div id={progressBarId} className="flex justify-between mt-1 text-xs text-monarch-text-dark">
-              <span>{formatCurrency(monthlyTargets.contributedThisMonth, { maximumFractionDigits: 0 })} saved</span>
-              <span>{formatCurrency(Math.max(0, monthlyTargets.amountNeeded - monthlyTargets.contributedThisMonth), { maximumFractionDigits: 0 })} to go</span>
+              <span>{formatCurrency(monthlyTargets.totalBudgeted, { maximumFractionDigits: 0 })} saved</span>
+              <span>{formatCurrency(monthlyTargets.toGo, { maximumFractionDigits: 0 })} to go</span>
             </div>
           </div>
         )}

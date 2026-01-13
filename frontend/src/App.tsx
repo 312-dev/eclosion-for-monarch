@@ -14,6 +14,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DemoProvider, isGlobalDemoMode } from './context/DemoContext';
+import { RateLimitProvider } from './context/RateLimitContext';
 import { DemoAuthProvider } from './context/DemoAuthContext';
 import { AppShell } from './components/layout/AppShell';
 import { MacOSDragRegion } from './components/layout/MacOSDragRegion';
@@ -341,9 +342,11 @@ export default function App() {
             <Router>
               <MacOSDragRegion />
               <ScrollToTop />
-              <DemoProvider>
-                <AppRouter />
-              </DemoProvider>
+              <RateLimitProvider>
+                <DemoProvider>
+                  <AppRouter />
+                </DemoProvider>
+              </RateLimitProvider>
             </Router>
           </TooltipProvider>
         </ToastProvider>

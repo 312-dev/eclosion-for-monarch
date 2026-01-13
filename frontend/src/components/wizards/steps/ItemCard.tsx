@@ -4,7 +4,7 @@
 
 import type { RecurringItem } from '../../../types';
 import type { PendingLink } from '../../LinkCategoryModal';
-import { formatDueDate, formatCurrency, formatFrequency } from '../../../utils';
+import { formatDueDate, formatCurrency, formatFrequency, decodeHtmlEntities } from '../../../utils';
 import { LinkIcon } from '../SetupWizardIcons';
 import { CheckIcon, LinkIcon as LinkIconComponent } from '../../icons';
 import { MerchantLogo } from './MerchantLogo';
@@ -19,7 +19,9 @@ export interface ItemCardProps {
 }
 
 export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendingLink }: ItemCardProps) {
-  const displayName = item.merchant_name || item.name.split(' (')[0];
+  // split() always returns at least one element, so [0] is always defined
+  const namePart = item.name.split(' (')[0]!;
+  const displayName = decodeHtmlEntities(item.merchant_name ?? namePart);
   const isLinked = !!pendingLink;
 
   return (
@@ -62,7 +64,7 @@ export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendi
             >
               <LinkIconComponent size={12} />
               {pendingLink.categoryIcon && <span>{pendingLink.categoryIcon}</span>}
-              {pendingLink.categoryName}
+              {decodeHtmlEntities(pendingLink.categoryName)}
               <span style={{ color: 'var(--monarch-text-muted)' }}>x</span>
             </button>
           ) : (
@@ -87,7 +89,7 @@ export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendi
         )}
         <div>
           <div className="font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
-            {formatCurrency(item.monthly_contribution, { maximumFractionDigits: 0 })}/mo
+            {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo
           </div>
           <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
             {formatCurrency(item.amount, { maximumFractionDigits: 0 })} {formatFrequency(item.frequency).toLowerCase()}

@@ -487,7 +487,7 @@ input[type="radio"] {
 /* Notification banners container - sticky below fixed header */
 .app-notification-banners {
   position: sticky;
-  top: 0;
+  top: var(--header-height);
   z-index: 15; /* Below sticky nav (20) but above content */
 }
 

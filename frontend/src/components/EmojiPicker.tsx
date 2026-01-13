@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useClickOutside } from '../hooks';
 import { RefreshIcon } from './icons';
+import { useIsRateLimited } from '../context/RateLimitContext';
 
 interface EmojiPickerProps {
   readonly currentEmoji: string;
@@ -51,6 +52,10 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
   const [customInput, setCustomInput] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isRateLimited = useIsRateLimited();
+
+  // Combine disabled states
+  const isDisabled = disabled || isRateLimited;
 
   // Close picker when clicking outside
   useClickOutside([pickerRef], () => {
@@ -104,8 +109,8 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
     <span className="relative inline-flex items-center" ref={pickerRef}>
       <button
         type="button"
-        onClick={() => !disabled && !isUpdating && setIsOpen(!isOpen)}
-        disabled={disabled || isUpdating}
+        onClick={() => !isDisabled && !isUpdating && setIsOpen(!isOpen)}
+        disabled={isDisabled || isUpdating}
         className="inline-flex items-center justify-center rounded hover:bg-black/5 transition-colors disabled:opacity-50 px-0.5 -ml-0.5"
         style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
         aria-label={`Current icon: ${currentEmoji}. Click to change`}

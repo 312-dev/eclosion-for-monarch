@@ -21,6 +21,8 @@ import {
   FolderIcon,
 } from '../icons';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
+import { decodeHtmlEntities } from '../../utils';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 export interface ActionsDropdownProps {
   readonly item: RecurringItem;
@@ -57,11 +59,13 @@ export function ActionsDropdown({
   const containerRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const focusIndexRef = useRef(-1);
+  const isRateLimited = useIsRateLimited();
 
   const isLoading = isToggling || isRecreating || isAddingToRollup || isRefreshing;
+  const isDisabled = isLoading || isRateLimited;
 
   const handleToggle = () => {
-    if (!isLoading) {
+    if (!isDisabled) {
       setIsOpen((prev) => !prev);
     }
   };
@@ -144,8 +148,8 @@ export function ActionsDropdown({
       <button
         id={triggerId}
         onClick={handleToggle}
-        disabled={isLoading}
-        aria-label={`Actions for ${item.name}`}
+        disabled={isDisabled}
+        aria-label={`Actions for ${decodeHtmlEntities(item.name)}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
@@ -163,7 +167,7 @@ export function ActionsDropdown({
           id={menuId}
           role="menu"
           aria-labelledby={triggerId}
-          aria-label={`Actions for ${item.name}`}
+          aria-label={`Actions for ${decodeHtmlEntities(item.name)}`}
           onKeyDown={handleMenuKeyDown}
           className="absolute right-0 top-full mt-1 z-popover py-1 rounded-lg shadow-lg text-sm min-w-45 dropdown-menu bg-monarch-bg-card border border-monarch-border"
         >

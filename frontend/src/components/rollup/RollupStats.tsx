@@ -9,6 +9,7 @@ import { Tooltip } from '../ui/Tooltip';
 import { StatusBadge } from '../ui';
 import { TrendUpIcon, TrendDownIcon } from '../icons';
 import { formatCurrency } from '../../utils';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 import type { ItemStatus } from '../../types';
 
 /** Get current month abbreviation (e.g., "Jan", "Feb") */
@@ -44,6 +45,10 @@ export function RollupStats({
   onFocus,
 }: RollupStatsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isRateLimited = useIsRateLimited();
+
+  // Disable input when updating or rate limited
+  const isDisabled = isUpdatingBudget || isRateLimited;
 
   const handleKeyDown = useCallback((e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -75,7 +80,7 @@ export function RollupStats({
             onBlur={onBudgetSubmit}
             onKeyDown={handleKeyDown}
             onFocus={(e) => { e.target.select(); onFocus(); }}
-            disabled={isUpdatingBudget}
+            disabled={isDisabled}
             aria-label="Monthly budget amount for rollup category"
             className="w-16 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             min="0"
