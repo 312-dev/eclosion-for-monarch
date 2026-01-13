@@ -24,7 +24,8 @@ export const queryKeys = {
   noteHistory: ['noteHistory'] as const,
   checkboxStates: ['checkboxStates'] as const,
   notesSettings: ['notesSettings'] as const,
-  notesCategories: ['notesCategories'] as const,
+  // Shared stores (normalized caches)
+  categoryStore: ['categoryStore'] as const,
 };
 
 /**

@@ -78,7 +78,7 @@ export function useDeploymentInfoQuery() {
 }
 
 /**
- * Trigger full sync - invalidates dashboard cache on success
+ * Trigger full sync - invalidates all caches on success
  */
 export function useSyncMutation() {
   const isDemo = useDemo();
@@ -86,7 +86,9 @@ export function useSyncMutation() {
   return useMutation({
     mutationFn: isDemo ? demoApi.triggerSync : api.triggerSync,
     onSuccess: () => {
+      // Invalidate all data that depends on Monarch data
       queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.dashboard, isDemo) });
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.categoryStore, isDemo) });
 
       // Notify Electron main process about sync completion to update tray menu
       if (!isDemo && globalThis.electron?.pendingSync?.notifyCompleted) {

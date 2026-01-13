@@ -82,7 +82,6 @@ export {
   useAllNotesQuery,
   useMonthNotesQuery,
   useArchivedNotesQuery,
-  useNotesCategoriesQuery,
   useNoteHistoryQuery,
   useSaveCategoryNoteMutation,
   useDeleteCategoryNoteMutation,
@@ -98,3 +97,45 @@ export {
   useMonthCheckboxStatesQuery,
   useUpdateCheckboxStateMutation,
 } from './notesQueries';
+
+// Category store (normalized cache for cross-feature category data)
+export {
+  useCategoryStore,
+  useCategoriesByGroup,
+  useCategory,
+  useCategoryName,
+  useGroup,
+  useAllCategories,
+  useUpdateCategoryInCache,
+  useUpdateGroupInCache,
+  useGetCategoryFromCache,
+  useGetGroupFromCache,
+  useRefreshCategoryStore,
+  useInvalidateCategoryStore,
+} from './categoryStoreQueries';
+
+// Category group store (normalized cache for category groups and unmapped categories)
+export {
+  useCategoryGroupsStore,
+  useUnmappedCategoriesStore,
+  useCategoryGroupsList,
+  useCategoryGroup,
+  useUnmappedCategoriesList,
+  useUnmappedCategoriesByGroup,
+  useUnmappedCategory,
+  useRefreshCategoryGroups,
+  useRefreshUnmappedCategories,
+  useRemoveFromUnmappedCache,
+} from './categoryGroupStoreQueries';
+
+// Config store (selectors for config data, derived from dashboard)
+export {
+  useConfig,
+  useIsConfigured,
+  useTargetGroup,
+  useAutoSyncSettings,
+  useDisplayPreferences,
+  useUserInfo,
+  useGetConfigFromCache,
+  useUpdateConfigInCache,
+} from './configStoreQueries';
