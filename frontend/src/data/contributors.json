@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-05T17:30:48.388Z",
+  "generatedAt": "2026-01-13T23:34:58.802Z",
   "features": {
     "recurring": {
       "featureId": "recurring",
@@ -14,10 +14,28 @@
           "username": "GraysonAdams",
           "avatarUrl": "https://avatars.githubusercontent.com/u/1523519?v=4",
           "profileUrl": "https://github.com/GraysonAdams",
-          "commits": 34
+          "commits": 2
         }
       ],
-      "lastUpdated": "2026-01-05T17:30:48.388Z"
+      "lastUpdated": "2026-01-13T23:34:58.803Z"
+    },
+    "notes": {
+      "featureId": "notes",
+      "ideator": {
+        "username": "GraysonCAdams",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/51373669?v=4",
+        "profileUrl": "https://github.com/GraysonCAdams",
+        "commits": 0
+      },
+      "contributors": [
+        {
+          "username": "GraysonAdams",
+          "avatarUrl": "https://avatars.githubusercontent.com/u/1523519?v=4",
+          "profileUrl": "https://github.com/GraysonAdams",
+          "commits": 10
+        }
+      ],
+      "lastUpdated": "2026-01-13T23:34:59.638Z"
     },
     "linked-goals": {
       "featureId": "linked-goals",
@@ -28,7 +46,7 @@
         "commits": 0
       },
       "contributors": [],
-      "lastUpdated": "2026-01-05T17:30:49.081Z"
+      "lastUpdated": "2026-01-13T23:34:59.876Z"
     },
     "leaderboard": {
       "featureId": "leaderboard",
@@ -39,7 +57,35 @@
         "commits": 0
       },
       "contributors": [],
-      "lastUpdated": "2026-01-05T17:30:49.233Z"
+      "lastUpdated": "2026-01-13T23:35:00.058Z"
+    },
+    "inbox-sync": {
+      "featureId": "inbox-sync",
+      "ideator": null,
+      "contributors": [],
+      "lastUpdated": "2026-01-13T23:35:00.219Z"
+    },
+    "shared-budget": {
+      "featureId": "shared-budget",
+      "ideator": {
+        "username": "GraysonCAdams",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/51373669?v=4",
+        "profileUrl": "https://github.com/GraysonCAdams",
+        "commits": 0
+      },
+      "contributors": [],
+      "lastUpdated": "2026-01-13T23:35:03.741Z"
+    },
+    "allowance": {
+      "featureId": "allowance",
+      "ideator": {
+        "username": "GraysonCAdams",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/51373669?v=4",
+        "profileUrl": "https://github.com/GraysonCAdams",
+        "commits": 0
+      },
+      "contributors": [],
+      "lastUpdated": "2026-01-13T23:35:03.892Z"
     }
   }
 }
