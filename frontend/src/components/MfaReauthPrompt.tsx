@@ -32,21 +32,23 @@ interface MfaReauthPromptProps {
 
 export function MfaReauthPrompt({
   email,
-  initialMfaMode,
+  initialMfaMode: _initialMfaMode,
   onSuccess,
   onUseOtherAccount,
 }: Readonly<MfaReauthPromptProps>) {
   const { setAuthenticated } = useAuth();
   const [mfaCode, setMfaCode] = useState('');
-  const [mfaMode, setMfaMode] = useState<'secret' | 'code'>(initialMfaMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCodeCaveatsModal, setShowCodeCaveatsModal] = useState(false);
+  const [pendingCodeModeLogin, setPendingCodeModeLogin] = useState(false);
 
   const mfaFormat = detectMfaFormat(mfaCode);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Actually perform the login after any confirmations.
+   */
+  const performLogin = async (confirmedMfaMode: 'secret' | 'code') => {
     setLoading(true);
     setError(null);
 
@@ -64,7 +66,7 @@ export function MfaReauthPrompt({
         credentials.email,
         credentials.password,
         mfaCode,
-        mfaMode
+        confirmedMfaMode
       );
 
       if (result.success) {
@@ -72,9 +74,9 @@ export function MfaReauthPrompt({
         await globalThis.electron?.credentials.store({
           email: credentials.email,
           password: credentials.password,
-          mfaMode,
+          mfaMode: confirmedMfaMode,
           // Only store TOTP secrets, not ephemeral 6-digit codes
-          ...(mfaCode && mfaMode === 'secret' && { mfaSecret: mfaCode }),
+          ...(mfaCode && confirmedMfaMode === 'secret' && { mfaSecret: mfaCode }),
         });
 
         // Mark as authenticated
@@ -95,6 +97,20 @@ export function MfaReauthPrompt({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // If user entered a 6-digit code, show confirmation modal first
+    if (mfaFormat === 'six_digit_code') {
+      setPendingCodeModeLogin(true);
+      setShowCodeCaveatsModal(true);
+      return;
+    }
+
+    // Otherwise proceed with secret mode login
+    await performLogin('secret');
   };
 
   // Mask email for privacy (show first 2 chars and domain)
@@ -184,9 +200,7 @@ export function MfaReauthPrompt({
               <MfaInputSection
                 mfaSecret={mfaCode}
                 onMfaSecretChange={setMfaCode}
-                mfaMode={mfaMode}
                 mfaFormat={mfaFormat}
-                onShowCodeCaveats={() => setShowCodeCaveatsModal(true)}
               />
 
               <button
@@ -222,11 +236,17 @@ export function MfaReauthPrompt({
 
       <MfaCodeCaveatsModal
         isOpen={showCodeCaveatsModal}
-        onClose={() => setShowCodeCaveatsModal(false)}
-        onAccept={() => {
+        onClose={() => {
           setShowCodeCaveatsModal(false);
-          setMfaMode('code');
-          setMfaCode('');
+          setPendingCodeModeLogin(false);
+        }}
+        onAccept={async () => {
+          setShowCodeCaveatsModal(false);
+          // If this was triggered by form submit, proceed with login
+          if (pendingCodeModeLogin) {
+            setPendingCodeModeLogin(false);
+            await performLogin('code');
+          }
         }}
       />
     </>

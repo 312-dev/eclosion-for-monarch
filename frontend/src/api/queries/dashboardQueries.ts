@@ -87,6 +87,14 @@ export function useSyncMutation() {
     mutationFn: isDemo ? demoApi.triggerSync : api.triggerSync,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.dashboard, isDemo) });
+
+      // Notify Electron main process about sync completion to update tray menu
+      if (!isDemo && globalThis.electron?.pendingSync?.notifyCompleted) {
+        const now = new Date().toISOString();
+        globalThis.electron.pendingSync.notifyCompleted(now).catch(() => {
+          // Ignore errors - this is just for tray menu updates
+        });
+      }
     },
   });
 }

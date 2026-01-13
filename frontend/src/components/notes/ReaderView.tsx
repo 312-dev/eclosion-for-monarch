@@ -5,6 +5,7 @@
  */
 
 import { FileText } from 'lucide-react';
+import { decodeHtmlEntities } from '../../utils';
 import type { CategoryGroupWithNotes, GeneralMonthNote, MonthKey } from '../../types/notes';
 
 interface ReaderViewProps {
@@ -122,7 +123,7 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
               className="text-lg font-semibold mb-3 pb-2 border-b"
               style={{ color: 'var(--monarch-text-dark)', borderColor: 'var(--monarch-border)' }}
             >
-              {group.name}
+              {decodeHtmlEntities(group.name)}
             </h3>
 
             {/* Group note */}
@@ -171,7 +172,7 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
                         className="text-sm font-medium"
                         style={{ color: 'var(--monarch-text-dark)' }}
                       >
-                        {category.name}
+                        {decodeHtmlEntities(category.name)}
                       </span>
                       {category.effectiveNote.isInherited && category.effectiveNote.sourceMonth && (
                         <span

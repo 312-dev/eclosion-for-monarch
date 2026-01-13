@@ -18,6 +18,15 @@ function getStore(): Store {
 
 let tray: Tray | null = null;
 
+// Store the sync click handler for use by updateTrayMenuSyncStatus
+let storedSyncClickHandler: (() => Promise<void>) | null = null;
+
+// Store the last sync ISO timestamp for periodic refresh
+let lastSyncIsoTimestamp: string | null = null;
+
+// Timer for periodic tray menu refresh
+let trayRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 // Track current health status for tooltip updates
 interface HealthStatus {
   backendRunning: boolean;
@@ -28,6 +37,29 @@ interface HealthStatus {
 const currentHealth: HealthStatus = {
   backendRunning: false,
 };
+
+/**
+ * Format an ISO timestamp to a relative time string (e.g., "5m ago").
+ */
+function formatRelativeTime(isoTimestamp: string): string {
+  const date = new Date(isoTimestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+
+  if (diffSecs < 60) return `${diffSecs}s ago`;
+
+  const diffMins = Math.floor(diffSecs / 60);
+  if (diffMins < 60) return `${diffMins}m ago`;
+
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString();
+}
 
 /**
  * Build the tooltip string based on current health status.
@@ -116,6 +148,9 @@ function getTrayIconPath(): string {
  * Create the system tray icon.
  */
 export function createTray(onSyncClick: () => Promise<void>): void {
+  // Store the handler for later use by updateTrayMenuSyncStatus
+  storedSyncClickHandler = onSyncClick;
+
   const iconPath = getTrayIconPath();
 
   // Create icon (handle missing icon gracefully)
@@ -231,6 +266,50 @@ export function updateTrayMenu(
 }
 
 /**
+ * Refresh the tray menu with the current relative time.
+ * Called periodically to keep the "X ago" display up to date.
+ */
+function refreshTrayMenuTime(): void {
+  if (!tray || !storedSyncClickHandler || !lastSyncIsoTimestamp) return;
+
+  const timeAgo = formatRelativeTime(lastSyncIsoTimestamp);
+  const syncStatus = `Last sync: ${timeAgo}`;
+  updateTrayMenu(storedSyncClickHandler, syncStatus);
+  updateHealthStatus(true, timeAgo);
+}
+
+/**
+ * Start or restart the periodic refresh timer for the tray menu.
+ * Refreshes every 30 seconds to keep the "X ago" display in sync with the app header.
+ */
+function startTrayRefreshTimer(): void {
+  // Clear existing timer if any
+  if (trayRefreshTimer) {
+    clearInterval(trayRefreshTimer);
+  }
+
+  // Refresh every 30 seconds (same as frontend SyncButton)
+  trayRefreshTimer = setInterval(refreshTrayMenuTime, 30000);
+}
+
+/**
+ * Update tray menu sync status from an ISO timestamp.
+ * Stores the timestamp and starts periodic refresh to keep time display current.
+ */
+export function updateTrayMenuSyncStatus(isoTimestamp: string): void {
+  if (!tray || !storedSyncClickHandler) return;
+
+  // Store the ISO timestamp for periodic refresh
+  lastSyncIsoTimestamp = isoTimestamp;
+
+  // Update immediately
+  refreshTrayMenuTime();
+
+  // Start/restart the refresh timer
+  startTrayRefreshTimer();
+}
+
+/**
  * Update dock visibility on macOS based on menu bar mode.
  */
 function updateDockVisibility(menuBarMode: boolean): void {
@@ -291,6 +370,21 @@ export function isAuthError(errorMessage: string | undefined): boolean {
 }
 
 /**
+ * Check if an error message indicates a rate limit.
+ */
+export function isRateLimitError(errorMessage: string | undefined): boolean {
+  if (!errorMessage) return false;
+  const lowerError = errorMessage.toLowerCase();
+  return (
+    lowerError.includes('rate limit') ||
+    lowerError.includes('rate_limit') ||
+    lowerError.includes('ratelimit') ||
+    lowerError.includes('429') ||
+    lowerError.includes('too many requests')
+  );
+}
+
+/**
  * Show a re-authentication notification.
  * When clicked, opens the app and sends an IPC event to trigger the reauth modal.
  */
@@ -316,9 +410,15 @@ export function showReauthNotification(): void {
 }
 
 /**
- * Destroy the tray icon.
+ * Destroy the tray icon and clean up resources.
  */
 export function destroyTray(): void {
+  // Clean up the refresh timer
+  if (trayRefreshTimer) {
+    clearInterval(trayRefreshTimer);
+    trayRefreshTimer = null;
+  }
+
   tray?.destroy();
   tray = null;
 }

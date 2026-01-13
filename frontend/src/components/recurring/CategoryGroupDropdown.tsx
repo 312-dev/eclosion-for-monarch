@@ -15,6 +15,7 @@ import { useCategoryGroupsQuery } from '../../api/queries/dashboardQueries';
 import { useClickOutside } from '../../hooks';
 import { Tooltip } from '../ui/Tooltip';
 import { SpinnerIcon, ChevronDownIcon } from '../icons';
+import { decodeHtmlEntities } from '../../utils';
 
 interface CategoryGroupDropdownProps {
   readonly currentGroupName: string | null;
@@ -124,7 +125,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
 
   return (
     <div className="relative inline-flex items-center gap-1 min-w-0 max-w-full" ref={dropdownRef}>
-      <span className="truncate" id={`${triggerId}-label`}>{currentGroupName}</span>
+      <span className="truncate" id={`${triggerId}-label`}>{decodeHtmlEntities(currentGroupName)}</span>
       <Tooltip content="Change category group">
         <button
           id={triggerId}
@@ -132,7 +133,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
           onClick={handleOpen}
           onKeyDown={handleKeyDown}
           disabled={disabled || isChanging}
-          aria-label={`Change category group. Current: ${currentGroupName}`}
+          aria-label={`Change category group. Current: ${decodeHtmlEntities(currentGroupName)}`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           aria-controls={isOpen ? menuId : undefined}
@@ -185,7 +186,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
                     outlineOffset: '-2px',
                   }}
                 >
-                  {group.name}
+                  {decodeHtmlEntities(group.name)}
                 </button>
               );
             })

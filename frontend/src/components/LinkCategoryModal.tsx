@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { UnmappedCategory, RecurringItem } from '../types';
 import { getUnmappedCategories, linkToCategory } from '../api/client';
 import { useToast } from '../context/ToastContext';
+import { useIsRateLimited } from '../context/RateLimitContext';
 import { handleApiError, decodeHtmlEntities } from '../utils';
 import { Portal } from './Portal';
 
@@ -26,18 +27,19 @@ interface LinkCategoryModalProps {
 export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave = false, reservedCategories = new Map() }: LinkCategoryModalProps) {
   const [categories, setCategories] = useState<UnmappedCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [syncName, setSyncName] = useState<boolean>(true);
+  const [syncName, setSyncName] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const toast = useToast();
+  const isRateLimited = useIsRateLimited();
 
   useEffect(() => {
     if (isOpen) {
       fetchCategories();
       setSelectedCategory('');
-      setSyncName(true);
+      setSyncName(false);
       setSearchQuery('');
     }
   }, [isOpen]);
@@ -160,7 +162,7 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
             </button>
           </div>
           <p className="text-sm mt-1 text-monarch-text-muted">
-            Link <strong>{item.name}</strong> to an existing budget category
+            Link <strong>{decodeHtmlEntities(item.name)}</strong> to an existing budget category
           </p>
         </div>
 
@@ -260,7 +262,7 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
                       {selectedCategoryInfo?.icon && <span className="mr-1">{selectedCategoryInfo.icon}</span>}
                       {selectedCategoryInfo?.name && decodeHtmlEntities(selectedCategoryInfo.name)}
                       <span className="mx-2">→</span>
-                      <strong className="text-monarch-orange">{item.category_name || item.name}</strong>
+                      <strong className="text-monarch-orange">{decodeHtmlEntities(item.category_name || item.name)}</strong>
                     </div>
                   </div>
                 </label>
@@ -297,8 +299,8 @@ export function LinkCategoryModal({ item, isOpen, onClose, onSuccess, deferSave 
           </button>
           <button
             onClick={handleLink}
-            disabled={!selectedCategory || saving}
-            className={`flex-1 px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-hover-lift ${!selectedCategory || saving ? 'bg-monarch-orange-disabled' : 'bg-monarch-orange'}`}
+            disabled={!selectedCategory || saving || isRateLimited}
+            className={`flex-1 px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-hover-lift ${!selectedCategory || saving || isRateLimited ? 'bg-monarch-orange-disabled' : 'bg-monarch-orange'}`}
           >
             {saving ? 'Linking...' : 'Link Category'}
           </button>

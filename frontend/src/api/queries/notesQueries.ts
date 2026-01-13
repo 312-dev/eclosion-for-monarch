@@ -297,6 +297,10 @@ export function useSaveGeneralNoteMutation() {
     mutationFn: ({ monthKey, content }: { monthKey: MonthKey; content: string }) =>
       isDemo ? demoApi.saveGeneralNote(monthKey, content) : api.saveGeneralNote(monthKey, content),
     onSuccess: (_data, variables) => {
+      // Invalidate the bulk query so it refetches fresh data
+      queryClient.invalidateQueries({
+        queryKey: [...getQueryKey(queryKeys.monthNotes, isDemo), '__all__'],
+      });
       // Invalidate the specific month
       queryClient.invalidateQueries({
         queryKey: [...getQueryKey(queryKeys.monthNotes, isDemo), variables.monthKey],
@@ -316,6 +320,10 @@ export function useDeleteGeneralNoteMutation() {
     mutationFn: (monthKey: MonthKey) =>
       isDemo ? demoApi.deleteGeneralNote(monthKey) : api.deleteGeneralNote(monthKey),
     onSuccess: (_data, monthKey) => {
+      // Invalidate the bulk query so it refetches fresh data
+      queryClient.invalidateQueries({
+        queryKey: [...getQueryKey(queryKeys.monthNotes, isDemo), '__all__'],
+      });
       queryClient.invalidateQueries({
         queryKey: [...getQueryKey(queryKeys.monthNotes, isDemo), monthKey],
       });

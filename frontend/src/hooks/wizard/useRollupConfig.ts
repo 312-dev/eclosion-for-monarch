@@ -23,7 +23,7 @@ export function useRollupConfig(): UseRollupConfigResult {
   const [rollupMode, setRollupMode] = useState<'new' | 'existing'>('new');
   const [rollupCategories, setRollupCategories] = useState<UnmappedCategory[]>([]);
   const [selectedRollupCategoryId, setSelectedRollupCategoryId] = useState('');
-  const [rollupSyncName, setRollupSyncName] = useState(true);
+  const [rollupSyncName, setRollupSyncName] = useState(false);
   const [loadingRollupCategories, setLoadingRollupCategories] = useState(false);
   const [rollupCategoriesFetched, setRollupCategoriesFetched] = useState(false);
 

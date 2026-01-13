@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 import re
 from datetime import datetime, timedelta
@@ -13,6 +14,12 @@ from core import config
 from core.error_detection import is_rate_limit_error
 
 load_dotenv()
+
+# Browser-like user agent (per Monarch support guidance for firewall issues)
+_BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+)
 
 
 # Helper to strip leading emoji and space from a string
@@ -233,11 +240,38 @@ def _sanitize_base32_secret(secret: str) -> str:
     return secret
 
 
+def _is_invalid_token_error(error: Exception) -> bool:
+    """Check if an error indicates an invalid/expired session token."""
+    error_str = str(error).lower()
+    return (
+        "invalid token" in error_str or "unauthorized" in error_str or "authentication" in error_str
+    )
+
+
+async def _validate_session(mm: MonarchMoney) -> bool:
+    """
+    Validate that the MonarchMoney session is actually working.
+
+    The login() method with use_saved_session=True doesn't validate the token -
+    it just loads it. We need to make an actual API call to verify.
+    """
+    try:
+        # Use a lightweight call to verify the session is valid
+        await mm.get_subscription_details()
+        return True
+    except Exception as e:
+        # For invalid token errors, session is invalid
+        # For other errors (network, rate limit, etc.), assume session is OK
+        # to avoid unnecessary re-auth attempts
+        return not _is_invalid_token_error(e)
+
+
 async def get_mm(email=None, password=None, mfa_secret_key=None):
     """
     Get authenticated MonarchMoney client.
 
     Can use explicitly passed credentials, stored credentials, or env vars.
+    If the saved session has an expired token, automatically clears it and retries.
     """
     # Use provided credentials or load from storage/env
     if email is None or password is None:
@@ -250,28 +284,53 @@ async def get_mm(email=None, password=None, mfa_secret_key=None):
     if mfa_secret_key:
         mfa_secret_key = _sanitize_base32_secret(mfa_secret_key)
 
+    session_file = str(config.MONARCH_SESSION_FILE)
+    use_saved_session = session_file and os.path.exists(session_file)
+
     # Use configured session file path (stored in STATE_DIR for desktop/docker compatibility)
-    mm = MonarchMoney(session_file=str(config.MONARCH_SESSION_FILE))
+    mm = MonarchMoney(session_file=session_file)
 
     # Use browser-like user agent (per Monarch support guidance for firewall issues)
-    mm._headers["User-Agent"] = (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-    )
-    session_file = str(config.MONARCH_SESSION_FILE)
-    use_saved_session = False
-    if session_file and os.path.exists(session_file):
-        mtime = datetime.fromtimestamp(os.path.getmtime(session_file))
-        if (datetime.now() - mtime).total_seconds() < 300:
-            print(f"Using saved session from {session_file}.")
-            use_saved_session = True
-        else:
-            print(f"Session file {session_file} is too old, removing.")
+    mm._headers["User-Agent"] = _BROWSER_USER_AGENT
+
+    # Try to use saved session first, but handle expired tokens gracefully
+    if use_saved_session:
+        print(f"Using saved session from {session_file}.")
+        try:
+            await mm.login(
+                email=email,
+                password=password,
+                mfa_secret_key=mfa_secret_key,
+                use_saved_session=True,
+            )
+
+            # Validate the session with a real API call - login() doesn't verify the token
+            if await _validate_session(mm):
+                return mm
+
+            # Session is invalid - clear and re-authenticate
+            print("Saved session token is invalid. Clearing and re-authenticating...")
+
+        except Exception as e:
+            if not _is_invalid_token_error(e):
+                # Some other error during login - re-raise
+                raise
+            print(f"Session token expired during login ({e}). Clearing session...")
+
+        # Delete the stale session file
+        with contextlib.suppress(OSError):
             os.remove(session_file)
+
+        # Create fresh client without stale session
+        mm = MonarchMoney(session_file=session_file)
+        mm._headers["User-Agent"] = _BROWSER_USER_AGENT
+
+    # Login fresh (either no saved session or it was cleared due to expiry)
     await mm.login(
         email=email,
         password=password,
         mfa_secret_key=mfa_secret_key,
-        use_saved_session=use_saved_session,
+        use_saved_session=False,
     )
     return mm
 
@@ -294,9 +353,7 @@ async def get_mm_with_code(email: str, password: str, mfa_code: str):
     mm = MonarchMoney(session_file=str(config.MONARCH_SESSION_FILE))
 
     # Use browser-like user agent (per Monarch support guidance for firewall issues)
-    mm._headers["User-Agent"] = (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-    )
+    mm._headers["User-Agent"] = _BROWSER_USER_AGENT
 
     # First try login - this will fail with MFA error if MFA is enabled
     try:
@@ -306,6 +363,9 @@ async def get_mm_with_code(email: str, password: str, mfa_code: str):
         if "mfa" in error_lower or "multi-factor" in error_lower or "2fa" in error_lower:
             # MFA required - authenticate with the one-time code
             await mm.multi_factor_authenticate(email, password, mfa_code)
+            # multi_factor_authenticate() doesn't save the session automatically
+            # (unlike login()), so we need to save it explicitly
+            mm.save_session()
         else:
             # Some other error - re-raise
             raise

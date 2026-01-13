@@ -47,6 +47,7 @@ import {
   Users,
   LogOut,
   Lock,
+  Mail,
   Shield,
   ShieldCheck,
   Key,
@@ -154,6 +155,7 @@ export const UserIcon = User;
 export const UsersIcon = Users;
 export const LogoutIcon = LogOut;
 export const LockIcon = Lock;
+export const MailIcon = Mail;
 export const ShieldIcon = Shield;
 export const ShieldCheckIcon = ShieldCheck;
 export const KeyIcon = Key;

@@ -164,14 +164,27 @@ class TrackerRepository:
     ) -> bool:
         """Set frozen monthly target for a category."""
         category = self.get_category(recurring_id)
-        if category:
-            category.frozen_monthly_target = frozen_target
-            category.target_month = target_month
-            category.balance_at_month_start = balance_at_start
-            category.frozen_amount = amount
-            category.frozen_frequency_months = frequency_months
-            return True
-        return False
+
+        # Create entry if it doesn't exist (needed for rollup items which use
+        # keys like "rollup_{item_id}" that aren't tracked as regular categories)
+        if not category:
+            category = Category(
+                recurring_id=recurring_id,
+                monarch_category_id="",  # Rollup items don't have individual Monarch categories
+                name=recurring_id,
+                target_amount=amount,
+                is_active=True,
+                created_at=datetime.utcnow(),
+                last_synced_at=datetime.utcnow(),
+            )
+            self.session.add(category)
+
+        category.frozen_monthly_target = frozen_target
+        category.target_month = target_month
+        category.balance_at_month_start = balance_at_start
+        category.frozen_amount = amount
+        category.frozen_frequency_months = frequency_months
+        return True
 
     def clear_frozen_target(self, recurring_id: str) -> bool:
         """Clear frozen target for a category."""

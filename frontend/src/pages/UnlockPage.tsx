@@ -2,25 +2,28 @@
  * Unlock Page
  *
  * Orchestrates the credential unlock flow:
- * 1. Passphrase entry -> decrypt + validate
- * 2. If Monarch credentials invalid -> credential update form
- * 3. If passphrase forgotten -> reset app modal
+ * 1. Passphrase/biometric entry -> decrypt + validate
+ * 2. If biometric fails repeatedly -> fallback to email/password
+ * 3. If Monarch credentials invalid -> credential update form
+ * 4. If passphrase forgotten -> reset app modal
  */
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { PassphrasePrompt } from '../components/passphrase';
+import { PassphrasePrompt, FallbackAuthForm } from '../components/passphrase';
 import { CredentialUpdateForm } from '../components/CredentialUpdateForm';
 import { ResetAppModal } from '../components/ResetAppModal';
+import { ElectronTitleBar } from '../components/ElectronTitleBar';
 import { useState, useEffect } from 'react';
 import { usePageTitle } from '../hooks';
+import { isDesktopMode } from '../utils/apiBase';
 
-type UnlockStage = 'passphrase' | 'credential_update';
+type UnlockStage = 'passphrase' | 'fallback' | 'credential_update';
 
 export function UnlockPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authenticated, needsUnlock, lockReason } = useAuth();
+  const { authenticated, needsUnlock, lockReason, setAuthenticated, setNeedsUnlock } = useAuth();
 
   // Stage management
   const [stage, setStage] = useState<UnlockStage>('passphrase');
@@ -81,6 +84,16 @@ export function UnlockPage() {
     navigate('/login', { replace: true });
   };
 
+  // Handle fallback auth request (when Touch ID fails or user requests it)
+  const handleFallbackRequest = () => {
+    setStage('fallback');
+  };
+
+  // Handle cancel from fallback form (go back to biometric)
+  const handleFallbackCancel = () => {
+    setStage('passphrase');
+  };
+
   // Render credential update form when Monarch credentials are invalid
   if (stage === 'credential_update' && storedPassphrase) {
     return (
@@ -89,6 +102,22 @@ export function UnlockPage() {
         onSuccess={handleCredentialUpdateSuccess}
         onCancel={handleCredentialUpdateCancel}
       />
+    );
+  }
+
+  // Render fallback auth form when Touch ID fails
+  if (stage === 'fallback' && isDesktopMode()) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+        <ElectronTitleBar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <FallbackAuthForm
+            onCancel={handleFallbackCancel}
+            setAuthenticated={setAuthenticated}
+            setNeedsUnlock={setNeedsUnlock}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -105,6 +134,7 @@ export function UnlockPage() {
         onSuccess={handleUnlockSuccess}
         onCredentialUpdateNeeded={handleCredentialUpdateNeeded}
         onResetApp={handleResetAppClick}
+        onFallbackRequest={handleFallbackRequest}
         autoPromptBiometric={autoPromptBiometric}
       />
 

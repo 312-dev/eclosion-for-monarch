@@ -544,3 +544,100 @@ export function clearAllAuthData(): void {
 
   debugLog('Credentials: All auth data cleared');
 }
+
+// =============================================================================
+// Touch ID Setup & Fallback Authentication
+// =============================================================================
+
+/**
+ * Result of a Touch ID setup prompt.
+ */
+export interface TouchIdSetupResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Prompt Touch ID to verify user identity during setup.
+ * Does NOT store anything - just verifies the user can use Touch ID.
+ *
+ * On macOS: Prompts for fingerprint
+ * On Windows/Linux: Returns success (no explicit biometric prompt needed)
+ */
+export async function promptTouchIdForSetup(): Promise<TouchIdSetupResult> {
+  if (process.platform !== 'darwin') {
+    // Windows/Linux don't need an explicit prompt for setup
+    debugLog('Biometric: Non-macOS platform, skipping setup prompt');
+    return { success: true };
+  }
+
+  try {
+    await systemPreferences.promptTouchID('enable Touch ID for Eclosion');
+    debugLog('Biometric: Touch ID setup prompt successful');
+    return { success: true };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    debugLog(`Biometric: Touch ID setup prompt failed: ${errorMsg}`);
+
+    // Check if user cancelled
+    if (errorMsg.includes('cancel') || errorMsg.includes('Cancel')) {
+      return {
+        success: false,
+        error: 'Setup cancelled',
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Touch ID not available. Please check your system settings.',
+    };
+  }
+}
+
+/**
+ * Result of fallback credential validation.
+ */
+export interface FallbackValidationResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Validate credentials for fallback authentication when Touch ID fails.
+ * Compares against STORED credentials (works offline).
+ *
+ * Security: Never returns the actual stored credentials, only success/failure.
+ *
+ * @param email User-entered email
+ * @param password User-entered password
+ * @returns Validation result
+ */
+export function validateCredentialsFallback(
+  email: string,
+  password: string
+): FallbackValidationResult {
+  const stored = getMonarchCredentials();
+
+  if (!stored) {
+    debugLog('Biometric: Fallback validation failed - no stored credentials');
+    return {
+      success: false,
+      error: 'No stored credentials found',
+    };
+  }
+
+  // Case-insensitive email comparison, exact password match
+  const emailMatch = stored.email.toLowerCase() === email.toLowerCase().trim();
+  const passwordMatch = stored.password === password;
+
+  if (emailMatch && passwordMatch) {
+    debugLog('Biometric: Fallback validation successful');
+    return { success: true };
+  }
+
+  debugLog('Biometric: Fallback validation failed - credentials mismatch');
+  return {
+    success: false,
+    error: 'Invalid credentials. Please use the email and password you last used with Eclosion.',
+  };
+}

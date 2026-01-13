@@ -22,6 +22,7 @@ import {
 } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { usePageTitle } from '../../hooks';
+import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 import type { SyncResult } from '../../types';
 
 export function RecurringTab() {
@@ -112,7 +113,7 @@ export function RecurringTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div style={{ color: 'var(--monarch-text-muted)' }}>Loading...</div>
+        <PageLoadingSpinner />
       </div>
     );
   }

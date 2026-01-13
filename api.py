@@ -1059,6 +1059,96 @@ def preview_import():
     return {"success": True, "valid": True, "preview": preview}
 
 
+@app.route("/settings/export-encrypted", methods=["POST"])
+@api_handler(handle_mfa=False)
+def export_settings_encrypted():
+    """
+    Export user settings as encrypted JSON for auto-backup.
+
+    Body: {
+        "passphrase": "email+password"  # Encryption passphrase
+    }
+
+    Returns: {
+        "success": true,
+        "salt": "base64 salt",
+        "data": "base64 encrypted JSON"
+    }
+    """
+    from services.encrypted_export_service import EncryptedExportService
+
+    request_data = request.get_json()
+    if not request_data or "passphrase" not in request_data:
+        return {"success": False, "error": "Missing 'passphrase' in request body"}, 400
+
+    passphrase = request_data["passphrase"]
+    app_settings = request_data.get("app_settings")
+
+    export_service = EncryptedExportService()
+    result = export_service.export_encrypted(passphrase, app_settings)
+
+    if result.success:
+        return {
+            "success": True,
+            "salt": result.salt,
+            "data": result.data,
+        }
+    else:
+        return {"success": False, "error": result.error or "Encrypted export failed"}, 500
+
+
+@app.route("/settings/import-encrypted", methods=["POST"])
+@api_handler(handle_mfa=False)
+def import_settings_encrypted():
+    """
+    Import settings from an encrypted backup.
+
+    Body: {
+        "salt": "base64 salt",
+        "data": "base64 encrypted JSON",
+        "passphrase": "email+password",
+        "options": {
+            "tools": ["recurring"]  # Optional: specific tools to import
+        }
+    }
+
+    Returns: {
+        "success": true/false,
+        "needs_credentials": false,  # True if decryption failed
+        "imported": { "recurring": true },
+        "warnings": [],
+        "error": null
+    }
+    """
+    from services.encrypted_export_service import EncryptedExportService
+
+    request_data = request.get_json()
+    if not request_data:
+        return {"success": False, "error": "Missing request body"}, 400
+
+    required_fields = ["salt", "data", "passphrase"]
+    for field in required_fields:
+        if field not in request_data:
+            return {"success": False, "error": f"Missing '{field}' in request body"}, 400
+
+    salt = request_data["salt"]
+    encrypted_data = request_data["data"]
+    passphrase = request_data["passphrase"]
+    options = request_data.get("options", {})
+    tools = options.get("tools")
+
+    export_service = EncryptedExportService()
+    result = export_service.import_encrypted(salt, encrypted_data, passphrase, tools)
+
+    return {
+        "success": result.success,
+        "needs_credentials": result.needs_credentials,
+        "imported": result.imported,
+        "warnings": result.warnings,
+        "error": result.error,
+    }
+
+
 # ---- AUTO-SYNC ENDPOINTS ----
 
 
@@ -2118,6 +2208,30 @@ def update_notes_settings():
 def health_check():
     """Health check endpoint."""
     return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+
+
+@app.route("/health/monarch", methods=["GET"])
+@api_handler(handle_mfa=False)
+async def health_monarch():
+    """
+    Check if Monarch API is accessible.
+
+    Used by frontend to detect when rate limit clears.
+    Returns 200 if Monarch is accessible, 429 if still rate limited.
+    """
+    from core.exceptions import RateLimitError
+
+    try:
+        is_valid = await sync_service.validate_auth()
+        return {"healthy": is_valid}
+    except RateLimitError as e:
+        return jsonify(
+            {
+                "healthy": False,
+                "rate_limited": True,
+                "retry_after": e.retry_after,
+            }
+        ), 429
 
 
 def create_app():

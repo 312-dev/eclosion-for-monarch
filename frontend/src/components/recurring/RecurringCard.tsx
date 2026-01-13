@@ -22,7 +22,7 @@ import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
 interface RecurringCardProps {
   readonly item: RecurringItem;
   readonly onToggle: (id: string, enabled: boolean) => Promise<void>;
-  readonly onAllocate: (id: string, amount: number) => Promise<void>;
+  readonly onAllocate: (id: string, diff: number, newAmount: number) => Promise<void>;
   readonly onRecreate: (id: string) => Promise<void>;
   readonly onChangeGroup: (id: string, groupId: string, groupName: string) => Promise<void>;
   readonly onAddToRollup: ((id: string) => Promise<void>) | undefined;
@@ -102,12 +102,14 @@ export const RecurringCard = memo(function RecurringCard({
     return addToRollupAction.execute(() => onAddToRollup(item.id));
   };
 
-  const handleAllocate = (amount: number) =>
-    allocateAction.execute(() => onAllocate(item.id, amount));
+  const handleAllocate = (diff: number, newAmount: number) =>
+    allocateAction.execute(() => onAllocate(item.id, diff, newAmount));
 
   const handleAllocateNeeded = async (): Promise<void> => {
     if (item.amount_needed_now <= 0) return;
-    await handleAllocate(item.amount_needed_now);
+    const diff = item.amount_needed_now;
+    const newAmount = Math.round(item.planned_budget + diff);
+    await handleAllocate(diff, newAmount);
   };
 
   const contentOpacity = item.is_enabled ? '' : 'opacity-50';
@@ -140,13 +142,15 @@ export const RecurringCard = memo(function RecurringCard({
             showProgress={false}
           />
         </div>
-        <div className={`flex items-center gap-2 ${contentOpacity}`}>
-          <RecurringItemStatus
-            item={item}
-            displayStatus={displayStatus}
-            onAllocate={handleAllocateNeeded}
-            isAllocating={allocateAction.loading}
-          />
+        <div className="flex items-center gap-2">
+          <div className={contentOpacity}>
+            <RecurringItemStatus
+              item={item}
+              displayStatus={displayStatus}
+              onAllocate={handleAllocateNeeded}
+              isAllocating={allocateAction.loading}
+            />
+          </div>
           {item.is_enabled ? (
             <ActionsDropdown
               item={item}

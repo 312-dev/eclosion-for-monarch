@@ -266,6 +266,62 @@ export interface BackgroundSyncAPI {
   setInterval: (intervalMinutes: number) => Promise<BackgroundSyncResult>;
 }
 
+// Auto-Backup Types (encrypted daily backups)
+
+export interface AutoBackupSettings {
+  enabled: boolean;
+  folderPath: string | null;
+  retentionDays: number;
+  lastBackupDate: string | null;
+}
+
+export interface AutoBackupRetentionOption {
+  value: number;
+  label: string;
+}
+
+export interface AutoBackupFileInfo {
+  filename: string;
+  filePath: string;
+  date: string;
+  createdAt: string;
+  sizeBytes: number;
+}
+
+export interface AutoBackupResult {
+  success: boolean;
+  filePath?: string;
+  error?: string;
+}
+
+export interface AutoBackupRestoreResult {
+  success: boolean;
+  needsCredentials: boolean;
+  imported?: Record<string, boolean>;
+  warnings?: string[];
+  error?: string;
+}
+
+export interface AutoBackupInfo {
+  valid: boolean;
+  version?: number;
+  createdAt?: string;
+  error?: string;
+}
+
+export interface AutoBackupAPI {
+  getSettings: () => Promise<AutoBackupSettings>;
+  setEnabled: (enabled: boolean) => Promise<void>;
+  selectFolder: () => Promise<string | null>;
+  openFolder: () => Promise<void>;
+  setRetention: (days: number) => Promise<void>;
+  getRetentionOptions: () => Promise<AutoBackupRetentionOption[]>;
+  runNow: () => Promise<AutoBackupResult>;
+  listBackups: () => Promise<AutoBackupFileInfo[]>;
+  getInfo: (filePath: string) => Promise<AutoBackupInfo>;
+  restore: (filePath: string, passphrase?: string) => Promise<AutoBackupRestoreResult>;
+}
+
 // Pending Sync API (for menu-triggered sync when locked)
 
 export interface PendingSyncAPI {
@@ -277,6 +333,8 @@ export interface PendingSyncAPI {
   executePending: (passphrase: string) => Promise<SyncResult>;
   /** Listen for pending sync requests from main process */
   onSyncPending: (callback: () => void) => () => void;
+  /** Notify main process that a sync completed, to update tray menu */
+  notifyCompleted: (lastSyncIso: string) => Promise<void>;
 }
 
 export interface BiometricAuthResult {
@@ -311,6 +369,18 @@ export interface CredentialsAPI {
   clearAll: () => Promise<void>;
 }
 
+/** Result of Touch ID setup prompt */
+export interface TouchIdSetupResult {
+  success: boolean;
+  error?: string;
+}
+
+/** Result of fallback credential validation */
+export interface FallbackValidationResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface BiometricAPI {
   isAvailable: () => Promise<boolean>;
   getType: () => Promise<BiometricType>;
@@ -324,6 +394,10 @@ export interface BiometricAPI {
   isPassphraseStored: () => Promise<boolean>;
   /** Store passphrase for background sync (without enabling biometric unlock) */
   storeForSync: (passphrase: string) => Promise<boolean>;
+  /** Prompt Touch ID during setup to verify user can use it */
+  promptForSetup: () => Promise<TouchIdSetupResult>;
+  /** Validate credentials for fallback authentication when Touch ID fails */
+  validateFallback: (email: string, password: string) => Promise<FallbackValidationResult>;
 }
 
 export interface ElectronAPI {
@@ -420,8 +494,20 @@ export interface ElectronAPI {
   // Background Sync (sync when app is closed)
   backgroundSync: BackgroundSyncAPI;
 
+  // Auto-Backup (encrypted daily backups)
+  autoBackup: AutoBackupAPI;
+
   // Re-authentication (for expired MFA sessions)
   reauth: ReauthAPI;
+
+  // Rate Limit (for handling Monarch API 429 responses)
+  rateLimit?: RateLimitAPI;
+}
+
+/** Rate Limit API for handling Monarch API 429 responses */
+export interface RateLimitAPI {
+  /** Listen for rate limit events from main process (e.g., during session restore) */
+  onRateLimited: (callback: (data: { retryAfter: number }) => void) => () => void;
 }
 
 /** Data sent when MFA is required during session restore */

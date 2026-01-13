@@ -8,6 +8,7 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CategoryGroupRow } from './CategoryGroupRow';
 import { CategoryRow } from './CategoryRow';
+import { decodeHtmlEntities, spacifyEmoji } from '../../utils';
 import type { CategoryGroupWithNotes, MonthKey } from '../../types/notes';
 
 interface CategoryTreeProps {
@@ -106,7 +107,7 @@ export function CategoryTree({
                     className="font-medium"
                     style={{ color: 'var(--monarch-text-dark)' }}
                   >
-                    {group.name}
+                    {spacifyEmoji(decodeHtmlEntities(group.name))}
                   </span>
                   <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
                     ({group.categories.length})
@@ -149,7 +150,7 @@ export function CategoryTree({
                       key={category.id}
                       category={category}
                       groupId={group.id}
-                      groupName={group.name}
+                      groupName={spacifyEmoji(decodeHtmlEntities(group.name))}
                       currentMonth={currentMonth}
                     />
                   ))}

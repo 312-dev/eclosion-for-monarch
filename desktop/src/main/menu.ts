@@ -18,10 +18,17 @@ let syncCallback: (() => Promise<void>) | null = null;
 
 /**
  * Check if the current app version is a beta build.
- * Beta versions contain "beta" in their version string (e.g., "1.1.0-beta.20260104.1").
+ * Beta builds are identified by:
+ * - Version containing "beta" (e.g., "1.1.0-beta.20260104.1") - CI releases
+ * - App name containing "Beta" (e.g., "Eclosion (Beta)") - local builds via electron-builder.beta.yml
+ * - RELEASE_CHANNEL env var set to "beta" - local builds via npm run dist:beta:*
  */
 function isBetaBuild(): boolean {
-  return app.getVersion().toLowerCase().includes('beta');
+  return (
+    app.getVersion().toLowerCase().includes('beta') ||
+    app.getName().toLowerCase().includes('beta') ||
+    process.env.RELEASE_CHANNEL === 'beta'
+  );
 }
 
 /**

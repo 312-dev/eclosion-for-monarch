@@ -29,6 +29,7 @@ interface HeroSectionProps {
   architecture?: string;
   loading?: boolean;
   downloadStatus?: DownloadStatus;
+  screenshotUrl?: string | null;
 }
 
 export function HeroSection({
@@ -39,6 +40,7 @@ export function HeroSection({
   architecture,
   loading,
   downloadStatus = 'idle',
+  screenshotUrl,
 }: Readonly<HeroSectionProps>) {
   return (
     <section className="px-4 sm:px-6 pt-8 pb-0">
@@ -132,12 +134,16 @@ export function HeroSection({
               <div className="relative rounded-xl overflow-hidden" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 12px 24px -8px rgba(0, 0, 0, 0.3)' }}>
                 {/* Container with fixed height to show ~1/4 of image */}
                 <div className="h-[280px] sm:h-[350px] overflow-hidden">
-                  <img
-                    src="https://github.com/312-dev/eclosion/releases/latest/download/screenshot-recurring.png"
-                    alt="Eclosion - Recurring Expenses Dashboard"
-                    className="w-full h-auto"
-                    loading="eager"
-                  />
+                  {screenshotUrl ? (
+                    <img
+                      src={screenshotUrl}
+                      alt="Eclosion - Recurring Expenses Dashboard"
+                      className="w-full h-auto"
+                      loading="eager"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-(--monarch-bg-hover) animate-pulse" />
+                  )}
                 </div>
                 {/* Gradient fade overlay */}
                 <div

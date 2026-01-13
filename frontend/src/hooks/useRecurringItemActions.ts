@@ -27,11 +27,11 @@ export function useRecurringItemActions(onRefresh: () => void) {
     }
   }, [client, onRefresh, toast]);
 
-  const handleAllocateItem = useCallback(async (id: string, amount: number) => {
+  const handleAllocateItem = useCallback(async (id: string, diff: number, newAmount: number) => {
     try {
-      await client.allocateFunds(id, amount);
+      await client.allocateFunds(id, diff);
       onRefresh();
-      toast.success(amount > 0 ? `${formatCurrency(amount, { maximumFractionDigits: 0 })} allocated` : `${formatCurrency(Math.abs(amount), { maximumFractionDigits: 0 })} removed`);
+      toast.success(`Budget set to ${formatCurrency(newAmount, { maximumFractionDigits: 0 })}`);
     } catch (err) {
       toast.error(formatErrorMessage(err, 'Failed to allocate funds'));
     }

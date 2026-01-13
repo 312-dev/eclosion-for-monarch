@@ -133,10 +133,25 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       setNeedsUnlock(false);
       return validated.authenticated;
     } catch (err) {
+      const isRateLimitErr = err instanceof Error && err.message.includes('Rate limit');
+
+      // In desktop mode with stored credentials, rate limits mean credentials are known-good
+      // (they worked before), so allow the app to load with rate limit banner instead of ErrorPage
+      if (isRateLimitErr && globalThis.electron?.credentials) {
+        const hasCredentials = await globalThis.electron.credentials.has();
+        if (hasCredentials) {
+          // Don't set error - let the app load with rate limit banner
+          // The RateLimitContext will handle showing the banner via IPC event
+          setAuthenticated(true);
+          setNeedsUnlock(false);
+          return true;
+        }
+      }
+
       // Determine user-friendly error message
       let errorMessage = 'Unable to connect to the server';
       if (err instanceof Error) {
-        if (err.message.includes('Rate limit')) {
+        if (isRateLimitErr) {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
         } else if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('ERR_')) {
           errorMessage = 'Unable to connect to the server. Please check if the backend is running.';

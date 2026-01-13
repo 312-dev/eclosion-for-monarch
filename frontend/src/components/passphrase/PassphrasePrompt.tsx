@@ -26,6 +26,8 @@ interface PassphrasePromptProps {
   onSuccess: () => void;
   onCredentialUpdateNeeded?: (passphrase: string) => void;
   onResetApp?: () => void;
+  /** Called when user wants to use email/password fallback (desktop mode only) */
+  onFallbackRequest?: () => void;
   autoPromptBiometric?: boolean;
 }
 
@@ -34,14 +36,18 @@ export function PassphrasePrompt({
   onSuccess,
   onCredentialUpdateNeeded,
   onResetApp,
+  onFallbackRequest,
   autoPromptBiometric = true,
 }: Readonly<PassphrasePromptProps>) {
-  const { setPassphrase: savePassphrase, unlockCredentials } = useAuth();
+  const { setPassphrase: savePassphrase, unlockCredentials, setAuthenticated, setNeedsUnlock } = useAuth();
   const [passphrase, setPassphrase] = useState('');
   const [confirmPassphrase, setConfirmPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassphrase, setShowPassphrase] = useState(false);
+
+  // Desktop mode: Track if Touch ID is required (separate from legacy passphrase-based enrollment)
+  const [requireTouchId, setRequireTouchId] = useState(false);
 
   // Progressive cooldown state (persisted across restarts)
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -56,6 +62,13 @@ export function PassphrasePrompt({
       setCooldownUntil(state.cooldownUntil);
       setLockoutLoaded(true);
     });
+  }, []);
+
+  // Load desktop mode Touch ID setting
+  useEffect(() => {
+    if (isDesktopMode() && globalThis.electron?.credentials) {
+      globalThis.electron.credentials.getRequireTouchId().then(setRequireTouchId);
+    }
   }, []);
 
   const clearCooldown = useCallback(() => {
@@ -80,6 +93,8 @@ export function PassphrasePrompt({
     ...(onCredentialUpdateNeeded && { onCredentialUpdateNeeded }),
     onClearCooldown: clearCooldown,
     loading,
+    setAuthenticated,
+    setNeedsUnlock,
   });
 
   const requirements = useMemo(() => validatePassphrase(passphrase), [passphrase]);
@@ -92,9 +107,10 @@ export function PassphrasePrompt({
     : allRequirementsMet && passwordsMatch;
   const displayError = error || biometricError;
 
-  // On desktop with biometric enrolled, only show Touch ID for unlock (no passphrase form)
+  // On desktop with Touch ID enabled, only show Touch ID for unlock (no passphrase form)
   // Desktop doesn't use encryption passwords - only biometric authentication
-  const isDesktopBiometricOnly = isDesktopMode() && mode === 'unlock' && biometric.available && biometric.enrolled;
+  // Check requireTouchId (desktop mode) OR biometric.enrolled (legacy passphrase mode)
+  const isDesktopBiometricOnly = isDesktopMode() && mode === 'unlock' && biometric.available && (requireTouchId || biometric.enrolled);
 
   // Cooldown timer effect
   useEffect(() => {
@@ -203,13 +219,26 @@ export function PassphrasePrompt({
           </div>
         )}
 
-        {mode === 'unlock' && biometric.available && biometric.enrolled && (
+        {mode === 'unlock' && biometric.available && (requireTouchId || biometric.enrolled) && (
           <BiometricUnlockButton
             displayName={biometric.displayName}
             loading={biometricLoading}
             disabled={biometricLoading || loading || isInCooldown}
             onClick={handleBiometricUnlock}
+            showPassphraseDivider={!isDesktopBiometricOnly}
           />
+        )}
+
+        {/* Fallback link for desktop mode when Touch ID fails or user prefers credentials */}
+        {isDesktopBiometricOnly && onFallbackRequest && (
+          <button
+            type="button"
+            onClick={onFallbackRequest}
+            className="w-full mt-3 text-sm hover:underline"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            Having trouble? Use credentials instead
+          </button>
         )}
 
         {/* On desktop with biometric enrolled, hide the passphrase form - only show Touch ID */}

@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Monitor, FolderOpen, Shield, ChevronDown } from 'lucide-react';
 import { SettingsRow } from './SettingsRow';
 import { ToggleSwitch } from './ToggleSwitch';
+import { AutoBackupSection } from './AutoBackupSection';
 import { useBiometric } from '../../hooks';
 import type { DesktopSettings, LockTrigger, LockOption } from '../../types/electron';
 
@@ -28,6 +29,10 @@ export function DesktopSection() {
   // Biometric settings
   const biometric = useBiometric();
 
+  // Desktop mode Touch ID setting (separate from legacy passphrase-based enrollment)
+  const [touchIdEnabled, setTouchIdEnabled] = useState(false);
+  const [touchIdLoading, setTouchIdLoading] = useState(false);
+
   const fetchSettings = useCallback(async () => {
     if (!window.electron) return;
     try {
@@ -36,13 +41,15 @@ export function DesktopSection() {
       const appInfo = await window.electron.getAppInfo();
       setIsMac(appInfo.platform === 'darwin');
 
-      // Fetch lock settings
-      const [trigger, options] = await Promise.all([
+      // Fetch lock settings and Touch ID setting
+      const [trigger, options, requireTouchId] = await Promise.all([
         window.electron.lock.getTrigger(),
         window.electron.lock.getOptions(),
+        window.electron.credentials.getRequireTouchId(),
       ]);
       setLockTrigger(trigger);
       setLockOptions(options);
+      setTouchIdEnabled(requireTouchId);
     } catch {
       // Non-critical if this fails
     } finally {
@@ -58,11 +65,11 @@ export function DesktopSection() {
     }
   }, [fetchSettings]);
 
-  // Reset auto-lock to "never" when biometric is disabled
+  // Reset auto-lock to "never" when Touch ID is disabled
   // On desktop, auto-lock only makes sense with Touch ID since there's no encryption password
   useEffect(() => {
     const resetLockTrigger = async () => {
-      if (!biometric.loading && !biometric.enrolled && lockTrigger !== 'never' && globalThis.electron) {
+      if (!loading && !touchIdEnabled && lockTrigger !== 'never' && globalThis.electron) {
         try {
           await globalThis.electron.lock.setTrigger('never');
           setLockTrigger('never');
@@ -72,7 +79,7 @@ export function DesktopSection() {
       }
     };
     void resetLockTrigger();
-  }, [biometric.loading, biometric.enrolled, lockTrigger]);
+  }, [loading, touchIdEnabled, lockTrigger]);
 
   const handleAutoStartChange = async () => {
     if (!window.electron || !settings) return;
@@ -107,9 +114,9 @@ export function DesktopSection() {
 
   const handleLockTriggerChange = async (newTrigger: LockTrigger) => {
     if (!window.electron) return;
-    // On desktop, only allow auto-lock if biometric (Touch ID) is enrolled
-    // Without biometric, there's no way to unlock (no encryption password on desktop)
-    if (!biometric.enrolled && newTrigger !== 'never') {
+    // On desktop, only allow auto-lock if Touch ID is enabled
+    // Without Touch ID, there's no way to unlock (no encryption password on desktop)
+    if (!touchIdEnabled && newTrigger !== 'never') {
       return;
     }
     try {
@@ -121,40 +128,45 @@ export function DesktopSection() {
   };
 
   const handleBiometricToggle = async () => {
-    if (!window.electron || biometric.loading) return;
+    if (!window.electron || biometric.loading || touchIdLoading) return;
 
-    if (biometric.enrolled) {
-      // Clear biometric enrollment
-      await biometric.clear();
-    } else {
-      // Enroll biometric - need to prompt user for passphrase first
-      // For now, show a message that they need to unlock first
-      // This will be handled by a separate enrollment flow
-      const confirmed = await window.electron.showConfirmDialog({
-        title: `Enable ${biometric.displayName}`,
-        message: `To enable ${biometric.displayName}, you'll need to enter your passphrase once to securely store it.`,
-        detail: 'After setup, you can unlock the app using biometric authentication instead of typing your passphrase.',
-        confirmText: 'Continue',
-        cancelText: 'Cancel',
-      });
+    setTouchIdLoading(true);
 
-      if (confirmed) {
-        // The actual enrollment happens in PassphrasePrompt after successful unlock
-        // For now, we just inform the user
-        await window.electron.showErrorDialog({
-          title: 'Enrollment',
-          content: `Please lock and unlock the app to complete ${biometric.displayName} setup. The next time you unlock with your passphrase, you'll be prompted to enable biometric authentication.`,
-        });
+    try {
+      if (touchIdEnabled) {
+        // Disable Touch ID
+        await window.electron.credentials.setRequireTouchId(false);
+        setTouchIdEnabled(false);
+      } else {
+        // Enable Touch ID - prompt to verify user can use it
+        const result = await window.electron.biometric.promptForSetup();
+
+        if (result.success) {
+          // Touch ID verified, enable it
+          await window.electron.credentials.setRequireTouchId(true);
+          setTouchIdEnabled(true);
+        } else if (result.error && !result.error.includes('cancel')) {
+          // Show error if not just a cancellation
+          await window.electron.showErrorDialog({
+            title: `${biometric.displayName} Setup Failed`,
+            content: result.error,
+          });
+        }
+        // If user cancelled, do nothing (toggle stays off)
       }
+    } catch {
+      // Ignore errors
+    } finally {
+      setTouchIdLoading(false);
     }
   };
 
   // Don't render if not in desktop mode
   if (!window.electron) return null;
 
-  // Auto-lock requires biometric on desktop (no encryption password)
+  // Auto-lock requires Touch ID on desktop (no encryption password)
   const getAutoLockDescription = (): string => {
-    if (biometric.enrolled) {
+    if (touchIdEnabled) {
       return `When to require ${biometric.displayName} re-entry`;
     }
     if (biometric.available) {
@@ -258,13 +270,13 @@ export function DesktopSection() {
             <select
               value={lockTrigger}
               onChange={(e) => handleLockTriggerChange(e.target.value as LockTrigger)}
-              disabled={loading || !biometric.enrolled}
+              disabled={loading || !touchIdEnabled}
               className="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-sm cursor-pointer hover-bg-page-to-hover"
               style={{
-                color: biometric.enrolled ? 'var(--monarch-text-dark)' : 'var(--monarch-text-muted)',
+                color: touchIdEnabled ? 'var(--monarch-text-dark)' : 'var(--monarch-text-muted)',
                 border: '1px solid var(--monarch-border)',
                 backgroundColor: 'var(--monarch-bg-card)',
-                opacity: biometric.enrolled ? 1 : 0.6,
+                opacity: touchIdEnabled ? 1 : 0.6,
               }}
               aria-label="Select auto-lock timing"
             >
@@ -285,16 +297,18 @@ export function DesktopSection() {
         {biometric.available && (
           <SettingsRow
             label={`Use ${biometric.displayName}`}
-            description={`Unlock with ${biometric.displayName} instead of passphrase`}
+            description={`Unlock with ${biometric.displayName} instead of your credentials`}
           >
             <ToggleSwitch
-              checked={biometric.enrolled}
+              checked={touchIdEnabled}
               onChange={handleBiometricToggle}
-              disabled={loading || biometric.loading}
+              disabled={loading || touchIdLoading}
               ariaLabel={`Toggle ${biometric.displayName}`}
             />
           </SettingsRow>
         )}
+
+        <AutoBackupSection />
 
         <div style={{ borderTop: '1px solid var(--monarch-border)' }} />
 

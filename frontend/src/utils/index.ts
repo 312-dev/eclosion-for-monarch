@@ -18,6 +18,7 @@ export {
   formatInterval,
   formatDateTime,
   decodeHtmlEntities,
+  spacifyEmoji,
   FREQUENCY_LABELS,
   FREQUENCY_SHORT_LABELS,
   FREQUENCY_ORDER,

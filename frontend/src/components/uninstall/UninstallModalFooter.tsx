@@ -4,6 +4,7 @@
 
 import type { CancelSubscriptionResult } from '../../api/client';
 import { SpinnerIcon, TrashIcon } from '../icons';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface UninstallModalFooterProps {
   readonly cancelling: boolean;
@@ -20,6 +21,8 @@ export function UninstallModalFooter({
   onClose,
   onUninstall,
 }: UninstallModalFooterProps) {
+  const isRateLimited = useIsRateLimited();
+
   if (cancelResult) {
     return (
       <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--monarch-border)' }}>
@@ -54,11 +57,11 @@ export function UninstallModalFooter({
       </button>
       <button
         onClick={onUninstall}
-        disabled={!confirmed || cancelling}
+        disabled={!confirmed || cancelling || isRateLimited}
         className="flex-1 px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         style={{
           backgroundColor: 'var(--monarch-error)',
-          opacity: !confirmed && !cancelling ? 0.5 : 1,
+          opacity: (!confirmed || isRateLimited) && !cancelling ? 0.5 : 1,
         }}
       >
         {cancelling ? (

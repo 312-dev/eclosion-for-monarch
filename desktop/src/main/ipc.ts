@@ -12,6 +12,21 @@ import {
   setAutoStart,
 } from './autostart';
 import {
+  getAutoBackupSettings,
+  setAutoBackupEnabled,
+  setAutoBackupRetention,
+  selectBackupFolder,
+  executeAutoBackup,
+  listBackups,
+  restoreFromBackup,
+  getBackupInfo,
+  getRetentionOptions,
+  type AutoBackupSettings,
+  type BackupFileInfo,
+  type BackupResult,
+  type RestoreResult,
+} from './auto-backup';
+import {
   checkForUpdates,
   quitAndInstall,
   getUpdateStatus,
@@ -52,6 +67,8 @@ import {
   setRequireTouchId,
   authenticateAndGetCredentials,
   clearAllAuthData,
+  promptTouchIdForSetup,
+  validateCredentialsFallback,
   type MonarchCredentials,
 } from './biometric';
 import {
@@ -76,7 +93,7 @@ import {
 } from './cleanup';
 import { getStateDir } from './paths';
 import { getAllLogFiles, getLogDir } from './logger';
-import { getHealthStatus } from './tray';
+import { getHealthStatus, updateTrayMenuSyncStatus } from './tray';
 import { getStore } from './store';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -643,6 +660,22 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     return storePassphraseForSync(passphrase);
   });
 
+  /**
+   * Prompt Touch ID during setup to verify user can use it.
+   * Does NOT store anything - just verifies biometric works.
+   */
+  ipcMain.handle('biometric:prompt-for-setup', async () => {
+    return promptTouchIdForSetup();
+  });
+
+  /**
+   * Validate credentials for fallback authentication when Touch ID fails.
+   * Compares against stored credentials (works offline).
+   */
+  ipcMain.handle('biometric:validate-fallback', (_event, email: string, password: string) => {
+    return validateCredentialsFallback(email, password);
+  });
+
   // =========================================================================
   // Desktop Mode: Direct Credential Storage
   // =========================================================================
@@ -770,6 +803,15 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     return result;
   });
 
+  /**
+   * Notify main process that a sync completed (called by renderer after API sync).
+   * Updates the tray menu to show the correct sync time.
+   * The tray module handles periodic refresh to keep the "X ago" display current.
+   */
+  ipcMain.handle('sync:notify-completed', (_event, lastSyncIso: string) => {
+    updateTrayMenuSyncStatus(lastSyncIso);
+  });
+
   // =========================================================================
   // MFA Re-authentication (for session restore)
   // =========================================================================
@@ -831,4 +873,89 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     getStore().delete('lockout.failedAttempts');
     getStore().delete('lockout.cooldownUntil');
   });
+
+  // =========================================================================
+  // Auto-Backup
+  // =========================================================================
+
+  /**
+   * Get current auto-backup settings.
+   */
+  ipcMain.handle('auto-backup:get-settings', (): AutoBackupSettings => {
+    return getAutoBackupSettings();
+  });
+
+  /**
+   * Set auto-backup enabled state.
+   */
+  ipcMain.handle('auto-backup:set-enabled', (_event, enabled: boolean): void => {
+    setAutoBackupEnabled(enabled);
+  });
+
+  /**
+   * Open folder selection dialog and set backup folder.
+   * Returns the selected path or null if cancelled.
+   */
+  ipcMain.handle('auto-backup:select-folder', async (): Promise<string | null> => {
+    return selectBackupFolder();
+  });
+
+  /**
+   * Set retention period in days.
+   */
+  ipcMain.handle('auto-backup:set-retention', (_event, days: number): void => {
+    setAutoBackupRetention(days);
+  });
+
+  /**
+   * Get available retention options.
+   */
+  ipcMain.handle('auto-backup:get-retention-options', (): Array<{ value: number; label: string }> => {
+    return getRetentionOptions();
+  });
+
+  /**
+   * Run a manual backup now (creates timestamped backup that won't be auto-cleaned).
+   */
+  ipcMain.handle('auto-backup:run-now', async (): Promise<BackupResult> => {
+    return executeAutoBackup(true);
+  });
+
+  /**
+   * List available backups in the configured folder.
+   */
+  ipcMain.handle('auto-backup:list-backups', (): BackupFileInfo[] => {
+    return listBackups();
+  });
+
+  /**
+   * Open the backup folder in the system file manager.
+   */
+  ipcMain.handle('auto-backup:open-folder', (): void => {
+    const settings = getAutoBackupSettings();
+    if (settings.folderPath) {
+      shell.openPath(settings.folderPath);
+    }
+  });
+
+  /**
+   * Get backup file info for preview.
+   */
+  ipcMain.handle(
+    'auto-backup:get-info',
+    (_event, filePath: string): { valid: boolean; version?: number; createdAt?: string; error?: string } => {
+      return getBackupInfo(filePath);
+    }
+  );
+
+  /**
+   * Restore from a backup file.
+   * If passphrase is not provided, uses current Monarch credentials.
+   */
+  ipcMain.handle(
+    'auto-backup:restore',
+    async (_event, filePath: string, passphrase?: string): Promise<RestoreResult> => {
+      return restoreFromBackup(filePath, passphrase);
+    }
+  );
 }
