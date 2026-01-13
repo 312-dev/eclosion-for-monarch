@@ -654,13 +654,17 @@ The workflow automatically:
 - Keep functions focused and under 50 lines when possible
 
 ```python
-@app.route("/api/example", methods=["POST"])
-@async_flask
-async def example_route() -> Response:
+# Add routes to the appropriate blueprint in blueprints/
+# Example: blueprints/recurring.py
+
+@recurring_bp.route("/example", methods=["POST"])
+@api_handler(handle_mfa=False)
+async def example_route():
     """Brief description of what this route does."""
+    services = get_services()
     data = request.get_json()
-    result = await service.process(data)
-    return jsonify(result)
+    result = await services.sync_service.process(data)
+    return result
 ```
 
 ### TypeScript (Frontend)
@@ -797,9 +801,21 @@ npm run type-check
 ### Backend Structure
 
 ```
-api.py              # Flask routes and app configuration
-app.py              # Application entry point
-core/               # Core utilities (logging, encryption, config)
+api.py              # Flask app setup and middleware
+blueprints/         # Flask blueprints (organized by domain)
+  __init__.py       # Services container and registration
+  auth.py           # Authentication endpoints
+  recurring.py      # Recurring expense tracking
+  notes.py          # Category notes management
+  security.py       # Security status and audit
+  settings.py       # Export/import settings
+  admin.py          # Health, version, migrations
+core/               # Core utilities
+  __init__.py       # Logging, encryption, config, decorators
+  middleware.py     # Security middleware functions
+  session.py        # Session timeout tracking
+  rate_limit.py     # Rate limiter instance
+  audit.py          # Audit logging
 services/           # Business logic services
   sync_service.py   # Main sync orchestration
   credentials_service.py  # Auth and encryption
