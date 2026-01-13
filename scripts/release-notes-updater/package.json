@@ -1,0 +1,13 @@
+{
+  "name": "release-notes-updater",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI-powered release notes summarizer for human-friendly updates",
+  "scripts": {
+    "update": "tsx index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0"
+  }
+}

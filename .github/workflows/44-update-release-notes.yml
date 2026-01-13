@@ -1,0 +1,78 @@
+name: "44 Update: Release Notes"
+
+# Triggers:
+# 1. Automatically when a stable release is published (draft->release or new release)
+# 2. Manually via workflow_dispatch with a specific tag
+#
+# Note: Only runs ONCE per release tag (script checks for existing summary)
+
+on:
+  release:
+    types: [published]  # Fires for draft->release AND new releases
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to update (e.g., v1.2.3)'
+        required: true
+        type: string
+      force:
+        description: 'Regenerate even if summary already exists'
+        required: false
+        type: boolean
+        default: false
+
+permissions: read-all
+
+jobs:
+  update-release-notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Skip prereleases (beta releases) - only run for stable releases
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
+    permissions:
+      contents: write
+    steps:
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "force=${{ inputs.force }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+            echo "force=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/release-notes-updater/package-lock.json
+
+      - name: Install dependencies
+        working-directory: scripts/release-notes-updater
+        run: npm ci
+
+      - name: Update release notes
+        working-directory: scripts/release-notes-updater
+        env:
+          MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ steps.tag.outputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+          npx tsx index.ts --tag "${{ steps.tag.outputs.tag }}" $FORCE_FLAG
+
+      - name: Summary
+        run: |
+          echo "### Release Notes Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Added user-friendly summary to release **${{ steps.tag.outputs.tag }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.tag.outputs.tag }})" >> $GITHUB_STEP_SUMMARY
