@@ -71,14 +71,21 @@ async def auth_login():
             return jsonify({"success": False, "error": "Email and password are required"}), 400
 
         result = await services.sync_service.login(email, password, mfa_secret, mfa_mode)
-        audit_log(services.security_service, "LOGIN_ATTEMPT", result.get("success", False), f"MFA mode: {mfa_mode}")
+        audit_log(
+            services.security_service,
+            "LOGIN_ATTEMPT",
+            result.get("success", False),
+            f"MFA mode: {mfa_mode}",
+        )
 
         if result.get("success"):
             SessionManager.update_activity()  # Start session timeout tracking
 
         return jsonify(result)
     except Exception as e:
-        audit_log(services.security_service, "LOGIN_ATTEMPT", False, f"Exception: {type(e).__name__}")
+        audit_log(
+            services.security_service, "LOGIN_ATTEMPT", False, f"Exception: {type(e).__name__}"
+        )
         logger.error(f"[LOGIN] Exception: {e}")
         # Return generic error message to prevent information exposure
         return jsonify({"success": False, "error": "Login failed. Please try again."}), 500
@@ -128,7 +135,9 @@ async def auth_desktop_login():
 
         return jsonify(result)
     except Exception as e:
-        audit_log(services.security_service, "DESKTOP_LOGIN", False, f"Exception: {type(e).__name__}")
+        audit_log(
+            services.security_service, "DESKTOP_LOGIN", False, f"Exception: {type(e).__name__}"
+        )
         logger.error(f"[DESKTOP_LOGIN] Exception: {e}")
         return jsonify({"success": False, "error": "Login failed. Please try again."}), 500
 
@@ -152,7 +161,12 @@ def auth_set_passphrase():
         return {"success": False, "error": "Passphrase is required"}
 
     result = services.sync_service.set_passphrase(passphrase)
-    audit_log(services.security_service, "SET_PASSPHRASE", result.get("success", False), "Credentials encrypted")
+    audit_log(
+        services.security_service,
+        "SET_PASSPHRASE",
+        result.get("success", False),
+        "Credentials encrypted",
+    )
 
     if result.get("success"):
         SessionManager.update_activity()
@@ -302,7 +316,9 @@ async def auth_update_credentials():
     passphrase = data.get("passphrase", "")
 
     if not email or not password:
-        audit_log(services.security_service, "UPDATE_CREDENTIALS", False, "Missing email or password")
+        audit_log(
+            services.security_service, "UPDATE_CREDENTIALS", False, "Missing email or password"
+        )
         return {"success": False, "error": "Email and password are required"}
 
     if not passphrase:
@@ -340,5 +356,7 @@ def auth_reset_app():
     # Clear session
     session.pop("auth_unlocked", None)
     session.pop("session_passphrase", None)
-    audit_log(services.security_service, "RESET_APP", True, "Credentials cleared, preferences preserved")
+    audit_log(
+        services.security_service, "RESET_APP", True, "Credentials cleared, preferences preserved"
+    )
     return {"success": True, "message": "App reset. Please log in again."}

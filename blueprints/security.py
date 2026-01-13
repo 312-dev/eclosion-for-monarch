@@ -139,7 +139,12 @@ def clear_security_events():
     """Clear all security event logs."""
     services = get_services()
     services.security_service.clear_events()
-    audit_log(services.security_service, "SECURITY_LOGS_CLEARED", True, "All security logs cleared by user")
+    audit_log(
+        services.security_service,
+        "SECURITY_LOGS_CLEARED",
+        True,
+        "All security logs cleared by user",
+    )
     return {"success": True, "message": "Security logs cleared"}
 
 

@@ -222,7 +222,9 @@ def check_version():
             "client_version": client_version,
             "server_version": server_version,
             "update_available": update_available,
-            "update_type": _get_update_type(client_parts, server_parts) if update_available else None,
+            "update_type": _get_update_type(client_parts, server_parts)
+            if update_available
+            else None,
         }
     )
 
@@ -500,7 +502,9 @@ def execute_migration():
 
     # Use hardcoded messages to prevent any tainted data from flowing through
     # (CodeQL tracks exception info that could be in _message)
-    safe_message = "Migration completed successfully." if success else "Migration failed. Please try again."
+    safe_message = (
+        "Migration completed successfully." if success else "Migration failed. Please try again."
+    )
 
     # Only expose backup filename, not full path (prevents directory structure disclosure)
     # Use str() explicitly to break any taint tracking from Path object
