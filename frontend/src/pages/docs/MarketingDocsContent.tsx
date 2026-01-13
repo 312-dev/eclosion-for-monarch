@@ -60,7 +60,7 @@ export function MarketingDocsContent() {
 
           {/* Try Demo */}
           <Link
-            to="/demo"
+            to="/demo/"
             className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
           >
             <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">

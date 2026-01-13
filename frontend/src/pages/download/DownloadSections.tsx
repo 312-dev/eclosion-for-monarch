@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { InstallationInstructions } from '../../components/marketing/InstallationInstructions';
 import { ReleaseNotesSection } from '../../components/marketing/ReleaseNotesSection';
 import {
@@ -93,12 +94,12 @@ export function HeroSection({
                   Loading...
                 </div>
               )}
-              <a
-                href="/demo"
+              <Link
+                to="/demo/"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg text-base font-semibold border-2 border-[var(--monarch-border)] text-[var(--monarch-text-dark)] hover:border-[var(--monarch-orange)] hover:text-[var(--monarch-orange)] transition-colors bg-[var(--monarch-bg-card)]"
               >
                 Try Demo
-              </a>
+              </Link>
             </div>
 
             {/* Download status feedback */}

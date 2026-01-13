@@ -529,6 +529,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pull latest
+        run: git pull origin main
 
       - name: Create docs version (production only)
         if: inputs.release_type == 'production'

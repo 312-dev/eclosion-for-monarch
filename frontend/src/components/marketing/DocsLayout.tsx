@@ -111,7 +111,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
                 >
                   User Guide
                 </a>
-                <NavLink to="/demo">Demo</NavLink>
+                <NavLink to="/demo/">Demo</NavLink>
                 {isCoderMode && (
                   <>
                     <NavLink

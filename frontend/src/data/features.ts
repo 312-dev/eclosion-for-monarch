@@ -105,7 +105,7 @@ export const FEATURES: FeatureDefinition[] = [
           'Syncs directly with your Monarch Money account to update budget targets.',
       },
     ],
-    demoPath: '/demo/recurring',
+    demoPath: '/demo/recurring/',
     appPath: '/recurring',
     // TODO: Set originIssue to the GitHub issue that originated this feature
     sourcePaths: [
@@ -150,7 +150,7 @@ export const FEATURES: FeatureDefinition[] = [
           'Type math expressions and press Tab to evaluate them inline.',
       },
     ],
-    demoPath: '/demo/notes',
+    demoPath: '/demo/notes/',
     appPath: '/notes',
     sourcePaths: [
       'frontend/src/components/tabs/NotesTab.tsx',

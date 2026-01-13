@@ -7,6 +7,7 @@
  * Stacked layout on mobile: branding top, IdeasBoard below.
  */
 
+import { Link } from 'react-router-dom';
 import {
   ChevronRightIcon,
   WindowsIcon,
@@ -20,10 +21,9 @@ import { CoderModeToggle } from './CoderModeToggle';
 
 interface HeroProps {
   readonly onGetStarted?: () => void;
-  readonly demoHref?: string;
 }
 
-export function Hero({ onGetStarted, demoHref = '/demo' }: HeroProps) {
+export function Hero({ onGetStarted }: HeroProps) {
   return (
     <section className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-6 py-16 md:py-24 bg-[var(--monarch-bg-card)]">
       {/* Branding side */}
@@ -66,12 +66,12 @@ export function Hero({ onGetStarted, demoHref = '/demo' }: HeroProps) {
             Start Here
             <ChevronRightIcon size={20} color="white" />
           </button>
-          <a
-            href={demoHref}
+          <Link
+            to="/demo/"
             className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-[var(--monarch-orange)]/10 transition-colors"
           >
             Explore Demo
-          </a>
+          </Link>
         </div>
 
         {/* Platform Icons */}

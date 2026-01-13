@@ -7,16 +7,26 @@
 
 # React SPA routes - explicitly serve index.html
 # These rules ensure direct URL access works for all SPA paths
+# Note: Both with and without trailing slash are needed for consistent behavior
 /demo/* /index.html 200
+/demo/ /index.html 200
 /demo /index.html 200
+/download/ /index.html 200
 /download /index.html 200
+/login/ /index.html 200
 /login /index.html 200
+/unlock/ /index.html 200
 /unlock /index.html 200
+/dashboard/ /index.html 200
 /dashboard /index.html 200
+/recurring/ /index.html 200
 /recurring /index.html 200
+/notes/ /index.html 200
 /notes /index.html 200
+/settings/ /index.html 200
 /settings /index.html 200
 /features/* /index.html 200
+/features/ /index.html 200
 /features /index.html 200
 
 # For missing /docs paths, show Docusaurus 404 page (not the React SPA)
