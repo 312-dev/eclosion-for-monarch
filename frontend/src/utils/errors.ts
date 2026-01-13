@@ -56,28 +56,6 @@ export function handleApiError(error: unknown, context: string): string {
 }
 
 /**
- * Format an error for display to the user.
- *
- * Handles special cases like rate limiting and provides
- * user-friendly messages.
- *
- * @param err - The error to format
- * @param fallback - Fallback message if error can't be parsed
- * @returns User-friendly error message
- *
- * @deprecated Use getErrorMessage() or handleApiError() instead for consistency
- */
-export function formatErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof RateLimitError) {
-    return `Rate limit reached. Please wait ${err.retryAfter} seconds and try again.`;
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return fallback;
-}
-
-/**
  * Check if an error is a rate limit error.
  *
  * @param err - The error to check

@@ -25,12 +25,11 @@ import {
   generateRandomDeveloper,
   getUsernameForIdea,
   getAvatarUrlForIdea,
-  getAvatarSeedForIdea,
 } from './ideasAnimationUtils';
 
 // Re-export for external use
 export type { DeveloperContributor };
-export { getUsernameForIdea, getAvatarUrlForIdea, getAvatarSeedForIdea };
+export { getUsernameForIdea, getAvatarUrlForIdea };
 
 export type AnimationPhase =
   | 'stacking'           // Drop in ideas one at a time
@@ -221,22 +220,23 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
       }
     } else if (animationPhase === 'resetting') {
       timeoutRef.current = setTimeout(() => {
-        setState({
+        setState((s) => ({
           animationPhase: 'stacking',
           stackCount: 1,
           devCycleStage: 'idea',
           isUpvoting: false,
           voteAccumulationCount: 0,
           targetVotes: 0,
-          cycleKey: state.cycleKey + 1,
+          cycleKey: s.cycleKey + 1,
           developers: [],
           devProgress: 0,
-        });
+        }));
       }, RESET_FADE_DURATION);
     }
 
     return () => { clearCurrentTimeout(); };
-  }, [state.animationPhase, state.stackCount, state.devCycleStage, stackedIdeas.length, isPaused, prefersReducedMotion, state.cycleKey, clearCurrentTimeout, scheduleNextDeveloper, startProgressAnimation, clearDevAnimations]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally depend on specific state properties only
+  }, [state.animationPhase, state.stackCount, state.devCycleStage, stackedIdeas.length, isPaused, prefersReducedMotion, clearCurrentTimeout, scheduleNextDeveloper, startProgressAnimation, clearDevAnimations]);
 
   // Resume after pause
   useEffect(() => {

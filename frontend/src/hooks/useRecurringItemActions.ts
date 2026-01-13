@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import type { RecurringItem } from '../types';
 import { useToast } from '../context/ToastContext';
 import { useApiClient } from './useApiClient';
-import { formatCurrency, formatErrorMessage } from '../utils';
+import { formatCurrency, handleApiError } from '../utils';
 import { UI } from '../constants';
 
 export function useRecurringItemActions(onRefresh: () => void) {
@@ -23,7 +23,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       toast.success(enabled ? 'Tracking enabled' : 'Tracking disabled');
       setTimeout(() => setHighlightId(null), UI.HIGHLIGHT.ROW);
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to toggle tracking'));
+      toast.error(handleApiError(err, 'Failed to toggle tracking'));
     }
   }, [client, onRefresh, toast]);
 
@@ -33,7 +33,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success(`Budget set to ${formatCurrency(newAmount, { maximumFractionDigits: 0 })}`);
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to allocate funds'));
+      toast.error(handleApiError(err, 'Failed to allocate funds'));
     }
   }, [client, onRefresh, toast]);
 
@@ -43,7 +43,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success('Category recreated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to recreate category'));
+      toast.error(handleApiError(err, 'Failed to recreate category'));
     }
   }, [client, onRefresh, toast]);
 
@@ -53,7 +53,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success(`Moved to ${groupName}`);
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to change group'));
+      toast.error(handleApiError(err, 'Failed to change group'));
     }
   }, [client, onRefresh, toast]);
 
@@ -63,7 +63,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success('Added to rollup');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to add to rollup'));
+      toast.error(handleApiError(err, 'Failed to add to rollup'));
     }
   }, [client, onRefresh, toast]);
 
@@ -73,7 +73,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success('Emoji updated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update emoji'));
+      toast.error(handleApiError(err, 'Failed to update emoji'));
     }
   }, [client, onRefresh, toast]);
 
@@ -83,7 +83,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success('Target recalculated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to recalculate target'));
+      toast.error(handleApiError(err, 'Failed to recalculate target'));
     }
   }, [client, onRefresh, toast]);
 
@@ -93,7 +93,7 @@ export function useRecurringItemActions(onRefresh: () => void) {
       onRefresh();
       toast.success('Name updated');
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to update name'));
+      toast.error(handleApiError(err, 'Failed to update name'));
     }
   }, [client, onRefresh, toast]);
 

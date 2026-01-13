@@ -11,7 +11,7 @@ import { NoteEditorMDX } from './NoteEditorMDX';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { useSaveGeneralNoteMutation, useDeleteGeneralNoteMutation } from '../../api/queries';
 import { useCheckboxState } from '../../hooks';
-import { formatErrorMessage } from '../../utils';
+import { handleApiError } from '../../utils';
 import { useToast } from '../../context/ToastContext';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import { useNotesEditorOptional } from '../../context/NotesEditorContext';
@@ -110,8 +110,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
       setIsEditing(false);
       notesEditor?.closeEditor();
     } catch (err) {
-      console.error('Failed to save note:', err);
-      toast.error(formatErrorMessage(err, 'Failed to save note'));
+      toast.error(handleApiError(err, 'Failed to save note'));
     } finally {
       setIsSaving(false);
     }

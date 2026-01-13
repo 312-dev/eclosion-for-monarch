@@ -104,8 +104,3 @@ export function getAvatarUrlForIdea(idea: PublicIdea): string {
   const seed = hashString(idea.id);
   return `https://api.dicebear.com/7.x/thumbs/svg?seed=${seed}&backgroundColor=f3f4f6`;
 }
-
-/** @deprecated Use getAvatarUrlForIdea instead */
-export function getAvatarSeedForIdea(idea: PublicIdea): number {
-  return hashString(idea.id);
-}

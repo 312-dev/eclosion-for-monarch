@@ -28,7 +28,6 @@ export {
 export {
   getErrorMessage,
   handleApiError,
-  formatErrorMessage,
   isRateLimitError,
   getRetryAfter,
 } from './errors';

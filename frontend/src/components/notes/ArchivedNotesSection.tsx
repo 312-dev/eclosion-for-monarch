@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, Trash2, Archive } from 'lucide-react';
 import { useDeleteArchivedNoteMutation } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
-import { formatErrorMessage, decodeHtmlEntities } from '../../utils';
+import { handleApiError, decodeHtmlEntities } from '../../utils';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import type { ArchivedNote } from '../../types/notes';
 
@@ -46,7 +46,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
       toast.success('Archived note deleted');
       setDeletingId(null);
     } catch (err) {
-      toast.error(formatErrorMessage(err, 'Failed to delete note'));
+      toast.error(handleApiError(err, 'Failed to delete note'));
     }
   };
 
