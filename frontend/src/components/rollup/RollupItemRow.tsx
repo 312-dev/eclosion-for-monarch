@@ -7,9 +7,10 @@
 import { memo, useState, useCallback } from 'react';
 import type { RollupItem } from '../../types';
 import { Tooltip } from '../ui/Tooltip';
-import { formatCurrency, formatDateRelative, formatFrequencyShort } from '../../utils';
+import { formatCurrency, formatDateRelative, formatFrequencyShort, decodeHtmlEntities } from '../../utils';
 import { MerchantIcon, LoadingSpinner } from '../ui';
 import { TrendUpIcon, TrendDownIcon, XIcon, AnchorIcon } from '../icons';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RollupItemRowProps {
   readonly item: RollupItem;
@@ -24,6 +25,8 @@ export const RollupItemRow = memo(function RollupItemRow({
   dataTourId,
 }: RollupItemRowProps) {
   const [isRemoving, setIsRemoving] = useState(false);
+  const isRateLimited = useIsRateLimited();
+  const isDisabled = isRemoving || isRateLimited;
   const target = Math.round(item.frozen_monthly_target);
   const idealRate = Math.round(item.ideal_monthly_rate);
   const isCatchingUp = target > idealRate && idealRate > 0;
@@ -52,7 +55,7 @@ export const RollupItemRow = memo(function RollupItemRow({
             rel="noopener noreferrer"
             className="text-sm truncate no-underline text-monarch-text-dark"
           >
-            {item.name}
+            {decodeHtmlEntities(item.name)}
           </a>
         </div>
       </td>
@@ -141,8 +144,8 @@ export const RollupItemRow = memo(function RollupItemRow({
         <button
           type="button"
           onClick={handleRemove}
-          disabled={isRemoving}
-          aria-label={`Remove ${item.name} from rollup`}
+          disabled={isDisabled}
+          aria-label={`Remove ${decodeHtmlEntities(item.name)} from rollup`}
           aria-busy={isRemoving}
           className={`p-1 rounded transition-all disabled:opacity-50 hover-bg-transparent-to-hover ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
         >

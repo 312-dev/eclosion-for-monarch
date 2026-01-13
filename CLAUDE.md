@@ -365,6 +365,49 @@ catch (error) {
 }
 ```
 
+### Rate Limit Handling
+
+**Components with Monarch API mutations must respect rate limits.**
+
+When Monarch rate limits the app (429 responses), the app enters a degraded state:
+- A global banner warns the user
+- Features requiring live Monarch API are disabled
+- The app polls every 5 minutes to detect when the rate limit clears
+
+**Required pattern for API-mutating components:**
+
+```tsx
+import { useIsRateLimited } from '../../context/RateLimitContext';
+
+function MyComponent({ onSave, isSaving }) {
+  const isRateLimited = useIsRateLimited();
+
+  // Combine with other loading states
+  const isDisabled = isSaving || isRateLimited;
+
+  return (
+    <button disabled={isDisabled} onClick={onSave}>
+      Save
+    </button>
+  );
+}
+```
+
+**Key files:**
+
+| File | Purpose |
+|------|---------|
+| `context/RateLimitContext.tsx` | Global rate limit state and ping polling |
+| `components/ui/RateLimitBanner.tsx` | Warning banner with countdown |
+| `components/ui/RateLimitTooltip.tsx` | Wrapper to disable buttons with tooltip |
+
+**Components that require rate limit awareness:**
+
+- Sync buttons (`SyncButton.tsx`)
+- Budget inputs (`RecurringItemBudget.tsx`, `RollupStats.tsx`)
+- Item actions (`ActionsDropdown.tsx` - toggle, recreate, refresh, add to rollup)
+- Destructive actions (`UninstallModalFooter.tsx`, `RecurringResetModal.tsx`)
+
 ### TypeScript
 
 **Strict typing is required.**

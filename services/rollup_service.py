@@ -207,7 +207,7 @@ class RollupService:
             current_balance=0,
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=int(item.frequency_months),
+            frequency_months=item.frequency_months,
         )
         monthly_rate = calc.ideal_monthly_rate
 
@@ -251,7 +251,7 @@ class RollupService:
             current_balance=0,
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=int(item.frequency_months),
+            frequency_months=item.frequency_months,
         )
         monthly_rate = calc.ideal_monthly_rate
 
@@ -404,7 +404,7 @@ class RollupService:
                 current_balance=item_balance,
                 months_until_due=item.months_until_due,
                 tracked_over_contribution=0,
-                frequency_months=int(item.frequency_months),
+                frequency_months=item.frequency_months,
             )
 
             ideal_monthly_rate = calc.ideal_monthly_rate
@@ -438,7 +438,7 @@ class RollupService:
                     target_month=current_month,
                     balance_at_start=item_balance,
                     amount=item.amount,
-                    frequency_months=int(item.frequency_months),
+                    frequency_months=item.frequency_months,
                 )
                 balance_at_start = item_balance
             else:

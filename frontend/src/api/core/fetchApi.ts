@@ -101,6 +101,12 @@ export async function fetchApi<T>(
           const retryAfter = Number.parseInt(response.headers.get('Retry-After') || '60', 10);
           rateLimitState.set(endpoint, { until: Date.now() + (retryAfter * 1000) });
           const errorBody = await response.json().catch(() => ({}));
+
+          // Emit custom event for global rate limit handling (RateLimitContext listens)
+          globalThis.dispatchEvent(new CustomEvent('monarch-rate-limited', {
+            detail: { retryAfter, endpoint },
+          }));
+
           throw new RateLimitError(retryAfter, errorBody.error);
         }
 

@@ -35,6 +35,11 @@
    - Verify seed data in `frontend/src/api/demoData.ts` if new data structures are introduced
    - Ensure queries route through `frontend/src/api/queries.ts` with demo mode support
 
+6. **Rate Limit Handling**: If the PR adds components with Monarch API mutations:
+   - Components must use `useIsRateLimited()` hook from `RateLimitContext`
+   - Action buttons must be disabled when rate limited
+   - Combine rate limit check with other loading states: `const isDisabled = isLoading || isRateLimited`
+
 ### Should Check (Suggest improvements)
 
 1. **Hover States**: Should use Tailwind hover classes (`hover:bg-*`), not JS `onMouseEnter`/`onMouseLeave` handlers
@@ -74,6 +79,7 @@ When reviewing PRs that add a new tool or major feature, verify:
 - [ ] Uses Tailwind hover classes, not JS handlers
 - [ ] No `console.log` or `any` types
 - [ ] TypeScript types defined in `types/`
+- [ ] API-mutating components respect rate limits (`useIsRateLimited` hook)
 
 ### Backend (if applicable)
 - [ ] Routes defined in `api.py` with `@async_flask` decorator

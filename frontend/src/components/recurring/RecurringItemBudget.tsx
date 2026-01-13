@@ -10,10 +10,11 @@ import type { RecurringItem } from '../../types';
 import { formatCurrency, formatFrequencyShort } from '../../utils';
 import { TrendUpIcon, TrendDownIcon, AnchorIcon } from '../icons';
 import { Tooltip } from '../ui/Tooltip';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RecurringItemBudgetProps {
   readonly item: RecurringItem;
-  readonly onAllocate: (amount: number) => Promise<void>;
+  readonly onAllocate: (diff: number, newAmount: number) => Promise<void>;
   readonly isAllocating: boolean;
 }
 
@@ -24,6 +25,10 @@ export function RecurringItemBudget({
 }: RecurringItemBudgetProps) {
   const [budgetInput, setBudgetInput] = useState(Math.round(item.planned_budget).toString());
   const [prevPlannedBudget, setPrevPlannedBudget] = useState(item.planned_budget);
+  const isRateLimited = useIsRateLimited();
+
+  // Disable input when allocating or rate limited
+  const isDisabled = isAllocating || isRateLimited;
 
   // Adjust state during render when prop changes (React recommended pattern)
   if (item.planned_budget !== prevPlannedBudget) {
@@ -44,7 +49,7 @@ export function RecurringItemBudget({
     setBudgetInput(newAmount.toString());
     const diff = newAmount - item.planned_budget;
     if (Math.abs(diff) > 0.01) {
-      await onAllocate(diff);
+      await onAllocate(diff, newAmount);
     }
   };
 
@@ -152,7 +157,7 @@ export function RecurringItemBudget({
           onKeyDown={handleBudgetKeyDown}
           onBlur={handleBudgetSubmit}
           onFocus={(e) => e.target.select()}
-          disabled={isAllocating}
+          disabled={isDisabled}
           className="w-16 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
         <span className="text-monarch-text-muted ml-1">/ {target}</span>

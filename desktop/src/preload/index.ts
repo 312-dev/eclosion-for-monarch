@@ -492,6 +492,23 @@ const electronAPI = {
      */
     storeForSync: (passphrase: string): Promise<boolean> =>
       ipcRenderer.invoke('biometric:store-for-sync', passphrase),
+
+    /**
+     * Prompt Touch ID during setup to verify user can use it.
+     * Does NOT store anything - just verifies biometric works.
+     */
+    promptForSetup: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('biometric:prompt-for-setup'),
+
+    /**
+     * Validate credentials for fallback authentication when Touch ID fails.
+     * Compares against stored credentials (works offline).
+     */
+    validateFallback: (
+      email: string,
+      password: string
+    ): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('biometric:validate-fallback', email, password),
   },
 
   // =========================================================================
@@ -642,6 +659,14 @@ const electronAPI = {
       ipcRenderer.on('sync:pending', handler);
       return () => ipcRenderer.removeListener('sync:pending', handler);
     },
+
+    /**
+     * Notify main process that a sync completed.
+     * Updates the tray menu to show the correct sync time.
+     * Call this after a successful sync from the frontend.
+     */
+    notifyCompleted: (lastSyncIso: string): Promise<void> =>
+      ipcRenderer.invoke('sync:notify-completed', lastSyncIso),
   },
 
   // =========================================================================
@@ -686,6 +711,28 @@ const electronAPI = {
       mfaMode: 'secret' | 'code'
     ): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('auth:submit-mfa-code', mfaCode, mfaMode),
+  },
+
+  // =========================================================================
+  // Rate Limiting
+  // =========================================================================
+
+  /**
+   * Rate limit API for handling Monarch API rate limiting.
+   */
+  rateLimit: {
+    /**
+     * Listen for rate limit events from the main process.
+     * Triggered when Monarch API returns 429 during session restore or sync.
+     */
+    onRateLimited: (callback: (data: { retryAfter: number }) => void): (() => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        data: { retryAfter: number }
+      ): void => callback(data);
+      ipcRenderer.on('monarch-rate-limited', handler);
+      return () => ipcRenderer.removeListener('monarch-rate-limited', handler);
+    },
   },
 
   // =========================================================================
@@ -789,6 +836,97 @@ const electronAPI = {
       intervalMinutes: number
     ): Promise<{ success: boolean; intervalMinutes?: number; error?: string }> =>
       ipcRenderer.invoke('background-sync:set-interval', intervalMinutes),
+  },
+
+  // =========================================================================
+  // Auto-Backup
+  // =========================================================================
+
+  /**
+   * Auto-backup API for managing encrypted daily backups.
+   */
+  autoBackup: {
+    /**
+     * Get current auto-backup settings.
+     */
+    getSettings: (): Promise<{
+      enabled: boolean;
+      folderPath: string | null;
+      retentionDays: number;
+      lastBackupDate: string | null;
+    }> => ipcRenderer.invoke('auto-backup:get-settings'),
+
+    /**
+     * Enable or disable auto-backup.
+     */
+    setEnabled: (enabled: boolean): Promise<void> =>
+      ipcRenderer.invoke('auto-backup:set-enabled', enabled),
+
+    /**
+     * Open folder selection dialog.
+     * Returns the selected path or null if cancelled.
+     */
+    selectFolder: (): Promise<string | null> =>
+      ipcRenderer.invoke('auto-backup:select-folder'),
+
+    /**
+     * Open the backup folder in the system file manager.
+     */
+    openFolder: (): Promise<void> => ipcRenderer.invoke('auto-backup:open-folder'),
+
+    /**
+     * Set retention period in days.
+     */
+    setRetention: (days: number): Promise<void> =>
+      ipcRenderer.invoke('auto-backup:set-retention', days),
+
+    /**
+     * Get available retention options.
+     */
+    getRetentionOptions: (): Promise<Array<{ value: number; label: string }>> =>
+      ipcRenderer.invoke('auto-backup:get-retention-options'),
+
+    /**
+     * Run a backup now.
+     */
+    runNow: (): Promise<{ success: boolean; filePath?: string; error?: string }> =>
+      ipcRenderer.invoke('auto-backup:run-now'),
+
+    /**
+     * List available backups in the configured folder.
+     */
+    listBackups: (): Promise<
+      Array<{
+        filename: string;
+        filePath: string;
+        date: string;
+        createdAt: string;
+        sizeBytes: number;
+      }>
+    > => ipcRenderer.invoke('auto-backup:list-backups'),
+
+    /**
+     * Get backup file info for preview.
+     */
+    getInfo: (
+      filePath: string
+    ): Promise<{ valid: boolean; version?: number; createdAt?: string; error?: string }> =>
+      ipcRenderer.invoke('auto-backup:get-info', filePath),
+
+    /**
+     * Restore from a backup file.
+     * If passphrase is not provided, uses current Monarch credentials.
+     */
+    restore: (
+      filePath: string,
+      passphrase?: string
+    ): Promise<{
+      success: boolean;
+      needsCredentials: boolean;
+      imported?: Record<string, boolean>;
+      warnings?: string[];
+      error?: string;
+    }> => ipcRenderer.invoke('auto-backup:restore', filePath, passphrase),
   },
 };
 

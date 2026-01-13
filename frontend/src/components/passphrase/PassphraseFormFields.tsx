@@ -98,6 +98,8 @@ interface BiometricUnlockButtonProps {
   loading: boolean;
   disabled: boolean;
   onClick: () => void;
+  /** If true, shows "or enter passphrase" divider below button. Default: true */
+  showPassphraseDivider?: boolean;
 }
 
 export function BiometricUnlockButton({
@@ -105,6 +107,7 @@ export function BiometricUnlockButton({
   loading,
   disabled,
   onClick,
+  showPassphraseDivider = true,
 }: Readonly<BiometricUnlockButtonProps>) {
   return (
     <>
@@ -132,13 +135,15 @@ export function BiometricUnlockButton({
         )}
       </button>
 
-      <div className="flex items-center gap-3 my-4">
-        <div className="flex-1 h-px" style={{ backgroundColor: 'var(--monarch-border)' }} />
-        <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-          or enter passphrase
-        </span>
-        <div className="flex-1 h-px" style={{ backgroundColor: 'var(--monarch-border)' }} />
-      </div>
+      {showPassphraseDivider && (
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 h-px" style={{ backgroundColor: 'var(--monarch-border)' }} />
+          <span className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+            or enter passphrase
+          </span>
+          <div className="flex-1 h-px" style={{ backgroundColor: 'var(--monarch-border)' }} />
+        </div>
+      )}
     </>
   );
 }

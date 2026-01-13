@@ -80,3 +80,4 @@ desktop/resources/backend/
 # Local app copies (e.g., copied from release for testing)
 apps/
 state/*.migrated*
+.venv-build/

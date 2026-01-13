@@ -74,7 +74,7 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
 
   mainWindow = new BrowserWindow({
     ...bounds,
-    minWidth: 800,
+    minWidth: 515,
     minHeight: 600,
     title: 'Eclosion',
     webPreferences: {

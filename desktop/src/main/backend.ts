@@ -16,6 +16,54 @@ import { debugLog as log, getLogDir } from './logger';
 import { updateHealthStatus } from './tray';
 import { getStateDir } from './paths';
 
+/** Filename for the persistent session secret */
+const SESSION_SECRET_FILE = '.session_secret';
+
+/**
+ * Get or create a persistent session secret.
+ *
+ * This secret is used by Flask to sign session cookies. By persisting it,
+ * user sessions survive backend restarts (e.g., app updates, reboots).
+ *
+ * The secret is stored in the app's state directory which is already
+ * protected by OS-level permissions (same location as encrypted credentials).
+ */
+function getOrCreateSessionSecret(): string {
+  const stateDir = getStateDir();
+  const secretPath = path.join(stateDir, SESSION_SECRET_FILE);
+
+  try {
+    // Try to read existing secret
+    if (fs.existsSync(secretPath)) {
+      const secret = fs.readFileSync(secretPath, 'utf-8').trim();
+      // Validate it's a reasonable length (64 hex chars = 32 bytes)
+      if (secret.length >= 64) {
+        return secret;
+      }
+      // Invalid/corrupted file, regenerate
+      console.warn('Session secret file invalid, regenerating');
+    }
+
+    // Generate new secret
+    const newSecret = crypto.randomBytes(32).toString('hex');
+
+    // Ensure state directory exists
+    if (!fs.existsSync(stateDir)) {
+      fs.mkdirSync(stateDir, { recursive: true });
+    }
+
+    // Write with restrictive permissions (owner read/write only)
+    fs.writeFileSync(secretPath, newSecret, { mode: 0o600 });
+    console.log('Generated new persistent session secret');
+
+    return newSecret;
+  } catch (err) {
+    // If we can't read/write the file, fall back to ephemeral secret
+    console.error('Failed to persist session secret, using ephemeral:', err);
+    return crypto.randomBytes(32).toString('hex');
+  }
+}
+
 /** Status updates emitted during backend startup */
 export interface BackendStartupStatus {
   phase: 'initializing' | 'spawning' | 'waiting_for_health' | 'ready' | 'failed';
@@ -203,6 +251,8 @@ export class BackendManager extends EventEmitter {
         ECLOSION_DESKTOP: '1',
         // Runtime secret for API authentication - only the Electron app knows this
         DESKTOP_SECRET: this.desktopSecret,
+        // Persistent session secret - allows sessions to survive backend restarts
+        SESSION_SECRET: getOrCreateSessionSecret(),
         // Pass build-time version and channel to backend
         // These are injected by esbuild at build time (see build-main.js)
         APP_VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0',

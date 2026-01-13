@@ -156,11 +156,6 @@ export function calculateBurndownData(items: RecurringItem[], currentMonthlyCost
   let currentMonth = new Date(startMonth);
   const processedItems = new Set<string>();
 
-  // Calculate total months in range - if <= 6, show all months
-  const totalMonths = (endMonth.getFullYear() - startMonth.getFullYear()) * 12 +
-    (endMonth.getMonth() - startMonth.getMonth()) + 1;
-  const showAllMonths = totalMonths <= 6;
-
   while (currentMonth <= endMonth) {
     // Check which items complete in this month
     // Items are considered completing if their due date is in this month OR before (for overdue items on first iteration)
@@ -194,27 +189,23 @@ export function calculateBurndownData(items: RecurringItem[], currentMonthlyCost
       processedItems.add(item.id);
     }
 
-    // Add point if: showing all months, there's a change, or it's the first/last month
-    const isFirst = points.length === 0;
+    // Always add a point for every month
     const isLast = currentMonth.getTime() === endMonth.getTime();
+    const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'short' });
+    const yearLabel = currentMonth.getFullYear().toString().slice(-2);
 
-    if (showAllMonths || isFirst || completingThisMonth.length > 0 || isLast) {
-      const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'short' });
-      const yearLabel = currentMonth.getFullYear().toString().slice(-2);
+    // For the last point, use the known lowest cost to ensure accuracy
+    const amount = isLast ? Math.round(lowestMonthlyCost) : Math.max(0, Math.round(runningTotal));
+    const rollupAmount = isLast ? Math.round(lowestRollupCost) : Math.max(0, Math.round(rollupRunningTotal));
 
-      // For the last point, use the known lowest cost to ensure accuracy
-      const amount = isLast ? Math.round(lowestMonthlyCost) : Math.max(0, Math.round(runningTotal));
-      const rollupAmount = isLast ? Math.round(lowestRollupCost) : Math.max(0, Math.round(rollupRunningTotal));
-
-      points.push({
-        month: monthLabel,
-        fullLabel: `${monthLabel} '${yearLabel}`,
-        amount,
-        rollupAmount,
-        hasChange: completingThisMonth.length > 0,
-        completingItems: completingThisMonth.map(i => i.name)
-      });
-    }
+    points.push({
+      month: monthLabel,
+      fullLabel: `${monthLabel} '${yearLabel}`,
+      amount,
+      rollupAmount,
+      hasChange: completingThisMonth.length > 0,
+      completingItems: completingThisMonth.map(i => i.name)
+    });
 
     currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
   }

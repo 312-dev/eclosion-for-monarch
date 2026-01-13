@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useBiometric } from '../../hooks';
 import { getErrorMessage } from '../../utils';
+import { isDesktopMode } from '../../utils/apiBase';
 
 interface UnlockResult {
   success: boolean;
@@ -17,6 +18,10 @@ interface UsePassphraseBiometricOptions {
   onCredentialUpdateNeeded?: (passphrase: string) => void;
   onClearCooldown: () => void;
   loading: boolean;
+  /** Auth state setter for desktop mode - called on Touch ID success */
+  setAuthenticated?: (value: boolean) => void;
+  /** Auth state setter for desktop mode - called on Touch ID success */
+  setNeedsUnlock?: (value: boolean) => void;
 }
 
 export function usePassphraseBiometric({
@@ -27,12 +32,22 @@ export function usePassphraseBiometric({
   onCredentialUpdateNeeded,
   onClearCooldown,
   loading,
+  setAuthenticated,
+  setNeedsUnlock,
 }: UsePassphraseBiometricOptions) {
   const biometric = useBiometric();
   const [biometricLoading, setBiometricLoading] = useState(false);
   const biometricAttempted = useRef(false);
   const [biometricWasReset, setBiometricWasReset] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Desktop mode: Track if Touch ID is required
+  const [requireTouchId, setRequireTouchId] = useState(false);
+  useEffect(() => {
+    if (isDesktopMode() && globalThis.electron?.credentials) {
+      globalThis.electron.credentials.getRequireTouchId().then(setRequireTouchId);
+    }
+  }, []);
 
   const handleBiometricUnlock = useCallback(async () => {
     if (biometricLoading || loading) return;
@@ -41,6 +56,28 @@ export function usePassphraseBiometric({
     setError(null);
 
     try {
+      // Desktop mode: Use credentials.authenticate() which prompts Touch ID
+      // and returns credentials directly (no passphrase involved)
+      if (isDesktopMode() && globalThis.electron?.credentials) {
+        const result = await globalThis.electron.credentials.authenticate();
+        if (result.success) {
+          // Update auth state - the useEffect in UnlockPage will handle navigation
+          // Note: We don't call onSuccess() here because React state updates are async.
+          // If we navigate immediately, ProtectedRoute still sees old state and redirects back.
+          // The useEffect watching authenticated/needsUnlock will navigate when state updates.
+          setAuthenticated?.(true);
+          setNeedsUnlock?.(false);
+          onClearCooldown();
+          // Don't call onSuccess() - let useEffect handle navigation after state updates
+        } else if (result.error) {
+          if (!result.error.includes('cancel')) {
+            setError(result.error);
+          }
+        }
+        return;
+      }
+
+      // Legacy mode: Use passphrase-based biometric authentication
       const result = await biometric.authenticate();
       if (result.success && result.passphrase) {
         const unlockResult = await unlockCredentials(result.passphrase);
@@ -66,22 +103,23 @@ export function usePassphraseBiometric({
     } finally {
       setBiometricLoading(false);
     }
-  }, [biometric, biometricLoading, loading, unlockCredentials, onSuccess, onCredentialUpdateNeeded, onClearCooldown]);
+  }, [biometric, biometricLoading, loading, unlockCredentials, onSuccess, onCredentialUpdateNeeded, onClearCooldown, setAuthenticated, setNeedsUnlock]);
 
-  // Auto-trigger biometric authentication on mount if enrolled (unlock mode only)
+  // Auto-trigger biometric authentication on mount if enrolled/enabled (unlock mode only)
+  // Check both requireTouchId (desktop mode) and biometric.enrolled (legacy mode)
   useEffect(() => {
     if (
       mode === 'unlock' &&
       autoPromptBiometric &&
       biometric.available &&
-      biometric.enrolled &&
+      (requireTouchId || biometric.enrolled) &&
       !biometric.loading &&
       !biometricAttempted.current
     ) {
       biometricAttempted.current = true;
       void handleBiometricUnlock();
     }
-  }, [mode, autoPromptBiometric, biometric.available, biometric.enrolled, biometric.loading, handleBiometricUnlock]);
+  }, [mode, autoPromptBiometric, biometric.available, biometric.enrolled, biometric.loading, requireTouchId, handleBiometricUnlock]);
 
   const storePassphraseForSync = useCallback(async (passphrase: string): Promise<void> => {
     if (!window.electron?.biometric) return;

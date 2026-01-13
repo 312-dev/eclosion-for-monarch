@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, EyeOff, Eye } from 'lucide-react';
 import { Portal } from '../Portal';
 import { useNotesCategoriesQuery } from '../../api/queries';
+import { decodeHtmlEntities } from '../../utils';
 import type { NotesCategoryGroup } from '../../types/notes';
 
 interface HiddenCategoriesModalProps {
@@ -200,7 +201,7 @@ export function HiddenCategoriesModal({
                           className="flex-1 font-medium text-sm"
                           style={{ color: 'var(--monarch-text-dark)' }}
                         >
-                          {group.name}
+                          {decodeHtmlEntities(group.name)}
                         </span>
 
                         {/* Hidden count badge */}
@@ -232,8 +233,8 @@ export function HiddenCategoriesModal({
                           }
                           aria-label={
                             isGroupHidden
-                              ? `Show ${group.name} group`
-                              : `Hide ${group.name} group`
+                              ? `Show ${decodeHtmlEntities(group.name)} group`
+                              : `Hide ${decodeHtmlEntities(group.name)} group`
                           }
                         >
                           {isGroupHidden ? (
@@ -274,7 +275,7 @@ export function HiddenCategoriesModal({
                                   className="flex-1 text-sm"
                                   style={{ color: 'var(--monarch-text-dark)' }}
                                 >
-                                  {category.name}
+                                  {decodeHtmlEntities(category.name)}
                                 </span>
                                 <button
                                   type="button"
@@ -298,8 +299,8 @@ export function HiddenCategoriesModal({
                                   }
                                   aria-label={
                                     isCategoryHidden
-                                      ? `Show ${category.name}`
-                                      : `Hide ${category.name}`
+                                      ? `Show ${decodeHtmlEntities(category.name)}`
+                                      : `Hide ${decodeHtmlEntities(category.name)}`
                                   }
                                 >
                                   {isCategoryHidden && !isGroupHidden ? (

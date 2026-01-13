@@ -10,6 +10,7 @@
 
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 
 export function ProtectedRoute() {
   const location = useLocation();
@@ -19,7 +20,7 @@ export function ProtectedRoute() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
-        <div style={{ color: 'var(--monarch-text-muted)' }}>Loading...</div>
+        <PageLoadingSpinner />
       </div>
     );
   }

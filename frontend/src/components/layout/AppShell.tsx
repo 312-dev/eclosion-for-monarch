@@ -21,11 +21,13 @@ import { SecurityInfo } from '../SecurityInfo';
 import { UpdateBanner } from '../UpdateBanner';
 import { UpdateReadyBanner, UpdateErrorBanner } from '../update';
 import { OfflineIndicator } from '../OfflineIndicator';
+import { RateLimitBanner } from '../ui/RateLimitBanner';
 import { WhatsNewModal } from '../WhatsNewModal';
 import { VersionIndicator } from '../VersionIndicator';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { SecurityAlertBanner } from '../SecurityAlertBanner';
 import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
+import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 import { useDashboardQuery, useSyncMutation } from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
 import { useDemo } from '../../context/DemoContext';
@@ -111,6 +113,15 @@ export function AppShell() {
     }
   }, [hasTour, hasCurrentTourSteps, hasSeenCurrentTour, isRecurringPage, isNotesPage, isRecurringConfigured, currentTourSteps]);
 
+  // Sync tray menu with dashboard last_sync on initial load (desktop only)
+  useEffect(() => {
+    if (!isDemo && data?.last_sync && globalThis.electron?.pendingSync?.notifyCompleted) {
+      globalThis.electron.pendingSync.notifyCompleted(data.last_sync).catch(() => {
+        // Ignore errors - this is just for tray menu updates
+      });
+    }
+  }, [isDemo, data?.last_sync]);
+
   // Handle tour close - mark as seen
   const handleTourClose = () => {
     setShowTour(false);
@@ -140,11 +151,8 @@ export function AppShell() {
   // Loading state
   if (isLoading || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--monarch-bg-page)' }} role="status" aria-live="polite">
-        <div style={{ color: 'var(--monarch-text-muted)' }}>
-          <span className="sr-only">Loading application</span>
-          Loading...
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+        <PageLoadingSpinner />
       </div>
     );
   }
@@ -245,6 +253,7 @@ export function AppShell() {
           <UpdateBanner />
           <UpdateReadyBanner />
           <UpdateErrorBanner />
+          <RateLimitBanner />
           <OfflineIndicator />
         </div>
 

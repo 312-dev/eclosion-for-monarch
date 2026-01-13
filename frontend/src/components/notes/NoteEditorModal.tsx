@@ -12,6 +12,7 @@ import { NoteEditorMDX } from './NoteEditorMDX';
 import { useSaveCategoryNoteMutation, useDeleteCategoryNoteMutation } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { formatErrorMessage } from '../../utils';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 import type { MonthKey } from '../../types/notes';
 
 interface NoteEditorModalProps {
@@ -65,6 +66,7 @@ export function NoteEditorModal({
   const [showHistory, setShowHistory] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
+  const isRateLimited = useIsRateLimited();
 
   const saveMutation = useSaveCategoryNoteMutation();
   useDeleteCategoryNoteMutation(); // Pre-warm for future delete functionality
@@ -182,6 +184,7 @@ export function NoteEditorModal({
             <NoteEditorMDX
               value={content}
               onChange={setContent}
+              onSave={handleSave}
               placeholder={`Write a note for ${categoryName}...`}
               autoFocus
               minHeight={150}
@@ -255,9 +258,9 @@ export function NoteEditorModal({
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={!hasContent || saveMutation.isPending}
+                  disabled={!hasContent || saveMutation.isPending || isRateLimited}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    !hasContent || saveMutation.isPending
+                    !hasContent || saveMutation.isPending || isRateLimited
                       ? 'opacity-50 cursor-not-allowed'
                       : 'hover:opacity-90'
                   }`}

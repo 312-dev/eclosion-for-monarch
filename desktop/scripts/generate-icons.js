@@ -23,6 +23,7 @@ const trayDir = path.join(assetsDir, 'tray');
 
 // Source SVGs
 const sourceSvg = path.join(projectRoot, 'frontend/public/icons/icon-512.svg');
+const betaSourceSvg = path.join(assetsDir, 'icon-beta.svg');
 const traySourceSvg = path.join(trayDir, 'tray-source.svg');
 
 // Icon sizes needed
@@ -48,8 +49,8 @@ function ensureDirectories() {
 /**
  * Generate PNG from SVG at specified size
  */
-async function generatePng(outputPath, size) {
-  await sharp(sourceSvg)
+async function generatePng(outputPath, size, svgSource = sourceSvg) {
+  await sharp(svgSource)
     .resize(size, size)
     .png()
     .toFile(outputPath);
@@ -59,30 +60,32 @@ async function generatePng(outputPath, size) {
 /**
  * Generate macOS .icns file
  * Requires macOS with iconutil command
+ * @param {string} svgSource - Path to source SVG
+ * @param {string} outputName - Output filename without extension (e.g., 'icon' or 'icon-beta')
  */
-async function generateMacIcon() {
-  console.log('\n📱 Generating macOS icon...');
+async function generateMacIcon(svgSource = sourceSvg, outputName = 'icon') {
+  console.log(`\n📱 Generating macOS icon (${outputName})...`);
 
-  const iconsetDir = path.join(assetsDir, 'icon.iconset');
+  const iconsetDir = path.join(assetsDir, `${outputName}.iconset`);
   fs.mkdirSync(iconsetDir, { recursive: true });
 
   // Generate all required sizes for iconset
   const sizes = [16, 32, 128, 256, 512];
   for (const size of sizes) {
     // Regular size
-    await generatePng(path.join(iconsetDir, `icon_${size}x${size}.png`), size);
+    await generatePng(path.join(iconsetDir, `icon_${size}x${size}.png`), size, svgSource);
     // @2x size (retina)
-    await generatePng(path.join(iconsetDir, `icon_${size}x${size}@2x.png`), size * 2);
+    await generatePng(path.join(iconsetDir, `icon_${size}x${size}@2x.png`), size * 2, svgSource);
   }
 
   // Convert iconset to icns using iconutil (macOS only)
   if (process.platform === 'darwin') {
-    const icnsPath = path.join(assetsDir, 'icon.icns');
+    const icnsPath = path.join(assetsDir, `${outputName}.icns`);
     try {
       execSync(`iconutil -c icns "${iconsetDir}" -o "${icnsPath}"`, { stdio: 'pipe' });
-      console.log(`  ✓ Generated icon.icns`);
+      console.log(`  ✓ Generated ${outputName}.icns`);
     } catch (error) {
-      console.error('  ✗ Failed to generate icon.icns:', error.message);
+      console.error(`  ✗ Failed to generate ${outputName}.icns:`, error.message);
     }
   } else {
     console.log('  ⚠ Skipping .icns generation (requires macOS)');
@@ -90,7 +93,7 @@ async function generateMacIcon() {
   }
 
   // Clean up iconset directory if icns was created
-  const icnsPath = path.join(assetsDir, 'icon.icns');
+  const icnsPath = path.join(assetsDir, `${outputName}.icns`);
   if (fs.existsSync(icnsPath)) {
     fs.rmSync(iconsetDir, { recursive: true });
   }
@@ -98,25 +101,27 @@ async function generateMacIcon() {
 
 /**
  * Generate Windows .ico file
+ * @param {string} svgSource - Path to source SVG
+ * @param {string} outputName - Output filename without extension (e.g., 'icon' or 'icon-beta')
  */
-async function generateWindowsIcon() {
-  console.log('\n🪟 Generating Windows icon...');
+async function generateWindowsIcon(svgSource = sourceSvg, outputName = 'icon') {
+  console.log(`\n🪟 Generating Windows icon (${outputName})...`);
 
-  const pngToIco = require('png-to-ico');
+  const pngToIco = require('png-to-ico').default;
   const tempPngs = [];
 
   // Generate PNGs at required sizes
   for (const size of ICON_SIZES.windowsIco) {
-    const pngPath = path.join(assetsDir, `temp_${size}.png`);
-    await generatePng(pngPath, size);
+    const pngPath = path.join(assetsDir, `temp_${outputName}_${size}.png`);
+    await generatePng(pngPath, size, svgSource);
     tempPngs.push(pngPath);
   }
 
   // Convert to ICO
-  const icoPath = path.join(assetsDir, 'icon.ico');
+  const icoPath = path.join(assetsDir, `${outputName}.ico`);
   const buf = await pngToIco(tempPngs);
   fs.writeFileSync(icoPath, buf);
-  console.log(`  ✓ Generated icon.ico`);
+  console.log(`  ✓ Generated ${outputName}.ico`);
 
   // Clean up temp PNGs
   for (const png of tempPngs) {
@@ -126,10 +131,12 @@ async function generateWindowsIcon() {
 
 /**
  * Generate Linux PNG icon
+ * @param {string} svgSource - Path to source SVG
+ * @param {string} outputName - Output filename without extension (e.g., 'icon' or 'icon-beta')
  */
-async function generateLinuxIcon() {
-  console.log('\n🐧 Generating Linux icon...');
-  await generatePng(path.join(assetsDir, 'icon.png'), ICON_SIZES.linux);
+async function generateLinuxIcon(svgSource = sourceSvg, outputName = 'icon') {
+  console.log(`\n🐧 Generating Linux icon (${outputName})...`);
+  await generatePng(path.join(assetsDir, `${outputName}.png`), ICON_SIZES.linux, svgSource);
 }
 
 /**
@@ -198,7 +205,7 @@ async function generateTrayIcons() {
   await generateColoredTrayPng(path.join(trayDir, 'tray.png'), 32);
 
   // Windows tray ICO
-  const pngToIco = require('png-to-ico');
+  const pngToIco = require('png-to-ico').default;
   const trayPng16 = path.join(trayDir, 'temp_tray_16.png');
   const trayPng32 = path.join(trayDir, 'temp_tray_32.png');
 
@@ -231,17 +238,30 @@ async function main() {
     console.error(`\n✗ Tray source SVG not found: ${traySourceSvg}`);
     process.exit(1);
   }
+  const hasBetaSvg = fs.existsSync(betaSourceSvg);
   console.log(`\nApp icon source: ${sourceSvg}`);
+  console.log(`Beta icon source: ${hasBetaSvg ? betaSourceSvg : '(not found, skipping)'}`);
   console.log(`Tray icon source: ${traySourceSvg}`);
   console.log(`Output: ${assetsDir}`);
 
   ensureDirectories();
 
   try {
+    // Generate regular icons
     await generateLinuxIcon();
     await generateWindowsIcon();
     await generateMacIcon();
     await generateTrayIcons();
+
+    // Generate beta icons if source exists
+    if (hasBetaSvg) {
+      console.log('\n────────────────────────────────────────────────────────────────');
+      console.log('Generating Beta Icons...');
+      console.log('────────────────────────────────────────────────────────────────');
+      await generateLinuxIcon(betaSourceSvg, 'icon-beta');
+      await generateWindowsIcon(betaSourceSvg, 'icon-beta');
+      await generateMacIcon(betaSourceSvg, 'icon-beta');
+    }
 
     console.log('\n╔════════════════════════════════════════════════════════════════╗');
     console.log('║               Icon Generation Complete!                        ║');

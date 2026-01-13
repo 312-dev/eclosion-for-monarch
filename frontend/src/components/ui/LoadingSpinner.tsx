@@ -1,7 +1,7 @@
 /**
  * LoadingSpinner Component
  *
- * A consistent, accessible loading spinner.
+ * A consistent, accessible loading spinner using SpinnerDotted.
  * Features:
  * - Size variants
  * - Color customization
@@ -9,9 +9,11 @@
  * - Replaces inline SVG spinners throughout the app
  */
 
+import { SpinnerDotted } from 'spinners-react';
+
 export interface LoadingSpinnerProps {
-  /** Size of the spinner */
-  size?: 'sm' | 'md' | 'lg';
+  /** Size of the spinner in pixels */
+  size?: 'sm' | 'md' | 'lg' | number;
   /** Color of the spinner */
   color?: string;
   /** Additional CSS classes */
@@ -20,10 +22,10 @@ export interface LoadingSpinnerProps {
   label?: string;
 }
 
-const SIZE_CLASSES = {
-  sm: 'h-4 w-4',
-  md: 'h-6 w-6',
-  lg: 'h-8 w-8',
+const SIZE_MAP = {
+  sm: 24,
+  md: 40,
+  lg: 64,
 };
 
 /**
@@ -32,44 +34,65 @@ const SIZE_CLASSES = {
  * @example
  * ```tsx
  * <LoadingSpinner size="md" />
- * <LoadingSpinner size="lg" color="var(--monarch-primary)" />
+ * <LoadingSpinner size="lg" color="var(--monarch-orange)" />
+ * <LoadingSpinner size={50} />
  * ```
  */
 export function LoadingSpinner({
   size = 'md',
-  color = 'currentColor',
+  color = 'var(--monarch-orange)',
   className = '',
   label = 'Loading',
-}: LoadingSpinnerProps) {
+}: Readonly<LoadingSpinnerProps>) {
+  const sizeValue = typeof size === 'number' ? size : SIZE_MAP[size];
+
   return (
     <output
       aria-label={label}
       aria-live="polite"
       className={`inline-flex items-center justify-center ${className}`}
     >
-      <svg
-        className={`animate-spin ${SIZE_CLASSES[size]}`}
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        style={{ color }}
+      <SpinnerDotted
+        size={sizeValue}
+        thickness={100}
+        speed={100}
+        color={color}
         aria-hidden="true"
-      >
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        />
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        />
-      </svg>
+      />
       <span className="sr-only">{label}</span>
+    </output>
+  );
+}
+
+/**
+ * A centered page-level loading spinner.
+ * Use this for full-page or section loading states.
+ */
+export function PageLoadingSpinner({
+  message,
+  size = 90,
+  className = '',
+}: Readonly<{
+  message?: string;
+  size?: number;
+  className?: string;
+}>) {
+  return (
+    <output
+      className={`flex flex-col items-center justify-center gap-4 ${className}`}
+      aria-live="polite"
+    >
+      <SpinnerDotted
+        size={size}
+        thickness={100}
+        speed={100}
+        color="var(--monarch-orange)"
+        aria-hidden="true"
+      />
+      {message && (
+        <span style={{ color: 'var(--monarch-text-muted)' }}>{message}</span>
+      )}
+      <span className="sr-only">{message || 'Loading'}</span>
     </output>
   );
 }
@@ -79,17 +102,23 @@ export function LoadingSpinner({
  */
 export function LoadingOverlay({
   message = 'Loading...',
-}: {
+}: Readonly<{
   message?: string;
-}) {
+}>) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-modal">
       <div
-        className="flex flex-col items-center gap-3 p-6 rounded-lg"
+        className="flex flex-col items-center gap-4 p-6 rounded-lg"
         style={{ backgroundColor: 'var(--monarch-bg-card)' }}
       >
-        <LoadingSpinner size="lg" color="var(--monarch-primary)" />
-        <span style={{ color: 'var(--monarch-text)' }}>{message}</span>
+        <SpinnerDotted
+          size={64}
+          thickness={100}
+          speed={100}
+          color="var(--monarch-orange)"
+          aria-hidden="true"
+        />
+        <span style={{ color: 'var(--monarch-text-dark)' }}>{message}</span>
       </div>
     </div>
   );

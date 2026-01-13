@@ -11,6 +11,7 @@ import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 import * as api from '../../api/client';
 import * as demoApi from '../../api/demoClient';
 
@@ -33,6 +34,7 @@ export function RecurringResetModal({
   const isDemo = useDemo();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const isRateLimited = useIsRateLimited();
 
   const handleReset = async () => {
     if (!confirmed) return;
@@ -173,11 +175,11 @@ export function RecurringResetModal({
             </button>
             <button
               onClick={handleReset}
-              disabled={!confirmed || resetting}
+              disabled={!confirmed || resetting || isRateLimited}
               className="flex-1 px-4 py-2 rounded-lg transition-colors text-white flex items-center justify-center gap-2"
               style={{
                 backgroundColor: resetting ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
-                opacity: !confirmed && !resetting ? 0.5 : 1,
+                opacity: (!confirmed || isRateLimited) && !resetting ? 0.5 : 1,
               }}
             >
               {resetting ? (

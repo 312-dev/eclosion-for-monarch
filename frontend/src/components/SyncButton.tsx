@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { UI } from '../constants';
 import { SpinnerIcon, SyncIcon } from './icons';
+import { Tooltip } from './ui/Tooltip';
+import { useIsRateLimited } from '../context/RateLimitContext';
 
 interface SyncButtonProps {
   onSync: () => void;
@@ -41,9 +43,13 @@ function formatLastSync(timestamp: string | null): string {
 
 export function SyncButton({ onSync, isSyncing, lastSync, compact = false, syncBlocked = false, isFetching = false }: SyncButtonProps) {
   const [formattedTime, setFormattedTime] = useState(() => formatLastSync(lastSync));
+  const isRateLimited = useIsRateLimited();
 
   // Combined loading state: either syncing or fetching data
   const isLoading = isSyncing || isFetching;
+
+  // Disable sync when rate limited
+  const isDisabled = isLoading || isRateLimited;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync derived state with prop
@@ -71,27 +77,37 @@ export function SyncButton({ onSync, isSyncing, lastSync, compact = false, syncB
     const statusText = getStatusText();
     const showSyncedPrefix = !isLoading && lastSync;
 
+    const compactButton = (
+      <button
+        type="button"
+        onClick={onSync}
+        disabled={isDisabled}
+        className="flex items-center gap-1.5 text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:opacity-70"
+        style={{ color: syncBlocked ? 'var(--monarch-warning)' : 'var(--monarch-text-muted)' }}
+        aria-label={isLoading ? 'Syncing data with Monarch' : `Sync now. Last synced: ${syncStatus}`}
+        aria-busy={isLoading}
+      >
+        {isLoading ? (
+          <SpinnerIcon size={14} />
+        ) : (
+          <SyncIcon size={14} />
+        )}
+        <span aria-live="polite">
+          {showSyncedPrefix && <span className="hidden sm:inline">Synced </span>}
+          {statusText}
+        </span>
+      </button>
+    );
+
     return (
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onSync}
-          disabled={isLoading}
-          className="flex items-center gap-1.5 text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:opacity-70"
-          style={{ color: syncBlocked ? 'var(--monarch-warning)' : 'var(--monarch-text-muted)' }}
-          aria-label={isLoading ? 'Syncing data with Monarch' : `Sync now. Last synced: ${syncStatus}`}
-          aria-busy={isLoading}
-        >
-          {isLoading ? (
-            <SpinnerIcon size={14} />
-          ) : (
-            <SyncIcon size={14} />
-          )}
-          <span aria-live="polite">
-            {showSyncedPrefix && <span className="hidden sm:inline">Synced </span>}
-            {statusText}
-          </span>
-        </button>
+        {isRateLimited ? (
+          <Tooltip content="Rate limited — please wait a few minutes">
+            <span className="inline-block">{compactButton}</span>
+          </Tooltip>
+        ) : (
+          compactButton
+        )}
         {syncBlocked && !isSyncing && (
           <span
             className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded"
@@ -127,27 +143,45 @@ export function SyncButton({ onSync, isSyncing, lastSync, compact = false, syncB
           Stale
         </span>
       )}
-      <button
-        type="button"
-        onClick={onSync}
-        disabled={isLoading}
-        className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover"
-        style={{ backgroundColor: isLoading ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)' }}
-        aria-label={isLoading ? 'Syncing data' : 'Sync now'}
-        aria-busy={isLoading}
-      >
-        {isLoading ? (
-          <>
-            <SpinnerIcon size={16} />
-            <span>{isSyncing ? 'Syncing...' : 'Refreshing...'}</span>
-          </>
-        ) : (
-          <>
-            <SyncIcon size={16} />
-            <span>Sync Now</span>
-          </>
-        )}
-      </button>
+      {isRateLimited ? (
+        <Tooltip content="Rate limited — please wait a few minutes">
+          <span className="inline-block">
+            <button
+              type="button"
+              onClick={onSync}
+              disabled={isDisabled}
+              className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover"
+              style={{ backgroundColor: 'var(--monarch-orange-disabled)' }}
+              aria-label="Sync disabled - rate limited"
+            >
+              <SyncIcon size={16} />
+              <span>Sync Now</span>
+            </button>
+          </span>
+        </Tooltip>
+      ) : (
+        <button
+          type="button"
+          onClick={onSync}
+          disabled={isDisabled}
+          className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover"
+          style={{ backgroundColor: isLoading ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)' }}
+          aria-label={isLoading ? 'Syncing data' : 'Sync now'}
+          aria-busy={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <SpinnerIcon size={16} />
+              <span>{isSyncing ? 'Syncing...' : 'Refreshing...'}</span>
+            </>
+          ) : (
+            <>
+              <SyncIcon size={16} />
+              <span>Sync Now</span>
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { StaleWarningPopover } from './StaleWarningPopover';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 import { RecurringItemProgress } from './RecurringItemProgress';
 import { SpinnerIcon, WarningFilledIcon, CheckFilledIcon, BlockedIcon } from '../icons';
+import { decodeHtmlEntities } from '../../utils';
 
 interface RecurringItemHeaderProps {
   readonly item: RecurringItem;
@@ -154,7 +155,7 @@ export function RecurringItemHeader({
                 }}
                 title={item.is_enabled && !item.category_missing ? "Double-click to rename" : undefined}
               >
-                {item.name}
+                {decodeHtmlEntities(item.name)}
               </span>
             </>
           )}
@@ -181,7 +182,7 @@ export function RecurringItemHeader({
                 onChangeGroup={onChangeGroup}
               />
             ) : (
-              item.category_group_name
+              decodeHtmlEntities(item.category_group_name)
             )}
           </div>
         )}

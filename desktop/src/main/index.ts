@@ -62,6 +62,7 @@ import {
   showNotification,
   updateHealthStatus,
   isAuthError,
+  isRateLimitError,
   showReauthNotification,
 } from './tray';
 import { setupIpcHandlers } from './ipc';
@@ -85,6 +86,40 @@ import {
   clearStoredPassphrase,
 } from './biometric';
 import { setPendingSync } from './sync-pending';
+import {
+  initializeAutoBackup,
+  checkAndRunDailyBackup,
+  cleanupAutoBackup,
+} from './auto-backup';
+
+/**
+ * Check if the app is running from a macOS DMG volume mount.
+ * DMG volumes are read-only and cause backend failures.
+ *
+ * @returns Object with isVolume flag and the volume path if detected
+ */
+function checkRunningFromVolume(): { isVolume: boolean; volumePath?: string } {
+  if (process.platform !== 'darwin') {
+    return { isVolume: false };
+  }
+
+  const appPath = app.getAppPath();
+  const resourcesPath = process.resourcesPath || appPath;
+
+  // Check if either path starts with /Volumes/
+  // This indicates the app is being run directly from a mounted DMG
+  if (appPath.startsWith('/Volumes/') || resourcesPath.startsWith('/Volumes/')) {
+    const pathToCheck = resourcesPath.startsWith('/Volumes/') ? resourcesPath : appPath;
+    // Extract the volume name (e.g., "/Volumes/Eclosion (Beta) 1.2.6-arm64")
+    const volumeMatch = /^\/Volumes\/[^/]+/.exec(pathToCheck);
+    return {
+      isVolume: true,
+      volumePath: volumeMatch ? volumeMatch[0] : '/Volumes',
+    };
+  }
+
+  return { isVolume: false };
+}
 
 // Single instance lock - prevent multiple instances
 debugLog('Requesting single instance lock...');
@@ -167,6 +202,9 @@ async function initialize(): Promise<void> {
     debugLog('Setting up IPC handlers...');
     setupIpcHandlers(backendManager);
     debugLog('IPC handlers set up');
+
+    // Initialize auto-backup manager
+    initializeAutoBackup(backendManager);
 
     // Clean up old passphrase-based credentials if new mode isn't set up yet
     // This handles the upgrade path: users need to log in fresh with the new simplified flow
@@ -271,6 +309,8 @@ async function startBackendAndInitialize(): Promise<void> {
   let sessionRestored = false;
   let mfaRequired = false;
 
+  let rateLimited = false;
+
   if (hasMonarchCredentials()) {
     // New desktop mode: restore session from stored credentials
     const credentials = getMonarchCredentials();
@@ -283,8 +323,21 @@ async function startBackendAndInitialize(): Promise<void> {
       } else {
         debugLog(`Session restore failed: ${restoreResult.error}`);
 
+        // Check if rate limited - don't redirect to login, let renderer handle it
+        if (isRateLimitError(restoreResult.error)) {
+          debugLog('Rate limited during session restore - will notify renderer');
+          rateLimited = true;
+
+          // Notify renderer about rate limit so it can show banner
+          const mainWindow = getMainWindow();
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('monarch-rate-limited', {
+              retryAfter: 60, // Default to 60 seconds
+            });
+          }
+        }
         // Check if MFA is required (session expired for 6-digit code users)
-        if (restoreResult.mfaRequired) {
+        else if (restoreResult.mfaRequired) {
           debugLog('MFA required for session restore - will prompt user');
           mfaRequired = true;
 
@@ -301,10 +354,10 @@ async function startBackendAndInitialize(): Promise<void> {
     }
   }
 
-  // Check if sync is needed (skip if MFA is required - user must authenticate first)
+  // Check if sync is needed (skip if MFA is required or rate limited)
   // New mode: credentials already in session (no passphrase needed)
   // Legacy mode: pass the passphrase to unlock
-  if (!mfaRequired) {
+  if (!mfaRequired && !rateLimited) {
     const passphrase = sessionRestored ? undefined : getStoredPassphrase();
     const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
     if (syncResult.synced) {
@@ -317,6 +370,11 @@ async function startBackendAndInitialize(): Promise<void> {
         showNotification('Sync Failed', syncResult.error || 'Unable to sync. Please try again later.');
       }
     }
+  }
+
+  // Check if daily backup is needed (runs in background, doesn't block startup)
+  if (sessionRestored) {
+    void checkAndRunDailyBackup();
   }
 
   // Record startup metrics
@@ -358,6 +416,15 @@ async function handleSyncClick(): Promise<void> {
     showNotification('Sync Complete', 'Your recurring expenses are up to date.');
     updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
     updateHealthStatus(true, syncTime);
+  } else if (isRateLimitError(result.error)) {
+    // Rate limited - notify renderer to show banner, don't show error notification
+    debugLog('Rate limited during sync - notifying renderer');
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('monarch-rate-limited', {
+        retryAfter: 60,
+      });
+    }
   } else if (isAuthError(result.error)) {
     // Auth error (session expired, MFA needed) - show reauth notification
     showReauthNotification();
@@ -433,6 +500,9 @@ async function cleanup(): Promise<void> {
   // Cleanup lock manager
   cleanupLockManager();
 
+  // Cleanup auto-backup
+  cleanupAutoBackup();
+
   // Destroy tray
   destroyTray();
 
@@ -451,6 +521,23 @@ async function cleanup(): Promise<void> {
 // App ready - initialize
 app.on('ready', async () => {
   recordMilestone('appReady');
+
+  // Check if running from a DMG volume mount (macOS)
+  // This must happen before any initialization that requires write access
+  const volumeCheck = checkRunningFromVolume();
+  if (volumeCheck.isVolume) {
+    debugLog(`App is running from volume mount: ${volumeCheck.volumePath}`);
+    dialog.showErrorBox(
+      'Move to Applications',
+      'Eclosion cannot run directly from the disk image.\n\n' +
+        'Please drag the Eclosion app to your Applications folder (or another location on your drive), ' +
+        'then eject the disk image and launch from the new location.\n\n' +
+        'This is required because the app needs write access to store your settings and data.'
+    );
+    app.exit(1);
+    return;
+  }
+
   try {
     await initialize();
   } catch (error) {

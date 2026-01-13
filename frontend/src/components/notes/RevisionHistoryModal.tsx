@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import { X, Calendar, ArrowRight } from 'lucide-react';
 import { Portal } from '../Portal';
 import { useNoteHistoryQuery } from '../../api/queries';
+import { decodeHtmlEntities } from '../../utils';
 import type { MonthKey, NoteVersion } from '../../types/notes';
 
 interface RevisionHistoryModalProps {
@@ -125,8 +126,8 @@ export function RevisionHistoryModal({
                 Notes History
               </h2>
               <p className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-                {categoryType === 'group' ? `${categoryName} Group` : categoryName}
-                {groupName && categoryType === 'category' && ` in ${groupName}`}
+                {categoryType === 'group' ? `${decodeHtmlEntities(categoryName)} Group` : decodeHtmlEntities(categoryName)}
+                {groupName && categoryType === 'category' && ` in ${decodeHtmlEntities(groupName)}`}
               </p>
             </div>
             <button

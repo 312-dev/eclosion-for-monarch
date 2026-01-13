@@ -40,7 +40,8 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.11.0",
     "recharts": "^3.6.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "spinners-react": "^1.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -90,6 +90,12 @@ export interface StoreSchema {
   // Lockout state
   'lockout.failedAttempts': number;
   'lockout.cooldownUntil': number | null;
+
+  // Auto-backup settings
+  'autoBackup.enabled': boolean;
+  'autoBackup.folderPath': string;
+  'autoBackup.retentionDays': number;
+  'autoBackup.lastBackupDate': string;
 }
 
 /**

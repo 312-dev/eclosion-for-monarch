@@ -3,10 +3,11 @@
  *
  * Obsidian-style WYSIWYG markdown editor using MDXEditor.
  * Renders formatting inline as you type, reveals markdown when cursor enters.
- * Toolbar shows only when focused.
+ * Toolbar shows only when focused. Explicit save button instead of blur-based saving.
  */
 
 import { useRef, useCallback, useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
 import {
   MDXEditor,
   headingsPlugin,
@@ -32,12 +33,14 @@ interface MathSuggestion {
 }
 
 interface NoteEditorMDXProps {
-  /** Initial markdown content */
+  /** Current markdown content */
   value: string;
   /** Callback when content changes */
   onChange: (value: string) => void;
-  /** Callback when content should be saved immediately (e.g., after math insertion) */
-  onCommit?: (value: string) => void;
+  /** Callback to save and close the editor */
+  onSave: () => void;
+  /** Whether save is in progress */
+  isSaving?: boolean;
   /** Placeholder text */
   placeholder?: string;
   /** Read-only mode */
@@ -55,7 +58,8 @@ interface NoteEditorMDXProps {
 export function NoteEditorMDX({
   value,
   onChange,
-  onCommit,
+  onSave,
+  isSaving = false,
   placeholder = 'Write your note...',
   readOnly = false,
   autoFocus = false,
@@ -77,7 +81,7 @@ export function NoteEditorMDX({
     // Match: optional $, then digits/operators/parens (x allowed for multiply since * conflicts with markdown)
     const match = stripped.match(/\$?([\d.+\-*/xX()]+)$/);
 
-    if (match && match[1] && match[1].length >= 3) {
+    if (match?.[1] && match[1].length >= 3) {
       const expression = match[1];
       // Must have at least one operator (x/X for multiplication)
       if (/[+\-*/xX]/.test(expression)) {
@@ -120,20 +124,25 @@ export function NoteEditorMDX({
     const newMarkdown = currentMarkdown + `=${mathSuggestion.result}`;
     editorRef.current.setMarkdown(newMarkdown);
     onChange(newMarkdown);
-    // Signal to parent that this is a commit point (should save immediately)
-    onCommit?.(newMarkdown);
     setMathSuggestion(null);
 
     // Keep focus in the editor after accepting
     requestAnimationFrame(() => {
       editorRef.current?.focus();
     });
-  }, [mathSuggestion, onChange, onCommit]);
+  }, [mathSuggestion, onChange]);
 
-  // Handle keyboard events for math suggestions
-  // Use capture phase to intercept Tab before MDXEditor/Lexical handles it
+  // Handle keyboard events for math suggestions and save shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+Enter to save
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        onSave();
+        return;
+      }
+
+      // Math suggestion handling
       if (!mathSuggestion || !isFocused) return;
 
       if (e.key === 'Tab') {
@@ -147,33 +156,12 @@ export function NoteEditorMDX({
 
     document.addEventListener('keydown', handleKeyDown, { capture: true });
     return () => document.removeEventListener('keydown', handleKeyDown, { capture: true });
-  }, [mathSuggestion, isFocused, acceptMathSuggestion]);
+  }, [mathSuggestion, isFocused, acceptMathSuggestion, onSave]);
 
-  // Handle focus/blur on the container
+  // Handle focus on the container (for toolbar visibility)
   const handleFocus = useCallback(() => {
     setIsFocused(true);
   }, []);
-
-  const handleBlur = useCallback(() => {
-    // Use requestAnimationFrame to let focus settle before checking
-    // This handles cases where relatedTarget is null or the portal hasn't rendered yet
-    requestAnimationFrame(() => {
-      const activeElement = document.activeElement as HTMLElement | null;
-      const isInsideContainer = containerRef.current?.contains(activeElement);
-      // MDXEditor portals toolbar dropdowns outside the container using Radix UI
-      const isInsideRadixPortal = activeElement?.closest('[data-radix-popper-content-wrapper]');
-      // Also check for MDXEditor's own dialog portals (e.g., link dialog)
-      const isInsideMdxDialog = activeElement?.closest('[class*="mdxeditor"]');
-
-      if (!isInsideContainer && !isInsideRadixPortal && !isInsideMdxDialog) {
-        // Get the latest markdown directly from the editor before blur completes
-        // This ensures we save the most recent content even if onChange was batched/delayed
-        const currentMarkdown = editorRef.current?.getMarkdown() ?? '';
-        onCommit?.(currentMarkdown);
-        setIsFocused(false);
-      }
-    });
-  }, [onCommit]);
 
   // Build plugins array
   const plugins = [
@@ -214,7 +202,6 @@ export function NoteEditorMDX({
       className={`note-editor-mdx ${className} ${isFocused ? 'is-focused' : ''}`}
       data-readonly={readOnly}
       onFocus={handleFocus}
-      onBlur={handleBlur}
       style={containerStyle}
     >
       <div className="relative">
@@ -239,6 +226,27 @@ export function NoteEditorMDX({
           </div>
         )}
       </div>
+
+      {/* Save button */}
+      {!readOnly && (
+        <div className="flex justify-end mt-2">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:opacity-90 disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--monarch-tint)',
+              color: 'white',
+            }}
+            aria-label="Save note"
+            title="Save (Cmd+Enter)"
+          >
+            <Check size={14} />
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

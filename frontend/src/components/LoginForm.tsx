@@ -43,13 +43,15 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
-  const [mfaMode, setMfaMode] = useState<'secret' | 'code'>('secret');
   const [showCodeCaveatsModal, setShowCodeCaveatsModal] = useState(false);
+  const [pendingCodeModeLogin, setPendingCodeModeLogin] = useState(false);
 
   const mfaFormat = useMemo(() => detectMfaFormat(mfaSecret), [mfaSecret]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Actually perform the login after any confirmations.
+   */
+  const performLogin = async (confirmedMfaMode: 'secret' | 'code') => {
     setLoading(true);
     setError(null);
 
@@ -57,7 +59,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       // Desktop mode: simplified flow without passphrase
       if (isElectronDesktop()) {
         // Validate credentials and establish backend session
-        const result = await desktopLogin(email, password, mfaSecret, mfaMode);
+        const result = await desktopLogin(email, password, mfaSecret, confirmedMfaMode);
 
         if (result.success) {
           // Store credentials in Electron's safeStorage
@@ -68,9 +70,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
           const stored = await globalThis.electron!.credentials.store({
             email,
             password,
-            mfaMode,
+            mfaMode: confirmedMfaMode,
             // Only store TOTP secrets, not ephemeral 6-digit codes
-            ...(mfaSecret && mfaMode === 'secret' && { mfaSecret }),
+            ...(mfaSecret && confirmedMfaMode === 'secret' && { mfaSecret }),
           });
 
           if (!stored) {
@@ -88,7 +90,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         }
       } else {
         // Web/self-hosted mode: existing passphrase flow
-        const result = await login(email, password, mfaSecret, mfaMode);
+        const result = await login(email, password, mfaSecret, confirmedMfaMode);
         if (result.success) {
           if (result.needs_passphrase) {
             setStage('passphrase');
@@ -104,6 +106,20 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // If user entered a 6-digit code, show confirmation modal first
+    if (mfaFormat === 'six_digit_code') {
+      setPendingCodeModeLogin(true);
+      setShowCodeCaveatsModal(true);
+      return;
+    }
+
+    // Otherwise proceed with secret mode login
+    await performLogin('secret');
   };
 
   /**
@@ -239,9 +255,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 <MfaInputSection
                   mfaSecret={mfaSecret}
                   onMfaSecretChange={setMfaSecret}
-                  mfaMode={mfaMode}
                   mfaFormat={mfaFormat}
-                  onShowCodeCaveats={() => setShowCodeCaveatsModal(true)}
                 />
               )}
 
@@ -310,13 +324,16 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <MfaCodeCaveatsModal
         isOpen={showCodeCaveatsModal}
-        onClose={() => setShowCodeCaveatsModal(false)}
-        onAccept={() => {
+        onClose={() => {
           setShowCodeCaveatsModal(false);
-          setMfaMode('code');
-          // Preserve the value if it's already a 6-digit code
-          if (mfaFormat !== 'six_digit_code') {
-            setMfaSecret('');
+          setPendingCodeModeLogin(false);
+        }}
+        onAccept={async () => {
+          setShowCodeCaveatsModal(false);
+          // If this was triggered by form submit, proceed with login
+          if (pendingCodeModeLogin) {
+            setPendingCodeModeLogin(false);
+            await performLogin('code');
           }
         }}
       />

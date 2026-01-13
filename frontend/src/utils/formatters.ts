@@ -247,3 +247,41 @@ export function decodeHtmlEntities(text: string): string {
   textarea.innerHTML = text;
   return textarea.value;
 }
+
+/**
+ * Regex pattern to match leading emoji(s) at the start of a string.
+ * Matches common emoji patterns including:
+ * - Basic emoji (single codepoint)
+ * - Emoji with variation selectors (e.g., ❤️)
+ * - Emoji with skin tone modifiers
+ * - Compound emoji with ZWJ (e.g., 👨‍👩‍👧)
+ * - Flag emoji (regional indicators)
+ */
+const LEADING_EMOJI_REGEX = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(\u200D(\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/u;
+
+/**
+ * Add a space after leading emoji if one doesn't exist.
+ *
+ * Monarch category names often have emojis directly concatenated with the name
+ * (e.g., "🙏Dining Out"). This function adds proper spacing for display.
+ *
+ * @param text - String that may start with an emoji
+ * @returns String with space added after leading emoji, or original if no emoji or already spaced
+ */
+export function spacifyEmoji(text: string): string {
+  if (!text) return text;
+
+  const match = LEADING_EMOJI_REGEX.exec(text);
+  if (!match) return text;
+
+  const emoji = match[0];
+  const rest = text.slice(emoji.length);
+
+  // Already has a space after emoji
+  if (rest.startsWith(' ')) return text;
+
+  // No text after emoji
+  if (!rest) return text;
+
+  return `${emoji} ${rest}`;
+}
