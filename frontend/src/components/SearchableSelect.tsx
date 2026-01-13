@@ -233,6 +233,7 @@ export function SearchableSelect({
             className="fixed z-(--z-index-dropdown) min-w-50 max-w-75 rounded-lg shadow-lg border border-(--monarch-border) bg-(--monarch-bg-card) overflow-hidden dropdown-menu"
             style={{
               top: dropdown.position.top,
+              bottom: dropdown.position.bottom,
               left: dropdown.position.left,
               right: dropdown.position.right,
             }}

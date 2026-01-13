@@ -17,7 +17,8 @@ export interface UnmappedCategory {
   icon?: string;
   group_order: number;
   category_order: number;
-  planned_budget: number;
+  /** @deprecated No longer returned by backend - kept for backwards compatibility */
+  planned_budget?: number;
 }
 
 export interface LinkCategoryResult {

@@ -14,6 +14,7 @@
 /unlock /index.html 200
 /dashboard /index.html 200
 /recurring /index.html 200
+/notes /index.html 200
 /settings /index.html 200
 /features/* /index.html 200
 /features /index.html 200

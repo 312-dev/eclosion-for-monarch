@@ -6,31 +6,8 @@
 
 import type { AllocateResult } from '../../types';
 import { calculateItemDisplayStatus } from '../../hooks/useItemDisplayStatus';
+import { calculateFrozenTarget } from '../../utils/calculations';
 import { getDemoState, updateDemoState, simulateDelay } from './demoState';
-
-/**
- * Calculate the frozen monthly target for a recurring item.
- * Mirrors the logic from services/frozen_target_calculator.py
- */
-function calculateFrozenTarget(
-  amount: number,
-  frequencyMonths: number,
-  monthsUntilDue: number,
-  currentBalance: number
-): number {
-  if (frequencyMonths <= 1) {
-    // Monthly items: target is the shortfall (what's still needed)
-    return Math.ceil(Math.max(0, amount - currentBalance));
-  } else {
-    // Non-monthly items: calculate catch-up rate
-    const shortfall = Math.max(0, amount - currentBalance);
-    const monthsRemaining = Math.max(1, monthsUntilDue);
-    if (shortfall > 0) {
-      return Math.ceil(shortfall / monthsRemaining);
-    }
-    return 0;
-  }
-}
 
 /**
  * Toggle tracking for a recurring item.
