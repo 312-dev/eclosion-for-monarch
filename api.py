@@ -23,8 +23,8 @@ from core.session import SessionManager
 from services.credentials_service import CredentialsService
 from services.security_service import SecurityService
 from services.sync_service import SyncService
+from state import NotesStateManager
 from state.db import init_db
-from state.state_manager import NotesStateManager
 
 load_dotenv()
 

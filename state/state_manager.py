@@ -850,3 +850,9 @@ class NotesStateManager:
         with db_session() as session:
             repo = NotesRepository(session)
             return repo.get_all_notes_for_month(month_key, passphrase)
+
+    def get_all_notes(self, passphrase: str) -> dict:
+        """Get all notes data for bulk loading."""
+        with db_session() as session:
+            repo = NotesRepository(session)
+            return repo.get_all_notes(passphrase)

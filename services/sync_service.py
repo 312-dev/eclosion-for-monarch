@@ -29,7 +29,7 @@ from monarch_utils import (
     get_user_first_name,
     get_user_profile,
 )
-from state.state_manager import RollupState, StateManager, TrackerState
+from state import RollupState, StateManager, TrackerState
 
 from .category_manager import CategoryManager
 from .credentials_service import CredentialsService

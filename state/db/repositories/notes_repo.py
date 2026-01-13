@@ -187,6 +187,27 @@ class NotesRepository:
             "effective_general_note": effective_general,
         }
 
+    def get_all_category_notes(self, passphrase: str) -> list[dict]:
+        """Get all category notes sorted by category and month."""
+        notes = self.session.query(Note).order_by(Note.category_id, Note.month_key.asc()).all()
+        result = []
+        for note in notes:
+            content = self._decrypt_content(note.content_encrypted, note.salt, passphrase)
+            result.append(self._note_to_dict(note, content))
+        return result
+
+    def get_all_notes(self, passphrase: str) -> dict:
+        """
+        Get all notes data for bulk loading.
+
+        Returns all raw notes and general notes so the frontend can compute
+        effective notes for any month instantly.
+        """
+        return {
+            "notes": self.get_all_category_notes(passphrase),
+            "general_notes": self.get_all_general_notes(passphrase),
+        }
+
     def get_revision_history(
         self, category_type: str, category_id: str, passphrase: str
     ) -> list[dict]:

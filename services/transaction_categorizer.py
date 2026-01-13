@@ -14,7 +14,7 @@ from typing import Any
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from monarch_utils import get_mm, retry_with_backoff
-from state.state_manager import StateManager, TrackerState
+from state import StateManager, TrackerState
 
 logger = logging.getLogger(__name__)
 

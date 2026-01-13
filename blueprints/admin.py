@@ -398,144 +398,85 @@ def get_update_info():
     )
 
 
-# ---- MIGRATION ----
+# ---- DATABASE BACKUP ----
 
 
-@admin_bp.route("/migration/status", methods=["GET"])
-def get_migration_status():
-    """
-    Check current state file compatibility.
+def _get_database_path() -> Path:
+    """Get the SQLite database path."""
+    from state.db.database import DATABASE_PATH
 
-    Returns compatibility status, whether migration is needed,
-    and any warnings about the current state.
-    """
-    from state.migrations import BackupManager, check_compatibility
+    return DATABASE_PATH
 
-    # Load raw state data
-    if not config.STATE_FILE.exists():
-        return jsonify(
+
+def _list_db_backups() -> list[dict]:
+    """List available database backups."""
+    backup_dir = config.BACKUP_DIR
+    if not backup_dir.exists():
+        return []
+
+    backups = []
+    for f in sorted(backup_dir.glob("eclosion_*.db"), reverse=True):
+        backups.append(
             {
-                "compatibility": "compatible",
-                "message": "No state file exists yet",
-                "needs_migration": False,
-                "can_auto_migrate": False,
-                "has_backups": False,
+                "filename": f.name,
+                "created_at": datetime.fromtimestamp(f.stat().st_mtime).isoformat(),
+                "size_bytes": f.stat().st_size,
             }
         )
 
-    with open(config.STATE_FILE) as f:
-        state_data = json.load(f)
+    return backups[: config.MAX_BACKUPS]
 
-    result = check_compatibility(state_data)
-    backup_manager = BackupManager()
-    backups = backup_manager.list_backups()
+
+def _create_db_backup(reason: str = "manual") -> Path | None:
+    """Create a backup of the database."""
+    import shutil
+
+    db_path = _get_database_path()
+    if not db_path.exists():
+        return None
+
+    config.BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"eclosion_{timestamp}_{reason}.db"
+    backup_path = config.BACKUP_DIR / backup_filename
+
+    shutil.copy2(db_path, backup_path)
+
+    # Clean up old backups
+    backups = sorted(config.BACKUP_DIR.glob("eclosion_*.db"), reverse=True)
+    for old_backup in backups[config.MAX_BACKUPS :]:
+        old_backup.unlink()
+
+    return backup_path
+
+
+@admin_bp.route("/backup/status", methods=["GET"])
+def get_backup_status():
+    """
+    Get database backup status.
+
+    Returns information about the database and available backups.
+    """
+    db_path = _get_database_path()
+    backups = _list_db_backups()
 
     return jsonify(
         {
-            "compatibility": result.level.value,
-            "current_schema_version": result.current_schema,
-            "file_schema_version": result.file_schema,
-            "current_channel": result.current_channel,
-            "file_channel": result.file_channel,
-            "message": result.message,
-            "needs_migration": result.level.value != "compatible",
-            "can_auto_migrate": result.can_auto_migrate,
-            "requires_backup_first": result.requires_backup_first,
-            "has_beta_data": result.has_beta_data,
+            "database_exists": db_path.exists(),
+            "database_size_bytes": db_path.stat().st_size if db_path.exists() else 0,
+            "schema_version": config.SCHEMA_VERSION,
             "has_backups": len(backups) > 0,
             "latest_backup": backups[0] if backups else None,
+            "backup_count": len(backups),
         }
     )
 
 
-@admin_bp.route("/migration/execute", methods=["POST"])
-@api_handler(handle_mfa=False)
-def execute_migration():
-    """
-    Execute migration to target schema version.
-
-    Body: {
-        "target_version": "1.1",  # Optional, defaults to current app schema
-        "target_channel": "stable",  # Optional, defaults to current app channel
-        "confirm_backup": true  # Required
-    }
-    """
-    from state.migrations import MigrationExecutor
-
-    data = request.get_json() or {}
-
-    if not data.get("confirm_backup"):
-        return jsonify(
-            {
-                "success": False,
-                "error": "You must confirm backup creation before migration",
-            }
-        ), 400
-
-    target_version = data.get("target_version", config.SCHEMA_VERSION)
-    target_channel = data.get("target_channel", config.RELEASE_CHANNEL)
-
-    executor = MigrationExecutor()
-
-    # Check safety first
-    is_safe, warnings = executor.check_migration_safety(target_version, target_channel)
-    if not is_safe and not data.get("force"):
-        # Sanitize warnings before returning to prevent information exposure
-        sanitized_warnings = []
-        for warning in warnings:
-            # Remove file paths and limit length to prevent sensitive data leakage
-            sanitized = re.sub(r"[/\\][\w./\\-]+", "[path]", str(warning))
-            sanitized_warnings.append(sanitized[:200])
-        return jsonify(
-            {
-                "success": False,
-                "error": "Migration has warnings. Set 'force': true to proceed.",
-                "warnings": sanitized_warnings,
-            }
-        ), 400
-
-    success, _message, backup_path = executor.execute_migration(
-        target_version=target_version,
-        target_channel=target_channel,
-        create_backup=True,
-    )
-
-    # Use hardcoded messages to prevent any tainted data from flowing through
-    # (CodeQL tracks exception info that could be in _message)
-    safe_message = (
-        "Migration completed successfully." if success else "Migration failed. Please try again."
-    )
-
-    # Only expose backup filename, not full path (prevents directory structure disclosure)
-    # Use str() explicitly to break any taint tracking from Path object
-    safe_backup_name = str(backup_path.name) if backup_path else None
-
-    # Sanitize warnings to remove any paths or sensitive details
-    safe_warnings: list[str] = []
-    if not is_safe:
-        for warning in warnings:
-            # Remove file paths from warnings
-            sanitized = re.sub(r"[/\\][\w./\\-]+", "[path]", str(warning))
-            safe_warnings.append(sanitized[:200])  # Limit length
-
-    # Return a new dict with only safe values to ensure CodeQL sees sanitization
-    return jsonify(
-        {
-            "success": bool(success),
-            "message": safe_message,
-            "backup_name": safe_backup_name,
-            "warnings": safe_warnings,
-        }
-    )
-
-
-@admin_bp.route("/migration/backups", methods=["GET"])
+@admin_bp.route("/backup/list", methods=["GET"])
 def list_backups():
-    """List available state backups."""
-    from state.migrations import BackupManager
-
-    backup_manager = BackupManager()
-    backups = backup_manager.list_backups()
+    """List available database backups."""
+    backups = _list_db_backups()
 
     return jsonify(
         {
@@ -545,103 +486,128 @@ def list_backups():
     )
 
 
-@admin_bp.route("/migration/backups", methods=["POST"])
+@admin_bp.route("/backup/create", methods=["POST"])
 @api_handler(handle_mfa=False)
 def create_backup():
     """
-    Create a manual backup of the current state.
+    Create a manual backup of the database.
 
     Body: {
         "reason": "manual"  # Optional, default: "manual"
     }
     """
-    from state.migrations import BackupManager
-
     data = request.get_json() or {}
     reason = data.get("reason", "manual")
 
-    backup_manager = BackupManager()
-    backup_path = backup_manager.create_backup(reason=reason)
+    # Sanitize reason to prevent path injection
+    reason = re.sub(r"[^a-zA-Z0-9_-]", "", reason)[:20]
+
+    backup_path = _create_db_backup(reason=reason)
 
     if backup_path:
         return jsonify(
             {
                 "success": True,
-                # Only expose filename, not full path (security: prevent path disclosure)
-                "backup_path": backup_path.name,
+                "backup_filename": backup_path.name,
             }
         )
     else:
         return jsonify(
             {
                 "success": False,
-                "error": "No state file to backup",
+                "error": "No database to backup",
             }
         ), 400
 
 
-@admin_bp.route("/migration/restore", methods=["POST"])
+@admin_bp.route("/backup/restore", methods=["POST"])
 @api_handler(handle_mfa=False)
 def restore_backup():
     """
-    Restore state from a backup.
+    Restore database from a backup.
 
     Body: {
-        "backup_path": "backup_filename.json",  # Filename only, not full path
+        "backup_filename": "eclosion_20260113_120000_manual.db",
         "create_backup_first": true  # Optional, default: true
     }
     """
-    from state.migrations import BackupManager
+    import shutil
 
     data = request.get_json() or {}
-    backup_path = data.get("backup_path")
+    backup_filename = data.get("backup_filename")
 
-    if not backup_path:
+    if not backup_filename:
         return jsonify(
             {
                 "success": False,
-                "error": "backup_path is required",
+                "error": "backup_filename is required",
             }
         ), 400
 
-    # Pre-validate path format to reject obvious traversal attempts early
-    if ".." in str(backup_path) or not str(backup_path).endswith(".json"):
+    # Validate filename format to prevent path traversal
+    if ".." in str(backup_filename) or "/" in str(backup_filename) or "\\" in str(backup_filename):
         return jsonify(
             {
                 "success": False,
-                "error": "Invalid backup path format.",
+                "error": "Invalid backup filename format.",
             }
         ), 400
 
-    backup_manager = BackupManager()
+    if not str(backup_filename).endswith(".db"):
+        return jsonify(
+            {
+                "success": False,
+                "error": "Invalid backup filename format.",
+            }
+        ), 400
 
+    backup_path = config.BACKUP_DIR / backup_filename
+
+    # Verify the resolved path is within backup directory (defense in depth)
     try:
-        # BackupManager.restore_backup validates path is within backup directory
-        backup_manager.restore_backup(
-            backup_path=Path(backup_path),
-            create_backup_first=data.get("create_backup_first", True),
-        )
-        return jsonify(
-            {
-                "success": True,
-                "message": "Backup restored successfully.",
-            }
-        )
-    except FileNotFoundError:
-        return jsonify(
-            {
-                "success": False,
-                "error": "Backup file not found",
-            }
-        ), 404
-    except ValueError:
-        # Path validation errors - return generic message to avoid path disclosure
+        backup_path = backup_path.resolve()
+        backup_dir_resolved = config.BACKUP_DIR.resolve()
+        if not str(backup_path).startswith(str(backup_dir_resolved)):
+            raise ValueError("Path traversal detected")
+    except (ValueError, RuntimeError):
         return jsonify(
             {
                 "success": False,
                 "error": "Invalid backup path provided.",
             }
         ), 400
+
+    if not backup_path.exists():
+        return jsonify(
+            {
+                "success": False,
+                "error": "Backup file not found",
+            }
+        ), 404
+
+    try:
+        # Create backup of current state first
+        if data.get("create_backup_first", True):
+            _create_db_backup(reason="pre_restore")
+
+        # Close database connections before restore
+        from state.db import database as db_module
+
+        if db_module._engine:
+            db_module._engine.dispose()
+            db_module._engine = None
+            db_module._SessionLocal = None
+
+        # Restore the backup
+        db_path = _get_database_path()
+        shutil.copy2(backup_path, db_path)
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Backup restored successfully. Please restart the application.",
+            }
+        )
     except Exception as e:
         logger.error(f"Restore failed: {type(e).__name__}")
         return jsonify(

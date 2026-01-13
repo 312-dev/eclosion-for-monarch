@@ -9,7 +9,7 @@ from flask import Flask, g
 if TYPE_CHECKING:
     from services.security_service import SecurityService
     from services.sync_service import SyncService
-    from state.state_manager import NotesStateManager
+    from state import NotesStateManager
 
 
 @dataclass
@@ -52,7 +52,7 @@ def init_services(app: Flask, services: Services | None = None) -> Services:
     if services is None:
         from services.security_service import SecurityService
         from services.sync_service import SyncService
-        from state.state_manager import NotesStateManager
+        from state import NotesStateManager
 
         services = Services(
             sync_service=SyncService(),

@@ -345,8 +345,8 @@ def auth_reset_app():
     Reset the app when user can't unlock (forgot passphrase).
 
     This:
-    - Clears encrypted credentials (credentials.json)
-    - Preserves preferences (tracker_state.json) - linked categories, rollups, settings
+    - Clears encrypted credentials from the database
+    - Preserves preferences (tracker state) - linked categories, rollups, settings
     - Clears session
 
     User will need to re-login with Monarch credentials and set a new passphrase.
