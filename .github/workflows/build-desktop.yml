@@ -101,10 +101,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install pip==24.3.1
+          pip install --require-hashes -r requirements-build.txt
           pip install --require-hashes -r requirements.txt
           pip install --no-deps -r requirements-vcs.txt
-          pip install pyinstaller==6.11.1
 
       - name: Build backend with PyInstaller
         working-directory: desktop
@@ -135,10 +134,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install pip==24.3.1
+          pip install --require-hashes -r requirements-build.txt
           pip install --require-hashes -r requirements.txt
           pip install --no-deps -r requirements-vcs.txt
-          pip install pyinstaller==6.11.1
 
       - name: Build backend with PyInstaller
         working-directory: desktop
@@ -177,10 +175,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install pip==24.3.1
+          pip install --require-hashes -r requirements-build.txt
           pip install --require-hashes -r requirements.txt
           pip install --no-deps -r requirements-vcs.txt
-          pip install pyinstaller==6.11.1
 
       - name: Build backend with PyInstaller
         working-directory: desktop

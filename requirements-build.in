@@ -1,0 +1,15 @@
+# Eclosion for Monarch - Build Dependencies
+# This file contains build tools used in CI workflows.
+#
+# IMPORTANT: Do NOT run pip-compile on this file!
+# PyInstaller has platform-specific wheels, so requirements-build.txt is
+# manually maintained with hashes for all platforms (macOS, Windows, Linux).
+#
+# To update requirements-build.txt:
+#   1. Download wheels for each platform:
+#      pip download pyinstaller==X.Y.Z -d /tmp/dl --no-deps --platform <platform>
+#   2. Generate hashes: pip hash /tmp/dl/*.whl
+#   3. Update requirements-build.txt with all platform hashes
+
+pip==24.3.1
+pyinstaller==6.11.1
