@@ -62,7 +62,7 @@ class SavingsCalculator:
         current_balance: float,
         months_until_due: int,
         tracked_over_contribution: float = 0.0,
-        frequency_months: int = 12,
+        frequency_months: float = 12,
     ) -> SavingsCalculation:
         """
         Calculate monthly savings needed to be ready by due date.
@@ -224,7 +224,7 @@ class SavingsCalculator:
         self,
         previous_due_date: str | None,
         current_due_date: str,
-        frequency_months: int,
+        frequency_months: float,
     ) -> bool:
         """
         Detect if a new billing cycle has started.

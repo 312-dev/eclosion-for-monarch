@@ -179,7 +179,7 @@ class SyncService:
                 item_amount = float(item_data.get("amount", 0))
                 months_until_due = float(item_data.get("months_until_due", 0))
                 next_due_date = str(item_data.get("next_due_date") or "")
-                frequency_months = int(item_data.get("frequency_months", 1))
+                frequency_months = float(item_data.get("frequency_months", 1))
             else:
                 # Fetch from cache (won't make API call if recently fetched)
                 recurring_items = await self.recurring_service.get_all_recurring()
@@ -190,7 +190,7 @@ class SyncService:
                 item_amount = item.amount
                 months_until_due = item.months_until_due
                 next_due_date = item.next_due_date.isoformat()
-                frequency_months = int(item.frequency_months)
+                frequency_months = item.frequency_months
 
             # Get or create category
             cat_state = state.categories.get(recurring_id)
@@ -352,7 +352,7 @@ class SyncService:
             current_balance=0,  # New category starts at 0
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=int(item.frequency_months),
+            frequency_months=item.frequency_months,
         )
 
         # Set budget in Monarch
@@ -457,7 +457,7 @@ class SyncService:
             current_balance=current_balance,
             months_until_due=item.months_until_due,
             tracked_over_contribution=0,
-            frequency_months=int(item.frequency_months),
+            frequency_months=item.frequency_months,
         )
 
         # Set budget in Monarch
@@ -726,10 +726,13 @@ class SyncService:
 
         # Step 3: Handle removed items - create notices and fully decouple
         # Collect IDs first to avoid modifying dict during iteration
+        # Skip rollup_ prefixed entries - these are frozen target storage, not real items
         removed_ids = [
             (recurring_id, cat_state)
             for recurring_id, cat_state in state.categories.items()
-            if recurring_id not in active_ids and cat_state.is_active
+            if recurring_id not in active_ids
+            and cat_state.is_active
+            and not recurring_id.startswith("rollup_")
         ]
 
         for recurring_id, cat_state in removed_ids:
@@ -867,7 +870,7 @@ class SyncService:
                 new_cycle = self.savings_calculator.detect_new_cycle(
                     cat_state.previous_due_date,
                     item.next_due_date.isoformat(),
-                    int(item.frequency_months),
+                    item.frequency_months,
                 )
                 if new_cycle:
                     # Reset over-contribution for new cycle
@@ -889,7 +892,7 @@ class SyncService:
             current_balance=current_balance,
             months_until_due=item.months_until_due,
             tracked_over_contribution=tracked_over_contribution,
-            frequency_months=int(item.frequency_months),
+            frequency_months=item.frequency_months,
         )
 
         # Only update budget if it changed (avoid unnecessary API calls)
@@ -938,6 +941,9 @@ class SyncService:
 
         # Check each category in state
         for recurring_id, cat_state in state.categories.items():
+            # Skip rollup_ prefixed entries - these are frozen target storage, not real categories
+            if recurring_id.startswith("rollup_"):
+                continue
             # Only include categories that were created (not linked to existing)
             if cat_state.is_linked:
                 continue
@@ -1210,8 +1216,10 @@ class SyncService:
 
         if not state.is_configured():
             # Still fetch recurring items from Monarch for setup wizard
+            data_fetched = False
             try:
                 recurring_items = await self.recurring_service.get_all_recurring()
+                data_fetched = True
                 unconfigured_items_data: list[dict[str, Any]] = []
                 for item in recurring_items:
                     # Calculate contribution for display
@@ -1220,7 +1228,7 @@ class SyncService:
                         current_balance=0,
                         months_until_due=item.months_until_due,
                         tracked_over_contribution=0,
-                        frequency_months=int(item.frequency_months),
+                        frequency_months=item.frequency_months,
                     )
                     unconfigured_items_data.append(
                         {
@@ -1237,6 +1245,7 @@ class SyncService:
                             ),
                             "months_until_due": item.months_until_due,
                             "monthly_contribution": calc.monthly_contribution,
+                            "ideal_monthly_rate": calc.ideal_monthly_rate,
                             "is_enabled": False,
                             "is_in_rollup": False,
                         }
@@ -1251,9 +1260,18 @@ class SyncService:
             # Always fetch ready to assign - this should show regardless of tool setup
             try:
                 ready_to_assign_data = await self.category_manager.get_ready_to_assign()
+                data_fetched = True
             except Exception as e:
                 logger.warning(f"Failed to fetch ready to assign during setup: {e}")
                 ready_to_assign_data = None
+
+            # Update last_sync if we successfully fetched data from Monarch AND
+            # this is the first time (last_sync is null). This ensures the user
+            # doesn't see "Never synced" after their first login, while not
+            # interfering with the rate limit check in full_sync().
+            if data_fetched and state.last_sync is None:
+                self.state_manager.mark_sync_complete()
+                state = self.state_manager.load()  # Reload to get updated last_sync
 
             return {
                 "is_configured": False,
@@ -1338,7 +1356,7 @@ class SyncService:
                 current_balance=current_balance,
                 months_until_due=item.months_until_due,
                 tracked_over_contribution=tracked_over,
-                frequency_months=int(item.frequency_months),
+                frequency_months=item.frequency_months,
             )
 
             # Frozen monthly target logic - only recalculate at month boundaries OR if inputs changed
@@ -1375,7 +1393,7 @@ class SyncService:
                         target_month=current_month,
                         balance_at_start=current_balance,
                         amount=item.amount,
-                        frequency_months=int(item.frequency_months),
+                        frequency_months=item.frequency_months,
                     )
                     balance_at_start = current_balance
                 else:
@@ -1455,7 +1473,10 @@ class SyncService:
                 inactive_count += 1
 
         # Add inactive categories not in recurring items
+        # Skip rollup_ prefixed entries - these are frozen target storage
         for recurring_id, cat_state in state.categories.items():
+            if recurring_id.startswith("rollup_"):
+                continue
             if not cat_state.is_active and recurring_id not in {i.id for i in recurring_items}:
                 inactive_count += 1
 

@@ -217,8 +217,11 @@ class SettingsExportService:
         enabled_items = list(state.enabled_items)
 
         # Export category mappings (exclude runtime fields like frozen targets)
+        # Skip rollup_ prefixed entries - these are frozen target storage, not real categories
         categories: dict[str, Any] = {}
         for recurring_id, cat in state.categories.items():
+            if recurring_id.startswith("rollup_"):
+                continue
             categories[recurring_id] = {
                 "monarch_category_id": cat.monarch_category_id,
                 "name": cat.name,

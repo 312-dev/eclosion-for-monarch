@@ -153,3 +153,79 @@ class TestStateManagerEdgeCases:
         # Remove
         configured_state.enabled_items.discard("recurring-001")
         assert "recurring-001" not in configured_state.enabled_items
+
+
+class TestFrozenTargetPersistence:
+    """Tests for frozen target persistence, including rollup items."""
+
+    def test_set_frozen_target_creates_category_for_rollup_items(
+        self, state_manager: StateManager
+    ) -> None:
+        """set_frozen_target should create category entry for rollup items.
+
+        Rollup items use keys like 'rollup_item-123' which don't exist in
+        state.categories. The fix ensures these are created automatically
+        so frozen targets persist across fetches.
+        """
+        rollup_key = "rollup_item-netflix"
+
+        # Set frozen target for rollup item (key doesn't exist yet)
+        state_manager.set_frozen_target(
+            recurring_id=rollup_key,
+            frozen_target=50.0,
+            target_month="2026-01",
+            balance_at_start=100.0,
+            amount=600.0,
+            frequency_months=12.0,
+        )
+
+        # Verify we can retrieve the frozen target
+        result = state_manager.get_frozen_target(rollup_key)
+        assert result is not None
+        assert result["frozen_monthly_target"] == 50.0
+        assert result["target_month"] == "2026-01"
+        assert result["balance_at_month_start"] == 100.0
+        assert result["frozen_amount"] == 600.0
+        assert result["frozen_frequency_months"] == 12.0
+
+    def test_frozen_target_persists_across_loads(self, state_manager: StateManager) -> None:
+        """Frozen target should persist when state is saved and reloaded."""
+        rollup_key = "rollup_item-spotify"
+
+        # Set frozen target
+        state_manager.set_frozen_target(
+            recurring_id=rollup_key,
+            frozen_target=10.0,
+            target_month="2026-01",
+            balance_at_start=0.0,
+            amount=120.0,
+            frequency_months=12.0,
+        )
+
+        # Create new state manager pointing to same file to simulate app restart
+        new_manager = StateManager(state_file=state_manager.state_file)
+
+        # Verify frozen target persisted
+        result = new_manager.get_frozen_target(rollup_key)
+        assert result is not None
+        assert result["frozen_monthly_target"] == 10.0
+
+    def test_set_frozen_target_for_existing_category(
+        self, state_manager: StateManager, configured_state: TrackerState
+    ) -> None:
+        """set_frozen_target should work for existing categories."""
+        state_manager.save(configured_state)
+
+        # Set frozen target for existing category
+        state_manager.set_frozen_target(
+            recurring_id="recurring-001",
+            frozen_target=16.0,
+            target_month="2026-01",
+            balance_at_start=0.0,
+            amount=15.99,
+            frequency_months=1.0,
+        )
+
+        result = state_manager.get_frozen_target("recurring-001")
+        assert result is not None
+        assert result["frozen_monthly_target"] == 16.0

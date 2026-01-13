@@ -695,13 +695,26 @@ class StateManager:
     ) -> None:
         """Set frozen monthly target for an item."""
         state = self.load()
-        if recurring_id in state.categories:
-            state.categories[recurring_id].frozen_monthly_target = frozen_target
-            state.categories[recurring_id].target_month = target_month
-            state.categories[recurring_id].balance_at_month_start = balance_at_start
-            state.categories[recurring_id].frozen_amount = amount
-            state.categories[recurring_id].frozen_frequency_months = frequency_months
-            self.save(state)
+        now = datetime.now().isoformat()
+
+        # Create entry if it doesn't exist (needed for rollup items which use
+        # keys like "rollup_{item_id}" that aren't in state.categories)
+        if recurring_id not in state.categories:
+            state.categories[recurring_id] = CategoryState(
+                monarch_category_id="",  # Rollup items don't have individual Monarch categories
+                name=recurring_id,
+                target_amount=amount,
+                is_active=True,
+                created_at=now,
+                last_synced_at=now,
+            )
+
+        state.categories[recurring_id].frozen_monthly_target = frozen_target
+        state.categories[recurring_id].target_month = target_month
+        state.categories[recurring_id].balance_at_month_start = balance_at_start
+        state.categories[recurring_id].frozen_amount = amount
+        state.categories[recurring_id].frozen_frequency_months = frequency_months
+        self.save(state)
 
     def clear_frozen_target(self, recurring_id: str) -> bool:
         """Clear frozen target for an item to force recalculation."""
@@ -1454,6 +1467,30 @@ class NotesStateManager:
         self.save(state)
         return True
 
+    def get_effective_general_note(self, target_month: str) -> dict | None:
+        """
+        Get the effective general note for a given month.
+
+        Returns the most recent general note at or before the target month,
+        along with metadata about whether it's inherited.
+        """
+        state = self.load()
+
+        # Get all general note months sorted ascending
+        months = sorted(state.general_notes.keys())
+
+        # Find most recent note at or before target month
+        for month in reversed(months):
+            if month <= target_month:
+                note = state.general_notes[month]
+                return {
+                    "note": self._serialize_general_note(note),
+                    "source_month": month,
+                    "is_inherited": month != target_month,
+                }
+
+        return None
+
     # =========================================================================
     # Archived Note Operations
     # =========================================================================
@@ -1555,11 +1592,7 @@ class NotesStateManager:
             "month_key": month_key,
             "last_updated": state.month_last_updated.get(month_key),
             "effective_notes": effective_notes,
-            "general_note": (
-                self._serialize_general_note(state.general_notes[month_key])
-                if month_key in state.general_notes
-                else None
-            ),
+            "effective_general_note": self.get_effective_general_note(month_key),
         }
 
     def get_all_notes(self) -> dict:
