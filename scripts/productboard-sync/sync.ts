@@ -491,6 +491,9 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
   for (const disc of existingDiscussions) {
     // Skip if already matched to a ProductBoard idea
     if (matchedDiscussionIds.has(disc.id)) continue;
+    // Skip discussions that originated from ProductBoard (even if filtered out)
+    const pbId = extractProductBoardId(disc.body);
+    if (pbId) continue;
     // Skip if already in state (use discussion number as key for GitHub-only ideas)
     const githubKey = `github-${disc.number}`;
     if (state.trackedIdeas[githubKey]) {
@@ -500,6 +503,10 @@ export async function syncToDiscussions(ideas: ProductBoardIdea[]): Promise<void
       if (disc.closed) {
         state.trackedIdeas[githubKey].closedReason = getClosedReason(disc);
         state.trackedIdeas[githubKey].closedAt = disc.closedAt ?? undefined;
+      }
+      // Backfill author info if missing
+      if (disc.author && !state.trackedIdeas[githubKey].author) {
+        state.trackedIdeas[githubKey].author = disc.author;
       }
       continue;
     }
