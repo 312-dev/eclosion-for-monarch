@@ -2,7 +2,7 @@
 Shared pytest fixtures for Eclosion tests.
 
 Provides reusable fixtures including:
-- Temporary state files
+- Temporary SQLite database
 - Sample data generators
 - StateManager instances
 - SavingsCalculator instances
@@ -14,15 +14,52 @@ from pathlib import Path
 import pytest
 
 from services.savings_calculator import SavingsCalculator
-from state.state_manager import (
+from state import (
     CategoryState,
     StateManager,
     TrackerState,
 )
 
 # ============================================================================
-# Temporary File Fixtures
+# Database Fixtures
 # ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def use_test_database(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Generator[Path, None, None]:
+    """
+    Use a temporary SQLite database for each test.
+
+    This fixture runs automatically for all tests and:
+    1. Points DATABASE_PATH to a temp directory
+    2. Resets the database engine singleton
+    3. Initializes the database schema
+    """
+    import state.db.database as db_module
+
+    # Point to temp database
+    test_db = tmp_path / "test.db"
+    monkeypatch.setattr(db_module, "DATABASE_PATH", test_db)
+
+    # Reset engine singleton so it picks up new path
+    db_module._engine = None
+    db_module._SessionLocal = None
+
+    # Initialize database schema
+    from state.db.models import Base
+
+    engine = db_module.get_engine()
+    Base.metadata.create_all(bind=engine)
+
+    yield test_db
+
+    # Cleanup: dispose engine to release file handles
+    if db_module._engine:
+        db_module._engine.dispose()
+        db_module._engine = None
+        db_module._SessionLocal = None
 
 
 @pytest.fixture
@@ -33,21 +70,15 @@ def temp_state_dir(tmp_path: Path) -> Generator[Path, None, None]:
     yield state_dir
 
 
-@pytest.fixture
-def temp_state_file(temp_state_dir: Path) -> Path:
-    """Provide a path for a temporary state file."""
-    return temp_state_dir / "tracker_state.json"
-
-
 # ============================================================================
 # State Manager Fixtures
 # ============================================================================
 
 
 @pytest.fixture
-def state_manager(temp_state_file: Path) -> StateManager:
-    """Provide a StateManager with a temporary state file."""
-    return StateManager(state_file=temp_state_file)
+def state_manager() -> StateManager:
+    """Provide a StateManager that uses the test database."""
+    return StateManager()
 
 
 @pytest.fixture

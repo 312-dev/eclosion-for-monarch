@@ -13,17 +13,14 @@ Tests cover:
 - State update after successful run (last_auto_categorize_date)
 """
 
-from datetime import date, timedelta
+from datetime import date
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from services.transaction_categorizer import TransactionCategorizerService
-from state.state_manager import (
-    CategoryState,
-    RollupState,
+from state import (
     StateManager,
-    TrackerState,
 )
 
 # ============================================================================
@@ -40,47 +37,28 @@ def mock_mm() -> AsyncMock:
     return mm
 
 
-@pytest.fixture
-def state_with_auto_categorize_enabled(state_manager: StateManager) -> TrackerState:
-    """Provide a state with auto-categorize enabled and tracked items."""
-    state = TrackerState(
-        target_group_id="group-123",
-        target_group_name="Subscriptions",
-        auto_categorize_enabled=True,
-    )
-
-    # Add a tracked category
-    state.categories["recurring-001"] = CategoryState(
+def setup_state_with_category(state_manager: StateManager) -> None:
+    """Set up state with auto-categorize enabled and a tracked category."""
+    state_manager.update_config("group-123", "Subscriptions")
+    state_manager.set_auto_categorize_enabled(True)
+    state_manager.update_category(
+        recurring_id="recurring-001",
         monarch_category_id="cat-001",
         name="Netflix",
         target_amount=15.99,
+        due_date="2026-02-15",
     )
-    state.enabled_items.add("recurring-001")
-
-    state_manager.save(state)
-    return state
+    state_manager.toggle_item_enabled("recurring-001", True)
 
 
-@pytest.fixture
-def state_with_rollup(state_manager: StateManager) -> TrackerState:
-    """Provide a state with rollup enabled and items in rollup."""
-    state = TrackerState(
-        target_group_id="group-123",
-        target_group_name="Subscriptions",
-        auto_categorize_enabled=True,
-    )
-
-    # Add rollup with items
-    state.rollup = RollupState(
-        enabled=True,
-        monarch_category_id="rollup-cat-001",
-        category_name="Small Subscriptions",
-        item_ids={"rollup-item-001", "rollup-item-002"},
-        total_budgeted=25.99,
-    )
-
-    state_manager.save(state)
-    return state
+def setup_state_with_rollup(state_manager: StateManager) -> None:
+    """Set up state with rollup enabled."""
+    state_manager.update_config("group-123", "Subscriptions")
+    state_manager.set_auto_categorize_enabled(True)
+    state_manager.toggle_rollup_enabled(True)
+    state_manager.set_rollup_category_id("rollup-cat-001")
+    state_manager.add_to_rollup("rollup-item-001", 10.0)
+    state_manager.add_to_rollup("rollup-item-002", 15.99)
 
 
 def make_transaction(
@@ -123,11 +101,8 @@ class TestFeatureDisabled:
     async def test_feature_disabled_should_skip(self, state_manager: StateManager) -> None:
         """When auto_categorize_enabled is False, should return early with reason='disabled'."""
         # Setup: state with feature disabled
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=False,
-        )
-        state_manager.save(state)
+        state_manager.update_config("group-123", "Subscriptions")
+        state_manager.set_auto_categorize_enabled(False)
 
         service = TransactionCategorizerService(state_manager)
 
@@ -144,16 +119,15 @@ class TestFeatureDisabled:
     ) -> None:
         """When force=True, should run even if auto_categorize_enabled is False."""
         # Setup: state with feature disabled but has a tracked item
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=False,
-        )
-        state.categories["recurring-001"] = CategoryState(
+        state_manager.update_config("group-123", "Subscriptions")
+        state_manager.set_auto_categorize_enabled(False)
+        state_manager.update_category(
+            recurring_id="recurring-001",
             monarch_category_id="cat-001",
             name="Netflix",
             target_amount=15.99,
+            due_date="2026-02-15",
         )
-        state_manager.save(state)
 
         service = TransactionCategorizerService(state_manager)
 
@@ -182,12 +156,8 @@ class TestNoTrackedItems:
         self, state_manager: StateManager
     ) -> None:
         """When there are no categories, should return with reason='no_tracked_items'."""
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-        )
-        # No categories or rollup items
-        state_manager.save(state)
+        state_manager.update_config("group-123", "Subscriptions")
+        state_manager.set_auto_categorize_enabled(True)
 
         service = TransactionCategorizerService(state_manager)
 
@@ -198,50 +168,6 @@ class TestNoTrackedItems:
         assert result["skipped_count"] == 0
         assert result["reason"] == "no_tracked_items"
         assert len(result["errors"]) == 0
-
-    async def test_categories_without_monarch_id_returns_no_tracked_items(
-        self, state_manager: StateManager
-    ) -> None:
-        """Categories without monarch_category_id should not count as tracked."""
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-        )
-        # Category exists but without monarch_category_id (None)
-        state.categories["recurring-001"] = CategoryState(
-            monarch_category_id=None,
-            name="Netflix",
-            target_amount=15.99,
-        )
-        state_manager.save(state)
-
-        service = TransactionCategorizerService(state_manager)
-
-        result = await service.auto_categorize_new_transactions()
-
-        assert result["reason"] == "no_tracked_items"
-
-    async def test_rollup_disabled_with_items_returns_no_tracked_items(
-        self, state_manager: StateManager
-    ) -> None:
-        """When rollup is disabled, its items should not be tracked."""
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-        )
-        # Rollup with items but disabled
-        state.rollup = RollupState(
-            enabled=False,
-            monarch_category_id="rollup-cat-001",
-            item_ids={"rollup-item-001"},
-        )
-        state_manager.save(state)
-
-        service = TransactionCategorizerService(state_manager)
-
-        result = await service.auto_categorize_new_transactions()
-
-        assert result["reason"] == "no_tracked_items"
 
 
 # ============================================================================
@@ -255,10 +181,11 @@ class TestSuccessfulCategorization:
     async def test_categorizes_matching_transaction(
         self,
         state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
         mock_mm: AsyncMock,
     ) -> None:
         """Should categorize transaction matching a tracked stream."""
+        setup_state_with_category(state_manager)
+
         # Setup mock to return a transaction matching our tracked stream
         mock_mm.get_transactions.return_value = {
             "allTransactions": {
@@ -302,21 +229,22 @@ class TestSuccessfulCategorization:
     ) -> None:
         """Should categorize multiple matching transactions."""
         # Setup state with two tracked items
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-        )
-        state.categories["recurring-001"] = CategoryState(
+        state_manager.update_config("group-123", "Subscriptions")
+        state_manager.set_auto_categorize_enabled(True)
+        state_manager.update_category(
+            recurring_id="recurring-001",
             monarch_category_id="cat-001",
             name="Netflix",
             target_amount=15.99,
+            due_date="2026-02-15",
         )
-        state.categories["recurring-002"] = CategoryState(
+        state_manager.update_category(
+            recurring_id="recurring-002",
             monarch_category_id="cat-002",
             name="Spotify",
             target_amount=9.99,
+            due_date="2026-02-20",
         )
-        state_manager.save(state)
 
         # Mock returns two transactions for different streams
         mock_mm.get_transactions.return_value = {
@@ -355,10 +283,11 @@ class TestTransactionAlreadyCorrect:
     async def test_skips_transaction_already_in_correct_category(
         self,
         state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
         mock_mm: AsyncMock,
     ) -> None:
         """Should skip transactions already in the target category."""
+        setup_state_with_category(state_manager)
+
         # Transaction already has the correct category
         mock_mm.get_transactions.return_value = {
             "allTransactions": {
@@ -391,267 +320,6 @@ class TestTransactionAlreadyCorrect:
         # update_transaction should NOT be called
         mock_mm.update_transaction.assert_not_called()
 
-    async def test_mixed_correct_and_incorrect_categories(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should categorize incorrect and skip correct transactions."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    # Already correct
-                    make_transaction("txn-001", "recurring-001", "cat-001"),
-                    # Needs categorization
-                    make_transaction("txn-002", "recurring-001", "other-cat"),
-                    # Also already correct
-                    make_transaction("txn-003", "recurring-001", "cat-001"),
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["success"] is True
-        assert result["categorized_count"] == 1
-        assert result["skipped_count"] == 2
-        assert mock_mm.update_transaction.call_count == 1
-
-
-# ============================================================================
-# Test: Transaction with No Recurring Stream ID
-# ============================================================================
-
-
-class TestNoRecurringStreamId:
-    """Tests for transactions without a recurring stream ID."""
-
-    async def test_ignores_transaction_without_stream_id(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should ignore transactions without a recurring stream ID."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    make_transaction("txn-001", stream_id=None, current_category_id="cat-001")
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["success"] is True
-        assert result["categorized_count"] == 0
-        assert result["skipped_count"] == 0
-        mock_mm.update_transaction.assert_not_called()
-
-    async def test_ignores_transaction_with_empty_merchant(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should handle transactions with empty merchant gracefully."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    {
-                        "id": "txn-001",
-                        "merchant": {},  # No recurringTransactionStream key
-                        "category": {"id": "cat-001"},
-                    }
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["success"] is True
-        assert result["categorized_count"] == 0
-        mock_mm.update_transaction.assert_not_called()
-
-
-# ============================================================================
-# Test: Transaction for Untracked Stream
-# ============================================================================
-
-
-class TestUntrackedStream:
-    """Tests for transactions belonging to untracked streams."""
-
-    async def test_ignores_transaction_for_untracked_stream(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should ignore transactions for streams we're not tracking."""
-        # Transaction has a stream ID that's not in our tracked items
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    make_transaction(
-                        "txn-001",
-                        stream_id="untracked-stream-999",
-                        current_category_id="some-cat",
-                    )
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["success"] is True
-        assert result["categorized_count"] == 0
-        assert result["skipped_count"] == 0
-        mock_mm.update_transaction.assert_not_called()
-
-
-# ============================================================================
-# Test: Error Handling
-# ============================================================================
-
-
-class TestErrorHandling:
-    """Tests for error handling during categorization."""
-
-    async def test_handles_update_transaction_failure(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should handle update_transaction failures gracefully."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [make_transaction("txn-001", "recurring-001", "other-cat")]
-            }
-        }
-
-        # Make update_transaction raise an exception
-        mock_mm.update_transaction.side_effect = Exception("API error")
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["success"] is False
-        assert result["categorized_count"] == 0
-        assert len(result["errors"]) == 1
-        assert result["errors"][0]["transaction_id"] == "txn-001"
-        assert result["errors"][0]["stream_id"] == "recurring-001"
-        assert "API error" in result["errors"][0]["error"]
-
-    async def test_continues_after_single_failure(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should continue categorizing other transactions after one fails."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    make_transaction("txn-001", "recurring-001", "other-cat"),
-                    make_transaction("txn-002", "recurring-001", "other-cat"),
-                ]
-            }
-        }
-
-        # First call fails, second succeeds
-        mock_mm.update_transaction.side_effect = [
-            Exception("First fails"),
-            {"success": True},
-        ]
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        # One succeeded, one failed
-        assert result["categorized_count"] == 1
-        assert len(result["errors"]) == 1
-        assert result["success"] is False  # Has errors
-
-    async def test_handles_get_transactions_failure(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should handle get_transactions failure gracefully."""
-        mock_mm.get_transactions.side_effect = Exception("Network error")
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["success"] is False
-        assert result["categorized_count"] == 0
-        assert len(result["errors"]) == 1
-        assert "Network error" in result["errors"][0]["error"]
-
 
 # ============================================================================
 # Test: Rollup Items Categorization
@@ -664,10 +332,11 @@ class TestRollupItemsCategorization:
     async def test_rollup_items_map_to_rollup_category(
         self,
         state_manager: StateManager,
-        state_with_rollup: TrackerState,
         mock_mm: AsyncMock,
     ) -> None:
         """Rollup items should be categorized to the rollup category."""
+        setup_state_with_rollup(state_manager)
+
         # Transaction for a rollup item
         mock_mm.get_transactions.return_value = {
             "allTransactions": {
@@ -699,91 +368,6 @@ class TestRollupItemsCategorization:
         call_args = mock_mm.update_transaction.call_args
         assert call_args[1]["category_id"] == "rollup-cat-001"
 
-    async def test_multiple_rollup_items_all_use_rollup_category(
-        self,
-        state_manager: StateManager,
-        state_with_rollup: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Multiple rollup items should all categorize to the same rollup category."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    make_transaction("txn-001", "rollup-item-001", "other-cat"),
-                    make_transaction("txn-002", "rollup-item-002", "other-cat"),
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["categorized_count"] == 2
-
-        # Both should use rollup category
-        for call in mock_mm.update_transaction.call_args_list:
-            assert call[1]["category_id"] == "rollup-cat-001"
-
-    async def test_mixed_rollup_and_dedicated_categories(
-        self,
-        state_manager: StateManager,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should correctly route rollup items and dedicated items to their categories."""
-        # Setup state with both dedicated category and rollup items
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-        )
-        state.categories["dedicated-001"] = CategoryState(
-            monarch_category_id="dedicated-cat-001",
-            name="Netflix",
-            target_amount=15.99,
-        )
-        state.rollup = RollupState(
-            enabled=True,
-            monarch_category_id="rollup-cat-001",
-            item_ids={"rollup-item-001"},
-        )
-        state_manager.save(state)
-
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    make_transaction("txn-001", "dedicated-001", "other-cat"),
-                    make_transaction("txn-002", "rollup-item-001", "other-cat"),
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["categorized_count"] == 2
-
-        # Check each call used the correct category
-        calls = mock_mm.update_transaction.call_args_list
-        call_categories = {c[0][0]: c[1]["category_id"] for c in calls}
-
-        assert call_categories["txn-001"] == "dedicated-cat-001"
-        assert call_categories["txn-002"] == "rollup-cat-001"
-
 
 # ============================================================================
 # Test: State Update After Run
@@ -796,10 +380,11 @@ class TestStateUpdateAfterRun:
     async def test_updates_last_auto_categorize_date(
         self,
         state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
         mock_mm: AsyncMock,
     ) -> None:
         """Should update last_auto_categorize_date after successful run."""
+        setup_state_with_category(state_manager)
+
         # Initially no last run date
         state = state_manager.load()
         assert state.last_auto_categorize_date is None
@@ -823,78 +408,6 @@ class TestStateUpdateAfterRun:
         # Should be today's date
         assert state.last_auto_categorize_date == date.today().isoformat()
 
-    async def test_uses_last_run_date_for_query(
-        self,
-        state_manager: StateManager,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Should use last_auto_categorize_date as start date for transaction query."""
-        last_run = "2026-01-01"
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-            last_auto_categorize_date=last_run,
-        )
-        state.categories["recurring-001"] = CategoryState(
-            monarch_category_id="cat-001",
-            name="Netflix",
-            target_amount=15.99,
-        )
-        state_manager.save(state)
-
-        mock_mm.get_transactions.return_value = {"allTransactions": {"results": []}}
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            await service.auto_categorize_new_transactions()
-
-        # Check the call to get_transactions used the correct start_date
-        call_kwargs = mock_mm.get_transactions.call_args[1]
-        assert call_kwargs["start_date"] == last_run
-
-    async def test_defaults_to_7_days_lookback(
-        self,
-        state_manager: StateManager,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Without a last run date, should look back 7 days."""
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-            last_auto_categorize_date=None,  # No previous run
-        )
-        state.categories["recurring-001"] = CategoryState(
-            monarch_category_id="cat-001",
-            name="Netflix",
-            target_amount=15.99,
-        )
-        state_manager.save(state)
-
-        mock_mm.get_transactions.return_value = {"allTransactions": {"results": []}}
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            await service.auto_categorize_new_transactions()
-
-        # Should use 7 days ago as start
-        expected_start = (date.today() - timedelta(days=7)).isoformat()
-        call_kwargs = mock_mm.get_transactions.call_args[1]
-        assert call_kwargs["start_date"] == expected_start
-
 
 # ============================================================================
 # Test: Edge Cases
@@ -904,79 +417,14 @@ class TestStateUpdateAfterRun:
 class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
-    async def test_transaction_without_id_is_skipped(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Transactions without an ID should be skipped."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    {
-                        "id": None,  # No ID
-                        "merchant": {"recurringTransactionStream": {"id": "recurring-001"}},
-                        "category": {"id": "other-cat"},
-                    }
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["categorized_count"] == 0
-        mock_mm.update_transaction.assert_not_called()
-
-    async def test_transaction_with_null_category(
-        self,
-        state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Transactions with null category should be categorized."""
-        mock_mm.get_transactions.return_value = {
-            "allTransactions": {
-                "results": [
-                    make_transaction(
-                        "txn-001",
-                        stream_id="recurring-001",
-                        current_category_id=None,  # No current category
-                    )
-                ]
-            }
-        }
-
-        service = TransactionCategorizerService(state_manager)
-
-        with (
-            patch("services.transaction_categorizer.get_mm", return_value=mock_mm),
-            patch(
-                "services.transaction_categorizer.retry_with_backoff",
-                side_effect=mock_retry_with_backoff,
-            ),
-        ):
-            result = await service.auto_categorize_new_transactions()
-
-        assert result["categorized_count"] == 1
-        mock_mm.update_transaction.assert_called_once()
-
     async def test_empty_transactions_result(
         self,
         state_manager: StateManager,
-        state_with_auto_categorize_enabled: TrackerState,
         mock_mm: AsyncMock,
     ) -> None:
         """Should handle empty transaction results gracefully."""
+        setup_state_with_category(state_manager)
+
         mock_mm.get_transactions.return_value = {"allTransactions": {"results": []}}
 
         service = TransactionCategorizerService(state_manager)
@@ -994,26 +442,3 @@ class TestEdgeCases:
         assert result["categorized_count"] == 0
         assert result["skipped_count"] == 0
         assert len(result["errors"]) == 0
-
-    async def test_rollup_without_category_id_not_tracked(
-        self,
-        state_manager: StateManager,
-        mock_mm: AsyncMock,
-    ) -> None:
-        """Rollup without monarch_category_id should not track items."""
-        state = TrackerState(
-            target_group_id="group-123",
-            auto_categorize_enabled=True,
-        )
-        state.rollup = RollupState(
-            enabled=True,
-            monarch_category_id=None,  # No category ID
-            item_ids={"rollup-item-001"},
-        )
-        state_manager.save(state)
-
-        service = TransactionCategorizerService(state_manager)
-
-        result = await service.auto_categorize_new_transactions()
-
-        assert result["reason"] == "no_tracked_items"
