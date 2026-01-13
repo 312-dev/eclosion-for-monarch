@@ -84,16 +84,21 @@ export async function fetchLatestRelease(): Promise<GithubRelease | null> {
 
 /**
  * Asset name patterns for each platform.
- * macOS: Eclosion-{VERSION}-arm64.dmg (ARM64 build)
- * Windows: Eclosion.Setup.{VERSION}.exe
- * Linux: Eclosion-{VERSION}.AppImage
  *
- * Version can be stable (1.2.6) or beta (1.2.6-beta.20260111.2)
+ * Stable builds:
+ *   macOS: Eclosion-{VERSION}-arm64.dmg
+ *   Windows: Eclosion.Setup.{VERSION}.exe
+ *   Linux: Eclosion-{VERSION}.AppImage
+ *
+ * Beta builds (have "Beta" in name):
+ *   macOS: Eclosion.Beta.-{VERSION}-arm64.dmg
+ *   Windows: Eclosion.Beta.Setup.{VERSION}.exe
+ *   Linux: Eclosion.Beta.-{VERSION}.AppImage
  */
 const ASSET_PATTERNS: Record<Platform, RegExp> = {
-  macos: /Eclosion-[\w.-]+-arm64\.dmg$/,
-  windows: /Eclosion\.Setup\.[\w.-]+\.exe$/,
-  linux: /Eclosion-[\w.-]+\.AppImage$/,
+  macos: /Eclosion(\.Beta)?[.-][\w.-]+-arm64\.dmg$/,
+  windows: /Eclosion(\.Beta)?\.Setup\.[\w.-]+\.exe$/,
+  linux: /Eclosion(\.Beta)?[.-][\w.-]+\.AppImage$/,
   unknown: /^$/, // Never matches
 };
 
@@ -157,27 +162,15 @@ export function getAssetForPlatform(
  */
 export type Checksums = Record<string, string>;
 
-/** Fetches and parses the SHA256SUMS.txt file from a release. */
-export async function fetchChecksums(release: GithubRelease): Promise<Checksums | null> {
-  try {
-    const checksumAsset = release.assets.find((a) => a.name === 'SHA256SUMS.txt');
-    if (!checksumAsset) return null;
-
-    const response = await fetch(checksumAsset.browser_download_url);
-    if (!response.ok) return null;
-
-    const text = await response.text();
-    const checksums: Checksums = {};
-    const pattern = /^([a-f0-9]{64})\s+\*?(.+)$/i;
-
-    for (const line of text.split('\n')) {
-      const match = pattern.exec(line.trim());
-      if (match?.[1] && match[2]) checksums[match[2]] = match[1].toLowerCase();
-    }
-    return Object.keys(checksums).length > 0 ? checksums : null;
-  } catch {
-    return null;
-  }
+/**
+ * Checksums are not fetchable from browser environments due to GitHub's CORS policy.
+ * This function always returns null. Users can verify checksums manually by
+ * downloading SHA256SUMS.txt from the GitHub releases page.
+ */
+export async function fetchChecksums(_release: GithubRelease): Promise<Checksums | null> {
+  // GitHub release asset downloads don't support CORS, so browser fetches always fail.
+  // Skip the request entirely to avoid console errors.
+  return null;
 }
 
 /**

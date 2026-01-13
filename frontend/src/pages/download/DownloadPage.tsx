@@ -195,6 +195,11 @@ export function DownloadPage() {
     ? `https://github.com/312-dev/eclosion/releases/download/${release.tag_name}/screenshot-recurring.png`
     : null;
 
+  // Construct checksums URL from the fetched release tag
+  const checksumsUrl = release
+    ? `https://github.com/312-dev/eclosion/releases/download/${release.tag_name}/SHA256SUMS.txt`
+    : null;
+
   return (
     <DocsLayout>
       <HeroSection
@@ -206,6 +211,7 @@ export function DownloadPage() {
         loading={loading}
         downloadStatus={downloadStatus}
         screenshotUrl={screenshotUrl}
+        checksumsUrl={checksumsUrl}
       />
 
       {/* Loading/Error State */}
