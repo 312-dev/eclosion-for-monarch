@@ -49,6 +49,10 @@ on:
         required: false
       APPLE_TEAM_ID:
         required: false
+      RELEASE_APP_ID:
+        required: false
+      RELEASE_APP_PRIVATE_KEY:
+        required: false
 
 # Note: This workflow inherits permissions from the calling workflow.
 # Required permissions (must be granted by caller):
@@ -527,11 +531,20 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Generate app token
+        id: app-token
+        if: inputs.release_type == 'production' && secrets.RELEASE_APP_ID != ''
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || github.token }}
 
       - name: Pull latest
         run: git pull origin main
