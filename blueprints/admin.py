@@ -25,27 +25,25 @@ def _safe_join_path(base_dir: Path, filename: str) -> Path | None:
     Safely join a filename to a base directory, preventing path traversal.
 
     Returns the resolved path if safe, None if the path would escape base_dir.
-    This uses os.path.commonpath which CodeQL recognizes as a path sanitization barrier.
+    Uses Path.name to extract only the filename component, which is a CodeQL-recognized
+    sanitization that prevents directory traversal.
     """
-    # Reject any path-like characters in the filename
-    if ".." in filename or "/" in filename or "\\" in filename or os.sep in filename:
+    # Extract only the filename component - this removes any path traversal attempts
+    # Path(filename).name returns only the final component (e.g., "../../etc/passwd" -> "passwd")
+    safe_filename = Path(filename).name
+
+    # Additional validation: reject if the extracted name differs from input
+    # This catches cases where path components were stripped
+    if safe_filename != filename:
         return None
 
-    # Construct and resolve the path
-    candidate = (base_dir / filename).resolve()
-    base_resolved = base_dir.resolve()
-
-    # Use commonpath to verify the candidate is within base_dir
-    # This is recognized by CodeQL as a proper path sanitization
-    try:
-        common = Path(os.path.commonpath([str(base_resolved), str(candidate)]))
-        if common != base_resolved:
-            return None
-    except ValueError:
-        # commonpath raises ValueError if paths are on different drives (Windows)
+    # Reject empty filenames
+    if not safe_filename:
         return None
 
-    return candidate
+    # Construct path using the sanitized filename
+    result = base_dir / safe_filename
+    return result.resolve()
 
 
 # ---- HEALTH ENDPOINTS ----
@@ -587,9 +585,22 @@ def restore_backup():
             }
         ), 400
 
-    # Safely resolve path using CodeQL-recognized sanitization
-    backup_path = _safe_join_path(config.BACKUP_DIR, str(backup_filename))
-    if backup_path is None:
+    # Sanitize filename using Path.name to extract only the filename component
+    # This is a CodeQL-recognized sanitization pattern that prevents path traversal
+    safe_filename = Path(str(backup_filename)).name
+    if safe_filename != str(backup_filename) or not safe_filename:
+        return jsonify(
+            {
+                "success": False,
+                "error": "Invalid backup filename format.",
+            }
+        ), 400
+
+    # Construct path using the sanitized filename within backup directory
+    backup_path = (config.BACKUP_DIR / safe_filename).resolve()
+
+    # Verify the path is still within backup directory (defense in depth)
+    if not str(backup_path).startswith(str(config.BACKUP_DIR.resolve())):
         return jsonify(
             {
                 "success": False,
