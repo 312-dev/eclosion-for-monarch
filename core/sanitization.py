@@ -110,7 +110,8 @@ def sanitize_emoji(value: str | None) -> str:
     """
     Sanitize an emoji field.
 
-    Only allows actual emoji characters or a small fallback set.
+    Allows Unicode emoji characters (including multi-codepoint sequences like
+    families 👨‍👩‍👧 and professions 👩‍💻) while preventing XSS via HTML tags.
 
     Args:
         value: The emoji to sanitize
@@ -126,9 +127,13 @@ def sanitize_emoji(value: str | None) -> str:
     # Remove any HTML/script content - limit tag length to prevent ReDoS
     value = re.sub(r"<[^<>]{0,100}>", "", value)
 
-    # Only keep first grapheme cluster (emoji can be multi-codepoint)
-    # Simple approach: take first 4 characters max
-    value = value[:4].strip()
+    # Strip whitespace
+    value = value.strip()
+
+    # Reasonable max length to prevent abuse while allowing complex emoji
+    # (family emoji like 👨‍👩‍👧‍👦 can be 11 codepoints / ~25 UTF-16 units)
+    if len(value) > 30:
+        value = value[:30]
 
     # If empty after sanitization, use default
     return value if value else "🔄"

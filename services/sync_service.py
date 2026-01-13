@@ -435,12 +435,34 @@ class SyncService:
             # Keep category as-is, import its name and emoji into our state
             existing_name = cat_info.get("name", "")
             # Try to extract emoji from existing name
+            # This regex handles:
+            # - Basic emoji (single codepoint)
+            # - Emoji with variation selector (❤️)
+            # - Emoji with skin tone modifier (👋🏽)
+            # - ZWJ sequences for compound emoji (👨‍👩‍👧, 👩‍💻)
+            # - Flag emoji (regional indicators 🇺🇸) - two consecutive regional indicator symbols
             import re
 
-            emoji_match = re.match(
-                r"^([\U0001F300-\U0001FAFF\U00002700-\U000027BF\U0001F900-\U0001F9FF\U0001F600-\U0001F64F\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\u2600-\u26FF\u2700-\u27BF])",
-                existing_name,
+            # Base emoji ranges (excluding regional indicators which need special handling)
+            emoji_base = (
+                r"[\U0001F300-\U0001FAFF"  # Misc symbols, pictographs, emoticons
+                r"\U00002700-\U000027BF"  # Dingbats
+                r"\U0001F900-\U0001F9FF"  # Supplemental symbols
+                r"\U0001F600-\U0001F64F"  # Emoticons
+                r"\U0001F680-\U0001F6FF"  # Transport/map symbols
+                r"\u2600-\u26FF"  # Misc symbols
+                r"\u2700-\u27BF]"  # Dingbats
             )
+            # Variation selector and skin tone modifiers
+            modifiers = r"[\uFE0F\U0001F3FB-\U0001F3FF]?"
+            # ZWJ (zero-width joiner) followed by another emoji
+            zwj_sequence = rf"(?:\u200D{emoji_base}{modifiers})*"
+            # Flag emoji: two consecutive regional indicator symbols (U+1F1E0 - U+1F1FF)
+            flag_emoji = r"[\U0001F1E0-\U0001F1FF]{2}"
+            # Full pattern: either a flag emoji OR regular emoji with modifiers/ZWJ
+            emoji_pattern = rf"^({flag_emoji}|{emoji_base}{modifiers}{zwj_sequence})"
+
+            emoji_match = re.match(emoji_pattern, existing_name)
             emoji = emoji_match.group(1) if emoji_match else "🔄"
             # Import the category's existing name (strip emoji prefix if present)
             if emoji_match:

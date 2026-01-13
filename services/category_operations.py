@@ -13,8 +13,29 @@ from typing import Any, Protocol
 DEFAULT_EMOJI = "🔄"
 
 # Pattern to match emoji at the start of a category name
-# Covers common emoji ranges used for category icons
-EMOJI_PATTERN = re.compile(r"^([\U0001F300-\U0001F9FF\U00002600-\U000027BF])\s*")
+# Handles multi-codepoint emoji:
+# - Basic emoji (single codepoint)
+# - Emoji with variation selector (❤️)
+# - Emoji with skin tone modifier (👋🏽)
+# - ZWJ sequences for compound emoji (👨‍👩‍👧, 👩‍💻)
+# - Flag emoji (regional indicators 🇺🇸) - two consecutive regional indicator symbols
+
+# Base emoji character ranges (excluding regional indicators which need special handling)
+_EMOJI_BASE = (
+    r"[\U0001F300-\U0001FAFF"  # Misc symbols, pictographs, emoticons
+    r"\U00002700-\U000027BF"  # Dingbats
+    r"\U0001F900-\U0001F9FF"  # Supplemental symbols
+    r"\U0001F600-\U0001F64F"  # Emoticons
+    r"\U0001F680-\U0001F6FF"  # Transport/map symbols
+    r"\u2600-\u26FF"  # Misc symbols
+    r"\u2700-\u27BF]"  # Dingbats
+)
+_EMOJI_MODIFIERS = r"[\uFE0F\U0001F3FB-\U0001F3FF]?"  # Variation selector, skin tones
+_EMOJI_ZWJ_SEQ = rf"(?:\u200D{_EMOJI_BASE}{_EMOJI_MODIFIERS})*"  # ZWJ sequences
+# Flag emoji: two consecutive regional indicator symbols (U+1F1E0 - U+1F1FF)
+_FLAG_EMOJI = r"[\U0001F1E0-\U0001F1FF]{2}"
+# Full pattern: either a flag emoji OR a regular emoji with modifiers/ZWJ
+EMOJI_PATTERN = re.compile(rf"^({_FLAG_EMOJI}|{_EMOJI_BASE}{_EMOJI_MODIFIERS}{_EMOJI_ZWJ_SEQ})\s*")
 
 
 class CategoryManagerProtocol(Protocol):
