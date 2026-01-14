@@ -43,16 +43,16 @@ Function LaunchAppNonBlocking
   !insertmacro WriteInstallerLog "=== LaunchAppNonBlocking called ==="
   !insertmacro WriteInstallerLog "INSTDIR: $INSTDIR"
 
-  ; Get the executable name from electron-builder
-  ; APP_EXECUTABLE_FILENAME is defined by electron-builder
-  !insertmacro WriteInstallerLog "Launching: $INSTDIR\${APP_EXECUTABLE_FILENAME}"
+  ; Build executable filename from APP_FILENAME (defined by electron-builder)
+  ; APP_FILENAME = "Eclosion" or "Eclosion Beta", so exe = "Eclosion.exe" or "Eclosion Beta.exe"
+  !insertmacro WriteInstallerLog "Launching: $INSTDIR\${APP_FILENAME}.exe"
 
   ; Use cmd.exe /c start for guaranteed non-blocking launch
   ; The empty quotes after 'start' are required for the window title
   ; This spawns a new process and immediately returns
-  !insertmacro WriteInstallerLog "Executing: cmd.exe /c start Eclosion $INSTDIR\${APP_EXECUTABLE_FILENAME}"
+  !insertmacro WriteInstallerLog "Executing: cmd.exe /c start Eclosion $INSTDIR\${APP_FILENAME}.exe"
 
-  nsExec::Exec 'cmd.exe /c start "Eclosion" "$INSTDIR\${APP_EXECUTABLE_FILENAME}"'
+  nsExec::Exec 'cmd.exe /c start "Eclosion" "$INSTDIR\${APP_FILENAME}.exe"'
   Pop $0
   !insertmacro WriteInstallerLog "nsExec returned: $0"
 
