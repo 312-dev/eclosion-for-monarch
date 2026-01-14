@@ -102,8 +102,8 @@ nsis:
   installerIcon: assets/icon.ico
   uninstallerIcon: assets/icon.ico
   differentialPackage: true
-  # Include custom uninstaller script that prompts for data cleanup
-  include: installer/uninstaller.nsh
+  # Include custom NSIS scripts (combined installer + uninstaller macros)
+  include: installer/custom.nsh
 
 # Linux configuration
 linux:

@@ -9,7 +9,7 @@
 # Usage: electron-builder --config electron-builder.beta.yml
 
 appId: com.eclosion.desktop.beta
-productName: Eclosion (Beta)
+productName: Eclosion Beta
 copyright: Copyright (c) 2026
 
 # Build directories
@@ -111,12 +111,12 @@ nsis:
   deleteAppDataOnUninstall: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Eclosion (Beta)
+  shortcutName: Eclosion Beta
   installerIcon: assets/icon-beta.ico
   uninstallerIcon: assets/icon-beta.ico
   differentialPackage: true
-  # Include custom uninstaller script that prompts for data cleanup
-  include: installer/uninstaller.nsh
+  # Include custom NSIS scripts (combined installer + uninstaller macros)
+  include: installer/custom.nsh
 
 # Linux configuration
 linux:

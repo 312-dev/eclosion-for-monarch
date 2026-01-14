@@ -74,6 +74,29 @@ function setupCSP(): void {
 
 let mainWindow: BrowserWindow | null = null;
 
+/**
+ * Force window to foreground on Windows.
+ * Windows prevents apps from stealing focus, so we use the setAlwaysOnTop
+ * workaround combined with restore/show/focus to ensure visibility.
+ * This is especially important when launched from the installer.
+ */
+function forceWindowFocus(win: BrowserWindow | null): void {
+  if (!win || win.isDestroyed()) return;
+  // Restore if minimized
+  if (win.isMinimized()) {
+    win.restore();
+  }
+  // Ensure visible
+  if (!win.isVisible()) {
+    win.show();
+  }
+  // setAlwaysOnTop trick to bring to front
+  win.setAlwaysOnTop(true);
+  win.setAlwaysOnTop(false);
+  // Request focus
+  win.focus();
+}
+
 interface WindowBounds {
   x?: number;
   y?: number;
@@ -201,11 +224,18 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     mainWindow?.show();
     // Windows prevents apps from stealing focus. Use setAlwaysOnTop workaround
     // to ensure window is visible when launched from installer or startup.
+    // We need to do this multiple times with delays because the installer may
+    // still have focus when the app first becomes ready.
     if (process.platform === 'win32') {
-      mainWindow?.setAlwaysOnTop(true);
-      mainWindow?.setAlwaysOnTop(false);
+      // Initial focus attempt
+      forceWindowFocus(mainWindow);
+      // Retry after short delay (installer might still be closing)
+      setTimeout(() => forceWindowFocus(mainWindow), 300);
+      // Final retry after installer is likely gone
+      setTimeout(() => forceWindowFocus(mainWindow), 1000);
+    } else {
+      mainWindow?.focus();
     }
-    mainWindow?.focus();
   });
 
   // Handle close - behavior depends on menuBarMode setting
