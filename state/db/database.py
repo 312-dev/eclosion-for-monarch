@@ -78,12 +78,16 @@ def db_session() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     """
-    Initialize the database by running Alembic migrations.
+    Initialize the database.
+
+    In development: Uses Alembic migrations.
+    In packaged apps: Uses inline migrations, then create_all() for new tables.
 
     This should be called on application startup.
     """
-    from alembic import command
-    from alembic.config import Config
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     # Ensure state directory exists
     config.STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -93,6 +97,10 @@ def init_db() -> None:
     alembic_ini = project_root / "alembic.ini"
 
     if alembic_ini.exists():
+        # Development mode: use Alembic
+        from alembic import command
+        from alembic.config import Config
+
         alembic_cfg = Config(str(alembic_ini))
         # Override the script location to be absolute
         alembic_cfg.set_main_option(
@@ -100,9 +108,16 @@ def init_db() -> None:
         )
         command.upgrade(alembic_cfg, "head")
     else:
-        # Fallback: create tables directly if alembic.ini doesn't exist
+        # Packaged app mode: use inline migrations
+        logger.info("Alembic not available, using inline migrations")
+
+        from .inline_migrations import ensure_schema_current
         from .models import Base
 
+        # Run inline migrations for existing databases
+        ensure_schema_current(DATABASE_PATH)
+
+        # Create any new tables (safe to call on existing DB)
         Base.metadata.create_all(bind=get_engine())
 
 
