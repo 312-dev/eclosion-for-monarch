@@ -16,6 +16,7 @@ import { COLUMN_WIDTHS } from './RecurringListHeader';
 import { UI } from '../../constants';
 import { SpinnerIcon, ArrowUpIcon } from '../icons';
 import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RecurringRowProps {
   readonly item: RecurringItem;
@@ -55,6 +56,7 @@ export const RecurringRow = memo(function RecurringRow({
   const recreateAction = useAsyncAction();
   const addToRollupAction = useAsyncAction();
   const refreshAction = useAsyncAction();
+  const isRateLimited = useIsRateLimited();
 
   const rowRef = useRef<HTMLTableRowElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -179,7 +181,7 @@ export const RecurringRow = memo(function RecurringRow({
             <Tooltip content="Add to rollup">
               <button
                 onClick={handleAddToRollup}
-                disabled={addToRollupAction.loading}
+                disabled={addToRollupAction.loading || isRateLimited}
                 className="w-7 h-7 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 hover:bg-black/10 disabled:opacity-50"
               >
                 {addToRollupAction.loading ? (

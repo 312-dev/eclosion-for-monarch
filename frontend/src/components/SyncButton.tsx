@@ -23,7 +23,8 @@ function formatLastSync(timestamp: string | null): string {
   const diffMs = now.getTime() - date.getTime();
   const diffSecs = Math.floor(diffMs / 1000);
 
-  if (diffSecs < 60) return `${diffSecs}s ago`;
+  // Handle negative values (clock skew or future timestamps) gracefully
+  if (diffSecs < 5) return 'Just now';
 
   const diffMins = Math.floor(diffSecs / 60);
   if (diffMins < 60) return `${diffMins}m ago`;

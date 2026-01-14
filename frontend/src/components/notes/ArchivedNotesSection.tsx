@@ -9,7 +9,6 @@ import { ChevronDown, ChevronRight, Trash2, Archive } from 'lucide-react';
 import { useDeleteArchivedNoteMutation } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { handleApiError, decodeHtmlEntities } from '../../utils';
-import { useIsRateLimited } from '../../context/RateLimitContext';
 import type { ArchivedNote } from '../../types/notes';
 
 interface ArchivedNotesSectionProps {
@@ -32,7 +31,6 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const toast = useToast();
-  const isRateLimited = useIsRateLimited();
 
   const deleteMutation = useDeleteArchivedNoteMutation();
 
@@ -114,7 +112,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
                     <button
                       type="button"
                       onClick={() => handleDelete(note.id)}
-                      disabled={deleteMutation.isPending || isRateLimited}
+                      disabled={deleteMutation.isPending}
                       className="px-2 py-1 text-xs font-medium rounded disabled:opacity-50"
                       style={{ backgroundColor: 'var(--monarch-warning)', color: 'white' }}
                     >

@@ -72,9 +72,8 @@ export function RateLimitBanner() {
       <div className="flex items-center gap-2">
         <AlertTriangle size={16} className="shrink-0" aria-hidden="true" />
         <span>
-          <strong>Giving Monarch a moment to rest.</strong>
-          {' '}Some features are temporarily unavailable.
-          {timeUntilPing && ` Checking again in ${timeUntilPing}`}
+          Some Monarch sync features paused to avoid too many requests.
+          {timeUntilPing && ` Retrying in ${timeUntilPing}.`}
         </span>
       </div>
       <button

@@ -18,6 +18,7 @@ import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
 import { SpinnerIcon, ArrowUpIcon } from '../icons';
 import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RecurringCardProps {
   readonly item: RecurringItem;
@@ -57,6 +58,7 @@ export const RecurringCard = memo(function RecurringCard({
   const recreateAction = useAsyncAction();
   const addToRollupAction = useAsyncAction();
   const refreshAction = useAsyncAction();
+  const isRateLimited = useIsRateLimited();
 
   const cardRef = useRef<HTMLElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -171,7 +173,7 @@ export const RecurringCard = memo(function RecurringCard({
               <Tooltip content="Add to rollup">
                 <button
                   onClick={handleAddToRollup}
-                  disabled={addToRollupAction.loading}
+                  disabled={addToRollupAction.loading || isRateLimited}
                   aria-label="Add to rollup"
                   className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-black/10 disabled:opacity-50"
                 >

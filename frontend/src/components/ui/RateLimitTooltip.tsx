@@ -45,7 +45,7 @@ export function RateLimitTooltip({
   // (disabled buttons don't fire mouse events)
   return (
     <Tooltip content={message}>
-      <span className="inline-block">{disabledChild}</span>
+      <span className="inline-block cursor-not-allowed">{disabledChild}</span>
     </Tooltip>
   );
 }

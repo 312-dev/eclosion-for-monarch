@@ -493,6 +493,39 @@ frontend/src/
 
 All checks must pass before committing.
 
+## Troubleshooting Local Builds
+
+When troubleshooting issues with local desktop builds, logs are stored in platform-specific locations.
+
+### Log Locations by Platform
+
+| Platform | Eclosion | Eclosion Beta |
+|----------|----------|---------------|
+| **macOS** | `~/Library/Application Support/Eclosion/logs/` | `~/Library/Application Support/Eclosion Beta/logs/` |
+| **Windows** | `%APPDATA%\Eclosion\logs\` | `%APPDATA%\Eclosion Beta\logs\` |
+| **Linux** | `~/.config/Eclosion/logs/` | `~/.config/Eclosion Beta/logs/` |
+
+**Windows note:** `%APPDATA%` typically resolves to `C:\Users\<username>\AppData\Roaming\`.
+
+### What's in the Logs Directory
+
+- `main.log` - Electron main process logs (startup, IPC, system events)
+- `renderer.log` - Frontend/renderer process logs (if configured)
+- Crash reports and error dumps
+
+### Quick Access Commands
+
+```bash
+# macOS - Open Eclosion logs folder
+open ~/Library/Application\ Support/Eclosion/logs/
+
+# macOS - Open Eclosion Beta logs folder
+open ~/Library/Application\ Support/Eclosion\ Beta/logs/
+
+# macOS - Tail main log in real-time
+tail -f ~/Library/Application\ Support/Eclosion/logs/main.log
+```
+
 ## Dependency Management
 
 Python dependencies use **hash-pinned lockfiles** for supply chain security. When modifying dependencies:

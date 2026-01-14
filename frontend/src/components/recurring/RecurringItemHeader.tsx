@@ -15,6 +15,7 @@ import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 import { RecurringItemProgress } from './RecurringItemProgress';
 import { SpinnerIcon, WarningFilledIcon, CheckFilledIcon, BlockedIcon, ExternalLinkIcon } from '../icons';
 import { decodeHtmlEntities } from '../../utils';
+import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RecurringItemHeaderProps {
   readonly item: RecurringItem;
@@ -47,6 +48,7 @@ export function RecurringItemHeader({
   const [nameValue, setNameValue] = useState(item.name);
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const isRateLimited = useIsRateLimited();
 
   // Keep nameValue in sync with item.name
   useEffect(() => {
@@ -103,7 +105,7 @@ export function RecurringItemHeader({
         >
           <button
             onClick={onToggle}
-            disabled={isToggling}
+            disabled={isToggling || isRateLimited}
             className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50 bg-monarch-bg-card border border-monarch-border shadow-sm"
           >
             {isToggling ? (

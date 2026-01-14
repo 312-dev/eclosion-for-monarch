@@ -476,7 +476,10 @@ input[type="radio"] {
 
 /* App Layout - Fixed header/footer with scrolling content */
 .app-layout {
-  --header-height: 53px; /* Match .app-header-content min-height + border */
+  /* Base header height: 52px min-height + 1px border.
+     This may be overridden for macOS Electron (73px) to account for traffic lights.
+     See AppShell.tsx for platform-specific adjustments. */
+  --header-height: 53px;
   --footer-height: 45px; /* Match .app-footer height */
   min-height: 100vh;
   padding-top: var(--header-height);
@@ -1079,9 +1082,9 @@ input[type="radio"] {
   flex-shrink: 0;
   padding: 1rem 1rem 1.5rem 1.5rem;
   position: sticky;
-  top: 56px; /* Below header */
+  top: var(--header-height);
   height: fit-content;
-  max-height: calc(100vh - 56px);
+  max-height: calc(100vh - var(--header-height));
   overflow-y: auto;
 }
 
@@ -1096,7 +1099,7 @@ input[type="radio"] {
 /* Stats Mobile Header */
 .stats-mobile-header {
   position: sticky;
-  top: 56px; /* Below app header */
+  top: var(--header-height);
   z-index: var(--z-index-popover);
 }
 
@@ -3057,6 +3060,11 @@ input[type="radio"] {
   scrollbar-width: thin;
 }
 
+/* Hide toolbar when editor is not focused (performance optimization) */
+.note-editor-mdx:not(.is-focused) .mdxeditor-toolbar {
+  display: none;
+}
+
 .note-editor-mdx .mdxeditor-toolbar::-webkit-scrollbar {
   height: 4px;
 }
@@ -3256,12 +3264,28 @@ input[type="radio"] {
   font-style: italic;
 }
 
-/* Placeholder styling */
+/* Placeholder styling - multiple selectors for Lexical/MDXEditor compatibility */
 .note-editor-mdx .mdxeditor [data-lexical-editor="true"]:empty::before {
   content: attr(data-placeholder);
   color: var(--monarch-text-muted);
   pointer-events: none;
   position: absolute;
+}
+
+/* Lexical placeholder element - uses absolute positioning inside the editor */
+.note-editor-mdx .mdxeditor [class*="placeholder"],
+.note-editor-mdx .mdxeditor p.PlaygroundEditorTheme__paragraph:only-child:empty::before,
+.note-editor-mdx .mdxeditor [data-lexical-placeholder],
+.note-editor-mdx .mdxeditor .editor-placeholder,
+.note-editor-mdx .mdxeditor .ContentEditable__placeholder,
+.note-editor-mdx p[data-placeholder]:empty::before {
+  color: var(--monarch-text-muted) !important;
+  opacity: 1;
+}
+
+/* MDXEditor's internal placeholder class (hashed module class) */
+.note-editor-mdx [class*="_placeholder_"] {
+  color: var(--monarch-text-muted) !important;
 }
 
 /* Read-only mode */
@@ -3335,4 +3359,96 @@ input[type="radio"] {
   opacity: 0.7;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   Release Notes Modal Content
+   ============================================================================
+   Styles for HTML content from GitHub release notes displayed in modals.
+   The HTML comes directly from GitHub and needs styling to match our theme.
+   ============================================================================ */
+
+.release-notes-content h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--monarch-text-dark);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.release-notes-content h2:first-child {
+  margin-top: 0;
+}
+
+.release-notes-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--monarch-text-dark);
+  margin-top: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.release-notes-content h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--monarch-text-dark);
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.release-notes-content p {
+  margin-bottom: 0.75rem;
+  color: var(--monarch-text);
+}
+
+.release-notes-content ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.release-notes-content li {
+  margin-bottom: 0.25rem;
+  color: var(--monarch-text);
+}
+
+.release-notes-content a {
+  color: var(--monarch-orange);
+  text-decoration: none;
+}
+
+.release-notes-content a:hover {
+  text-decoration: underline;
+}
+
+.release-notes-content code {
+  background-color: var(--monarch-bg-hover);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.release-notes-content pre {
+  background-color: var(--monarch-bg-hover);
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.release-notes-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.release-notes-content hr {
+  border: none;
+  border-top: 1px solid var(--monarch-border);
+  margin: 1rem 0;
+}
+
+.release-notes-content strong {
+  font-weight: 600;
+  color: var(--monarch-text-dark);
 }

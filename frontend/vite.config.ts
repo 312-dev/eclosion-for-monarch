@@ -173,6 +173,16 @@ export default defineConfig(() => ({
   // - './' for desktop (Electron needs relative paths for file:// protocol)
   base: process.env.VITE_DESKTOP_BUILD === 'true' ? './' : '/',
 
+  // Force single React instance for MDXEditor compatibility with React 19
+  // MDXEditor bundles its own React/Lexical which causes duplicate instances
+  // See: https://github.com/mdx-editor/editor/issues/494
+  resolve: {
+    alias: {
+      'react': resolve(__dirname, 'node_modules/react'),
+      'react-dom': resolve(__dirname, 'node_modules/react-dom'),
+    },
+  },
+
   plugins: [
     // MDX plugin must come before React plugin
     mdx({

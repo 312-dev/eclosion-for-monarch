@@ -261,6 +261,30 @@ export function ItemSelectionStep({
         </button>
       </div>
 
+      {/* Help text for missing items */}
+      <p className="text-xs mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
+        Not finding what you are looking for?{' '}
+        <a
+          href="https://app.monarchmoney.com/recurring/all"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:underline"
+          style={{ color: 'var(--monarch-orange)' }}
+        >
+          Update your recurring transactions in Monarch
+        </a>{' '}
+        first, then{' '}
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          className="hover:underline"
+          style={{ color: 'var(--monarch-orange)', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+        >
+          refresh
+        </button>{' '}
+        here.
+      </p>
+
       {/* Grouped items */}
       <div
         className="max-h-64 overflow-y-auto pr-1"
