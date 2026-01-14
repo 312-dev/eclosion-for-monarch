@@ -19,6 +19,9 @@ import { useDemo } from './DemoContext';
 // Types
 // ============================================================================
 
+/** Source of rate limit - distinguishes between Monarch API and Eclosion's internal cooldown */
+export type RateLimitSource = 'monarch' | 'eclosion_sync_cooldown' | null;
+
 export interface RateLimitState {
   /** Whether we are currently rate limited */
   isRateLimited: boolean;
@@ -28,11 +31,13 @@ export interface RateLimitState {
   retryAfter: number | null;
   /** Next scheduled ping time */
   nextPingAt: Date | null;
+  /** Source of rate limit (Monarch API or Eclosion internal cooldown) */
+  source: RateLimitSource;
 }
 
 export interface RateLimitActions {
   /** Mark as rate limited (called when 429 received) */
-  setRateLimited: (retryAfter?: number) => void;
+  setRateLimited: (retryAfter?: number, source?: RateLimitSource) => void;
   /** Clear rate limit state (called when ping succeeds) */
   clearRateLimit: () => void;
   /** Manually trigger a ping check */
@@ -60,6 +65,7 @@ const DEFAULT_COOLDOWN_MS = 5 * 60 * 1000;
 interface PersistedRateLimitState {
   rateLimitedAt: number; // timestamp
   retryAfter: number | null; // seconds
+  source: RateLimitSource; // rate limit source
 }
 
 /**
@@ -91,10 +97,11 @@ function loadPersistedState(): PersistedRateLimitState | null {
 /**
  * Save rate limit state to localStorage.
  */
-function persistState(rateLimitedAt: Date, retryAfter: number | null): void {
+function persistState(rateLimitedAt: Date, retryAfter: number | null, source: RateLimitSource): void {
   const state: PersistedRateLimitState = {
     rateLimitedAt: rateLimitedAt.getTime(),
     retryAfter,
+    source,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -139,6 +146,11 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
     const persisted = loadPersistedState();
     return persisted ? new Date(Date.now() + PING_INTERVAL_MS) : null;
   });
+  const [source, setSource] = useState<RateLimitSource>(() => {
+    if (isDemo) return null;
+    const persisted = loadPersistedState();
+    return persisted?.source ?? null;
+  });
 
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -160,6 +172,7 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
         setRateLimitedAt(null);
         setRetryAfter(null);
         setNextPingAt(null);
+        setSource(null);
         clearPersistedState();
 
         // In desktop mode, trigger sync since session may have failed during startup
@@ -188,7 +201,7 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
    * Mark the app as rate limited.
    * Called when fetchApi receives 429 or desktop IPC notifies.
    */
-  const setRateLimitedFn = useCallback((retryAfterSeconds?: number) => {
+  const setRateLimitedFn = useCallback((retryAfterSeconds?: number, rateLimitSource?: RateLimitSource) => {
     // Don't set rate limit in demo mode
     if (isDemo) return;
 
@@ -199,9 +212,10 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
       setRetryAfter(retryAfterSeconds);
     }
     setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
+    setSource(rateLimitSource ?? null);
 
     // Persist to survive app restarts
-    persistState(now, retryAfterSeconds ?? null);
+    persistState(now, retryAfterSeconds ?? null, rateLimitSource ?? null);
   }, [isDemo]);
 
   /**
@@ -213,6 +227,7 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
     setRateLimitedAt(null);
     setRetryAfter(null);
     setNextPingAt(null);
+    setSource(null);
     clearPersistedState();
   }, []);
 
@@ -234,8 +249,9 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
   // Listen for rate limit events from fetchApi (mid-session rate limits)
   useEffect(() => {
     const handleRateLimitEvent = (event: Event) => {
-      const customEvent = event as CustomEvent<{ retryAfter: number; endpoint: string }>;
-      setRateLimitedFn(customEvent.detail.retryAfter);
+      const customEvent = event as CustomEvent<{ retryAfter: number; endpoint: string; source?: string }>;
+      const eventSource = customEvent.detail.source as RateLimitSource;
+      setRateLimitedFn(customEvent.detail.retryAfter, eventSource);
     };
 
     globalThis.addEventListener(RATE_LIMIT_EVENT, handleRateLimitEvent);
@@ -263,11 +279,12 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
     rateLimitedAt,
     retryAfter,
     nextPingAt,
+    source,
     // Actions
     setRateLimited: setRateLimitedFn,
     clearRateLimit,
     triggerPing: pingMonarch,
-  }), [isRateLimited, rateLimitedAt, retryAfter, nextPingAt, setRateLimitedFn, clearRateLimit, pingMonarch]);
+  }), [isRateLimited, rateLimitedAt, retryAfter, nextPingAt, source, setRateLimitedFn, clearRateLimit, pingMonarch]);
 
   return (
     <RateLimitContext.Provider value={value}>
