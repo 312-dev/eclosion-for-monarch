@@ -46,7 +46,13 @@ class MonarchAPIError(MonarchTrackerError):
 
 
 class RateLimitError(MonarchAPIError):
-    """Raised when rate limited by Monarch API."""
+    """Raised when rate limited by Monarch API or internal cooldown.
+
+    The `source` field distinguishes between:
+    - "monarch": Rate limited by Monarch's API
+    - "eclosion_sync_cooldown": Eclosion's internal 5-minute sync cooldown
+    - None: Unknown/legacy rate limit (treated as Monarch)
+    """
 
     code = "RATE_LIMITED"
 
@@ -54,9 +60,11 @@ class RateLimitError(MonarchAPIError):
         self,
         message: str = "Rate limited. Please wait and try again.",
         retry_after: int = 60,
+        source: str | None = None,
     ):
         super().__init__(message)
         self.retry_after = retry_after
+        self.source = source
 
 
 class CategoryNotFoundError(MonarchTrackerError):
