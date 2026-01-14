@@ -287,11 +287,32 @@ export function decodeHtmlEntities(text: string): string {
  * Matches common emoji patterns including:
  * - Basic emoji (single codepoint)
  * - Emoji with variation selectors (e.g., ❤️)
- * - Emoji with skin tone modifiers
- * - Compound emoji with ZWJ (e.g., 👨‍👩‍👧)
- * - Flag emoji (regional indicators)
+ * - Emoji with skin tone modifiers (e.g., 👋🏻)
+ * - Compound emoji with ZWJ (e.g., 👨‍👩‍👧, 👨🏻‍💻)
+ * - Keycap emoji (e.g., 0️⃣, #️⃣, *️⃣)
+ * - Flag emoji (regional indicator pairs, e.g., 🇺🇸)
+ * - Tag sequence flags (e.g., 🏴󠁧󠁢󠁥󠁮󠁧󠁿)
+ *
+ * Unicode ranges used:
+ * - Skin tone modifiers: U+1F3FB-1F3FF
+ * - Regional indicators: U+1F1E6-1F1FF
+ * - Tag characters: U+E0020-E007F (with U+E007F as terminator)
  */
-const LEADING_EMOJI_REGEX = /^(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)(\u200D(\p{Emoji_Presentation}|\p{Emoji}\uFE0F))*/u;
+const LEADING_EMOJI_REGEX = new RegExp(
+  '^(' +
+    // Keycap sequences: digit/hash/asterisk + optional variation selector + combining enclosing keycap
+    '[\\d#*]\\uFE0F?\\u20E3|' +
+    // Flag emoji: pair of regional indicator symbols
+    '[\\u{1F1E6}-\\u{1F1FF}]{2}|' +
+    // Tag sequence (subdivision flags): base + tag chars + terminator
+    '\\u{1F3F4}[\\u{E0020}-\\u{E007E}]+\\u{E007F}|' +
+    // Standard emoji (presentation or with variation selector) + optional skin tone
+    '(?:\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)[\\u{1F3FB}-\\u{1F3FF}]?' +
+  ')' +
+  // ZWJ sequences: zero-width joiner + emoji element (with optional skin tone), repeated
+  '(?:\\u200D(?:\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)[\\u{1F3FB}-\\u{1F3FF}]?)*',
+  'u'
+);
 
 /**
  * Add a space after leading emoji if one doesn't exist.

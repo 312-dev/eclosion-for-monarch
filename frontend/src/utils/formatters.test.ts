@@ -89,4 +89,36 @@ describe('spacifyEmoji', () => {
   it('handles emoji with variation selector', () => {
     expect(spacifyEmoji('❤️Love')).toBe('❤️ Love');
   });
+
+  it('handles keycap asterisk emoji', () => {
+    expect(spacifyEmoji('*️⃣Apartment')).toBe('*️⃣ Apartment');
+  });
+
+  it('handles keycap number emoji', () => {
+    expect(spacifyEmoji('1️⃣First')).toBe('1️⃣ First');
+  });
+
+  it('handles keycap hash emoji', () => {
+    expect(spacifyEmoji('#️⃣Hashtag')).toBe('#️⃣ Hashtag');
+  });
+
+  it('preserves existing space after keycap emoji', () => {
+    expect(spacifyEmoji('*️⃣ Already Spaced')).toBe('*️⃣ Already Spaced');
+  });
+
+  it('handles skin tone modifier', () => {
+    expect(spacifyEmoji('👋🏻Greeting')).toBe('👋🏻 Greeting');
+  });
+
+  it('handles ZWJ sequence with skin tone', () => {
+    expect(spacifyEmoji('👨🏻‍💻Coding')).toBe('👨🏻‍💻 Coding');
+  });
+
+  it('handles flag emoji', () => {
+    expect(spacifyEmoji('🇺🇸USA')).toBe('🇺🇸 USA');
+  });
+
+  it('handles tag sequence flag (subdivision)', () => {
+    expect(spacifyEmoji('🏴󠁧󠁢󠁥󠁮󠁧󠁿England')).toBe('🏴󠁧󠁢󠁥󠁮󠁧󠁿 England');
+  });
 });
