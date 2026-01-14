@@ -13,6 +13,8 @@ interface ElectronUpdateState {
   updateAvailable: boolean;
   /** Whether the update has been downloaded and is ready to install */
   updateDownloaded: boolean;
+  /** Whether the update is currently being downloaded */
+  isDownloading: boolean;
   /** Download progress (0-100) */
   downloadProgress: number;
   /** Information about the available update */
@@ -25,6 +27,8 @@ interface ElectronUpdateState {
   isDesktop: boolean;
   /** Error message if update failed */
   error: string | null;
+  /** Whether auto-update (auto-download) is enabled */
+  autoUpdateEnabled: boolean;
 }
 
 export interface UseElectronUpdatesReturn extends ElectronUpdateState {
@@ -32,6 +36,8 @@ export interface UseElectronUpdatesReturn extends ElectronUpdateState {
   quitAndInstall: () => void;
   /** Manually check for updates */
   checkForUpdates: () => Promise<void>;
+  /** Manually start downloading the available update (when auto-download is off) */
+  downloadUpdate: () => Promise<void>;
   /** Dismiss the update notification for this session */
   dismiss: () => void;
   /** Whether the notification has been dismissed */
@@ -47,12 +53,14 @@ export function useElectronUpdates(): UseElectronUpdatesReturn {
   const [state, setState] = useState<ElectronUpdateState>(() => ({
     updateAvailable: false,
     updateDownloaded: false,
+    isDownloading: false,
     downloadProgress: 0,
     updateInfo: null,
     currentVersion: '',
     channel: 'stable',
     isDesktop,
     error: null,
+    autoUpdateEnabled: false,
   }));
 
   const [dismissed, setDismissed] = useState(() => {
@@ -75,6 +83,11 @@ export function useElectronUpdates(): UseElectronUpdatesReturn {
       }));
     });
 
+    // Get auto-update setting
+    globalThis.electron.getAutoUpdateEnabled().then(enabled => {
+      setState(prev => ({ ...prev, autoUpdateEnabled: enabled }));
+    });
+
     // Listen for update events (callbacks are async - allowed)
     const unsubAvailable = globalThis.electron.onUpdateAvailable((info: UpdateInfo) => {
       setState(prev => ({
@@ -92,6 +105,7 @@ export function useElectronUpdates(): UseElectronUpdatesReturn {
       setState(prev => ({
         ...prev,
         updateDownloaded: true,
+        isDownloading: false,
         updateInfo: info,
         downloadProgress: 100,
       }));
@@ -100,6 +114,7 @@ export function useElectronUpdates(): UseElectronUpdatesReturn {
     const unsubProgress = globalThis.electron.onUpdateProgress((progress: UpdateProgress) => {
       setState(prev => ({
         ...prev,
+        isDownloading: true,
         downloadProgress: progress.percent,
       }));
     });
@@ -130,6 +145,16 @@ export function useElectronUpdates(): UseElectronUpdatesReturn {
     await globalThis.electron.checkForUpdates();
   }, []);
 
+  const downloadUpdate = useCallback(async () => {
+    if (!globalThis.electron || !state.updateAvailable) return;
+    // Mark as downloading before calling - progress events will confirm
+    setState(prev => ({ ...prev, isDownloading: true }));
+    const result = await globalThis.electron.downloadUpdate();
+    if (!result.success && result.error) {
+      setState(prev => ({ ...prev, isDownloading: false, error: result.error ?? null }));
+    }
+  }, [state.updateAvailable]);
+
   const dismiss = useCallback(() => {
     setDismissed(true);
     sessionStorage.setItem(DISMISS_KEY, 'true');
@@ -139,6 +164,7 @@ export function useElectronUpdates(): UseElectronUpdatesReturn {
     ...state,
     quitAndInstall,
     checkForUpdates,
+    downloadUpdate,
     dismiss,
     dismissed,
   };

@@ -17,17 +17,21 @@ export function DesktopUpdateContent({ electronUpdates }: DesktopUpdateContentPr
   const {
     updateAvailable,
     updateDownloaded,
+    isDownloading,
     downloadProgress,
     updateInfo,
     currentVersion,
     channel,
     error,
+    autoUpdateEnabled,
     checkForUpdates,
+    downloadUpdate,
     quitAndInstall,
   } = electronUpdates;
 
   const [isChecking, setIsChecking] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
+  const [isStartingDownload, setIsStartingDownload] = useState(false);
 
   const handleCheckForUpdates = async () => {
     setIsChecking(true);
@@ -44,6 +48,16 @@ export function DesktopUpdateContent({ electronUpdates }: DesktopUpdateContentPr
     setTimeout(() => {
       quitAndInstall();
     }, 200);
+  };
+
+  const handleDownload = async () => {
+    setIsStartingDownload(true);
+    try {
+      await downloadUpdate();
+    } finally {
+      // Keep showing "starting" until progress events arrive
+      setTimeout(() => setIsStartingDownload(false), 1000);
+    }
   };
 
   const isBeta = channel === 'beta' || updateInfo?.version?.includes('-beta');
@@ -93,8 +107,10 @@ export function DesktopUpdateContent({ electronUpdates }: DesktopUpdateContentPr
     );
   }
 
-  // Update available and downloading
+  // Update available - show download button or progress based on state
   if (updateAvailable && updateInfo) {
+    const showProgress = isDownloading || isStartingDownload || autoUpdateEnabled;
+
     return (
       <div className="space-y-4">
         <div
@@ -116,37 +132,61 @@ export function DesktopUpdateContent({ electronUpdates }: DesktopUpdateContentPr
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-                Downloading Update
+                {showProgress ? 'Downloading Update' : 'Update Available'}
               </div>
               <div className="text-sm mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
-                Version {updateInfo.version} is downloading...
+                {showProgress
+                  ? `Version ${updateInfo.version} is downloading...`
+                  : `Version ${updateInfo.version} is available.`}
               </div>
             </div>
           </div>
 
-          {/* Progress bar */}
-          <div className="mt-4">
-            <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
-              <span>Downloading...</span>
-              <span>{Math.round(downloadProgress)}%</span>
-            </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-            >
+          {/* Progress bar - only show when downloading */}
+          {showProgress && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
+                <span>Downloading...</span>
+                <span>{Math.round(downloadProgress)}%</span>
+              </div>
               <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${downloadProgress}%`,
-                  backgroundColor: isBeta ? 'var(--monarch-accent)' : 'var(--monarch-orange)',
-                }}
-              />
+                className="h-2 rounded-full overflow-hidden"
+                style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${downloadProgress}%`,
+                    backgroundColor: isBeta ? 'var(--monarch-accent)' : 'var(--monarch-orange)',
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
+        {/* Download button - only show when NOT auto-downloading */}
+        {!showProgress && (
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isStartingDownload}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-70"
+            style={{
+              backgroundColor: isBeta ? 'var(--monarch-accent)' : 'var(--monarch-orange)',
+              color: 'white',
+            }}
+            aria-label="Download update"
+          >
+            <Download size={18} />
+            Download &amp; Install
+          </button>
+        )}
+
         <p className="text-sm text-center" style={{ color: 'var(--monarch-text-muted)' }}>
-          The update will be ready to install once the download completes.
+          {showProgress
+            ? 'The update will be ready to install once the download completes.'
+            : 'Click the button above to download and install this update.'}
         </p>
       </div>
     );
@@ -253,7 +293,9 @@ export function DesktopUpdateContent({ electronUpdates }: DesktopUpdateContentPr
       </button>
 
       <p className="text-xs text-center" style={{ color: 'var(--monarch-text-muted)' }}>
-        Updates are downloaded automatically in the background.
+        {autoUpdateEnabled
+          ? 'Updates are downloaded automatically in the background.'
+          : 'Auto-update is disabled. Click "Check for Updates" to see if a new version is available.'}
       </p>
     </div>
   );
