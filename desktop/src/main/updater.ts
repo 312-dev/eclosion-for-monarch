@@ -113,7 +113,10 @@ export function initializeUpdater(): void {
   autoUpdater.autoDownload = autoUpdateEnabled;
   autoUpdater.autoInstallOnAppQuit = autoUpdateEnabled;
 
-  debugLog(`Update channel: ${channel} (allowPrerelease: ${isBeta}, channel: ${autoUpdater.channel || 'latest'})`, LOG_PREFIX);
+  debugLog(`Build-time channel: ${channel}`, LOG_PREFIX);
+  debugLog(`__RELEASE_CHANNEL__ = ${typeof __RELEASE_CHANNEL__ !== 'undefined' ? __RELEASE_CHANNEL__ : 'undefined'}`, LOG_PREFIX);
+  debugLog(`autoUpdater.allowPrerelease = ${autoUpdater.allowPrerelease}`, LOG_PREFIX);
+  debugLog(`autoUpdater.channel = ${autoUpdater.channel || '(not set, defaults to latest)'}`, LOG_PREFIX);
   debugLog(`Auto-download: ${autoUpdateEnabled ? 'enabled' : 'disabled'}`, LOG_PREFIX);
 
   // Event handlers
@@ -122,7 +125,11 @@ export function initializeUpdater(): void {
   });
 
   autoUpdater.on('update-available', (info: UpdateInfo) => {
-    debugLog(`Update available: ${info.version} (auto-download: ${autoUpdater.autoDownload})`, LOG_PREFIX);
+    const isBetaVersion = info.version.includes('-beta');
+    debugLog(`Update available: ${info.version}`, LOG_PREFIX);
+    debugLog(`  Is beta version: ${isBetaVersion}`, LOG_PREFIX);
+    debugLog(`  Current channel setting: ${autoUpdater.channel || 'latest'}`, LOG_PREFIX);
+    debugLog(`  Auto-download: ${autoUpdater.autoDownload}`, LOG_PREFIX);
     updateAvailable = true;
     updateInfo = info;
     notifyRenderer('update-available', info);
@@ -135,7 +142,7 @@ export function initializeUpdater(): void {
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    debugLog(`Download progress: ${progress.percent.toFixed(1)}%`, LOG_PREFIX);
+    debugLog(`Download progress: ${progress.percent.toFixed(1)}% (${progress.transferred}/${progress.total} bytes, ${Math.round(progress.bytesPerSecond / 1024)} KB/s)`, LOG_PREFIX);
     notifyRenderer('update-progress', progress);
   });
 

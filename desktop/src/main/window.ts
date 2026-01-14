@@ -8,6 +8,13 @@ import { BrowserWindow, shell, app, session, screen } from 'electron';
 import path from 'node:path';
 import Store from 'electron-store';
 
+// Window creation timing for debugging installer launch delays
+let windowCreateStart = 0;
+function logWindowTiming(event: string): void {
+  const elapsed = windowCreateStart > 0 ? Date.now() - windowCreateStart : 0;
+  console.log(`[WINDOW +${elapsed}ms] ${event}`);
+}
+
 // Lazy store initialization to ensure app.setPath('userData') is called first
 let store: Store | null = null;
 function getStore(): Store {
@@ -121,8 +128,13 @@ export function getIsQuitting(): boolean {
  * Call setWindowMode('full') when the main app is ready.
  */
 export async function createWindow(backendPort: number): Promise<BrowserWindow> {
+  windowCreateStart = Date.now();
+  logWindowTiming('createWindow() called');
+
   // Setup Content Security Policy
+  logWindowTiming('Setting up CSP');
   setupCSP();
+  logWindowTiming('CSP configured');
 
   // Start in compact mode - centered on screen
   // Full bounds will be restored when setWindowMode('full') is called
@@ -135,6 +147,7 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
 
   currentWindowMode = 'compact';
 
+  logWindowTiming('Creating BrowserWindow');
   mainWindow = new BrowserWindow({
     x,
     y,
@@ -173,6 +186,7 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     backgroundColor: '#1a1a2e',
     show: false, // Don't show until ready
   });
+  logWindowTiming('BrowserWindow created');
 
   // Load the frontend
   const frontendPath = path.join(
@@ -215,28 +229,42 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
    * - Both mechanisms are kept for resilience; if IPC fails during startup, the
    *   query parameter could be used as a fallback (though currently not implemented).
    */
+  logWindowTiming('Calling loadFile');
   await mainWindow.loadFile(frontendPath, {
     query: { _backendPort: String(backendPort) },
   });
+  logWindowTiming('loadFile completed');
 
-  // Show window when ready
+  // Show window when ready (async - don't block createWindow return)
   mainWindow.once('ready-to-show', () => {
+    logWindowTiming('ready-to-show event fired');
     mainWindow?.show();
+    logWindowTiming('window.show() called');
     // Windows prevents apps from stealing focus. Use setAlwaysOnTop workaround
     // to ensure window is visible when launched from installer or startup.
     // We need to do this multiple times with delays because the installer may
     // still have focus when the app first becomes ready.
     if (process.platform === 'win32') {
+      logWindowTiming('Windows: starting focus sequence');
       // Initial focus attempt
       forceWindowFocus(mainWindow);
+      logWindowTiming('Windows: first forceWindowFocus called');
       // Retry after short delay (installer might still be closing)
-      setTimeout(() => forceWindowFocus(mainWindow), 300);
+      setTimeout(() => {
+        forceWindowFocus(mainWindow);
+        logWindowTiming('Windows: second forceWindowFocus called (300ms)');
+      }, 300);
       // Final retry after installer is likely gone
-      setTimeout(() => forceWindowFocus(mainWindow), 1000);
+      setTimeout(() => {
+        forceWindowFocus(mainWindow);
+        logWindowTiming('Windows: third forceWindowFocus called (1000ms)');
+      }, 1000);
     } else {
       mainWindow?.focus();
     }
   });
+
+  logWindowTiming('createWindow() returning (ready-to-show pending)');
 
   // Handle close - behavior depends on menuBarMode setting
   mainWindow.on('close', (event) => {

@@ -6,13 +6,57 @@
 ; 2. Clean uninstall prompts for user data
 
 ; ============================================================================
+; LOGGING CONFIGURATION (Beta only)
+; ============================================================================
+
+; Log file for debugging installer behavior
+!define INSTALLER_LOG "$APPDATA\Eclosion Beta\logs\installer.log"
+
+; Helper macro to write to log file (simple, no timestamp to avoid header deps)
+!macro WriteInstallerLog message
+  ; Ensure log directory exists
+  CreateDirectory "$APPDATA\Eclosion Beta\logs"
+  ; Append to log file
+  FileOpen $9 "${INSTALLER_LOG}" a
+  IfErrors +3
+    FileWrite $9 "${message}$\r$\n"
+    FileClose $9
+!macroend
+
+; ============================================================================
 ; INSTALLER CUSTOMIZATIONS
 ; ============================================================================
 
 !macro customInstall
-  ; Nothing special needed during install
+  ; Log installation start
+  !insertmacro WriteInstallerLog "=== Installation starting ==="
+  !insertmacro WriteInstallerLog "Install path: $INSTDIR"
+
+  ; Nothing else needed during install
   ; Focus handling is done in the Electron main process (window.ts)
   ; with retry logic to ensure the window comes to foreground
+
+  !insertmacro WriteInstallerLog "customInstall complete"
+!macroend
+
+; ============================================================================
+; POST-FINISH APP LAUNCH CUSTOMIZATION
+; This macro is called when "Run app after finish" is checked and user clicks Finish
+; ============================================================================
+
+!macro customFinishRun
+  ; Log that we're about to launch the app
+  !insertmacro WriteInstallerLog "=== customFinishRun called ==="
+  !insertmacro WriteInstallerLog "About to launch: $INSTDIR\${APP_EXECUTABLE_FILENAME}"
+
+  ; APPROACH 1: Use cmd.exe /c start for guaranteed non-blocking launch
+  ; This spawns a new process and immediately returns, preventing installer hang
+  !insertmacro WriteInstallerLog "Launching via cmd /c start (non-blocking)..."
+  nsExec::Exec 'cmd.exe /c start "" "$INSTDIR\${APP_EXECUTABLE_FILENAME}"'
+  Pop $0 ; Get return value (ignore it)
+  !insertmacro WriteInstallerLog "nsExec returned: $0"
+
+  !insertmacro WriteInstallerLog "customFinishRun completed, installer should close now"
 !macroend
 
 ; ============================================================================
