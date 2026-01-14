@@ -89,8 +89,6 @@ export {
   useDeleteGeneralNoteMutation,
   useDeleteArchivedNoteMutation,
   useSyncNotesCategoriesMutation,
-  useNotesSettingsQuery,
-  useUpdateNotesSettingsMutation,
   useInvalidateNotes,
   useCheckboxStatesQuery,
   useGeneralCheckboxStatesQuery,

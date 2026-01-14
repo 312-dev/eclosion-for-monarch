@@ -34,10 +34,8 @@ export interface DemoNotesState {
   knownCategoryIds: Record<string, string>;
   /** Last updated timestamps per month */
   monthLastUpdated: Record<string, string>;
-  /** Checkbox states: key format is "{noteId}:{scope}" or "general:{monthKey}:{scope}" */
+  /** Checkbox states: key format is "{noteId}:{viewingMonth}" or "general:{sourceMonth}:{viewingMonth}" */
   checkboxStates?: Record<string, boolean[]>;
-  /** Checkbox mode: persist (global) or reset (per-month) */
-  checkboxMode?: 'persist' | 'reset';
 }
 
 export interface DemoState {

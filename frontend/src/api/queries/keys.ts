@@ -23,7 +23,6 @@ export const queryKeys = {
   archivedNotes: ['archivedNotes'] as const,
   noteHistory: ['noteHistory'] as const,
   checkboxStates: ['checkboxStates'] as const,
-  notesSettings: ['notesSettings'] as const,
   // Shared stores (normalized caches)
   categoryStore: ['categoryStore'] as const,
 };

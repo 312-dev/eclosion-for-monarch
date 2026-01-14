@@ -459,23 +459,22 @@ export async function getNoteHistory(
 }
 
 // ============================================================================
-// Checkbox States
+// Checkbox States (Always Reset Mode - each viewing month has independent states)
 // ============================================================================
 
 /**
  * Get checkbox key for storage.
+ * Key format: "{noteId}:{viewingMonth}" or "general:{sourceMonth}:{viewingMonth}"
  */
 function getCheckboxKey(
   noteId: string | undefined,
   generalNoteMonthKey: string | undefined,
-  viewingMonth: string,
-  mode: 'persist' | 'reset'
+  viewingMonth: string
 ): string {
-  const scope = mode === 'persist' ? 'global' : viewingMonth;
   if (noteId) {
-    return `${noteId}:${scope}`;
+    return `${noteId}:${viewingMonth}`;
   }
-  return `general:${generalNoteMonthKey}:${scope}`;
+  return `general:${generalNoteMonthKey}:${viewingMonth}`;
 }
 
 /**
@@ -488,8 +487,7 @@ export async function getCheckboxStates(
   await simulateDelay(50);
 
   const state = getDemoState();
-  const mode = state.notes.checkboxMode ?? 'persist';
-  const key = getCheckboxKey(noteId, undefined, viewingMonth, mode);
+  const key = getCheckboxKey(noteId, undefined, viewingMonth);
   return state.notes.checkboxStates?.[key] ?? [];
 }
 
@@ -503,8 +501,7 @@ export async function getGeneralCheckboxStates(
   await simulateDelay(50);
 
   const state = getDemoState();
-  const mode = state.notes.checkboxMode ?? 'persist';
-  const key = getCheckboxKey(undefined, monthKey, viewingMonth, mode);
+  const key = getCheckboxKey(undefined, monthKey, viewingMonth);
   return state.notes.checkboxStates?.[key] ?? [];
 }
 
@@ -527,15 +524,11 @@ export async function updateCheckboxState(params: {
     if (!state.notes.checkboxStates) {
       state.notes.checkboxStates = {};
     }
-    if (!state.notes.checkboxMode) {
-      state.notes.checkboxMode = 'persist';
-    }
 
     const key = getCheckboxKey(
       params.noteId,
       params.generalNoteMonthKey,
-      params.viewingMonth,
-      state.notes.checkboxMode
+      params.viewingMonth
     );
 
     // Get or create states array
@@ -558,47 +551,37 @@ export async function updateCheckboxState(params: {
 }
 
 /**
- * Get all checkbox states for a month.
+ * Get all checkbox states for a viewing month.
  *
  * Returns checkbox states for all notes relevant to the given viewing month.
  * Keys are returned in backend format: note_id or "general:{source_month}"
  */
 export async function getMonthCheckboxStates(
-  monthKey: string
+  viewingMonth: string
 ): Promise<Record<string, boolean[]>> {
   await simulateDelay(50);
 
   const state = getDemoState();
-  const mode = state.notes.checkboxMode ?? 'persist';
   const result: Record<string, boolean[]> = {};
 
-  // Filter checkbox states relevant for this month
-  // Return keys in backend format: note_id or "general:{source_month}" (no scope suffix)
+  // Filter checkbox states for this viewing month
   for (const [key, states] of Object.entries(state.notes.checkboxStates ?? {})) {
     const parts = key.split(':');
 
     if (parts[0] === 'general' && parts.length >= 3) {
-      // General note: stored as "general:{source_month}:{scope}"
+      // General note: stored as "general:{source_month}:{viewing_month}"
       const sourceMonth = parts[1];
-      const scope = parts[2];
+      const keyViewingMonth = parts[2];
 
-      // Check if scope matches current mode
-      const scopeMatches = mode === 'persist' ? scope === 'global' : scope === monthKey;
-
-      // In persist mode, return all matching checkbox states (for inherited note support)
-      // In reset mode, only return states where source month matches viewing month
-      if (scopeMatches && (mode === 'persist' || sourceMonth === monthKey)) {
+      if (keyViewingMonth === viewingMonth && sourceMonth) {
         result[`general:${sourceMonth}`] = states;
       }
     } else if (parts.length >= 2) {
-      // Category note: stored as "{note_id}:{scope}"
+      // Category note: stored as "{note_id}:{viewing_month}"
       const noteId = parts[0];
-      const scope = parts[1];
+      const keyViewingMonth = parts[1];
 
-      // Check if scope matches current mode
-      const scopeMatches = mode === 'persist' ? scope === 'global' : scope === monthKey;
-
-      if (scopeMatches && noteId) {
+      if (keyViewingMonth === viewingMonth && noteId) {
         result[noteId] = states;
       }
     }
@@ -608,40 +591,132 @@ export async function getMonthCheckboxStates(
 }
 
 // ============================================================================
-// Notes Settings
+// Inheritance Impact
 // ============================================================================
 
 /**
- * Get notes settings.
+ * Get the impact of creating a new note (breaking inheritance).
+ *
+ * For demo mode, this returns mock data simulating the inheritance analysis.
  */
-export async function getNotesSettings(): Promise<{ checkboxMode: 'persist' | 'reset' }> {
+export async function getInheritanceImpact(params: {
+  categoryType?: 'group' | 'category';
+  categoryId?: string;
+  monthKey: string;
+  isGeneral?: boolean;
+}): Promise<{
+  sourceNote: { id: string; monthKey: string; contentPreview: string } | null;
+  affectedMonths: string[];
+  monthsWithCheckboxStates: Record<string, number>;
+  nextCustomNoteMonth: string | null;
+}> {
   await simulateDelay(50);
 
   const state = getDemoState();
-  return {
-    checkboxMode: state.notes.checkboxMode ?? 'persist',
-  };
-}
+  let sourceNote = null;
+  let nextCustomNoteMonth: string | null = null;
 
-/**
- * Update notes settings.
- */
-export async function updateNotesSettings(params: {
-  checkboxMode?: 'persist' | 'reset';
-}): Promise<{ checkboxMode: 'persist' | 'reset' }> {
-  await simulateDelay(50);
+  if (params.isGeneral) {
+    // Find general notes to determine inheritance
+    const generalNotes = Object.entries(state.notes.generalNotes)
+      .filter(([, note]) => note && note.monthKey < params.monthKey)
+      .sort(([, a], [, b]) => (b?.monthKey ?? '').localeCompare(a?.monthKey ?? ''));
 
-  let newMode: 'persist' | 'reset' = 'persist';
-
-  updateDemoState((state) => {
-    if (params.checkboxMode) {
-      state.notes.checkboxMode = params.checkboxMode;
+    if (generalNotes.length > 0 && generalNotes[0]?.[1]) {
+      const note = generalNotes[0][1];
+      sourceNote = {
+        id: note.id,
+        monthKey: note.monthKey,
+        contentPreview:
+          note.content.length > 100 ? note.content.slice(0, 100) + '...' : note.content,
+      };
     }
-    newMode = state.notes.checkboxMode ?? 'persist';
-    return state;
-  });
 
-  return { checkboxMode: newMode };
+    // Find next custom note
+    const futureNotes = Object.entries(state.notes.generalNotes)
+      .filter(([, note]) => note && note.monthKey > params.monthKey)
+      .sort(([, a], [, b]) => (a?.monthKey ?? '').localeCompare(b?.monthKey ?? ''));
+    if (futureNotes.length > 0 && futureNotes[0]?.[1]) {
+      nextCustomNoteMonth = futureNotes[0][1].monthKey;
+    }
+  } else if (params.categoryType && params.categoryId) {
+    // Find category notes by filtering all notes
+    const allCategoryNotes = Object.values(state.notes.notes).filter(
+      (note: Note) =>
+        note.categoryRef.id === params.categoryId &&
+        note.categoryRef.type === params.categoryType
+    );
+
+    const pastNotes = allCategoryNotes
+      .filter((note: Note) => note.monthKey < params.monthKey)
+      .sort((a: Note, b: Note) => b.monthKey.localeCompare(a.monthKey));
+
+    if (pastNotes.length > 0 && pastNotes[0]) {
+      const note = pastNotes[0];
+      sourceNote = {
+        id: note.id,
+        monthKey: note.monthKey,
+        contentPreview:
+          note.content.length > 100 ? note.content.slice(0, 100) + '...' : note.content,
+      };
+    }
+
+    // Find next custom note
+    const futureNotes = allCategoryNotes
+      .filter((note: Note) => note.monthKey > params.monthKey)
+      .sort((a: Note, b: Note) => a.monthKey.localeCompare(b.monthKey));
+    if (futureNotes.length > 0 && futureNotes[0]) {
+      nextCustomNoteMonth = futureNotes[0].monthKey;
+    }
+  }
+
+  if (!sourceNote) {
+    return {
+      sourceNote: null,
+      affectedMonths: [],
+      monthsWithCheckboxStates: {},
+      nextCustomNoteMonth: null,
+    };
+  }
+
+  // Calculate affected months (from monthKey to nextCustomNoteMonth or 12 months)
+  const affectedMonths: string[] = [];
+  const [startYear, startMonth] = params.monthKey.split('-').map(Number);
+  let year = startYear ?? new Date().getFullYear();
+  let month = startMonth ?? 1;
+
+  for (let i = 0; i < 12; i++) {
+    const mk = `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}`;
+    if (nextCustomNoteMonth && mk >= nextCustomNoteMonth) break;
+    affectedMonths.push(mk);
+    month++;
+    if (month > 12) {
+      month = 1;
+      year++;
+    }
+  }
+
+  // Check which months have checkbox states
+  const monthsWithCheckboxStates: Record<string, number> = {};
+  for (const mk of affectedMonths) {
+    const key = sourceNote.id
+      ? `${sourceNote.id}:${mk}`
+      : `general:${sourceNote.monthKey}:${mk}`;
+    const states = state.notes.checkboxStates?.[key];
+    if (states) {
+      const checkedCount = states.filter(Boolean).length;
+      if (checkedCount > 0) {
+        monthsWithCheckboxStates[mk] = checkedCount;
+      }
+    }
+  }
+
+  return {
+    sourceNote,
+    affectedMonths,
+    monthsWithCheckboxStates,
+    nextCustomNoteMonth,
+  };
 }
 
 // ============================================================================

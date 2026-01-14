@@ -109,8 +109,7 @@ export {
   getGeneralCheckboxStates,
   updateCheckboxState,
   getMonthCheckboxStates,
-  getNotesSettings,
-  updateNotesSettings,
+  getInheritanceImpact,
   type AllNotesResponse,
 } from './notes';
 

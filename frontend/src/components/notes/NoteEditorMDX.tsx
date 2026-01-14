@@ -6,7 +6,7 @@
  * Toolbar shows only when focused. Explicit save button instead of blur-based saving.
  */
 
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { Check } from 'lucide-react';
 import {
   MDXEditor,
@@ -163,33 +163,51 @@ export function NoteEditorMDX({
     setIsFocused(true);
   }, []);
 
-  // Build plugins array
-  const plugins = [
-    headingsPlugin(),
-    listsPlugin(),
-    quotePlugin(),
-    thematicBreakPlugin(),
-    markdownShortcutPlugin(),
-    linkPlugin(),
-    linkDialogPlugin(),
-  ];
+  // Handle blur - only unfocus if focus leaves the container entirely
+  const handleBlur = useCallback((e: React.FocusEvent) => {
+    const relatedTarget = e.relatedTarget as HTMLElement | null;
+    const isInsideContainer = containerRef.current?.contains(relatedTarget);
+    // Check for Radix UI portals (dropdowns, popovers)
+    const isInsideRadixPortal = relatedTarget?.closest('[data-radix-popper-content-wrapper]');
 
-  // Add toolbar if not hidden, not read-only, and focused
-  const showToolbar = !hideToolbar && !readOnly && isFocused;
-  if (showToolbar) {
-    plugins.unshift(
-      toolbarPlugin({
-        toolbarContents: () => (
-          <>
-            <BlockTypeSelect />
-            <BoldItalicUnderlineToggles />
-            <ListsToggle />
-            <CreateLink />
-          </>
-        ),
-      })
-    );
-  }
+    if (!isInsideContainer && !isInsideRadixPortal) {
+      setIsFocused(false);
+    }
+  }, []);
+
+  // Whether to show toolbar (used for CSS class, not for conditional rendering)
+  const showToolbar = !hideToolbar && !readOnly;
+
+  // Memoize plugins array to prevent MDXEditor re-initialization
+  // Always include toolbar plugin - visibility controlled via CSS
+  const plugins = useMemo(() => {
+    const basePlugins = [
+      headingsPlugin(),
+      listsPlugin(),
+      quotePlugin(),
+      thematicBreakPlugin(),
+      markdownShortcutPlugin(),
+      linkPlugin(),
+      linkDialogPlugin(),
+    ];
+
+    if (showToolbar) {
+      basePlugins.unshift(
+        toolbarPlugin({
+          toolbarContents: () => (
+            <>
+              <BlockTypeSelect />
+              <BoldItalicUnderlineToggles />
+              <ListsToggle />
+              <CreateLink />
+            </>
+          ),
+        })
+      );
+    }
+
+    return basePlugins;
+  }, [showToolbar]);
 
   // Set CSS custom property for dynamic min-height
   const containerStyle = {
@@ -202,11 +220,11 @@ export function NoteEditorMDX({
       className={`note-editor-mdx ${className} ${isFocused ? 'is-focused' : ''}`}
       data-readonly={readOnly}
       onFocus={handleFocus}
+      onBlur={handleBlur}
       style={containerStyle}
     >
       <div className="relative">
         <MDXEditor
-          key={showToolbar ? 'with-toolbar' : 'without-toolbar'}
           ref={editorRef}
           markdown={value}
           onChange={handleChange}

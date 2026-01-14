@@ -265,27 +265,11 @@ export interface GetRevisionHistoryResponse {
 // ============================================================================
 
 /**
- * Checkbox persistence mode
- *
- * 'persist': Checkbox states carry over to future months viewing the same note
- * 'reset': Each viewing month starts with fresh (unchecked) checkboxes
- */
-export type CheckboxMode = 'persist' | 'reset';
-
-/**
  * Checkbox states for a note
  */
 export interface CheckboxStates {
   /** Array of checked states, indexed by checkbox position in markdown */
   states: boolean[];
-}
-
-/**
- * Notes feature settings
- */
-export interface NotesSettings {
-  /** How checkbox state persists across months */
-  checkboxMode: CheckboxMode;
 }
 
 /**
@@ -327,28 +311,6 @@ export interface UpdateCheckboxResponse {
   success: boolean;
   /** Updated checkbox states */
   states: boolean[];
-}
-
-/**
- * Response from getting notes settings
- */
-export interface GetNotesSettingsResponse {
-  settings: NotesSettings;
-}
-
-/**
- * Request to update notes settings
- */
-export interface UpdateNotesSettingsRequest {
-  checkboxMode?: CheckboxMode;
-}
-
-/**
- * Response from updating notes settings
- */
-export interface UpdateNotesSettingsResponse {
-  success: boolean;
-  settings: NotesSettings;
 }
 
 // ============================================================================

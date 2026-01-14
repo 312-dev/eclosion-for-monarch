@@ -1,46 +1,40 @@
-/**
- * Note Editor Modal
- *
- * Modal wrapper for editing a category/group note.
- */
-
-import { useState, useEffect, useRef } from 'react';
-import { X, Trash2, History } from 'lucide-react';
+/** Note Editor Modal - for editing category/group notes with inheritance support. */
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Portal } from '../Portal';
 import { RevisionHistoryModal } from './RevisionHistoryModal';
 import { NoteEditorMDX } from './NoteEditorMDX';
+import {
+  NoteEditorHeader,
+  DeleteButton,
+  DiscardConfirmation,
+  InheritanceBreakWarning,
+  DeleteConfirmation,
+  InheritedContentReference,
+  NoteEditorFooterActions,
+} from './NoteEditorConfirmations';
 import { useSaveCategoryNoteMutation, useDeleteCategoryNoteMutation } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { handleApiError } from '../../utils';
 import { useIsRateLimited } from '../../context/RateLimitContext';
+import { useDemo } from '../../context/DemoContext';
+import * as api from '../../api/core';
+import * as demoApi from '../../api/demo';
 import type { MonthKey } from '../../types/notes';
 
 interface NoteEditorModalProps {
-  /** Type of category */
   categoryType: 'group' | 'category';
-  /** Category/group ID */
   categoryId: string;
-  /** Category/group name */
   categoryName: string;
-  /** Parent group ID (for categories) */
   groupId?: string;
-  /** Parent group name (for categories) */
   groupName?: string;
-  /** Month to save the note for */
   monthKey: MonthKey;
-  /** Initial content */
   initialContent: string;
-  /** Whether the note is inherited */
   isInherited: boolean;
-  /** Source month if inherited */
   sourceMonth: MonthKey | null;
-  /** Callback to close modal */
+  inheritedContent?: string;
   onClose: () => void;
 }
 
-/**
- * Format month key for display
- */
 function formatMonth(monthKey: string): string {
   const parts = monthKey.split('-').map(Number);
   const year = parts[0] ?? new Date().getFullYear();
@@ -59,48 +53,97 @@ export function NoteEditorModal({
   initialContent,
   isInherited,
   sourceMonth,
+  inheritedContent,
   onClose,
 }: NoteEditorModalProps) {
-  const [content, setContent] = useState(initialContent);
+  const startingContent = isInherited ? '' : initialContent;
+
+  const [content, setContent] = useState(startingContent);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showInheritanceWarning, setShowInheritanceWarning] = useState(false);
+  const [inheritanceImpact, setInheritanceImpact] = useState<{
+    affectedMonths: string[];
+    monthsWithCheckboxStates: Record<string, number>;
+  } | null>(null);
+  const [isCheckingInheritance, setIsCheckingInheritance] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
   const isRateLimited = useIsRateLimited();
+  const isDemo = useDemo();
 
   const saveMutation = useSaveCategoryNoteMutation();
-  useDeleteCategoryNoteMutation(); // Pre-warm for future delete functionality
+  useDeleteCategoryNoteMutation();
 
   const hasContent = content.trim().length > 0;
+  const hasUnsavedChanges = content !== startingContent;
+  const isSaveDisabled =
+    !hasContent || saveMutation.isPending || isCheckingInheritance || isRateLimited;
 
-  // Close on escape
+  const getSaveButtonText = () => {
+    if (isCheckingInheritance) return 'Checking...';
+    if (saveMutation.isPending) return 'Saving...';
+    return 'Save';
+  };
+
+  const handleClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  }, [hasUnsavedChanges, onClose]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') handleClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [handleClose]);
 
-  // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        onClose();
+        handleClose();
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
+  }, [handleClose]);
 
-  const handleSave = async () => {
-    if (!hasContent) {
-      toast.error('Note cannot be empty');
-      return;
+  const checkInheritanceImpact = async (): Promise<boolean> => {
+    if (!isInherited) return true;
+
+    setIsCheckingInheritance(true);
+    try {
+      const getImpact = isDemo ? demoApi.getInheritanceImpact : api.getInheritanceImpact;
+      const impact = await getImpact({ categoryType, categoryId, monthKey });
+
+      const totalCheckboxes = Object.values(impact.monthsWithCheckboxStates).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+
+      if (totalCheckboxes > 0) {
+        setInheritanceImpact({
+          affectedMonths: impact.affectedMonths,
+          monthsWithCheckboxStates: impact.monthsWithCheckboxStates,
+        });
+        setShowInheritanceWarning(true);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to check inheritance impact:', err);
+      return true;
+    } finally {
+      setIsCheckingInheritance(false);
     }
+  };
 
+  const performSave = async () => {
     try {
       await saveMutation.mutateAsync({
         categoryType,
@@ -118,19 +161,31 @@ export function NoteEditorModal({
     }
   };
 
+  const handleSave = async () => {
+    if (!hasContent) {
+      toast.error('Note cannot be empty');
+      return;
+    }
+    const canProceed = await checkInheritanceImpact();
+    if (canProceed) await performSave();
+  };
+
+  const handleConfirmInheritanceBreak = async () => {
+    setShowInheritanceWarning(false);
+    setInheritanceImpact(null);
+    await performSave();
+  };
+
   const handleDelete = async () => {
-    // For inherited notes, we can't delete - we need to clear with a new empty note
-    // For now, we'll just close
     if (!initialContent) {
       onClose();
       return;
     }
-
-    // Note: This needs the note ID, but we don't have it here
-    // In practice, we'd need to track the note ID or use a different approach
     toast.info('Delete functionality coming soon');
     setShowDeleteConfirm(false);
   };
+
+  const showingConfirmation = showDeleteConfirm || showDiscardConfirm || showInheritanceWarning;
 
   return (
     <Portal>
@@ -146,138 +201,89 @@ export function NoteEditorModal({
           aria-modal="true"
           aria-labelledby="note-editor-title"
         >
-          {/* Header */}
-          <div
-            className="flex items-center justify-between px-4 py-3 border-b"
-            style={{ borderColor: 'var(--monarch-border)' }}
-          >
-            <div>
-              <h2
-                id="note-editor-title"
-                className="font-semibold"
-                style={{ color: 'var(--monarch-text-dark)' }}
-              >
-                {categoryType === 'group' ? `${categoryName} Group` : categoryName}
-              </h2>
-              <p className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-                Note for {formatMonth(monthKey)}
-                {isInherited && sourceMonth && (
-                  <> (currently inherited from {formatMonth(sourceMonth)})</>
-                )}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
-              aria-label="Close"
-            >
-              <X size={18} style={{ color: 'var(--monarch-text-muted)' }} />
-            </button>
-          </div>
+          <NoteEditorHeader
+            categoryType={categoryType}
+            categoryName={categoryName}
+            monthKey={monthKey}
+            isInherited={isInherited}
+            sourceMonth={sourceMonth}
+            formatMonth={formatMonth}
+            onClose={handleClose}
+          />
 
           {/* Editor */}
-          <div
-            className="border-b"
-            style={{ borderColor: 'var(--monarch-border)' }}
-          >
+          <div className="border-b" style={{ borderColor: 'var(--monarch-border)' }}>
             <NoteEditorMDX
               value={content}
               onChange={setContent}
               onSave={handleSave}
-              placeholder={`Write a note for ${categoryName}...`}
+              placeholder={
+                isInherited
+                  ? `Type here to create a new note for ${formatMonth(monthKey)}...`
+                  : `Write a note for ${categoryName}...`
+              }
               autoFocus
               minHeight={150}
             />
           </div>
 
+          {/* Inherited content reference */}
+          {isInherited && inheritedContent && sourceMonth && (
+            <InheritedContentReference
+              sourceMonth={sourceMonth}
+              inheritedContent={inheritedContent}
+              formatMonth={formatMonth}
+            />
+          )}
+
+          {/* Confirmations */}
+          {showDiscardConfirm && (
+            <DiscardConfirmation
+              onKeepEditing={() => setShowDiscardConfirm(false)}
+              onDiscard={onClose}
+            />
+          )}
+
+          {showInheritanceWarning && inheritanceImpact && (
+            <InheritanceBreakWarning
+              monthsWithCheckboxStates={inheritanceImpact.monthsWithCheckboxStates}
+              formatMonth={formatMonth}
+              onCancel={() => {
+                setShowInheritanceWarning(false);
+                setInheritanceImpact(null);
+              }}
+              onConfirm={handleConfirmInheritanceBreak}
+            />
+          )}
+
           {/* Footer */}
           <div className="flex items-center justify-between px-4 py-3">
-            {/* Delete button */}
-            {initialContent && !showDeleteConfirm && (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-red-500/10 transition-colors"
-                style={{ color: '#ef4444' }}
-              >
-                <Trash2 size={14} />
-                Delete
-              </button>
+            {!isInherited && initialContent && !showingConfirmation && (
+              <DeleteButton onClick={() => setShowDeleteConfirm(true)} />
             )}
 
-            {/* Delete confirmation */}
             {showDeleteConfirm && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-                  Delete this note?
-                </span>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="px-2 py-1 text-sm font-medium rounded"
-                  style={{ backgroundColor: '#ef4444', color: 'white' }}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-2 py-1 text-sm rounded hover:bg-[var(--monarch-bg-hover)]"
-                  style={{ color: 'var(--monarch-text-muted)' }}
-                >
-                  No
-                </button>
-              </div>
+              <DeleteConfirmation
+                onConfirm={handleDelete}
+                onCancel={() => setShowDeleteConfirm(false)}
+              />
             )}
 
-            {!initialContent && !showDeleteConfirm && <div />}
+            {(isInherited || !initialContent) && !showingConfirmation && <div />}
 
-            {/* Action buttons */}
-            {!showDeleteConfirm && (
-              <div className="flex items-center gap-2">
-                {/* History button */}
-                <button
-                  type="button"
-                  onClick={() => setShowHistory(true)}
-                  className="p-2 rounded-lg hover:bg-[var(--monarch-bg-hover)] transition-colors"
-                  style={{ color: 'var(--monarch-text-muted)' }}
-                  aria-label="View revision history"
-                  title="History"
-                >
-                  <History size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--monarch-bg-hover)] transition-colors"
-                  style={{ color: 'var(--monarch-text-muted)' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={!hasContent || saveMutation.isPending || isRateLimited}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    !hasContent || saveMutation.isPending || isRateLimited
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'hover:opacity-90'
-                  }`}
-                  style={{
-                    backgroundColor: 'var(--monarch-orange)',
-                    color: 'white',
-                  }}
-                >
-                  {saveMutation.isPending ? 'Saving...' : 'Save'}
-                </button>
-              </div>
+            {!showingConfirmation && (
+              <NoteEditorFooterActions
+                onShowHistory={() => setShowHistory(true)}
+                onCancel={handleClose}
+                onSave={handleSave}
+                saveButtonText={getSaveButtonText()}
+                isSaveDisabled={isSaveDisabled}
+              />
             )}
           </div>
         </div>
       </div>
 
-      {/* Revision history modal */}
       {showHistory && (
         <RevisionHistoryModal
           categoryType={categoryType}

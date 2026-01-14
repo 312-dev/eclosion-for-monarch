@@ -280,35 +280,52 @@ export async function getMonthCheckboxStates(
 }
 
 // ============================================================================
-// Notes Settings
+// Inheritance Impact
 // ============================================================================
 
 /**
- * Get notes settings including checkbox mode.
+ * Get the impact of creating a new note (breaking inheritance).
  */
-export async function getNotesSettings(): Promise<{ checkboxMode: 'persist' | 'reset' }> {
-  const response = await fetchApi<{ settings: { checkbox_mode: string } }>(
-    '/notes/settings'
-  );
-  return { checkboxMode: response.settings.checkbox_mode as 'persist' | 'reset' };
-}
+export async function getInheritanceImpact(params: {
+  categoryType?: 'group' | 'category';
+  categoryId?: string;
+  monthKey: string;
+  isGeneral?: boolean;
+}): Promise<{
+  sourceNote: { id: string; monthKey: string; contentPreview: string } | null;
+  affectedMonths: string[];
+  monthsWithCheckboxStates: Record<string, number>;
+  nextCustomNoteMonth: string | null;
+}> {
+  const queryParams = new URLSearchParams({
+    month_key: params.monthKey,
+  });
+  if (params.isGeneral) {
+    queryParams.set('is_general', 'true');
+  } else if (params.categoryType && params.categoryId) {
+    queryParams.set('category_type', params.categoryType);
+    queryParams.set('category_id', params.categoryId);
+  }
 
-/**
- * Update notes settings.
- */
-export async function updateNotesSettings(params: {
-  checkboxMode?: 'persist' | 'reset';
-}): Promise<{ checkboxMode: 'persist' | 'reset' }> {
-  const response = await fetchApi<{ success: boolean; settings: { checkbox_mode: string } }>(
-    '/notes/settings',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        checkbox_mode: params.checkboxMode,
-      }),
-    }
-  );
-  return { checkboxMode: response.settings.checkbox_mode as 'persist' | 'reset' };
+  const response = await fetchApi<{
+    source_note: { id: string; month_key: string; content_preview: string } | null;
+    affected_months: string[];
+    months_with_checkbox_states: Record<string, number>;
+    next_custom_note_month: string | null;
+  }>(`/notes/inheritance-impact?${queryParams.toString()}`);
+
+  return {
+    sourceNote: response.source_note
+      ? {
+          id: response.source_note.id,
+          monthKey: response.source_note.month_key,
+          contentPreview: response.source_note.content_preview,
+        }
+      : null,
+    affectedMonths: response.affected_months,
+    monthsWithCheckboxStates: response.months_with_checkbox_states,
+    nextCustomNoteMonth: response.next_custom_note_month,
+  };
 }
 
 // ============================================================================
