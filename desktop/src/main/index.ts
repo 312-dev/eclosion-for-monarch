@@ -9,6 +9,23 @@ import { app, dialog, powerMonitor } from 'electron';
 import * as path from 'node:path';
 import { getAppDisplayName, getAppFolderName, getAppFolderNameLower, isBetaBuild } from './beta';
 
+// ============================================================================
+// STARTUP TIMING INSTRUMENTATION
+// Captures detailed timing for debugging installer launch delays
+// ============================================================================
+const STARTUP_TIME = Date.now();
+const startupTimings: Array<{ event: string; elapsed: number; timestamp: string }> = [];
+
+function logStartupTiming(event: string): void {
+  const elapsed = Date.now() - STARTUP_TIME;
+  const timestamp = new Date().toISOString();
+  startupTimings.push({ event, elapsed, timestamp });
+  // Log immediately to console (captured by electron-log)
+  console.log(`[STARTUP +${elapsed}ms] ${event}`);
+}
+
+logStartupTiming('Module load started');
+
 // Set the display name for menus (overrides package.json "name")
 // Must happen before any modules that use app.name are imported
 app.setName(getAppDisplayName());
@@ -33,6 +50,8 @@ if (isBetaBuild()) {
   console.log('Running as Eclosion (Beta)');
   console.log(`userData path: ${userDataPath}`);
 }
+
+logStartupTiming('App paths configured');
 
 // Initialize Sentry as early as possible (before other imports that might crash)
 import { initSentry, captureException, addBreadcrumb, isSentryEnabled } from './sentry';
@@ -123,7 +142,9 @@ function checkRunningFromVolume(): { isVolume: boolean; volumePath?: string } {
 
 // Single instance lock - prevent multiple instances
 debugLog('Requesting single instance lock...');
+logStartupTiming('Requesting single instance lock');
 const gotTheLock = app.requestSingleInstanceLock();
+logStartupTiming(`Single instance lock result: ${gotTheLock}`);
 debugLog(`Got lock: ${gotTheLock}`);
 
 if (!gotTheLock) {
@@ -183,6 +204,7 @@ function formatRelativeTime(timestamp: string): string {
  * Creates the window immediately for fast perceived startup, then starts backend in parallel.
  */
 async function initialize(): Promise<void> {
+  logStartupTiming('initialize() called');
   debugLog('Initialize function called');
   debugLog(`Version: ${app.getVersion()}`);
   debugLog(`Platform: ${process.platform}`);
@@ -192,28 +214,37 @@ async function initialize(): Promise<void> {
 
   try {
     // Register deep link protocol (eclosion://)
+    logStartupTiming('Registering deep link protocol');
     registerDeepLinkProtocol();
+    logStartupTiming('Deep link protocol registered');
 
     // Initialize backend manager
     debugLog('Creating BackendManager...');
+    logStartupTiming('Creating BackendManager');
     backendManager = new BackendManager();
+    logStartupTiming('BackendManager created');
     debugLog('BackendManager created');
 
     // Setup IPC handlers (needed before window creation)
     debugLog('Setting up IPC handlers...');
+    logStartupTiming('Setting up IPC handlers');
     setupIpcHandlers(backendManager);
+    logStartupTiming('IPC handlers ready');
     debugLog('IPC handlers set up');
 
     // Create main window IMMEDIATELY after IPC is ready
     // This ensures the loading screen appears as fast as possible
     // Other initialization (tray, hotkeys, etc.) happens in parallel below
     console.log('Creating main window...');
+    logStartupTiming('Creating main window (awaiting)');
     await createWindow(BACKEND_NOT_READY_PORT);
+    logStartupTiming('Main window created and shown');
     recordMilestone('windowCreated');
 
     // --- Everything below runs while the loading screen is visible ---
 
     // Initialize auto-backup manager
+    logStartupTiming('Initializing auto-backup');
     initializeAutoBackup(backendManager);
 
     // Clean up old passphrase-based credentials if new mode isn't set up yet
@@ -226,35 +257,45 @@ async function initialize(): Promise<void> {
     // Initialize auto-updater (only in packaged builds - dev mode has no app-update.yml)
     if (app.isPackaged) {
       debugLog('Initializing updater...');
+      logStartupTiming('Initializing updater');
       initializeUpdater();
+      logStartupTiming('Updater initialized');
       debugLog('Updater initialized');
     } else {
       debugLog('Skipping updater initialization (development mode)');
     }
 
     // Initialize dock visibility (macOS menu bar mode)
+    logStartupTiming('Initializing dock visibility');
     initializeDockVisibility();
 
     // Create application menu (adds Settings, Sync, Lock to menu bar)
+    logStartupTiming('Creating app menu');
     createAppMenu(handleSyncClick);
 
     // Create system tray
     console.log('Creating system tray...');
+    logStartupTiming('Creating system tray');
     createTray(handleSyncClick);
+    logStartupTiming('System tray created');
 
     // Initialize global hotkeys
+    logStartupTiming('Initializing hotkeys');
     initializeHotkeys(handleSyncClick);
 
     // Setup deep link handlers (for eclosion:// URLs)
+    logStartupTiming('Setting up deep link handlers');
     setupDeepLinkHandlers(handleSyncClick);
 
     // Initialize lock manager (handles auto-lock on system lock or idle)
+    logStartupTiming('Initializing lock manager');
     const mainWindow = getMainWindow();
     if (mainWindow) {
       initializeLockManager(mainWindow);
     }
 
     // Setup power monitor for sleep/wake handling
+    logStartupTiming('Setting up power monitor');
     setupPowerMonitor();
 
     // Schedule periodic update checks (only in packaged builds)
@@ -264,6 +305,8 @@ async function initialize(): Promise<void> {
 
     // Handle deep link if app was opened via eclosion:// URL
     handleInitialDeepLink();
+
+    logStartupTiming('Primary initialization complete - starting backend');
 
     // Start Python backend in background (doesn't block window display)
     debugLog('Starting backend in background...');
@@ -283,6 +326,14 @@ async function initialize(): Promise<void> {
 
     addBreadcrumb({ category: 'lifecycle', message: 'Window created, backend starting in background' });
     console.log('Window initialization complete, backend starting...');
+
+    // Log startup timing summary for debugging installer launch delays
+    logStartupTiming('initialize() returning');
+    console.log('\n========== STARTUP TIMING SUMMARY ==========');
+    for (const timing of startupTimings) {
+      console.log(`  ${timing.elapsed.toString().padStart(5)}ms - ${timing.event}`);
+    }
+    console.log('=============================================\n');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Failed to initialize:', errorMessage);
@@ -531,6 +582,7 @@ async function cleanup(): Promise<void> {
 
 // App ready - initialize
 app.on('ready', async () => {
+  logStartupTiming('app.ready event fired');
   recordMilestone('appReady');
 
   // Check if running from a DMG volume mount (macOS)
