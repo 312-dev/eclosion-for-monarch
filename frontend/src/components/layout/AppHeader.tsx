@@ -51,7 +51,10 @@ export function AppHeader({
       >
         {/* Logo/brand - shown on web and Windows/Linux desktop (macOS shows in sidebar) */}
         {(!isDesktop || !isMacOSElectron) && (
-          <div className="app-brand">
+          <div
+            className="app-brand"
+            style={isDesktop && !isMacOSElectron ? { position: 'absolute', left: '1rem' } : undefined}
+          >
             <Link
               to={isDemo ? '/' : `${pathPrefix}/`}
               className="flex items-center gap-2"
