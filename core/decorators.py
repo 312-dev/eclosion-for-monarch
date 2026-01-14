@@ -188,12 +188,14 @@ def _handle_exception(e: Exception, handle_mfa: bool) -> tuple:
     if is_rate_limit_error(e):
         logger.warning(f"Rate limited: {e}")
         retry_after = getattr(e, "retry_after", 60)
+        source = getattr(e, "source", None)
         return (
             jsonify(
                 {
                     "error": "Rate limit exceeded. Please try again later.",
                     "code": "RATE_LIMITED",
                     "retry_after": retry_after,
+                    "source": source,
                 }
             ),
             429,

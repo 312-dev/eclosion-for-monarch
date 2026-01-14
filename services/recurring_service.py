@@ -93,8 +93,13 @@ class RecurringItem:
 
     @property
     def formatted_date(self) -> str:
-        """Return formatted date string (e.g., 'Jun 15, 2025')."""
-        return self.next_due_date.strftime("%b %-d, %Y")
+        """Return formatted date string (e.g., 'Jun 15, 2025').
+
+        Note: Uses manual day extraction to avoid %-d format code,
+        which is POSIX-only and fails on Windows with "Invalid format string".
+        """
+        day = self.next_due_date.day  # Already no leading zero
+        return self.next_due_date.strftime(f"%b {day}, %Y")
 
     @property
     def category_name(self) -> str:

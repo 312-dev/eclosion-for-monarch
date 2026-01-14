@@ -688,6 +688,7 @@ class SyncService:
                 raise RateLimitError(
                     f"Eclosion limits syncs to once every 5 minutes. Please wait {remaining_mins} more minute(s).",
                     retry_after=remaining,
+                    source="eclosion_sync_cooldown",
                 )
 
         if not state.is_configured():

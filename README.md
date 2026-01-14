@@ -5,8 +5,8 @@
 <h1 align="center">Eclosion for Monarch</h1>
 
 <p align="center">
-  <a href="https://github.com/312-dev/eclosion/actions/workflows/ci.yml"><img src="https://github.com/312-dev/eclosion/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/312-dev/eclosion/actions/workflows/security.yml"><img src="https://github.com/312-dev/eclosion/actions/workflows/security.yml/badge.svg" alt="Security"></a>
+  <a href="https://github.com/312-dev/eclosion/actions/workflows/01-ci.yml"><img src="https://github.com/312-dev/eclosion/actions/workflows/01-ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/312-dev/eclosion/actions/workflows/10-security.yml"><img src="https://github.com/312-dev/eclosion/actions/workflows/10-security.yml/badge.svg" alt="Security"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/312-dev/eclosion"><img src="https://api.scorecard.dev/projects/github.com/312-dev/eclosion/badge" alt="OpenSSF Scorecard"></a>
   <a href="https://www.bestpractices.dev/projects/11728"><img src="https://www.bestpractices.dev/projects/11728/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://github.com/312-dev/eclosion/releases/latest"><img src="https://img.shields.io/github/v/release/312-dev/eclosion?label=stable" alt="Stable Release"></a>

@@ -133,10 +133,12 @@ export async function fetchApi<T>(
           const retryAfter = Number.parseInt(response.headers.get('Retry-After') || '60', 10);
           rateLimitState.set(endpoint, { until: Date.now() + (retryAfter * 1000) });
           const errorBody = await response.json().catch(() => ({}));
+          const source = errorBody.source || null;
 
           // Emit custom event for global rate limit handling (RateLimitContext listens)
+          // Source distinguishes between Monarch API rate limits and Eclosion's internal cooldown
           globalThis.dispatchEvent(new CustomEvent('monarch-rate-limited', {
-            detail: { retryAfter, endpoint },
+            detail: { retryAfter, endpoint, source },
           }));
 
           throw new RateLimitError(retryAfter, errorBody.error);

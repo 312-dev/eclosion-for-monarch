@@ -49,8 +49,8 @@ export function AppHeader({
           paddingTop: isMacOSElectron ? '20px' : undefined,
         } : undefined}
       >
-        {/* Logo/brand - hidden on desktop app (shown in sidebar instead) */}
-        {!isDesktop && (
+        {/* Logo/brand - shown on web and Windows/Linux desktop (macOS shows in sidebar) */}
+        {(!isDesktop || !isMacOSElectron) && (
           <div className="app-brand">
             <Link
               to={isDemo ? '/' : `${pathPrefix}/`}

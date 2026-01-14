@@ -487,11 +487,21 @@ input[type="radio"] {
   box-sizing: border-box;
 }
 
-/* Notification banners container - sticky below fixed header */
+/* Notification banners container - fixed below header for reliable positioning
+ * Changed from sticky to fixed to ensure visibility on all platforms,
+ * especially Windows where the banner was appearing "tucked under" the header.
+ */
 .app-notification-banners {
-  position: sticky;
+  position: fixed;
   top: var(--header-height);
-  z-index: 15; /* Below sticky nav (20) but above content */
+  left: 0;
+  right: 0;
+  z-index: 19; /* Just below header (20) but above everything else */
+}
+
+/* Add margin-top to app-body when banners might be present */
+.app-notification-banners:not(:empty) + .app-body {
+  margin-top: 40px; /* Approximate height of one banner */
 }
 
 .app-body {

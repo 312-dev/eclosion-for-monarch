@@ -14,7 +14,7 @@ import { Portal } from '../Portal';
 import { Tooltip } from '../ui/Tooltip';
 import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
-import { useMediaQuery } from '../../hooks';
+import { useMediaQuery, useMacOSElectron } from '../../hooks';
 import { getComingSoonFeatures } from '../../data/features';
 import { isDesktopMode } from '../../utils/apiBase';
 
@@ -115,6 +115,7 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const location = useLocation();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
+  const isMacOSElectron = useMacOSElectron();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const [showLockButton, setShowLockButton] = useState(!isDesktop);
@@ -158,8 +159,8 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
 
   return (
     <nav className="sidebar-nav" aria-label="Main navigation">
-      {/* Logo section - desktop app only */}
-      {isDesktop && (
+      {/* Logo section - macOS desktop only (Windows/Linux show logo in header) */}
+      {isMacOSElectron && (
         <div className="sidebar-logo sidebar-desktop-only">
           <Link to={`${prefix}/`} className="sidebar-logo-link" aria-label="Eclosion - Go to home">
             <AppIcon size={28} />
