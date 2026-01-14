@@ -204,6 +204,15 @@ async function initialize(): Promise<void> {
     setupIpcHandlers(backendManager);
     debugLog('IPC handlers set up');
 
+    // Create main window IMMEDIATELY after IPC is ready
+    // This ensures the loading screen appears as fast as possible
+    // Other initialization (tray, hotkeys, etc.) happens in parallel below
+    console.log('Creating main window...');
+    await createWindow(BACKEND_NOT_READY_PORT);
+    recordMilestone('windowCreated');
+
+    // --- Everything below runs while the loading screen is visible ---
+
     // Initialize auto-backup manager
     initializeAutoBackup(backendManager);
 
@@ -225,12 +234,6 @@ async function initialize(): Promise<void> {
 
     // Initialize dock visibility (macOS menu bar mode)
     initializeDockVisibility();
-
-    // Create main window IMMEDIATELY (before backend starts)
-    // The frontend will show a loading screen while backend initializes
-    console.log('Creating main window...');
-    await createWindow(BACKEND_NOT_READY_PORT);
-    recordMilestone('windowCreated');
 
     // Create application menu (adds Settings, Sync, Lock to menu bar)
     createAppMenu(handleSyncClick);

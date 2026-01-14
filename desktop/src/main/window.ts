@@ -199,6 +199,13 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
+    // Windows prevents apps from stealing focus. Use setAlwaysOnTop workaround
+    // to ensure window is visible when launched from installer or startup.
+    if (process.platform === 'win32') {
+      mainWindow?.setAlwaysOnTop(true);
+      mainWindow?.setAlwaysOnTop(false);
+    }
+    mainWindow?.focus();
   });
 
   // Handle close - behavior depends on menuBarMode setting
