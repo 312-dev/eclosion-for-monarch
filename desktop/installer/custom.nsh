@@ -29,16 +29,21 @@
 !macro customHeader
   ; Override the finish page run function BEFORE electron-builder sets it up
   ; This prevents the default blocking launch behavior
-  !define MUI_FINISHPAGE_RUN
-  !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchAppNonBlocking"
+  ; Only applies to installer, not uninstaller
+  !ifndef BUILD_UNINSTALLER
+    !define MUI_FINISHPAGE_RUN
+    !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchAppNonBlocking"
+  !endif
 !macroend
 
 ; ============================================================================
 ; NON-BLOCKING APP LAUNCH FUNCTION
 ; Called when user clicks Finish with "Run Eclosion" checked
 ; Uses cmd.exe /c start to launch without blocking the installer
+; Only included in installer build, not uninstaller
 ; ============================================================================
 
+!ifndef BUILD_UNINSTALLER
 Function LaunchAppNonBlocking
   !insertmacro WriteInstallerLog "=== LaunchAppNonBlocking called ==="
   !insertmacro WriteInstallerLog "INSTDIR: $INSTDIR"
@@ -58,6 +63,7 @@ Function LaunchAppNonBlocking
 
   !insertmacro WriteInstallerLog "LaunchAppNonBlocking complete - installer should close immediately"
 FunctionEnd
+!endif
 
 ; ============================================================================
 ; INSTALLER CUSTOMIZATIONS
