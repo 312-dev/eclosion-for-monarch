@@ -31,6 +31,13 @@
   ; This prevents the default blocking launch behavior
   ; Only applies to installer, not uninstaller
   !ifndef BUILD_UNINSTALLER
+    ; Undefine any existing values first (in case electron-builder set them)
+    !ifdef MUI_FINISHPAGE_RUN
+      !undef MUI_FINISHPAGE_RUN
+    !endif
+    !ifdef MUI_FINISHPAGE_RUN_FUNCTION
+      !undef MUI_FINISHPAGE_RUN_FUNCTION
+    !endif
     !define MUI_FINISHPAGE_RUN
     !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchAppNonBlocking"
   !endif
