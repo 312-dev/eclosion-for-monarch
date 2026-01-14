@@ -68,9 +68,14 @@ def _get_or_create_session_secret():
 
 
 app.secret_key = _get_or_create_session_secret()
-app.config["SESSION_COOKIE_SECURE"] = not app.debug  # Only require HTTPS in production
+# Secure cookies require HTTPS, but desktop mode uses HTTP localhost
+# Desktop mode is still secure via DESKTOP_SECRET header authentication
+app.config["SESSION_COOKIE_SECURE"] = not app.debug and not config.is_desktop_environment()
 app.config["SESSION_COOKIE_HTTPONLY"] = True  # Not accessible via JavaScript
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # CSRF protection
+# SameSite=Lax prevents cookies on cross-site requests. Desktop mode loads from file://
+# and makes requests to http://localhost, which is cross-site. Disable SameSite for desktop.
+# Security: Desktop mode is protected by DESKTOP_SECRET header, not cookies.
+app.config["SESSION_COOKIE_SAMESITE"] = None if config.is_desktop_environment() else "Lax"
 app.config["PERMANENT_SESSION_LIFETIME"] = config.SESSION_COOKIE_LIFETIME
 
 # CORS configuration

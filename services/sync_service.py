@@ -12,7 +12,7 @@ Orchestrates the full synchronization process:
 import math
 import os
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 # Add parent directory to path for imports
@@ -674,8 +674,10 @@ class SyncService:
         if state.last_sync:
             from datetime import datetime
 
-            last_sync_time = datetime.fromisoformat(state.last_sync)
-            now = datetime.now()
+            # Handle Z suffix for timezone-aware parsing
+            last_sync_str = state.last_sync.replace("Z", "+00:00")
+            last_sync_time = datetime.fromisoformat(last_sync_str)
+            now = datetime.now(UTC)
             diff_seconds = (now - last_sync_time).total_seconds()
             min_interval = 5 * 60  # 5 minutes in seconds
             if diff_seconds < min_interval:
@@ -1453,7 +1455,8 @@ class SyncService:
                     "id": item.id,
                     "merchant_id": item.merchant_id,
                     "logo_url": item.logo_url,
-                    "name": item.name,
+                    # Use stored name from state if enabled (allows user renames), otherwise stream name
+                    "name": cat_state.name if cat_state and is_enabled else item.name,
                     "category_name": item.category_name,
                     "category_id": cat_state.monarch_category_id if cat_state else None,
                     "category_group_name": category_group_name,
