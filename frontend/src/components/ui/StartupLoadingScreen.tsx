@@ -2,73 +2,21 @@
  * StartupLoadingScreen Component
  *
  * Displays a loading screen while waiting for the backend to start.
- * Features:
- * - Animated progress bar
- * - Rotating humorous messages that change every 10 seconds
- * - Self-deprecating humor that increases as wait time grows
- * - Error state after 3 minutes
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
+import { StartupUpdateStatus } from './StartupUpdateStatus';
 import { AppIcon } from '../wizards/SetupWizardIcons';
-
-/** Message phases based on elapsed time */
-const MESSAGES = {
-  // 0-30 seconds: Optimistic and confident
-  early: [
-    'Rome wasn\'t built in a day, but your app will be ready in seconds...',
-    'Warming up the engines...',
-    'Preparing something wonderful...',
-    'Loading awesomeness...',
-  ],
-  // 30-60 seconds: Still positive but acknowledging the wait
-  acknowledgingDelay: [
-    'Still working on it... good things take time!',
-    'Almost there... probably...',
-    'The backend is doing some heavy lifting...',
-    'Taking a bit longer than expected, but we\'re on it!',
-  ],
-  // 60-90 seconds: Getting self-deprecating
-  gettingLong: [
-    'Okay, this is taking a while. We apologize profusely.',
-    'Our hamsters are running as fast as they can...',
-    'If you\'re reading this, we owe you a coffee.',
-    'Plot twist: the backend wanted a dramatic entrance.',
-  ],
-  // 90-120 seconds: Full self-deprecation mode
-  veryLong: [
-    'At this point, we\'re as surprised as you are.',
-    'The intern may have unplugged something...',
-    'We\'re starting to sweat over here...',
-    'Fun fact: this delay is not a feature.',
-  ],
-  // 120-180 seconds: Crisis mode with humor
-  crisis: [
-    'We\'ve sent a search party for the backend.',
-    'Contemplating life choices that led to this moment...',
-    'The server is in witness protection. We\'re negotiating.',
-    'If this were a movie, dramatic music would be playing.',
-  ],
-};
-
-/** Time thresholds in seconds */
-const THRESHOLDS = {
-  ACKNOWLEDGE_DELAY: 30,
-  GETTING_LONG: 60,
-  VERY_LONG: 90,
-  CRISIS: 120,
-  TIMEOUT: 180,
-};
-
-/** Message rotation interval in milliseconds */
-const MESSAGE_INTERVAL = 10000;
-
-/** Progress bar animation - estimate based on typical startup times */
-const ESTIMATED_STARTUP_TIME = 10000; // 10 seconds typical
-
-/** Error message shown when startup times out */
-const TIMEOUT_ERROR_MESSAGE = 'Please restart the application or check the logs for errors.';
+import {
+  STARTUP_THRESHOLDS,
+  MESSAGE_INTERVAL,
+  ESTIMATED_STARTUP_TIME,
+  TIMEOUT_ERROR_MESSAGE,
+  getMessagePool,
+  getStatusText,
+} from './startupMessages';
+import type { UpdateInfo, UpdateProgress } from '../../types/electron';
 
 interface StartupLoadingScreenProps {
   /** Callback when timeout (3 minutes) is reached */
@@ -85,31 +33,37 @@ export function StartupLoadingScreen({
   const [messageRotationCount, setMessageRotationCount] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
+  // Update status
+  const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloading' | 'ready'>('none');
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState<boolean | null>(null);
+
   // Derive fading state and final progress from isConnected
   const isFadingOut = isConnected;
   const progress = isConnected ? 100 : animatedProgress;
 
-  // Get the appropriate message pool based on elapsed time
-  const getMessagePool = useCallback((seconds: number): string[] => {
-    if (seconds >= THRESHOLDS.CRISIS) return MESSAGES.crisis;
-    if (seconds >= THRESHOLDS.VERY_LONG) return MESSAGES.veryLong;
-    if (seconds >= THRESHOLDS.GETTING_LONG) return MESSAGES.gettingLong;
-    if (seconds >= THRESHOLDS.ACKNOWLEDGE_DELAY) return MESSAGES.acknowledgingDelay;
-    return MESSAGES.early;
+  // Set a smaller compact window size for the loading screen (desktop only)
+  useEffect(() => {
+    if (!globalThis.electron?.windowMode?.setCompactSize) return;
+    // Loading screen is simple - doesn't need much height
+    globalThis.electron.windowMode.setCompactSize(550).catch(() => {
+      // Ignore errors - window sizing is a UX enhancement
+    });
   }, []);
 
-  // Derive current message from rotation count and elapsed time (no useState needed)
+  // Derive current message from rotation count and elapsed time
   const currentMessage = useMemo(() => {
     const pool = getMessagePool(elapsedSeconds);
     return pool[messageRotationCount % pool.length];
-  }, [elapsedSeconds, messageRotationCount, getMessagePool]);
+  }, [elapsedSeconds, messageRotationCount]);
 
   // Timer for elapsed time
   useEffect(() => {
     const timer = setInterval(() => {
       setElapsedSeconds((prev) => {
         const next = prev + 1;
-        if (next >= THRESHOLDS.TIMEOUT) {
+        if (next >= STARTUP_THRESHOLDS.TIMEOUT) {
           onTimeout?.();
         }
         return next;
@@ -127,6 +81,54 @@ export function StartupLoadingScreen({
 
     return () => clearInterval(messageTimer);
   }, []);
+
+  // Check auto-update setting on mount
+  useEffect(() => {
+    if (!globalThis.electron) return;
+    globalThis.electron.getAutoUpdateEnabled().then(setAutoUpdateEnabled).catch(() => {
+      // Default to showing updates if we can't check the setting
+      setAutoUpdateEnabled(true);
+    });
+  }, []);
+
+  // Listen for update events from Electron (only if auto-update is enabled)
+  useEffect(() => {
+    if (!globalThis.electron || autoUpdateEnabled === null || !autoUpdateEnabled) return;
+
+    const unsubAvailable = globalThis.electron.onUpdateAvailable((info: UpdateInfo) => {
+      setUpdateStatus('downloading');
+      setUpdateVersion(info.version);
+    });
+
+    const unsubProgress = globalThis.electron.onUpdateProgress((progress: UpdateProgress) => {
+      setUpdateStatus('downloading');
+      setDownloadProgress(Math.round(progress.percent));
+    });
+
+    const unsubDownloaded = globalThis.electron.onUpdateDownloaded((info: UpdateInfo) => {
+      setUpdateStatus('ready');
+      setUpdateVersion(info.version);
+      setDownloadProgress(100);
+    });
+
+    // Check initial status
+    globalThis.electron.getUpdateStatus().then((status) => {
+      if (status.updateDownloaded && status.updateInfo) {
+        setUpdateStatus('ready');
+        setUpdateVersion(status.updateInfo.version);
+        setDownloadProgress(100);
+      } else if (status.updateAvailable && status.updateInfo) {
+        setUpdateStatus('downloading');
+        setUpdateVersion(status.updateInfo.version);
+      }
+    });
+
+    return () => {
+      unsubAvailable();
+      unsubProgress();
+      unsubDownloaded();
+    };
+  }, [autoUpdateEnabled]);
 
   // Animate progress bar (only when not connected)
   useEffect(() => {
@@ -154,17 +156,7 @@ export function StartupLoadingScreen({
   }, [elapsedSeconds, isConnected]);
 
   // Timeout state
-  const isTimedOut = elapsedSeconds >= THRESHOLDS.TIMEOUT;
-
-  // Get status text based on phase
-  const getStatusText = (): string => {
-    if (isTimedOut) return 'Unable to connect to server';
-    if (elapsedSeconds >= THRESHOLDS.CRISIS) return 'This is taking much longer than expected...';
-    if (elapsedSeconds >= THRESHOLDS.VERY_LONG) return 'Still trying to connect...';
-    if (elapsedSeconds >= THRESHOLDS.GETTING_LONG) return 'Hang tight...';
-    if (elapsedSeconds >= THRESHOLDS.ACKNOWLEDGE_DELAY) return 'This is taking a bit longer than usual...';
-    return 'Starting up...';
-  };
+  const isTimedOut = elapsedSeconds >= STARTUP_THRESHOLDS.TIMEOUT;
 
   return (
     <div
@@ -174,8 +166,11 @@ export function StartupLoadingScreen({
       style={{ backgroundColor: 'var(--monarch-bg-page)' }}
     >
       <div className="flex flex-col items-center gap-6 max-w-md px-6 text-center">
-        {/* Logo/Brand */}
-        <div className="flex items-center gap-3 mb-4">
+        {/* Logo/Brand - draggable region for window */}
+        <div
+          className="flex items-center gap-3 mb-4 cursor-default"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+        >
           <AppIcon size={48} />
           <span
             className="text-2xl font-semibold"
@@ -222,7 +217,7 @@ export function StartupLoadingScreen({
           className="text-sm font-medium"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
-          {getStatusText()}
+          {getStatusText(elapsedSeconds, isTimedOut)}
         </p>
 
         {/* Progress bar */}
@@ -267,7 +262,7 @@ export function StartupLoadingScreen({
         </div>
 
         {/* Elapsed time (shown after 30 seconds) */}
-        {elapsedSeconds >= THRESHOLDS.ACKNOWLEDGE_DELAY && (
+        {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && (
           <p
             className="text-xs animate-fade-in"
             style={{ color: 'var(--monarch-text-light)' }}
@@ -275,6 +270,12 @@ export function StartupLoadingScreen({
             Waiting for {elapsedSeconds} seconds...
           </p>
         )}
+
+        <StartupUpdateStatus
+          status={updateStatus}
+          version={updateVersion}
+          progress={downloadProgress}
+        />
 
         {/* Timeout action */}
         {isTimedOut && (

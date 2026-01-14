@@ -7,8 +7,9 @@
  */
 
 import { useState } from 'react';
-import { Download, X, ExternalLink, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Download, X, ExternalLink, RotateCcw } from 'lucide-react';
 import { useElectronUpdates } from '../../hooks';
+import { ReleaseNotesModal } from './ReleaseNotesModal';
 
 /**
  * Banner shown when a desktop update is downloaded and ready to install.
@@ -23,7 +24,7 @@ export function UpdateReadyBanner() {
     dismissed,
   } = useElectronUpdates();
 
-  const [showNotes, setShowNotes] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
 
   // Don't render if not desktop, no update ready, or dismissed
@@ -49,7 +50,8 @@ export function UpdateReadyBanner() {
       aria-live="polite"
       className="relative"
       style={{
-        backgroundColor: isBeta ? 'var(--monarch-accent)' : 'var(--monarch-success)',
+        // Use darker colors for better contrast with white text (WCAG AA)
+        backgroundColor: isBeta ? '#7c3aed' : '#166534',
         color: 'white',
         flexShrink: 0,
       }}
@@ -64,13 +66,10 @@ export function UpdateReadyBanner() {
           {releaseNotes && (
             <button
               type="button"
-              onClick={() => setShowNotes(!showNotes)}
-              className="flex items-center gap-1 text-sm underline hover:no-underline"
-              aria-expanded={showNotes}
-              aria-controls="update-release-notes"
+              onClick={() => setShowModal(true)}
+              className="text-sm underline hover:no-underline"
             >
               What&apos;s new
-              {showNotes ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
           )}
         </div>
@@ -112,19 +111,14 @@ export function UpdateReadyBanner() {
         </div>
       </div>
 
-      {/* Expandable release notes */}
-      {releaseNotes && showNotes && (
-        <div
-          id="update-release-notes"
-          className="px-4 pb-3 pt-1 text-sm border-t border-white/20"
-        >
-          <div
-            className="prose prose-sm prose-invert max-w-none"
-            style={{ color: 'rgba(255, 255, 255, 0.9)' }}
-          >
-            {releaseNotes}
-          </div>
-        </div>
+      {/* Release notes modal */}
+      {releaseNotes && (
+        <ReleaseNotesModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          version={version}
+          releaseNotes={releaseNotes}
+        />
       )}
     </div>
   );

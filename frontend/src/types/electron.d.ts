@@ -273,6 +273,7 @@ export interface AutoBackupSettings {
   folderPath: string | null;
   retentionDays: number;
   lastBackupDate: string | null;
+  scheduledTime: string; // HH:MM format (24-hour)
 }
 
 export interface AutoBackupRetentionOption {
@@ -315,6 +316,7 @@ export interface AutoBackupAPI {
   selectFolder: () => Promise<string | null>;
   openFolder: () => Promise<void>;
   setRetention: (days: number) => Promise<void>;
+  setScheduledTime: (time: string) => Promise<void>;
   getRetentionOptions: () => Promise<AutoBackupRetentionOption[]>;
   runNow: () => Promise<AutoBackupResult>;
   listBackups: () => Promise<AutoBackupFileInfo[]>;
@@ -367,6 +369,8 @@ export interface CredentialsAPI {
   setRequireTouchId: (required: boolean) => Promise<void>;
   authenticate: () => Promise<CredentialsAuthResult>;
   clearAll: () => Promise<void>;
+  /** Get or create the notes encryption key for desktop mode */
+  getNotesKey: () => Promise<string>;
 }
 
 /** Result of Touch ID setup prompt */
@@ -420,6 +424,12 @@ export interface ElectronAPI {
   getUpdateStatus: () => Promise<UpdateStatus>;
   getUpdateChannel: () => Promise<'stable' | 'beta'>;
   quitAndInstall: () => Promise<void>;
+  /** Check if auto-update is enabled (when disabled, updates are shown but not auto-downloaded) */
+  getAutoUpdateEnabled: () => Promise<boolean>;
+  /** Enable or disable auto-update */
+  setAutoUpdateEnabled: (enabled: boolean) => Promise<boolean>;
+  /** Manually download an available update (use when auto-update is disabled) */
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
 
   // Update event listeners
   onUpdateAvailable: (callback: (info: UpdateInfo) => void) => () => void;
@@ -502,6 +512,9 @@ export interface ElectronAPI {
 
   // Rate Limit (for handling Monarch API 429 responses)
   rateLimit?: RateLimitAPI;
+
+  // Window Mode (compact for loading/login, full for main app)
+  windowMode: WindowModeAPI;
 }
 
 /** Rate Limit API for handling Monarch API 429 responses */
@@ -524,6 +537,25 @@ export interface ReauthAPI {
   onMfaRequired: (callback: (data: MfaRequiredData) => void) => () => void;
   /** Submit MFA code to complete session restore */
   submitMfaCode: (mfaCode: string, mfaMode: 'secret' | 'code') => Promise<{ success: boolean; error?: string }>;
+}
+
+/** Window mode for compact (loading/login) vs full (main app) views */
+export type WindowMode = 'compact' | 'full';
+
+/** Window Mode API for switching between compact and full window sizes */
+export interface WindowModeAPI {
+  /** Set the window mode ('compact' for loading/login, 'full' for main app) */
+  setMode: (mode: WindowMode) => Promise<void>;
+  /** Get the current window mode */
+  getMode: () => Promise<WindowMode>;
+  /**
+   * Dynamically resize the compact window based on content height.
+   * Only works in compact mode. The height is clamped to min/max bounds
+   * and respects the user's screen size.
+   * @param height - The desired content height in pixels
+   * @returns The actual height applied (after clamping)
+   */
+  setCompactSize: (height: number) => Promise<number>;
 }
 
 declare global {

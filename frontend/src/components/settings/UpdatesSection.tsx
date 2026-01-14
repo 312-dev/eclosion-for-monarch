@@ -2,10 +2,14 @@
  * Updates Section
  *
  * Displays current version and allows checking for updates.
+ * On desktop, also shows auto-update toggle.
  */
 
+import { useState, useEffect, useCallback } from 'react';
 import { Download } from 'lucide-react';
 import { VersionBadge } from '../VersionBadge';
+import { SettingsRow } from './SettingsRow';
+import { ToggleSwitch } from './ToggleSwitch';
 import type { VersionInfo } from '../../types';
 
 interface UpdatesSectionProps {
@@ -14,6 +18,39 @@ interface UpdatesSectionProps {
 }
 
 export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectionProps) {
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const isDesktop = !!window.electron;
+
+  const fetchAutoUpdateSetting = useCallback(async () => {
+    if (!window.electron) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const enabled = await window.electron.getAutoUpdateEnabled();
+      setAutoUpdateEnabled(enabled);
+    } catch {
+      // Non-critical
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAutoUpdateSetting();
+  }, [fetchAutoUpdateSetting]);
+
+  const handleAutoUpdateChange = async () => {
+    if (!window.electron) return;
+    try {
+      const newValue = !autoUpdateEnabled;
+      await window.electron.setAutoUpdateEnabled(newValue);
+      setAutoUpdateEnabled(newValue);
+    } catch {
+      // Ignore errors
+    }
+  };
 
   return (
     <section className="mb-8">
@@ -71,6 +108,23 @@ export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectio
             </button>
           </div>
         </div>
+
+        {isDesktop && (
+          <>
+            <div style={{ borderTop: '1px solid var(--monarch-border)' }} />
+            <SettingsRow
+              label="Auto-update"
+              description="Automatically download and install updates when available"
+            >
+              <ToggleSwitch
+                checked={autoUpdateEnabled}
+                onChange={handleAutoUpdateChange}
+                disabled={loading}
+                ariaLabel="Toggle auto-update"
+              />
+            </SettingsRow>
+          </>
+        )}
 
       </div>
     </section>

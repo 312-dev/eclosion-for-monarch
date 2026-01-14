@@ -98,3 +98,10 @@ export { useSelectKeyboard } from './useSelectKeyboard';
 export { useCheckboxState, type UseCheckboxStateReturn } from './useCheckboxState';
 
 export { useHiddenCategories } from './useHiddenCategories';
+
+export {
+  useInheritanceWarning,
+  type InheritanceImpact,
+} from './useInheritanceWarning';
+
+export { useCompactWindowSize, useAutoCompactWindowSize } from './useCompactWindowSize';
