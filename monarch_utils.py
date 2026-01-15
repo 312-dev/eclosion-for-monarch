@@ -1,7 +1,9 @@
 import asyncio
 import contextlib
 import os
+import platform
 import re
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -15,11 +17,68 @@ from core.error_detection import is_rate_limit_error
 
 load_dotenv()
 
-# Browser-like user agent (per Monarch support guidance for firewall issues)
-_BROWSER_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-)
+
+# =============================================================================
+# Monarch API Client Configuration
+# =============================================================================
+# Custom headers for client identification to avoid Cloudflare issues (525 errors)
+
+
+def _get_device_uuid() -> str:
+    """Generate a persistent device UUID based on machine identifier."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"eclosion-{uuid.getnode()}"))
+
+
+def _get_platform_ua() -> str:
+    """Build platform-specific User-Agent string component."""
+    system = platform.system()
+    if system == "Darwin":
+        mac_ver = platform.mac_ver()[0].replace(".", "_") or "10_15_7"
+        return f"Macintosh; Intel Mac OS X {mac_ver}"
+    elif system == "Windows":
+        win_ver = platform.release() or "10"
+        return f"Windows NT {win_ver}; Win64; x64"
+    else:
+        return "X11; Linux x86_64"
+
+
+def _get_user_agent() -> str:
+    """Build browser-like User-Agent with dynamic Chrome version from Electron."""
+    chrome_version = os.environ.get("CHROME_VERSION", "142.0.0.0")
+    platform_ua = _get_platform_ua()
+    return f"Mozilla/5.0 ({platform_ua}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version} Safari/537.36"
+
+
+def _get_monarch_client_config() -> dict[str, Any]:
+    """
+    Get configuration for MonarchMoney client headers.
+
+    Returns dict with keys matching MonarchMoney __init__ parameters:
+    - device_uuid: Persistent UUID for this installation
+    - monarch_client: "eclosion"
+    - monarch_client_version: From APP_VERSION env var
+    - user_agent: Browser-like UA with platform and Chrome version
+    """
+    app_version = os.environ.get("APP_VERSION", "1.0.0")
+
+    config_dict = {
+        "device_uuid": _get_device_uuid(),
+        "monarch_client": "eclosion",
+        "monarch_client_version": app_version,
+        "user_agent": _get_user_agent(),
+    }
+
+    # Debug logging for beta builds
+    if os.environ.get("RELEASE_CHANNEL") == "beta":
+        print(f"[MonarchMoney] Platform: {platform.system()} ({_get_platform_ua()})")
+        print(
+            f"[MonarchMoney] Chrome version from env: {os.environ.get('CHROME_VERSION', '(not set)')}"
+        )
+        print(f"[MonarchMoney] App version from env: {app_version}")
+        print(f"[MonarchMoney] Device UUID: {config_dict['device_uuid']}")
+        print(f"[MonarchMoney] User-Agent: {config_dict['user_agent']}")
+
+    return config_dict
 
 
 # Helper to strip leading emoji and space from a string
@@ -309,10 +368,9 @@ async def get_mm(email=None, password=None, mfa_secret_key=None):
     use_saved_session = session_file and os.path.exists(session_file)
 
     # Use configured session file path (stored in STATE_DIR for desktop/docker compatibility)
-    mm = MonarchMoney(session_file=session_file)
-
-    # Use browser-like user agent (per Monarch support guidance for firewall issues)
-    mm._headers["User-Agent"] = _BROWSER_USER_AGENT
+    # Pass custom headers to avoid Cloudflare issues (525 errors)
+    client_config = _get_monarch_client_config()
+    mm = MonarchMoney(session_file=session_file, **client_config)
 
     # Try to use saved session first, but handle expired tokens gracefully
     if use_saved_session:
@@ -343,8 +401,7 @@ async def get_mm(email=None, password=None, mfa_secret_key=None):
             os.remove(session_file)
 
         # Create fresh client without stale session
-        mm = MonarchMoney(session_file=session_file)
-        mm._headers["User-Agent"] = _BROWSER_USER_AGENT
+        mm = MonarchMoney(session_file=session_file, **client_config)
 
     # Login fresh (either no saved session or it was cleared due to expiry)
     await mm.login(
@@ -371,10 +428,9 @@ async def get_mm_with_code(email: str, password: str, mfa_code: str):
     Returns:
         Authenticated MonarchMoney client
     """
-    mm = MonarchMoney(session_file=str(config.MONARCH_SESSION_FILE))
-
-    # Use browser-like user agent (per Monarch support guidance for firewall issues)
-    mm._headers["User-Agent"] = _BROWSER_USER_AGENT
+    # Pass custom headers to avoid Cloudflare issues (525 errors)
+    client_config = _get_monarch_client_config()
+    mm = MonarchMoney(session_file=str(config.MONARCH_SESSION_FILE), **client_config)
 
     # First try login - this will fail with MFA error if MFA is enabled
     try:

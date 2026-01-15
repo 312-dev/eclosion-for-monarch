@@ -3,4 +3,4 @@
 #   pip install --require-hashes -r requirements.txt
 #   pip install --no-deps -r requirements-vcs.txt
 
-git+https://github.com/312-dev/monarchmoney.git@348a1c0b7fd42344b10aff125418f0525c68cd90  # flex-budget branch
+git+https://github.com/312-dev/monarchmoney.git@d267bd3dceee78282c3c25639158ac58e6b6a096  # custom header support

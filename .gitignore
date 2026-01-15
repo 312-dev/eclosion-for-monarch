@@ -72,3 +72,6 @@ desktop/resources/backend/
 apps/
 state/*.migrated*
 .venv-build/
+
+# Temporary backups
+lib/

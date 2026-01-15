@@ -67,7 +67,7 @@ export function RateLimitBanner() {
 
   // Different messages based on source
   const message = isEclosionCooldown
-    ? 'Sync is on cooldown to protect your Monarch account.'
+    ? 'Sync is on cooldown.'
     : 'Monarch sync paused due to too many requests.';
 
   const Icon = isEclosionCooldown ? Clock : AlertTriangle;

@@ -256,6 +256,8 @@ export class BackendManager extends EventEmitter {
         // These are injected by esbuild at build time (see build-main.js)
         APP_VERSION: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0',
         RELEASE_CHANNEL: typeof __RELEASE_CHANNEL__ !== 'undefined' ? __RELEASE_CHANNEL__ : 'dev',
+        // Pass Chromium version for User-Agent in Monarch API requests
+        CHROME_VERSION: process.versions.chrome,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });

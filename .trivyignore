@@ -1,0 +1,7 @@
+# Trivy Vulnerability Ignore List
+# https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/#trivyignore
+
+# CVE-2024-3220: Windows-only mimetype handling issue
+# This vulnerability only affects Windows systems and our Docker container runs on Linux.
+# Waiting for Chainguard to update their Python base image to 3.14.2-r3.
+CVE-2024-3220
