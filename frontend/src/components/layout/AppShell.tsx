@@ -221,7 +221,8 @@ export function AppShell() {
           backgroundColor: 'var(--monarch-bg-page)',
           // Increase header height on desktop Electron to account for title bar integration
           ...(isMacOSElectron && { '--header-height': '73px' } as React.CSSProperties),
-          ...(isWindowsElectron && { '--header-height': '60px' } as React.CSSProperties),
+          // Windows: 52px base + 10px top padding + 10px bottom padding + border = ~73px
+          ...(isWindowsElectron && { '--header-height': '73px' } as React.CSSProperties),
         }}
       >
         {/* Skip to main content link for keyboard users */}

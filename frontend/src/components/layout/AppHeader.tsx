@@ -43,7 +43,8 @@ export function AppHeader({
   // Platform-specific padding for desktop title bar integration
   const getDesktopPaddingTop = (): string | undefined => {
     if (isMacOSElectron) return '20px';
-    if (isWindowsElectron) return '4px';
+    // Windows title bar overlay is 32px - use 10px padding to push content below it
+    if (isWindowsElectron) return '10px';
     return undefined;
   };
 
@@ -102,7 +103,11 @@ export function AppHeader({
           className="app-header-actions"
           role="group"
           aria-label="Header actions"
-          style={isDesktop ? { position: 'absolute', right: '1rem' } : undefined}
+          style={isDesktop ? {
+            position: 'absolute',
+            // On Windows, position further from right to avoid window controls overlay (~140px)
+            right: isWindowsElectron ? '150px' : '1rem',
+          } : undefined}
         >
           <SyncButton
             onSync={onSync}
