@@ -32,6 +32,10 @@ on:
           - minor
           - major
         default: patch
+      release_context:
+        description: "Optional context to guide AI summary (e.g., 'Focus on the new Windows experience' or 'This is a bug fix release')"
+        required: false
+        type: string
 
 permissions: {}
 
@@ -250,46 +254,69 @@ jobs:
       - name: Generate release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_URL: "https://github.com/${{ github.repository }}"
         run: |
           # Find last stable tag
           LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v beta | head -1)
-          IS_FIRST_STABLE="false"
+          NEW_TAG="${{ needs.calculate-version.outputs.tag }}"
 
           if [ -z "$LAST_TAG" ]; then
-            IS_FIRST_STABLE="true"
-            echo "No previous stable release found - this is the first stable release!"
+            # No previous stable tag - use first commit
+            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
 
-          if [ "$IS_FIRST_STABLE" = "true" ]; then
-            # First stable release - use comprehensive feature-based notes
-            cat > /tmp/release-notes.md << 'NOTESEOF'
-          ## Eclosion for Monarch - First Stable Release
+          echo "Generating notes from $LAST_TAG to HEAD"
 
-          Eclosion is an open source desktop & web app that expands what's possible with Monarch Money. After extensive beta testing, we're excited to release our first stable version.
+          # Get commits with author, filter out automated commits
+          # Format: "* commit message (@author)"
+          COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"* %s (@%an)" --no-merges \
+            | grep -vE "^\* (chore: release|docs: create version)" \
+            | grep -vE "^\* (ci|build|chore\(deps\)):" \
+            | head -30)
 
-          ### Key Features
+          # Remove owner attribution (keep for external contributors)
+          COMMITS=$(echo "$COMMITS" | sed -E 's/ \(@(Grayson Adams|GraysonAdams|GraysonCAdams)\)$//')
 
-          #### Recurring Expense Tracking
-          - **Individual expense tracking** - Track yearly, quarterly, and monthly expenses with dedicated categories
-          - **Rollup categories** - Combine multiple subscriptions into a single category for budget simplicity
-          - **Smart status indicators** - Visual feedback showing if you're ahead, on track, or behind on savings
-          - **Automatic category sync** - Seamlessly syncs with your Monarch Money categories
+          # Convert PR references to hyperlinks: (#123) -> in [#123](url)
+          # Use | as sed delimiter to avoid escaping issues with URLs
+          COMMITS=$(echo "$COMMITS" | sed -E "s| \(#([0-9]+)\)| in [#\1]($REPO_URL/pull/\1)|g")
 
-          #### Monthly Category Notes
-          - **Add notes to any category** - Document spending decisions, track promotions, or note unusual expenses
-          - **Month-by-month history** - Review past notes to understand spending patterns
-          - **Quick access** - Notes appear right in your category view
+          # Categorize and clean commit prefixes for readability
+          # Features: "feat: Add thing" or "feat(scope): Add thing" -> "Add thing"
+          FEATURES=$(echo "$COMMITS" | grep -E "^\* feat" | sed -E 's/^\* feat(\([^)]*\))?: /\* /') || true
 
-          #### Desktop App
-          - **Native experience** - Runs as a desktop app on macOS, Windows, and Linux
-          - **Secure credential storage** - Uses OS-level keychain for encrypted credential storage
-          - **Auto-sync** - Background synchronization keeps your data current
-          - **Global hotkeys** - Quick access to toggle window and trigger sync
+          # Fixes: "fix: Fix thing" or "fix(scope): Fix thing" -> "Fix thing"
+          FIXES=$(echo "$COMMITS" | grep -E "^\* fix" | sed -E 's/^\* fix(\([^)]*\))?: /\* /') || true
 
-          #### Self-Hosted Option
-          - **Docker deployment** - Run your own instance with Docker Compose
-          - **Full data control** - Your financial data stays on your infrastructure
-          - **Instance protection** - Optional access code for shared environments
+          # Other: exclude conventional commit types that are internal
+          OTHER=$(echo "$COMMITS" \
+            | grep -vE "^\* (feat|fix|chore|docs|test|ci|build|refactor|style|perf)" \
+            | grep -v "^$") || true
+
+          # Build release notes with emoji categories
+          echo "## What's Changed" > /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+
+          if [ -n "$FEATURES" ]; then
+            echo "### 🚀 Features" >> /tmp/release-notes.md
+            echo "$FEATURES" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if [ -n "$FIXES" ]; then
+            echo "### 🐛 Bug Fixes" >> /tmp/release-notes.md
+            echo "$FIXES" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          if [ -n "$OTHER" ]; then
+            echo "### 📦 Other Changes" >> /tmp/release-notes.md
+            echo "$OTHER" >> /tmp/release-notes.md
+            echo "" >> /tmp/release-notes.md
+          fi
+
+          cat >> /tmp/release-notes.md << EOF
+          ---
 
           ### Installation Notes
 
@@ -297,63 +324,13 @@ jobs:
 
           **Windows:** Click "More info" → "Run anyway" if SmartScreen appears.
 
-          **Linux:** Run `chmod +x Eclosion-*.AppImage` to make executable.
+          **Linux:** Run \`chmod +x Eclosion-*.AppImage\` to make executable.
 
           ---
 
-          Thank you to everyone who tested the beta releases and provided feedback!
-          NOTESEOF
-
-            # Remove leading whitespace from heredoc
-            sed -i 's/^          //' /tmp/release-notes.md
-          else
-            echo "Generating notes from $LAST_TAG to HEAD"
-
-            # Get commits since last release (clean, linear history now)
-            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" | head -30)
-
-            # Categorize changes using anchored patterns to avoid duplicates
-            # A commit starting with "feat:" goes to Features, "fix:" goes to Fixes
-            FEATURES=$(echo "$COMMITS" | grep -E "^- feat" | sed 's/^- feat[:(]/- /' | sed 's/):/:/') || true
-            FIXES=$(echo "$COMMITS" | grep -E "^- fix" | sed 's/^- fix[:(]/- /' | sed 's/):/:/') || true
-            OTHER=$(echo "$COMMITS" | grep -vE "^- (feat|fix)" | grep -vE "^- (chore|docs|test|ci|build|refactor)" || true)
-
-            # Build release notes - use echo to avoid YAML parsing issues with ## markers
-            echo "## What's Changed" > /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-
-            if [ -n "$FEATURES" ]; then
-              echo "### Features" >> /tmp/release-notes.md
-              echo "$FEATURES" >> /tmp/release-notes.md
-              echo "" >> /tmp/release-notes.md
-            fi
-
-            if [ -n "$FIXES" ]; then
-              echo "### Bug Fixes" >> /tmp/release-notes.md
-              echo "$FIXES" >> /tmp/release-notes.md
-              echo "" >> /tmp/release-notes.md
-            fi
-
-            if [ -n "$OTHER" ]; then
-              echo "### Other Changes" >> /tmp/release-notes.md
-              echo "$OTHER" >> /tmp/release-notes.md
-              echo "" >> /tmp/release-notes.md
-            fi
-
-            echo "---" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "### Installation Notes" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**macOS:** Signed and notarized. Drag to Applications and launch." >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**Windows:** Click \"More info\" → \"Run anyway\" if SmartScreen appears." >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**Linux:** Run \\\`chmod +x Eclosion-*.AppImage\\\` to make executable." >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "---" >> /tmp/release-notes.md
-            echo "" >> /tmp/release-notes.md
-            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${LAST_TAG}...${{ needs.calculate-version.outputs.tag }}" >> /tmp/release-notes.md
-          fi
+          **Full Changelog**: $REPO_URL/compare/${LAST_TAG}...${NEW_TAG}
+          EOF
+          sed -i 's/^          //' /tmp/release-notes.md
 
       - name: Create tag
         run: |

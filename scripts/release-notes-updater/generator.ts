@@ -1,8 +1,8 @@
 /**
  * AI Release Notes Summarizer
  *
- * Takes technical release notes and generates a human-friendly summary
- * that focuses on end-user value.
+ * Takes technical release notes and generates a friendly, conversational
+ * paragraph summary (2-4 sentences) that gets users excited about the update.
  */
 
 const GITHUB_MODELS_ENDPOINT = 'https://models.inference.ai.azure.com/chat/completions';
@@ -11,13 +11,14 @@ const MODEL = 'gpt-4o'; // Using GPT-4o for release notes summarization
 /**
  * Build the prompt for generating user-friendly release notes
  */
-function buildPrompt(technicalNotes: string, version: string, isPrerelease: boolean): string {
+function buildPrompt(technicalNotes: string, version: string, isPrerelease: boolean, context?: string): string {
   const releaseType = isPrerelease ? 'beta pre-release' : 'stable release';
+  const contextSection = context ? `\n## Additional Context\n${context}\n` : '';
 
   return `You are writing release notes for Eclosion, a desktop and web app that extends Monarch Money (a personal finance app) with additional features like recurring expense tracking and category notes.
 
 ## Your Task
-Transform the technical release notes below into a human-friendly summary that end users will actually want to read.
+Transform the technical release notes below into a friendly, conversational paragraph summary (2-4 sentences) that gets users excited about the update.
 
 ## Technical Release Notes
 ${technicalNotes}
@@ -25,54 +26,46 @@ ${technicalNotes}
 ## Version Info
 - Version: ${version}
 - Release type: ${releaseType}
+${contextSection}
 
 ## Writing Guidelines
 
 **Voice & Tone:**
-- Write from the app's perspective using "we" ("We've improved...", "You can now...")
-- Be specific about what changed - never say just "bug fixes and improvements"
-- Keep it matter-of-fact and concise, like 1Password's App Store notes
-- NO marketing fluff, NO "exciting updates", NO "Let us know what you think!"
-- NO introductory sentences like "We've made some updates..." - just go straight to bullets
+- Casual and celebratory, like announcing something you're genuinely proud of
+- Action-oriented language with moderate enthusiasm (exclamation points welcome!)
+- Benefit-first: focus on what users gain, not technical details
+- Conversational but professional - like a product team sharing good news
+- Use "you" and "your" to make it personal ("See more of your...", "Now you can...")
 
 **What to Include:**
-- Features users will notice or benefit from
-- Bug fixes that affected user experience (be specific about what was broken)
-- Performance improvements users might feel
-- UI/UX changes
+- The most impactful features or improvements users will notice
+- Bug fixes that affected user experience (briefly, if significant)
+- Frame improvements as meaningful upgrades ("new level of", "reimagined")
 
-**What to Exclude (skip entirely):**
-- CI/CD pipeline changes
-- Internal refactoring that doesn't change behavior
-- Dependency updates unless security-related
-- Backend-only changes users won't see
-- Test additions/changes
-- Beta-related changes (beta ribbons, beta banners, beta channels)
-- Build system changes (PyInstaller, signing, Windows/Linux build fixes)
-- Developer tooling changes
+**What to Exclude:**
+- CI/CD pipeline changes, internal refactoring, dependency updates
+- Build system changes (PyInstaller, signing, installers)
+- Beta-related changes (beta ribbons, banners, channels)
+- Developer tooling, test changes
+- Don't list every single change - focus on the highlights
 
 **Format:**
-- Jump straight into bullet points - no preamble
-- Use "- We've..." or "- You can now..." style for each bullet
-- Group related changes if it makes sense
-- Keep each bullet to 1-2 sentences max
-- If ALL changes are truly internal/technical with no user impact, respond with exactly: "Internal improvements and maintenance updates."
+- Write 2-4 sentences as a flowing paragraph
+- Start with a casual, celebratory opener
+- Keep sentences punchy and benefit-focused
+- If ALL changes are truly internal/technical with no user impact, respond with exactly: "This release includes internal improvements and maintenance updates under the hood."
 
-**Good Examples (like 1Password):**
-- "We've added titles to the buttons in the tab bar."
-- "You can now tap anywhere on a Watchtower card to open its details."
-- "We've fixed an issue that caused the item you're viewing to close unexpectedly."
-- "The scrolling experience is now smoother."
+**Good Examples:**
+- "Say hello to a fresh new look on Windows! This release brings a modern frameless window design and new focus settings so you can customize exactly how Eclosion behaves. Plus, we've squashed several installer bugs for a smoother experience."
+- "Get more control over your desktop experience with new window focus settings and a sleek title bar redesign on Windows!"
 
 **Bad Examples:**
 - "Bug fixes and improvements" (too vague)
-- "Fixed issue #123" (meaningless to users)
-- "Refactored authentication module" (internal detail)
-- "Updated CI pipeline" (irrelevant to users)
-- "We've made some exciting updates!" (marketing fluff)
-- "These updates are all about making your experience better" (filler)
+- "We've made some exciting updates!" (empty marketing, no substance)
+- "Fixed NSIS installer BUILD_UNINSTALLER check" (too technical)
+- Long lists of every change (focus on highlights instead)
 
-Generate ONLY bullet points. No intro, no outro, no headers. Just the bullets.`;
+Generate ONLY the paragraph. No headers, no bullets, no sign-off.`;
 }
 
 /**
@@ -120,11 +113,12 @@ async function callAzureOpenAI(prompt: string): Promise<string> {
 export async function generateSummary(
   technicalNotes: string,
   version: string,
-  isPrerelease: boolean
+  isPrerelease: boolean,
+  context?: string
 ): Promise<string> {
   console.log(`Generating user-friendly summary for ${version}...`);
 
-  const prompt = buildPrompt(technicalNotes, version, isPrerelease);
+  const prompt = buildPrompt(technicalNotes, version, isPrerelease, context);
   const summary = await callAzureOpenAI(prompt);
 
   return summary;

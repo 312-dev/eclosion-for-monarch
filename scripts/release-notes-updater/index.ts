@@ -5,6 +5,7 @@
  * Usage:
  *   npx tsx index.ts --tag v1.2.3
  *   npx tsx index.ts --tag v1.2.3 --dry-run
+ *   npx tsx index.ts --tag v1.2.3 --context "Focus on the Windows improvements"
  *
  * Environment:
  *   MODELS_TOKEN - GitHub Models API token for AI generation
@@ -94,14 +95,17 @@ async function main(): Promise<void> {
   const tag = tagIndex !== -1 ? args[tagIndex + 1] : null;
   const dryRun = args.includes('--dry-run');
   const force = args.includes('--force');
+  const contextIndex = args.indexOf('--context');
+  const context = contextIndex !== -1 ? args[contextIndex + 1] : undefined;
 
   if (!tag) {
-    console.error('Usage: npx tsx index.ts --tag <tag> [--dry-run] [--force]');
+    console.error('Usage: npx tsx index.ts --tag <tag> [--dry-run] [--force] [--context "..."]');
     console.error('');
     console.error('Options:');
-    console.error('  --tag <tag>   Release tag to update (required)');
-    console.error('  --dry-run     Print the updated notes without saving');
-    console.error('  --force       Regenerate even if summary already exists');
+    console.error('  --tag <tag>       Release tag to update (required)');
+    console.error('  --dry-run         Print the updated notes without saving');
+    console.error('  --force           Regenerate even if summary already exists');
+    console.error('  --context "..."   Optional context to guide AI summary');
     process.exit(1);
   }
 
@@ -111,6 +115,7 @@ async function main(): Promise<void> {
   console.log(`Tag: ${tag}`);
   console.log(`Dry run: ${dryRun}`);
   console.log(`Force: ${force}`);
+  if (context) console.log(`Context: ${context}`);
   console.log('');
 
   // Fetch the release
@@ -142,7 +147,7 @@ async function main(): Promise<void> {
   console.log('');
 
   // Generate the summary
-  const summary = await generateSummary(technicalNotes, tag, release.isPrerelease);
+  const summary = await generateSummary(technicalNotes, tag, release.isPrerelease, context);
 
   console.log('Generated summary:');
   console.log('-'.repeat(40));
