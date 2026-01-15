@@ -188,14 +188,20 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
         if (data.retry_after) {
           setRetryAfter(data.retry_after);
         }
-        setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
+        // Only reset timer for Monarch rate limits, not Eclosion cooldown
+        if (source !== 'eclosion_sync_cooldown') {
+          setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
+        }
       }
       // Other errors: keep current state, will retry on next interval
     } catch {
       // Network error - keep rate limit state, will retry on next interval
-      setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
+      // Only reset timer for Monarch rate limits, not Eclosion cooldown
+      if (source !== 'eclosion_sync_cooldown') {
+        setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
+      }
     }
-  }, [isDemo]);
+  }, [isDemo, source]);
 
   /**
    * Mark the app as rate limited.
