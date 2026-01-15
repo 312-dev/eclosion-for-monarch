@@ -4,8 +4,12 @@
  * Desktop app-specific settings including:
  * - Startup (launch at login, start minimized)
  * - Window Behavior (minimize to tray, close to tray, show in dock)
- * - Reveal Data Folder
+ * - Keyboard Shortcut (global hotkey)
+ * - Sync Schedule (periodic sync)
+ * - Background Sync (sync when app is closed)
  * - Security & Locking (auto-lock, biometric)
+ * - Automatic Backups (encrypted daily backups)
+ * - Data Folder
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,6 +17,7 @@ import { Monitor } from 'lucide-react';
 import { useBiometric } from '../../../hooks';
 import type { DesktopSettings, DesktopSettingKey, LockTrigger, LockOption, PeriodicSyncSettings, PeriodicSyncInterval, BackgroundSyncStatus, BackgroundSyncInterval, HotkeyConfig } from '../../../types/electron';
 import { StartupSection, WindowBehaviorSection, KeyboardShortcutSection, SyncScheduleSection, SecuritySection, DataFolderSection, BackgroundSyncSection } from './DesktopSectionGroups';
+import { AutoBackupSection } from '../AutoBackupSection';
 
 export function DesktopSection() {
   const [settings, setSettings] = useState<DesktopSettings | null>(null);
@@ -308,6 +313,8 @@ export function DesktopSection() {
           onLockTriggerChange={handleLockTriggerChange}
           onBiometricToggle={handleBiometricToggle}
         />
+
+        <AutoBackupSection />
 
         <DataFolderSection isMac={isMac} onReveal={handleRevealDataFolder} />
       </div>
