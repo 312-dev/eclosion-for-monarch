@@ -1,0 +1,125 @@
+---
+title: Overview
+description: Learn how to track and manage your recurring expenses in Eclosion.
+sidebar_position: 1
+---
+
+import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
+import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+import { Package, ClipboardList, RefreshCw } from 'lucide-react';
+
+# Recurring Expenses
+
+The Recurring tab is the heart of Eclosion. Track all your recurring bills, subscriptions, and regular expenses in one place.
+
+<FeatureGrid>
+  <FeatureCard
+    icon={<Package size={24} />}
+    title="Rollup Zone"
+    description="Combine small subscriptions into a single budget category"
+  />
+  <FeatureCard
+    icon={<ClipboardList size={24} />}
+    title="Dedicated Categories"
+    description="Track major bills separately with their own categories"
+  />
+  <FeatureCard
+    icon={<RefreshCw size={24} />}
+    title="Auto Sync"
+    description="Changes sync automatically with Monarch Money"
+  />
+</FeatureGrid>
+
+## How It Works
+
+Your recurring expenses are organized into two main areas:
+
+### The Rollup Zone
+
+The rollup combines smaller recurring charges into a single Monarch category. This is useful for:
+
+- Streaming subscriptions (Netflix, Spotify, etc.)
+- Small monthly fees
+- Any expenses you want to budget together
+
+### Dedicated Categories
+
+Larger expenses tracked individually, each with their own Monarch category. Use this for:
+
+- Major bills (rent, utilities)
+- Expenses you want to track separately
+- Items with variable amounts
+
+## How Items Are Added
+
+Recurring items are automatically detected from your Monarch account. Eclosion syncs with Monarch to find transactions marked as recurring.
+
+<WorkflowSteps
+  title="Getting New Recurring Expenses"
+  steps={[
+    {
+      title: "Mark as Recurring in Monarch",
+      description: "In Monarch Money, mark transactions as recurring. Eclosion will detect them during sync."
+    },
+    {
+      title: "Sync with Eclosion",
+      description: "New recurring items appear in Eclosion after syncing. They'll show in the Dedicated Categories section."
+    },
+    {
+      title: "Enable Tracking",
+      description: "Toggle tracking on for items you want to budget. Untracked items remain visible but don't affect your totals."
+    },
+    {
+      title: "Link or Create Category",
+      description: "Connect to an existing Monarch category or let Eclosion create one. The expense will sync automatically."
+    }
+  ]}
+/>
+
+:::note
+Changes sync automatically with your Monarch account. New recurring transactions from Monarch will appear after each sync.
+:::
+
+## Managing Existing Items
+
+Select any item to:
+
+- Edit its name and emoji
+- View its amount and payment frequency
+- Move it between the rollup zone and dedicated categories
+- Toggle tracking on or off
+
+## Auto-Categorization
+
+Eclosion can automatically categorize new recurring transactions as they're imported into Monarch.
+
+### How It Works
+
+When enabled, during each sync:
+
+1. Eclosion fetches recent recurring transactions from Monarch
+2. Matches them to your tracked recurring items using the recurring stream ID
+3. Updates each transaction's category to the corresponding tracking category
+
+This ensures new charges from tracked subscriptions are automatically categorized correctly.
+
+### Enabling Auto-Categorization
+
+You can enable auto-categorization in two ways:
+
+- **During setup**: Check the "Auto-categorize new transactions" option in the rollup configuration step
+- **In Settings**: Toggle "Auto-categorize transactions" under Recurring settings
+
+:::note
+Auto-categorization only affects new transactions going forward. It does not modify past transactions.
+:::
+
+### Historical Accuracy
+
+For accurate historical reports in Monarch, you may want to manually re-categorize past transactions to their tracking categories. This can be done directly in Monarch's Transactions view:
+
+1. Filter transactions by the merchant name
+2. Select the transactions you want to re-categorize
+3. Change their category to the tracking category
+
+This one-time step ensures your spending reports accurately reflect the full history of each recurring expense.
