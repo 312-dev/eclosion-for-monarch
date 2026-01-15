@@ -122,6 +122,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     if (globalThis.electron?.credentials) {
       await globalThis.electron.credentials.clearAll();
     }
+
+    // Switch back to minimal menu (macOS only, no-op on Windows/Linux)
+    globalThis.electron?.menu?.setMinimal().catch(() => {
+      // Ignore errors - menu is a UX enhancement, not critical
+    });
   }, []);
 
   const setPassphrase = useCallback(async (passphrase: string): Promise<SetPassphraseResult> => {

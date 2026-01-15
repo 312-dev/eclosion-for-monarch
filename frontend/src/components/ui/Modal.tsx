@@ -190,7 +190,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`relative w-full ${MAX_WIDTH_CLASSES[maxWidth]} rounded-lg shadow-xl p-0 m-0`}
+        className={`relative w-full ${MAX_WIDTH_CLASSES[maxWidth]} max-h-[90vh] flex flex-col rounded-lg shadow-xl p-0 m-0`}
         style={{ backgroundColor: 'var(--monarch-bg-card)' }}
       >
         {/* Header */}
@@ -226,7 +226,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="p-4 max-h-[60vh] overflow-y-auto">{children}</div>
+        <div className="p-4 flex-1 min-h-0 overflow-y-auto">{children}</div>
 
         {/* Footer */}
         {footer && (

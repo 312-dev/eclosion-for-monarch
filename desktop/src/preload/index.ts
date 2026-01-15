@@ -1011,6 +1011,29 @@ const electronAPI = {
     setCompactSize: (height: number): Promise<number> =>
       ipcRenderer.invoke('window:set-compact-size', height),
   },
+
+  // =========================================================================
+  // Menu Management (macOS only)
+  // =========================================================================
+
+  /**
+   * Menu API for switching between minimal and full application menus.
+   * On macOS, shows minimal menu before login, full menu after.
+   * On Windows/Linux, no menu bar is shown.
+   */
+  menu: {
+    /**
+     * Switch to the full application menu (after login).
+     * Shows all menu options: File, Edit, View, Toolkit, Window, Help.
+     */
+    setFull: (): Promise<void> => ipcRenderer.invoke('menu:set-full'),
+
+    /**
+     * Switch to the minimal application menu (after logout/lock).
+     * Shows only essential options: About, Edit, Window, basic Help.
+     */
+    setMinimal: (): Promise<void> => ipcRenderer.invoke('menu:set-minimal'),
+  },
 };
 
 // Expose the API to the renderer process

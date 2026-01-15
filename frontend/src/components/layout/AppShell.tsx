@@ -32,7 +32,7 @@ import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils';
 import { isDesktopMode } from '../../utils/apiBase';
 import { TourController } from '../wizards/WizardComponents';
-import { useMacOSElectron, useRecurringTour, useNotesTour } from '../../hooks';
+import { useMacOSElectron, useWindowsElectron, useRecurringTour, useNotesTour } from '../../hooks';
 
 export function AppShell() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -46,6 +46,7 @@ export function AppShell() {
   const { data, isLoading, isFetching, error, refetch } = useDashboardQuery();
   const syncMutation = useSyncMutation();
   const isMacOSElectron = useMacOSElectron();
+  const isWindowsElectron = useWindowsElectron();
 
   // Get recurring tour steps and state
   const {
@@ -124,12 +125,17 @@ export function AppShell() {
     }
   }, [isDemo, data?.last_sync]);
 
-  // Expand window to full size when main app loads (desktop only)
-  // The app starts in compact mode for loading/login screens, then expands here
+  // Expand window to full size and activate full menu when main app loads (desktop only)
+  // The app starts in compact mode with minimal menu for loading/login screens, then expands here
   useEffect(() => {
-    if (isDesktop && data && globalThis.electron?.windowMode?.setMode) {
-      globalThis.electron.windowMode.setMode('full').catch(() => {
+    if (isDesktop && data) {
+      // Expand window to full size
+      globalThis.electron?.windowMode?.setMode('full').catch(() => {
         // Ignore errors - window mode is a UX enhancement, not critical
+      });
+      // Switch to full application menu (macOS only, no-op on Windows/Linux)
+      globalThis.electron?.menu?.setFull().catch(() => {
+        // Ignore errors - menu is a UX enhancement, not critical
       });
     }
   }, [isDesktop, data]);
@@ -213,8 +219,9 @@ export function AppShell() {
         className="app-layout"
         style={{
           backgroundColor: 'var(--monarch-bg-page)',
-          // Increase header height on macOS Electron to account for traffic lights
+          // Increase header height on desktop Electron to account for title bar integration
           ...(isMacOSElectron && { '--header-height': '73px' } as React.CSSProperties),
+          ...(isWindowsElectron && { '--header-height': '60px' } as React.CSSProperties),
         }}
       >
         {/* Skip to main content link for keyboard users */}
@@ -226,6 +233,7 @@ export function AppShell() {
           isDemo={isDemo}
           isDesktop={isDesktop}
           isMacOSElectron={isMacOSElectron}
+          isWindowsElectron={isWindowsElectron}
           pathPrefix={pathPrefix}
           readyToAssign={data.ready_to_assign}
           lastSync={data.last_sync}

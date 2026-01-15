@@ -75,6 +75,8 @@ export { useIsBetaSite } from './useIsBetaSite';
 
 export { useMacOSElectron } from './useMacOSElectron';
 
+export { useWindowsElectron } from './useWindowsElectron';
+
 export { useElectronNavigation } from './useElectronNavigation';
 
 export {

@@ -28,7 +28,7 @@ export function MfaCodeCaveatsModal({ isOpen, onClose, onAccept }: MfaCodeCaveat
       onClick={onClose}
     >
       <div
-        className="rounded-xl shadow-xl max-w-md w-full p-6"
+        className="rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6"
         style={{ backgroundColor: 'var(--monarch-bg-card)' }}
         onClick={(e) => e.stopPropagation()}
       >

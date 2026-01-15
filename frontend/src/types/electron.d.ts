@@ -544,6 +544,9 @@ export interface ElectronAPI {
   // Window Mode (compact for loading/login, full for main app)
   windowMode: WindowModeAPI;
 
+  // Menu Management (macOS only)
+  menu: MenuAPI;
+
   // Loading Screen Signal
   /** Signal to main process that the loading screen is visible and rendered */
   signalLoadingReady: () => void;
@@ -588,6 +591,18 @@ export interface WindowModeAPI {
    * @returns The actual height applied (after clamping)
    */
   setCompactSize: (height: number) => Promise<number>;
+}
+
+/**
+ * Menu API for switching between minimal and full application menus.
+ * On macOS, shows minimal menu before login, full menu after.
+ * On Windows/Linux, no menu bar is shown.
+ */
+export interface MenuAPI {
+  /** Switch to the full application menu (after login) */
+  setFull: () => Promise<void>;
+  /** Switch to the minimal application menu (after logout/lock) */
+  setMinimal: () => Promise<void>;
 }
 
 declare global {

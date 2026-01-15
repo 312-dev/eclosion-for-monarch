@@ -16,6 +16,28 @@ function logWindowTiming(event: string): void {
 }
 
 /**
+ * Get platform-specific title bar configuration.
+ * Extracted to avoid nested ternary in BrowserWindow options.
+ */
+function getTitleBarConfig(): Electron.BrowserWindowConstructorOptions {
+  if (process.platform === 'darwin') {
+    return { titleBarStyle: 'hiddenInset' };
+  }
+  if (process.platform === 'win32') {
+    return {
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: '#1e1e2e', // --monarch-bg-card
+        symbolColor: '#cdd6f4', // --monarch-text-light
+        height: 32,
+      },
+    };
+  }
+  // Linux and other platforms: use native title bar
+  return { titleBarStyle: 'default' };
+}
+
+/**
  * Compact window dimensions for loading/login screens.
  * These screens don't need full app width, so we show a smaller, centered window.
  * Height can be dynamically adjusted via setCompactSize() based on content.
@@ -142,17 +164,17 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
      * - Requires extra padding in header component to avoid traffic light overlap
      *   (see AppShell.tsx: paddingLeft when isMacOSElectron)
      *
-     * Windows/Linux: Uses 'default' for native appearance:
-     * - Standard title bar with native window controls (minimize/maximize/close)
-     * - Matches OS conventions and user expectations
-     * - Better accessibility with native control behavior
+     * Windows: Uses 'hidden' with titleBarOverlay for modern frameless look:
+     * - Native window controls (minimize/maximize/close) overlaid on content
+     * - Similar to VS Code, Edge, and other modern Windows apps
+     * - Requires right padding in header to avoid control overlap
+     *   (see AppHeader.tsx: paddingRight when isWindowsElectron)
      *
-     * Why not use 'hiddenInset' everywhere?
-     * - Windows: Requires custom window controls (more code, less accessible)
-     * - Linux: Varies by desktop environment, native is more reliable
-     * - Each platform has different conventions for window chrome
+     * Linux: Uses 'default' for native appearance:
+     * - Standard title bar with native window controls
+     * - Varies by desktop environment, native is more reliable
      */
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    ...getTitleBarConfig(),
     backgroundColor: '#1a1a2e',
     // show: true is the default - window appears immediately for native focus behavior
   });

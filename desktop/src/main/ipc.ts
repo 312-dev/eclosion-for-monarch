@@ -1125,4 +1125,27 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   ipcMain.handle('window:set-compact-size', (_event, height: number) => {
     return setCompactSize(height);
   });
+
+  // =========================================================================
+  // Menu Management (macOS only)
+  // =========================================================================
+
+  /**
+   * Switch to the full application menu (after login).
+   * On Windows/Linux this is a no-op since menu bar is hidden.
+   */
+  ipcMain.handle('menu:set-full', () => {
+    // Import dynamically to avoid circular dependency
+    const { createAppMenu, getSyncCallback } = require('./menu');
+    createAppMenu(getSyncCallback());
+  });
+
+  /**
+   * Switch to the minimal application menu (after logout/lock).
+   * On Windows/Linux this is a no-op since menu bar is hidden.
+   */
+  ipcMain.handle('menu:set-minimal', () => {
+    const { createMinimalMenu } = require('./menu');
+    createMinimalMenu();
+  });
 }

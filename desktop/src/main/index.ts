@@ -86,7 +86,7 @@ import {
 } from './tray';
 import { setupIpcHandlers, createLoadingReadyPromise } from './ipc';
 import { initializeUpdater, scheduleUpdateChecks, offerUpdateOnStartupFailure } from './updater';
-import { createAppMenu } from './menu';
+import { createMinimalMenu, setSyncCallback } from './menu';
 import { initializeHotkeys, unregisterAllHotkeys } from './hotkeys';
 import {
   registerDeepLinkProtocol,
@@ -285,9 +285,12 @@ async function initialize(): Promise<void> {
     logStartupTiming('Initializing dock visibility');
     initializeDockVisibility();
 
-    // Create application menu (adds Settings, Sync, Lock to menu bar)
-    logStartupTiming('Creating app menu');
-    createAppMenu(handleSyncClick);
+    // Create minimal application menu (pre-login state, macOS only)
+    // Full menu is activated after successful login via IPC
+    // Store the sync callback so it's available when switching to full menu
+    logStartupTiming('Creating minimal menu');
+    setSyncCallback(handleSyncClick);
+    createMinimalMenu();
 
     // Create system tray
     console.log('Creating system tray...');

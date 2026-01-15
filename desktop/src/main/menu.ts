@@ -1,7 +1,11 @@
 /**
  * Application Menu
  *
- * Sets up the native macOS/Windows application menu bar.
+ * Sets up the native macOS application menu bar.
+ * Windows/Linux hide the menu bar entirely (no menu bar shown).
+ *
+ * On macOS, we show a minimal menu before login (just essential app controls)
+ * and expand to the full menu after login.
  */
 
 import { Menu, app, shell, clipboard, dialog } from 'electron';
@@ -15,6 +19,11 @@ import { checkForUpdates } from './updater';
  * Callback for sync action (set by createAppMenu).
  */
 let syncCallback: (() => Promise<void>) | null = null;
+
+/**
+ * Track whether we're showing the full menu (post-login) or minimal menu (pre-login).
+ */
+let isFullMenuActive = false;
 
 /**
  * Check if the current app version is a beta build.
@@ -47,61 +56,132 @@ function getDocsUrl(): string {
 }
 
 /**
- * Create and set the application menu.
+ * Create a minimal menu for the pre-login state (macOS only).
+ * This shows only essential app controls: About, Edit (for form input), Window, and basic Help.
+ * Windows/Linux don't show any menu bar.
+ */
+export function createMinimalMenu(): void {
+  // Only macOS shows the menu bar
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
+  isFullMenuActive = false;
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    // App menu (macOS)
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' as const },
+        { type: 'separator' as const },
+        { role: 'services' as const },
+        { type: 'separator' as const },
+        { role: 'hide' as const },
+        { role: 'hideOthers' as const },
+        { role: 'unhide' as const },
+        { type: 'separator' as const },
+        { role: 'quit' as const },
+      ],
+    },
+    // Edit menu - needed for form input (copy/paste)
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' as const },
+        { role: 'redo' as const },
+        { type: 'separator' as const },
+        { role: 'cut' as const },
+        { role: 'copy' as const },
+        { role: 'paste' as const },
+        { role: 'pasteAndMatchStyle' as const },
+        { role: 'delete' as const },
+        { role: 'selectAll' as const },
+      ],
+    },
+    // Window menu
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' as const },
+        { role: 'zoom' as const },
+        { type: 'separator' as const },
+        { role: 'front' as const },
+      ],
+    },
+    // Help menu (minimal)
+    {
+      role: 'help' as const,
+      submenu: [
+        {
+          label: 'Documentation',
+          click: async (): Promise<void> => {
+            await shell.openExternal(getDocsUrl());
+          },
+        },
+        {
+          label: 'Report an Issue',
+          click: async (): Promise<void> => {
+            await shell.openExternal(
+              'https://github.com/312-dev/eclosion/issues'
+            );
+          },
+        },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
+/**
+ * Create and set the full application menu (post-login).
+ * On Windows/Linux, this does nothing (no menu bar shown).
  * @param onSync Callback to trigger a sync (optional, enables Sync Now menu item)
  */
 export function createAppMenu(onSync?: () => Promise<void>): void {
+  // Only macOS shows the menu bar
+  if (process.platform !== 'darwin') {
+    syncCallback = onSync || null;
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
   syncCallback = onSync || null;
-  const isMac = process.platform === 'darwin';
+  isFullMenuActive = true;
 
   const template: Electron.MenuItemConstructorOptions[] = [
-    // App menu (macOS only)
-    ...(isMac
-      ? [
-          {
-            label: app.name,
-            submenu: [
-              { role: 'about' as const },
-              { type: 'separator' as const },
-              {
-                label: 'Settings...',
-                accelerator: 'CmdOrCtrl+,',
-                click: (): void => {
-                  showWindow();
-                  const mainWindow = getMainWindow();
-                  mainWindow?.webContents.send('navigate', '/settings');
-                },
-              },
-              { type: 'separator' as const },
-              { role: 'services' as const },
-              { type: 'separator' as const },
-              { role: 'hide' as const },
-              { role: 'hideOthers' as const },
-              { role: 'unhide' as const },
-              { type: 'separator' as const },
-              { role: 'quit' as const },
-            ],
+    // App menu
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' as const },
+        { type: 'separator' as const },
+        {
+          label: 'Settings...',
+          accelerator: 'CmdOrCtrl+,',
+          click: (): void => {
+            showWindow();
+            const mainWindow = getMainWindow();
+            mainWindow?.webContents.send('navigate', '/settings');
           },
-        ]
-      : []),
+        },
+        { type: 'separator' as const },
+        { role: 'services' as const },
+        { type: 'separator' as const },
+        { role: 'hide' as const },
+        { role: 'hideOthers' as const },
+        { role: 'unhide' as const },
+        { type: 'separator' as const },
+        { role: 'quit' as const },
+      ],
+    },
     // File menu
     {
       label: 'File',
       submenu: [
-        ...(!isMac
-          ? [
-              {
-                label: 'Settings',
-                accelerator: 'CmdOrCtrl+,',
-                click: (): void => {
-                  showWindow();
-                  const mainWindow = getMainWindow();
-                  mainWindow?.webContents.send('navigate', '/settings');
-                },
-              },
-              { type: 'separator' as const },
-            ]
-          : []),
         {
           label: 'Sync Now',
           accelerator: 'CmdOrCtrl+Shift+S',
@@ -226,7 +306,7 @@ export function createAppMenu(onSync?: () => Promise<void>): void {
           },
         },
         { type: 'separator' as const },
-        isMac ? { role: 'close' as const } : { role: 'quit' as const },
+        { role: 'close' as const },
       ],
     },
     // Edit menu
@@ -239,17 +319,9 @@ export function createAppMenu(onSync?: () => Promise<void>): void {
         { role: 'cut' as const },
         { role: 'copy' as const },
         { role: 'paste' as const },
-        ...(isMac
-          ? [
-              { role: 'pasteAndMatchStyle' as const },
-              { role: 'delete' as const },
-              { role: 'selectAll' as const },
-            ]
-          : [
-              { role: 'delete' as const },
-              { type: 'separator' as const },
-              { role: 'selectAll' as const },
-            ]),
+        { role: 'pasteAndMatchStyle' as const },
+        { role: 'delete' as const },
+        { role: 'selectAll' as const },
       ],
     },
     // View menu
@@ -317,14 +389,10 @@ export function createAppMenu(onSync?: () => Promise<void>): void {
       submenu: [
         { role: 'minimize' as const },
         { role: 'zoom' as const },
-        ...(isMac
-          ? [
-              { type: 'separator' as const },
-              { role: 'front' as const },
-              { type: 'separator' as const },
-              { role: 'window' as const },
-            ]
-          : [{ role: 'close' as const }]),
+        { type: 'separator' as const },
+        { role: 'front' as const },
+        { type: 'separator' as const },
+        { role: 'window' as const },
       ],
     },
     // Help menu
@@ -422,4 +490,26 @@ export function createAppMenu(onSync?: () => Promise<void>): void {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+
+/**
+ * Check if the full menu is currently active (post-login state).
+ */
+export function isFullMenu(): boolean {
+  return isFullMenuActive;
+}
+
+/**
+ * Get the stored sync callback (for re-creating the menu with sync enabled).
+ */
+export function getSyncCallback(): (() => Promise<void>) | null {
+  return syncCallback;
+}
+
+/**
+ * Store the sync callback for later use when switching to the full menu.
+ * Call this during initialization before the user logs in.
+ */
+export function setSyncCallback(callback: (() => Promise<void>) | null): void {
+  syncCallback = callback;
 }

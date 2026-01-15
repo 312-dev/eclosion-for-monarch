@@ -15,6 +15,7 @@ interface AppHeaderProps {
   isDemo: boolean;
   isDesktop: boolean;
   isMacOSElectron: boolean;
+  isWindowsElectron: boolean;
   pathPrefix: string;
   readyToAssign: ReadyToAssign;
   lastSync: string | null;
@@ -29,6 +30,7 @@ export function AppHeader({
   isDemo,
   isDesktop,
   isMacOSElectron,
+  isWindowsElectron,
   pathPrefix,
   readyToAssign,
   lastSync,
@@ -37,7 +39,14 @@ export function AppHeader({
   hasTour,
   onSync,
   onStartTour,
-}: AppHeaderProps) {
+}: Readonly<AppHeaderProps>) {
+  // Platform-specific padding for desktop title bar integration
+  const getDesktopPaddingTop = (): string | undefined => {
+    if (isMacOSElectron) return '20px';
+    if (isWindowsElectron) return '4px';
+    return undefined;
+  };
+
   return (
     <header className="app-header" role="banner">
       <div
@@ -45,7 +54,8 @@ export function AppHeader({
         style={isDesktop ? {
           justifyContent: 'center',
           paddingLeft: isMacOSElectron ? '80px' : undefined,
-          paddingTop: isMacOSElectron ? '20px' : undefined,
+          paddingTop: getDesktopPaddingTop(),
+          paddingRight: isWindowsElectron ? '150px' : undefined,
         } : undefined}
       >
         {/* Logo/brand - shown on web and Windows/Linux desktop (macOS shows in sidebar) */}
