@@ -80,6 +80,34 @@ Recurring items are automatically detected from your Monarch account. Eclosion s
 Changes sync automatically with your Monarch account. New recurring transactions from Monarch will appear after each sync.
 :::
 
+## How Monthly Targets Work
+
+Eclosion calculates how much you need to save each month to be ready when a bill is due. These targets are shown in whole dollars (Monarch doesn't track cents).
+
+### The Calculation
+
+For **monthly expenses**, the target is simply the bill amount minus what you've already saved.
+
+For **yearly or quarterly expenses**, the remaining amount is spread across the months until due:
+
+| Expense | Saved | Months Left | Monthly Target |
+|---------|-------|-------------|----------------|
+| $600/year insurance | $300 | 6 months | $50/mo |
+| $99/year subscription | $0 | 12 months | $8/mo |
+| $36/year service | $0 | 12 months | $3/mo |
+
+### Edge Cases
+
+**Small expenses**: Very small annual charges (like a $5/year service) always show at least $1/month. This ensures you don't see $0/month for something you're actively saving toward.
+
+**Self-correcting targets**: If rounding causes you to be slightly short, the target automatically adjusts upward as the due date approaches. For example, if you're $4 short with 2 months left, next month's target increases to cover the gap.
+
+**Funded expenses**: Once you've saved enough for a bill, the monthly target drops to $0 until the payment processes and a new cycle begins.
+
+:::tip
+Targets recalculate at the start of each month based on your current balance. You don't need to manually adjust anything - just budget the amount shown and you'll be ready when the bill arrives.
+:::
+
 ## Managing Existing Items
 
 Select any item to:

@@ -290,26 +290,34 @@ The animation system is defined in `index.css` with CSS variables matching `cons
 
 **Monarch Money doesn't support cents, so we round to whole dollars.**
 
-Rounding rules (also documented in `constants/index.ts`):
+Rounding rules:
 
 | Context | Method | Reason |
 |---------|--------|--------|
-| Monthly targets | `Math.ceil()` | Round UP to ensure enough is saved |
+| Monthly targets | `round_monthly_rate()` | Minimizes overbudgeting, min $1 for non-zero |
 | Balance comparisons | `Math.round()` | Standard rounding for display |
 | Currency display | `maximumFractionDigits: 0` | No cents shown |
 
-```typescript
-// Backend (Python)
-ideal_monthly_rate = math.ceil(target_amount / frequency_months)
-frozen_target = math.ceil(shortfall / months_remaining)
+The `round_monthly_rate()` helper uses standard rounding with a minimum of $1:
+- Prevents $0 display for small expenses (e.g., $5/year → $1/mo, not $0/mo)
+- Self-corrects via monthly recalculation if slightly behind
+- Reduces overbudgeting by ~27% compared to ceil() on small amounts
 
-// Frontend (TypeScript)
-const targetRounded = Math.ceil(item.frozen_monthly_target);
-const balanceRounded = Math.round(item.current_balance);
-formatCurrency(amount, { maximumFractionDigits: 0 })
+```typescript
+// Backend (Python) - services/frozen_target_calculator.py
+def round_monthly_rate(rate: float) -> int:
+    if rate <= 0:
+        return 0
+    return max(1, int(rate + 0.5))  # round-half-up, min $1
+
+// Frontend (TypeScript) - utils/calculations.ts
+export function roundMonthlyRate(rate: number): number {
+  if (rate <= 0) return 0;
+  return Math.max(1, Math.round(rate));
+}
 ```
 
-Example: If a $100 yearly expense calculates to $8.33/month, we round UP to $9/month to ensure the user saves enough ($108 total, providing a small buffer).
+Example: A $100 yearly expense calculates to $8.33/month → rounds to $8/month ($96 total). If slightly behind, next month's target auto-adjusts upward.
 
 ### Status Badge Calculation
 
@@ -317,37 +325,36 @@ Example: If a $100 yearly expense calculates to $8.33/month, we round UP to $9/m
 
 The status is determined by comparing the user's **budget** (what they're allocating monthly) against the **effective target** (what they need to allocate).
 
-**Key concept: Effective Target**
+**Key concepts:**
 
-The effective target varies based on expense frequency:
+- **Funded** = You have enough saved for the upcoming bill (`balance >= amount`)
+- **On Track** = You're budgeting enough this month (`budget >= target`)
 
-| Frequency | When Funded | Effective Target | Reason |
-|-----------|-------------|------------------|--------|
-| Monthly (≤1 mo) | Balance ≥ Amount | frozen_monthly_target | Next month's bill is coming |
-| Infrequent (>1 mo) | Balance ≥ Amount | $0 | Done saving until reset |
+These are independent - "Funded" takes priority over budget comparisons.
 
 **Status Logic (in `useItemDisplayStatus.ts`):**
 
 ```typescript
-// For monthly expenses: always use the target
-// For yearly/quarterly: target becomes $0 when funded
-const effectiveTarget = (isFunded && frequency_months > 1) ? 0 : target;
+// Priority 1: If you have enough saved, you're funded
+if (balance >= amount) return 'funded';
 
-if (budget > effectiveTarget) return 'ahead';
-if (budget >= effectiveTarget) return isFunded ? 'funded' : 'on_track';
-if (trajectoryReachesGoal) return 'ahead';
+// Priority 2: Compare budget vs target
+if (budget > target) return 'ahead';
+if (budget >= target) return 'on_track';
 return 'behind';
 ```
 
 **Examples:**
 
-| Expense | Balance | Budget | Target | Status | Why |
-|---------|---------|--------|--------|--------|-----|
-| $600/yr | $300 | $75 | $50 | Ahead | Budgeting more than needed |
-| $600/yr | $600 | $50 | $0 | Ahead | Still budgeting when funded |
-| $600/yr | $600 | $0 | $0 | Funded | Done saving, correct behavior |
-| $80/mo | $80 | $80 | $80 | Funded | On track for next month |
-| $80/mo | $80 | $50 | $80 | Behind | Won't have enough next month |
+| Expense | Balance | Amount | Budget | Target | Status | Why |
+|---------|---------|--------|--------|--------|--------|-----|
+| $600/yr | $600 | $600 | $0 | $0 | Funded | Have enough for the bill |
+| $600/yr | $600 | $600 | $50 | $0 | Funded | Have enough (budget irrelevant) |
+| $600/yr | $300 | $600 | $75 | $50 | Ahead | Budgeting more than target |
+| $600/yr | $300 | $600 | $50 | $50 | On Track | Meeting monthly goal |
+| $600/yr | $300 | $600 | $30 | $50 | Behind | Under monthly goal |
+| $175/qtr | $175 | $175 | $175 | $175 | Funded | Have enough for the bill |
+| $78/wk | $340 | $312 | $340 | $312 | Funded | Have enough for monthly equiv |
 
 See `frontend/src/hooks/useItemDisplayStatus.ts` for full implementation with detailed comments.
 
