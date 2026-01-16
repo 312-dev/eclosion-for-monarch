@@ -102,6 +102,9 @@ import {
   hasMonarchCredentials,
   isPassphraseStored,
   clearStoredPassphrase,
+  getRequireTouchId,
+  setRequireTouchId,
+  isBiometricAvailable,
 } from './biometric';
 import { setPendingSync } from './sync-pending';
 import {
@@ -392,6 +395,13 @@ async function startBackendAndInitialize(): Promise<void> {
   let rateLimited = false;
 
   if (hasMonarchCredentials()) {
+    // Migration: Enable biometric protection for existing users who have credentials
+    // but never had requireTouchId set (bug fix for users who logged in before v1.0.1)
+    if (!getRequireTouchId() && isBiometricAvailable()) {
+      setRequireTouchId(true);
+      debugLog('Migration: Auto-enabled biometric protection for existing credentials');
+    }
+
     // New desktop mode: restore session from stored credentials
     const credentials = getMonarchCredentials();
     if (credentials) {

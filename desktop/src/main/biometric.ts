@@ -434,6 +434,9 @@ export interface CredentialAuthResult {
  * Store Monarch credentials directly in safeStorage (desktop mode).
  * No passphrase required - credentials encrypted by OS keychain.
  *
+ * On platforms with biometric support (macOS Touch ID, Windows Hello),
+ * automatically enables biometric protection for the unlock screen.
+ *
  * @param credentials The Monarch credentials to store
  * @returns true if storage was successful
  */
@@ -451,6 +454,14 @@ export function storeMonarchCredentials(credentials: MonarchCredentials): boolea
     getStore().set(MONARCH_CREDENTIALS_KEY, base64);
 
     debugLog('Credentials: Monarch credentials stored successfully');
+
+    // Auto-enable biometric protection on platforms that support it
+    // This ensures the unlock screen shows Touch ID/Windows Hello instead of passphrase
+    if (isBiometricAvailable()) {
+      setRequireTouchId(true);
+      debugLog('Credentials: Auto-enabled biometric protection for unlock');
+    }
+
     return true;
   } catch (error) {
     debugLog(`Credentials: Failed to store credentials: ${error}`);
