@@ -5,12 +5,7 @@
  * Functions for generating print-friendly HTML from notes data.
  */
 
-import type {
-  MonthKey,
-  CategoryGroupWithNotes,
-  Note,
-  GeneralMonthNote,
-} from '../types/notes';
+import type { MonthKey, CategoryGroupWithNotes, Note, GeneralMonthNote } from '../types/notes';
 import type { AllNotesResponse } from '../api/core/notes';
 
 /**
@@ -134,19 +129,21 @@ function escapeHtml(text: string): string {
 function processInlineMarkdown(text: string): string {
   let result = escapeHtml(text);
 
+  /* eslint-disable sonarjs/slow-regex -- Using negated char classes to prevent backtracking */
   // Bold
-  result = result.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  result = result.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  result = result.replace(/__([^_]+)__/g, '<strong>$1</strong>');
 
   // Italic
-  result = result.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  result = result.replace(/_(.+?)_/g, '<em>$1</em>');
+  result = result.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  result = result.replace(/_([^_]+)_/g, '<em>$1</em>');
 
   // Inline code
-  result = result.replace(/`(.+?)`/g, '<code>$1</code>');
+  result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
 
   // Links
-  result = result.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+  result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  /* eslint-enable sonarjs/slow-regex */
 
   return result;
 }
@@ -159,9 +156,10 @@ function renderMarkdownToHtml(markdown: string, checkboxStates: boolean[]): stri
 
   // Process line by line for better control
   const lines = markdown.split('\n');
+  /* eslint-disable sonarjs/slow-regex -- Safe: patterns operate on single lines, .* can't span newlines */
   const processedLines = lines.map((line) => {
     // Handle task list items
-    const taskMatch = line.match(/^(\s*)[-*]\s*\[([xX ])\]\s*(.*)$/);
+    const taskMatch = /^(\s*)[-*]\s*\[([xX ])\]\s*(.*)$/.exec(line);
     if (taskMatch) {
       const indent = taskMatch[1] ?? '';
       const isChecked = checkboxStates[checkboxIndex] ?? (taskMatch[2] ?? '').toLowerCase() === 'x';
@@ -172,13 +170,13 @@ function renderMarkdownToHtml(markdown: string, checkboxStates: boolean[]): stri
     }
 
     // Handle regular list items
-    const listMatch = line.match(/^(\s*)[-*]\s+(.*)$/);
+    const listMatch = /^(\s*)[-*]\s+(.*)$/.exec(line);
     if (listMatch) {
       return `${listMatch[1] ?? ''}<li>${processInlineMarkdown(listMatch[2] ?? '')}</li>`;
     }
 
     // Handle numbered list items
-    const numMatch = line.match(/^(\s*)\d+\.\s+(.*)$/);
+    const numMatch = /^(\s*)\d+\.\s+(.*)$/.exec(line);
     if (numMatch) {
       return `${numMatch[1] ?? ''}<li>${processInlineMarkdown(numMatch[2] ?? '')}</li>`;
     }
@@ -212,6 +210,7 @@ function renderMarkdownToHtml(markdown: string, checkboxStates: boolean[]): stri
     // Regular paragraph
     return `<p>${processInlineMarkdown(line)}</p>`;
   });
+  /* eslint-enable sonarjs/slow-regex */
 
   // Join and wrap lists properly
   let html = processedLines.join('\n');
@@ -266,6 +265,7 @@ function lookupGeneralCheckboxStates(
 /**
  * Build export HTML with markdown rendered and checkbox states
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- HTML generation with nested loops for months, groups, and categories
 export function buildExportHtml(
   monthRange: MonthKey[],
   allNotesData: AllNotesResponse,
@@ -497,7 +497,12 @@ export function buildExportHtml(
     // Check category/group notes
     for (const group of groups) {
       if (selectedGroups.has(group.id)) {
-        const effectiveGroupNote = getEffectiveNote('group', group.id, monthKey, allNotesData.notes);
+        const effectiveGroupNote = getEffectiveNote(
+          'group',
+          group.id,
+          monthKey,
+          allNotesData.notes
+        );
         if (effectiveGroupNote?.note?.content) {
           hasContent = true;
           break;
@@ -505,7 +510,12 @@ export function buildExportHtml(
       }
       for (const category of group.categories) {
         if (selectedCategories.has(category.id)) {
-          const effectiveCatNote = getEffectiveNote('category', category.id, monthKey, allNotesData.notes);
+          const effectiveCatNote = getEffectiveNote(
+            'category',
+            category.id,
+            monthKey,
+            allNotesData.notes
+          );
           if (effectiveCatNote?.note?.content) {
             hasContent = true;
             break;

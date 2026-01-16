@@ -13,7 +13,13 @@ import { MerchantIcon } from '../ui';
 import { StaleWarningPopover } from './StaleWarningPopover';
 import { CategoryGroupDropdown } from './CategoryGroupDropdown';
 import { RecurringItemProgress } from './RecurringItemProgress';
-import { SpinnerIcon, WarningFilledIcon, CheckFilledIcon, BlockedIcon, ExternalLinkIcon } from '../icons';
+import {
+  SpinnerIcon,
+  WarningFilledIcon,
+  CheckFilledIcon,
+  BlockedIcon,
+  ExternalLinkIcon,
+} from '../icons';
 import { decodeHtmlEntities } from '../../utils';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 
@@ -93,32 +99,41 @@ export function RecurringItemHeader({
   return (
     <div className="flex items-center gap-3">
       <div className="relative shrink-0">
-        <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size={item.is_enabled ? 'lg' : 'md'} />
+        <MerchantIcon
+          logoUrl={item.logo_url}
+          itemName={item.name}
+          size={item.is_enabled ? 'lg' : 'md'}
+        />
         <Tooltip
-          content={
-            item.is_enabled
-              ? item.category_missing
-                ? 'Category missing - click to disable'
-                : 'Click to disable tracking'
-              : 'Click to enable tracking'
-          }
+          content={(() => {
+            if (!item.is_enabled) {
+              return 'Click to enable tracking';
+            }
+            if (item.category_missing) {
+              return 'Category missing - click to disable';
+            }
+            return 'Click to disable tracking';
+          })()}
         >
           <button
             onClick={onToggle}
             disabled={isToggling || isRateLimited}
             className="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:opacity-50 bg-monarch-bg-card border border-monarch-border shadow-sm"
           >
-            {isToggling ? (
-              <SpinnerIcon size={12} color="var(--monarch-orange)" strokeWidth={2.5} />
-            ) : item.is_enabled ? (
-              item.category_missing ? (
-                <WarningFilledIcon size={12} color="var(--monarch-warning)" />
-              ) : (
-                <CheckFilledIcon size={12} color="var(--monarch-success)" />
-              )
-            ) : (
-              <BlockedIcon size={12} color="var(--monarch-text-muted)" strokeWidth={2.5} />
-            )}
+            {(() => {
+              if (isToggling) {
+                return <SpinnerIcon size={12} color="var(--monarch-orange)" strokeWidth={2.5} />;
+              }
+              if (!item.is_enabled) {
+                return (
+                  <BlockedIcon size={12} color="var(--monarch-text-muted)" strokeWidth={2.5} />
+                );
+              }
+              if (item.category_missing) {
+                return <WarningFilledIcon size={12} color="var(--monarch-warning)" />;
+              }
+              return <CheckFilledIcon size={12} color="var(--monarch-success)" />;
+            })()}
           </button>
         </Tooltip>
       </div>
@@ -148,13 +163,21 @@ export function RecurringItemHeader({
                 role="button"
                 tabIndex={0}
                 className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark"
-                onDoubleClick={() => item.is_enabled && !item.category_missing && setIsEditingName(true)}
+                onDoubleClick={() =>
+                  item.is_enabled && !item.category_missing && setIsEditingName(true)
+                }
                 onKeyDown={(e) => {
-                  if ((e.key === 'Enter' || e.key === ' ') && item.is_enabled && !item.category_missing) {
+                  if (
+                    (e.key === 'Enter' || e.key === ' ') &&
+                    item.is_enabled &&
+                    !item.category_missing
+                  ) {
                     setIsEditingName(true);
                   }
                 }}
-                title={item.is_enabled && !item.category_missing ? "Double-click to rename" : undefined}
+                title={
+                  item.is_enabled && !item.category_missing ? 'Double-click to rename' : undefined
+                }
               >
                 {decodeHtmlEntities(item.name)}
               </span>

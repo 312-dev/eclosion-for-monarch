@@ -34,7 +34,9 @@ export function StartupLoadingScreen({
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
   // Update status
-  const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloading' | 'ready'>('none');
+  const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloading' | 'ready'>(
+    'none'
+  );
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState<boolean | null>(null);
@@ -93,10 +95,13 @@ export function StartupLoadingScreen({
   // Check auto-update setting on mount
   useEffect(() => {
     if (!globalThis.electron) return;
-    globalThis.electron.getAutoUpdateEnabled().then(setAutoUpdateEnabled).catch(() => {
-      // Default to showing updates if we can't check the setting
-      setAutoUpdateEnabled(true);
-    });
+    globalThis.electron
+      .getAutoUpdateEnabled()
+      .then(setAutoUpdateEnabled)
+      .catch(() => {
+        // Default to showing updates if we can't check the setting
+        setAutoUpdateEnabled(true);
+      });
   }, []);
 
   // Listen for update events from Electron (only if auto-update is enabled)
@@ -213,18 +218,11 @@ export function StartupLoadingScreen({
             </svg>
           </div>
         ) : (
-          <LoadingSpinner
-            size="lg"
-            color="var(--monarch-orange)"
-            label="Starting application"
-          />
+          <LoadingSpinner size="lg" color="var(--monarch-orange)" label="Starting application" />
         )}
 
         {/* Status text */}
-        <p
-          className="text-sm font-medium"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
+        <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
           {getStatusText(elapsedSeconds, isTimedOut)}
         </p>
 
@@ -238,43 +236,30 @@ export function StartupLoadingScreen({
               className="h-full rounded-full transition-all duration-300 ease-out"
               style={{
                 width: `${progress}%`,
-                backgroundColor: isTimedOut
-                  ? 'var(--monarch-error)'
-                  : 'var(--monarch-orange)',
+                backgroundColor: isTimedOut ? 'var(--monarch-error)' : 'var(--monarch-orange)',
               }}
             />
           </div>
           {!isTimedOut && (
-            <p
-              className="mt-2 text-xs"
-              style={{ color: 'var(--monarch-text-light)' }}
-            >
+            <p className="mt-2 text-xs" style={{ color: 'var(--monarch-text-light)' }}>
               {Math.round(progress)}%
             </p>
           )}
         </div>
 
         {/* Rotating message */}
-        <div
-          className="min-h-[3rem] flex items-center justify-center"
-          key={currentMessage}
-        >
+        <div className="min-h-12 flex items-center justify-center" key={currentMessage}>
           <p
             className="text-sm italic animate-fade-in"
             style={{ color: 'var(--monarch-text-muted)' }}
           >
-            {isTimedOut
-              ? TIMEOUT_ERROR_MESSAGE
-              : `"${currentMessage}"`}
+            {isTimedOut ? TIMEOUT_ERROR_MESSAGE : `"${currentMessage}"`}
           </p>
         </div>
 
         {/* Elapsed time (shown after 30 seconds) */}
         {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && (
-          <p
-            className="text-xs animate-fade-in"
-            style={{ color: 'var(--monarch-text-light)' }}
-          >
+          <p className="text-xs animate-fade-in" style={{ color: 'var(--monarch-text-light)' }}>
             Waiting for {elapsedSeconds} seconds...
           </p>
         )}

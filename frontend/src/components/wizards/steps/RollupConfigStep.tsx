@@ -38,12 +38,15 @@ export function RollupConfigStep({
 }: RollupConfigStepProps) {
   // Group categories by group_name for dropdown
   const categoryGroups: SelectGroup[] = Object.entries(
-    categories.reduce((acc, cat) => {
-      const group = cat.group_name || 'Other';
-      acc[group] ??= [];
-      acc[group].push(cat);
-      return acc;
-    }, {} as Record<string, UnmappedCategory[]>)
+    categories.reduce(
+      (acc, cat) => {
+        const group = cat.group_name || 'Other';
+        acc[group] ??= [];
+        acc[group].push(cat);
+        return acc;
+      },
+      {} as Record<string, UnmappedCategory[]>
+    )
   ).map(([groupLabel, cats]) => ({
     label: groupLabel,
     options: cats.map((cat) => {
@@ -68,7 +71,8 @@ export function RollupConfigStep({
         The Rollup Category
       </h2>
       <p className="mb-6" style={{ color: 'var(--monarch-text-muted)' }}>
-        The rollup is a single catch-all category for smaller recurring charges. Would you like to use an existing category or create a new one?
+        The rollup is a single catch-all category for smaller recurring charges. Would you like to
+        use an existing category or create a new one?
       </p>
 
       {/* Mode selection */}
@@ -78,7 +82,10 @@ export function RollupConfigStep({
           className="flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all"
           style={{
             backgroundColor: mode === 'new' ? 'rgba(255, 105, 45, 0.08)' : 'var(--monarch-bg-page)',
-            border: mode === 'new' ? '2px solid var(--monarch-orange)' : '1px solid var(--monarch-border)',
+            border:
+              mode === 'new'
+                ? '2px solid var(--monarch-orange)'
+                : '1px solid var(--monarch-border)',
           }}
         >
           <input
@@ -103,8 +110,12 @@ export function RollupConfigStep({
         <label
           className="flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all"
           style={{
-            backgroundColor: mode === 'existing' ? 'rgba(255, 105, 45, 0.08)' : 'var(--monarch-bg-page)',
-            border: mode === 'existing' ? '2px solid var(--monarch-orange)' : '1px solid var(--monarch-border)',
+            backgroundColor:
+              mode === 'existing' ? 'rgba(255, 105, 45, 0.08)' : 'var(--monarch-bg-page)',
+            border:
+              mode === 'existing'
+                ? '2px solid var(--monarch-orange)'
+                : '1px solid var(--monarch-border)',
           }}
         >
           <input
@@ -135,17 +146,23 @@ export function RollupConfigStep({
             border: '1px solid var(--monarch-border)',
           }}
         >
-          {showLoading ? (
+          {showLoading && (
             <div className="text-center py-4" style={{ color: 'var(--monarch-text-muted)' }}>
               Loading categories...
             </div>
-          ) : categories.length === 0 ? (
+          )}
+          {!showLoading && categories.length === 0 && (
             <div className="text-center py-4" style={{ color: 'var(--monarch-text-muted)' }}>
               No available categories found
             </div>
-          ) : (
+          )}
+          {!showLoading && categories.length > 0 && (
             <>
-              <label id="category-select-label" className="block mb-2 text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+              <label
+                id="category-select-label"
+                className="block mb-2 text-sm font-medium"
+                style={{ color: 'var(--monarch-text-dark)' }}
+              >
                 Select a category:
               </label>
               <div className="mb-3">
@@ -202,8 +219,13 @@ export function RollupConfigStep({
             <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
               Auto-categorize new transactions
             </span>
-            <p id="auto-categorize-description" className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-              Automatically categorize new recurring transactions to their tracking categories during sync
+            <p
+              id="auto-categorize-description"
+              className="text-sm"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            >
+              Automatically categorize new recurring transactions to their tracking categories
+              during sync
             </p>
           </div>
         </label>
@@ -218,8 +240,8 @@ export function RollupConfigStep({
           color: 'var(--monarch-text-muted)',
         }}
       >
-        <strong style={{ color: 'var(--monarch-text-dark)' }}>For historical accuracy:</strong>{' '}
-        You can manually re-categorize past transactions to their tracking categories in Monarch&apos;s
+        <strong style={{ color: 'var(--monarch-text-dark)' }}>For historical accuracy:</strong> You
+        can manually re-categorize past transactions to their tracking categories in Monarch&apos;s
         Transactions view. This helps ensure your reports accurately reflect spending over time.
       </div>
     </div>

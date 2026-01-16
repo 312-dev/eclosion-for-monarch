@@ -104,16 +104,13 @@ export function LogViewerSection() {
         {/* Header - always visible */}
         <button
           type="button"
-          className="w-full p-4 flex items-center justify-between hover:bg-[var(--monarch-bg-page)] transition-colors"
+          className="w-full p-4 flex items-center justify-between hover:bg-(--monarch-bg-page) transition-colors"
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
           aria-label={expanded ? 'Collapse log viewer' : 'Expand log viewer'}
         >
           <div className="flex items-center gap-3">
-            <div
-              className="p-2.5 rounded-lg"
-              style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-            >
+            <div className="p-2.5 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
               <FileText size={20} style={{ color: 'var(--monarch-text-muted)' }} />
             </div>
             <div className="text-left">
@@ -162,7 +159,7 @@ export function LogViewerSection() {
               </select>
 
               {/* Search */}
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-50">
                 <Search
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -188,7 +185,7 @@ export function LogViewerSection() {
                 type="button"
                 onClick={fetchLogContent}
                 disabled={loading}
-                className="p-2 rounded-lg hover:bg-[var(--monarch-bg-page)] transition-colors"
+                className="p-2 rounded-lg hover:bg-(--monarch-bg-page) transition-colors"
                 style={{ border: '1px solid var(--monarch-border)' }}
                 aria-label="Refresh logs"
               >
@@ -200,7 +197,10 @@ export function LogViewerSection() {
               </button>
 
               {/* Auto-refresh toggle */}
-              <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              <label
+                className="flex items-center gap-2 text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 <input
                   type="checkbox"
                   checked={autoRefresh}
@@ -246,7 +246,8 @@ export function LogViewerSection() {
                       backgroundColor: 'var(--monarch-bg-page)',
                       color: 'var(--monarch-text-dark)',
                       maxHeight: '400px',
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-all',
                     }}

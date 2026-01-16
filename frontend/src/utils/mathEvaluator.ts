@@ -14,6 +14,7 @@ type Token =
 /**
  * Tokenize a math expression string.
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Lexer requires handling each token type individually
 function tokenize(expr: string): Token[] | null {
   const tokens: Token[] = [];
   let i = 0;

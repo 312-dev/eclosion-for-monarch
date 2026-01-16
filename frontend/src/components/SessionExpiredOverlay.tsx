@@ -157,15 +157,14 @@ export function SessionExpiredOverlay() {
   if (!showSessionExpiredOverlay) return null;
 
   // Mask email for privacy
-  const maskedEmail = storedEmail
-    ? storedEmail.replace(/^(.{2})(.*)(@.*)$/, '$1***$3')
-    : null;
+  // Use negated character class [^@]* instead of .* to prevent regex backtracking
+  const maskedEmail = storedEmail ? storedEmail.replace(/^(.{2})[^@]*(@.*)$/, '$1***$2') : null;
 
   return (
     <>
       {/* Dark overlay backdrop */}
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center"
+        className="fixed inset-0 z-100 flex items-center justify-center"
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
         role="dialog"
         aria-modal="true"
@@ -290,19 +289,24 @@ export function SessionExpiredOverlay() {
             )}
 
             {/* Submit button */}
-            <button
-              type="submit"
-              disabled={loading || (isDesktop ? !mfaSecret : !email || !password)}
-              className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-to-orange-hover"
-              style={{
-                backgroundColor:
-                  loading || (isDesktop ? !mfaSecret : !email || !password)
-                    ? 'var(--monarch-orange-disabled)'
-                    : 'var(--monarch-orange)',
-              }}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            {(() => {
+              const isFormIncomplete = isDesktop ? !mfaSecret : !email || !password;
+              const isSubmitDisabled = loading || isFormIncomplete;
+              return (
+                <button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-to-orange-hover"
+                  style={{
+                    backgroundColor: isSubmitDisabled
+                      ? 'var(--monarch-orange-disabled)'
+                      : 'var(--monarch-orange)',
+                  }}
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </button>
+              );
+            })()}
           </form>
         </div>
       </div>

@@ -50,10 +50,10 @@ export const IdeatorAvatar = memo(function IdeatorAvatar({
       <img
         src={avatarUrl}
         alt={`${username}'s avatar`}
-        className={`${sizes.avatar} rounded-full bg-[var(--monarch-bg-page)]`}
+        className={`${sizes.avatar} rounded-full bg-(--monarch-bg-page)`}
       />
       <div
-        className={`absolute ${sizes.badgePosition} ${sizes.badge} rounded-full bg-[var(--monarch-orange)] flex items-center justify-center`}
+        className={`absolute ${sizes.badgePosition} ${sizes.badge} rounded-full bg-(--monarch-orange) flex items-center justify-center`}
         aria-label="Idea contributor"
       >
         <Lightbulb className={`${sizes.icon} text-white`} />

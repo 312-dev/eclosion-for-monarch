@@ -22,7 +22,13 @@ import type {
 import type { ReauthResult } from '../api/client';
 
 // Re-export types for consumers
-export type { LockReason, MfaRequiredData, AuthState, AuthActions, AuthContextValue } from './authTypes';
+export type {
+  LockReason,
+  MfaRequiredData,
+  AuthState,
+  AuthActions,
+  AuthContextValue,
+} from './authTypes';
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -40,6 +46,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   // Track if user was previously authenticated (for distinguishing session expiry from initial login)
   const wasAuthenticated = useRef(false);
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Auth state machine with multiple paths and error handling
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
       setError(null);
@@ -85,7 +92,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       if (err instanceof Error) {
         if (isRateLimitErr) {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
-        } else if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('ERR_')) {
+        } else if (
+          err.message.includes('fetch') ||
+          err.message.includes('network') ||
+          err.message.includes('ERR_')
+        ) {
           errorMessage = 'Unable to connect to the server. Please check if the backend is running.';
         } else {
           errorMessage = err.message;
@@ -97,10 +108,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string, mfaSecret?: string): Promise<LoginResult> => {
-    const result = await apiLogin(email, password, mfaSecret);
-    return result;
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string, mfaSecret?: string): Promise<LoginResult> => {
+      const result = await apiLogin(email, password, mfaSecret);
+      return result;
+    },
+    []
+  );
 
   const lock = useCallback(() => {
     // Lock the app - user will need to enter passphrase to unlock
@@ -129,57 +143,66 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     });
   }, []);
 
-  const setPassphrase = useCallback(async (passphrase: string): Promise<SetPassphraseResult> => {
-    const result = await apiSetPassphrase(passphrase);
-    if (result.success) {
-      setAuthenticated(true);
-      setNeedsUnlock(false);
-      setLockReason(null);
+  const setPassphrase = useCallback(
+    async (passphrase: string): Promise<SetPassphraseResult> => {
+      const result = await apiSetPassphrase(passphrase);
+      if (result.success) {
+        setAuthenticated(true);
+        setNeedsUnlock(false);
+        setLockReason(null);
 
-      // Execute pending sync if one was requested from menu
-      if (hasPendingSync && globalThis.electron?.pendingSync) {
-        setHasPendingSync(false);
-        globalThis.electron.pendingSync.executePending(passphrase).catch(() => {
-          // Sync errors are handled by main process notifications
-        });
+        // Execute pending sync if one was requested from menu
+        if (hasPendingSync && globalThis.electron?.pendingSync) {
+          setHasPendingSync(false);
+          globalThis.electron.pendingSync.executePending(passphrase).catch(() => {
+            // Sync errors are handled by main process notifications
+          });
+        }
       }
-    }
-    return result;
-  }, [hasPendingSync]);
+      return result;
+    },
+    [hasPendingSync]
+  );
 
-  const unlockCredentials = useCallback(async (passphrase: string): Promise<UnlockResult> => {
-    // Always validate against Monarch when unlocking
-    const result = await apiUnlockCredentials(passphrase, true);
-    if (result.success) {
-      setAuthenticated(true);
-      setNeedsUnlock(false);
-      setLockReason(null);
+  const unlockCredentials = useCallback(
+    async (passphrase: string): Promise<UnlockResult> => {
+      // Always validate against Monarch when unlocking
+      const result = await apiUnlockCredentials(passphrase, true);
+      if (result.success) {
+        setAuthenticated(true);
+        setNeedsUnlock(false);
+        setLockReason(null);
 
-      // Execute pending sync if one was requested from menu
-      if (hasPendingSync && globalThis.electron?.pendingSync) {
-        setHasPendingSync(false);
-        globalThis.electron.pendingSync.executePending(passphrase).catch(() => {
-          // Sync errors are handled by main process notifications
-        });
+        // Execute pending sync if one was requested from menu
+        if (hasPendingSync && globalThis.electron?.pendingSync) {
+          setHasPendingSync(false);
+          globalThis.electron.pendingSync.executePending(passphrase).catch(() => {
+            // Sync errors are handled by main process notifications
+          });
+        }
       }
-    }
-    // If unlock_success but not validation_success, caller should handle credential update
-    return result;
-  }, [hasPendingSync]);
+      // If unlock_success but not validation_success, caller should handle credential update
+      return result;
+    },
+    [hasPendingSync]
+  );
 
-  const updateCredentials = useCallback(async (
-    email: string,
-    password: string,
-    passphrase: string,
-    mfaSecret?: string
-  ): Promise<UpdateCredentialsResult> => {
-    const result = await apiUpdateCredentials(email, password, passphrase, mfaSecret);
-    if (result.success) {
-      setAuthenticated(true);
-      setNeedsUnlock(false);
-    }
-    return result;
-  }, []);
+  const updateCredentials = useCallback(
+    async (
+      email: string,
+      password: string,
+      passphrase: string,
+      mfaSecret?: string
+    ): Promise<UpdateCredentialsResult> => {
+      const result = await apiUpdateCredentials(email, password, passphrase, mfaSecret);
+      if (result.success) {
+        setAuthenticated(true);
+        setNeedsUnlock(false);
+      }
+      return result;
+    },
+    []
+  );
 
   const resetApp = useCallback(async (): Promise<ResetAppResult> => {
     const result = await apiResetApp();
@@ -354,11 +377,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     dismissSessionExpiredOverlay,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 // Re-export hooks

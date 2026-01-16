@@ -1,4 +1,13 @@
-import { CheckIcon, CircleIcon, EyeIcon, EyeOffIcon, FingerprintIcon, InfoIcon, ShieldCheckIcon, SpinnerIcon } from '../icons';
+import {
+  CheckIcon,
+  CircleIcon,
+  EyeIcon,
+  EyeOffIcon,
+  FingerprintIcon,
+  InfoIcon,
+  ShieldCheckIcon,
+  SpinnerIcon,
+} from '../icons';
 import { isDesktopMode } from '../../utils/apiBase';
 import type { RequirementCheck } from './PassphraseUtils';
 
@@ -83,7 +92,9 @@ export function RequirementsList({ requirements }: Readonly<RequirementsListProp
             ) : (
               <CircleIcon size={16} color="var(--monarch-text-muted)" />
             )}
-            <span style={{ color: req.met ? 'var(--monarch-success)' : 'var(--monarch-text-muted)' }}>
+            <span
+              style={{ color: req.met ? 'var(--monarch-success)' : 'var(--monarch-text-muted)' }}
+            >
               {req.label}
             </span>
           </li>
@@ -183,7 +194,7 @@ export function SecurityNote() {
   return (
     <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-elevated)' }}>
       <div className="flex items-start gap-2">
-        <ShieldCheckIcon size={16} color="var(--monarch-orange)" className="mt-0.5 flex-shrink-0" />
+        <ShieldCheckIcon size={16} color="var(--monarch-orange)" className="mt-0.5 shrink-0" />
         <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
           <p className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
             Your credentials are encrypted

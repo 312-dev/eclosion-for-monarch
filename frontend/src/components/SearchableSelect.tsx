@@ -56,9 +56,7 @@ export function SearchableSelect({
   const dropdown = useDropdown<HTMLDivElement, HTMLButtonElement>({ alignment: 'left' });
 
   // Get all options (either flat or from groups)
-  const allOptions = groups
-    ? groups.flatMap((g) => g.options)
-    : options;
+  const allOptions = groups ? groups.flatMap((g) => g.options) : options;
 
   // Find selected option
   const selectedOption = allOptions.find((opt) => opt.value === value);
@@ -66,16 +64,16 @@ export function SearchableSelect({
   // Filter options based on search
   const filterOptions = (opts: SelectOption[]) =>
     searchQuery
-      ? opts.filter((opt) =>
-          opt.label.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+      ? opts.filter((opt) => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
       : opts;
 
   const filteredOptions = filterOptions(options);
-  const filteredGroups = groups?.map((g) => ({
-    ...g,
-    options: filterOptions(g.options),
-  })).filter((g) => g.options.length > 0);
+  const filteredGroups = groups
+    ?.map((g) => ({
+      ...g,
+      options: filterOptions(g.options),
+    }))
+    .filter((g) => g.options.length > 0);
 
   // Get flat list for keyboard navigation
   const flatFilteredOptions = groups
@@ -148,11 +146,13 @@ export function SearchableSelect({
   const renderOption = (opt: SelectOption, idx: number) => {
     const isSelected = opt.value === value;
     const isActive = idx === activeIndex;
-    const baseClass = 'w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors';
+    const baseClass =
+      'w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors';
     let stateClass = 'hover:bg-(--monarch-bg-hover) text-(--monarch-text-dark)';
     if (opt.disabled) stateClass = 'opacity-50 cursor-not-allowed bg-(--monarch-bg-page)';
     else if (isSelected) stateClass = 'bg-(--monarch-orange)/10 text-(--monarch-orange)';
-    const activeClass = isActive && !opt.disabled ? 'ring-2 ring-inset ring-(--monarch-orange)' : '';
+    const activeClass =
+      isActive && !opt.disabled ? 'ring-2 ring-inset ring-(--monarch-orange)' : '';
 
     return (
       <button
@@ -169,7 +169,9 @@ export function SearchableSelect({
         onMouseEnter={() => setActiveIndex(idx)}
       >
         <span className="flex-1 truncate">{opt.label}</span>
-        {isSelected && <Check size={16} className="text-(--monarch-orange) shrink-0" aria-hidden="true" />}
+        {isSelected && (
+          <Check size={16} className="text-(--monarch-orange) shrink-0" aria-hidden="true" />
+        )}
       </button>
     );
   };
@@ -194,9 +196,10 @@ export function SearchableSelect({
           w-full flex items-center justify-between gap-2 px-3 py-1.5 text-sm rounded-lg
           border border-(--monarch-border) bg-(--monarch-bg-card)
           transition-colors
-          ${disabled
-            ? 'opacity-50 cursor-not-allowed'
-            : 'hover:border-(--monarch-text-muted) cursor-pointer'
+          ${
+            disabled
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:border-(--monarch-text-muted) cursor-pointer'
           }
           ${dropdown.isOpen ? 'border-(--monarch-orange) ring-1 ring-(--monarch-orange)/20' : ''}
         `}
@@ -229,7 +232,9 @@ export function SearchableSelect({
             id={listboxId}
             role="listbox"
             aria-label={ariaLabel || placeholder}
-            aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+            aria-activedescendant={
+              activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+            }
             className="fixed z-(--z-index-dropdown) min-w-50 max-w-75 rounded-lg shadow-lg border border-(--monarch-border) bg-(--monarch-bg-card) overflow-hidden dropdown-menu"
             style={{
               top: dropdown.position.top,
@@ -265,42 +270,59 @@ export function SearchableSelect({
 
             {/* Options list */}
             <div className="max-h-60 overflow-y-auto" role="presentation">
-              {loading ? (
-                <div className="px-3 py-4 text-sm text-center text-(--monarch-text-muted)" role="status">
-                  Loading...
-                </div>
-              ) : !hasResults ? (
-                <div className="px-3 py-4 text-sm text-center text-(--monarch-text-muted)">
-                  {searchQuery ? 'No results found' : 'No options available'}
-                </div>
-              ) : groups ? (
-                // Render grouped options
-                filteredGroups?.map((group, groupIdx) => {
-                  const groupElement = (
-                    <div key={group.label} role="group" aria-label={group.label}>
-                      {groupIdx > 0 && (
-                        <div className="h-px bg-(--monarch-border) mx-2" aria-hidden="true" />
-                      )}
-                      <div className="px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-(--monarch-text-muted) bg-(--monarch-bg-page)" role="presentation">
-                        {group.label}
-                      </div>
-                      {group.options.map((opt) => {
-                        const element = renderOption(opt, flatIndex);
-                        flatIndex++;
-                        return element;
-                      })}
+              {(() => {
+                if (loading) {
+                  return (
+                    <div
+                      className="px-3 py-4 text-sm text-center text-(--monarch-text-muted)"
+                      role="status"
+                    >
+                      Loading...
                     </div>
                   );
-                  return groupElement;
-                })
-              ) : (
+                }
+
+                if (!hasResults) {
+                  const emptyMessage = searchQuery ? 'No results found' : 'No options available';
+                  return (
+                    <div className="px-3 py-4 text-sm text-center text-(--monarch-text-muted)">
+                      {emptyMessage}
+                    </div>
+                  );
+                }
+
+                if (groups) {
+                  // Render grouped options
+                  return filteredGroups?.map((group, groupIdx) => {
+                    const groupElement = (
+                      <div key={group.label} role="group" aria-label={group.label}>
+                        {groupIdx > 0 && (
+                          <div className="h-px bg-(--monarch-border) mx-2" aria-hidden="true" />
+                        )}
+                        <div
+                          className="px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-(--monarch-text-muted) bg-(--monarch-bg-page)"
+                          role="presentation"
+                        >
+                          {group.label}
+                        </div>
+                        {group.options.map((opt) => {
+                          const element = renderOption(opt, flatIndex);
+                          flatIndex++;
+                          return element;
+                        })}
+                      </div>
+                    );
+                    return groupElement;
+                  });
+                }
+
                 // Render flat options
-                filteredOptions.map((opt) => {
+                return filteredOptions.map((opt) => {
                   const element = renderOption(opt, flatIndex);
                   flatIndex++;
                   return element;
-                })
-              )}
+                });
+              })()}
             </div>
           </div>
         </Portal>

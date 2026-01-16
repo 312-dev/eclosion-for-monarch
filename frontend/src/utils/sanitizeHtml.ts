@@ -10,12 +10,35 @@
  * These are safe formatting tags commonly used in rendered markdown.
  */
 const ALLOWED_TAGS = new Set([
-  'p', 'div', 'span', 'br', 'hr',
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'ul', 'ol', 'li',
-  'a', 'strong', 'b', 'em', 'i', 'u',
-  'code', 'pre', 'blockquote',
-  'table', 'thead', 'tbody', 'tr', 'th', 'td',
+  'p',
+  'div',
+  'span',
+  'br',
+  'hr',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'a',
+  'strong',
+  'b',
+  'em',
+  'i',
+  'u',
+  'code',
+  'pre',
+  'blockquote',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
   'img',
 ]);
 
@@ -65,6 +88,7 @@ export function sanitizeHtml(html: string): string {
   const doc = parser.parseFromString(html, 'text/html');
 
   // Recursively sanitize nodes
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Security-critical: must check all node types and attributes
   function sanitizeNode(node: Node): Node | null {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.cloneNode();

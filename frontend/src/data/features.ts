@@ -89,25 +89,21 @@ export const FEATURES: FeatureDefinition[] = [
       {
         icon: 'Package',
         title: 'Rollup Mode',
-        description:
-          'Combine small subscriptions into a single category for simplified budgeting.',
+        description: 'Combine small subscriptions into a single category for simplified budgeting.',
       },
       {
         icon: 'CheckCircle',
         title: 'Progress Tracking',
-        description:
-          'See at a glance if you\'re on track, behind, or ahead on each expense.',
+        description: "See at a glance if you're on track, behind, or ahead on each expense.",
       },
       {
         icon: 'Sync',
         title: 'Monarch Sync',
-        description:
-          'Syncs directly with your Monarch Money account to update budget targets.',
+        description: 'Syncs directly with your Monarch Money account to update budget targets.',
       },
     ],
     demoPath: '/demo/recurring/',
     appPath: '/recurring',
-    // TODO: Set originIssue to the GitHub issue that originated this feature
     sourcePaths: [
       'frontend/src/components/tabs/RecurringTab.tsx',
       'frontend/src/components/recurring/',
@@ -134,28 +130,22 @@ export const FEATURES: FeatureDefinition[] = [
       {
         icon: 'Calendar',
         title: 'Carry Forward Monthly',
-        description:
-          'Your notes automatically appear in future months until you change them.',
+        description: 'Your notes automatically appear in future months until you change them.',
       },
       {
         icon: 'Clock',
         title: 'Revision History',
-        description:
-          'See how your notes evolved over time and jump between versions.',
+        description: 'See how your notes evolved over time and jump between versions.',
       },
       {
         icon: 'Zap',
         title: 'Inline Math',
-        description:
-          'Type math expressions and press Tab to evaluate them inline.',
+        description: 'Type math expressions and press Tab to evaluate them inline.',
       },
     ],
     demoPath: '/demo/notes/',
     appPath: '/notes',
-    sourcePaths: [
-      'frontend/src/components/tabs/NotesTab.tsx',
-      'frontend/src/components/notes/',
-    ],
+    sourcePaths: ['frontend/src/components/tabs/NotesTab.tsx', 'frontend/src/components/notes/'],
   },
   {
     id: 'linked-goals',
@@ -182,7 +172,7 @@ export const FEATURES: FeatureDefinition[] = [
         icon: 'TrendUp',
         title: 'Combined Trajectory',
         description:
-          'See when you\'ll reach goals together based on both contributions, without seeing each other\'s details.',
+          "See when you'll reach goals together based on both contributions, without seeing each other's details.",
       },
       {
         icon: 'Gift',
@@ -246,8 +236,7 @@ export const FEATURES: FeatureDefinition[] = [
       {
         icon: 'Package',
         title: 'Smart Itemization',
-        description:
-          'Automatically splits transactions by item with accurate categories.',
+        description: 'Automatically splits transactions by item with accurate categories.',
       },
       {
         icon: 'Shield',
@@ -257,8 +246,7 @@ export const FEATURES: FeatureDefinition[] = [
       {
         icon: 'Sync',
         title: 'Growing Coverage',
-        description:
-          'New merchants added regularly. Walmart, Costco, Uber, DoorDash, and more.',
+        description: 'New merchants added regularly. Walmart, Costco, Uber, DoorDash, and more.',
       },
     ],
     appPath: '/inbox-sync',
@@ -269,7 +257,7 @@ export const FEATURES: FeatureDefinition[] = [
     name: 'Shared Budget',
     tagline: 'Track and split shared expenses each month',
     description:
-      'Tag expenses you share with a roommate or partner—rent, utilities, groceries, date nights—and split them automatically each month. Set a default ratio, adjust individual transactions when needed, and settle up when you\'re ready.',
+      "Tag expenses you share with a roommate or partner—rent, utilities, groceries, date nights—and split them automatically each month. Set a default ratio, adjust individual transactions when needed, and settle up when you're ready.",
     icon: 'Split',
     status: 'coming-soon',
     benefits: [
@@ -295,7 +283,7 @@ export const FEATURES: FeatureDefinition[] = [
         icon: 'CheckCircle',
         title: 'Settle Debt',
         description:
-          'See who owes what at month\'s end and mark debts as settled when you square up.',
+          "See who owes what at month's end and mark debts as settled when you square up.",
       },
     ],
     appPath: '/shared-budget',
@@ -318,8 +306,7 @@ export const FEATURES: FeatureDefinition[] = [
       {
         icon: 'Coins',
         title: 'Earn Your Allowance',
-        description:
-          'Complete habits to earn allowance credits that add up over time.',
+        description: 'Complete habits to earn allowance credits that add up over time.',
       },
       {
         icon: 'Target',

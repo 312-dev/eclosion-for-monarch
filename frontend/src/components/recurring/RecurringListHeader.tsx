@@ -16,9 +16,21 @@ interface SortButtonProps {
   readonly align?: 'left' | 'right' | 'center';
 }
 
-export function SortButton({ field, label, currentField, direction, onClick, align = 'left' }: SortButtonProps) {
+export function SortButton({
+  field,
+  label,
+  currentField,
+  direction,
+  onClick,
+  align = 'left',
+}: SortButtonProps) {
   const isActive = currentField === field;
-  const alignClass = align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : 'justify-start';
+  let alignClass = 'justify-start';
+  if (align === 'right') {
+    alignClass = 'justify-end';
+  } else if (align === 'center') {
+    alignClass = 'justify-center';
+  }
 
   return (
     <button
@@ -51,7 +63,11 @@ export const COLUMN_WIDTHS = {
   actions: 'w-[9%]', // Actions menu
 } as const;
 
-export function RecurringListHeader({ sortField, sortDirection, onSort }: RecurringListHeaderProps) {
+export function RecurringListHeader({
+  sortField,
+  sortDirection,
+  onSort,
+}: RecurringListHeaderProps) {
   const dataMonth = useDataMonth();
   const monthLabel = formatMonthShort(dataMonth);
 
@@ -86,7 +102,9 @@ export function RecurringListHeader({ sortField, sortDirection, onSort }: Recurr
             align="right"
           />
         </th>
-        <th className={`py-3 px-5 text-center text-sm font-medium text-monarch-text-light ${COLUMN_WIDTHS.status}`}>
+        <th
+          className={`py-3 px-5 text-center text-sm font-medium text-monarch-text-light ${COLUMN_WIDTHS.status}`}
+        >
           Status
         </th>
         <th className={`py-3 px-3 ${COLUMN_WIDTHS.actions}`}>

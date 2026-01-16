@@ -53,13 +53,8 @@ export const ContributorList = memo(function ContributorList({
         {/* Ideator */}
         {ideator && (
           <div className="flex items-center gap-1.5">
-            <LightbulbIcon
-              size={14}
-              className="text-[var(--monarch-warning)] flex-shrink-0"
-            />
-            <span className="text-xs text-[var(--monarch-text-muted)]">
-              Ideated by
-            </span>
+            <LightbulbIcon size={14} className="text-(--monarch-warning) shrink-0" />
+            <span className="text-xs text-(--monarch-text-muted)">Ideated by</span>
             <ContributorAvatar
               username={ideator.username}
               avatarUrl={ideator.avatarUrl}
@@ -72,13 +67,8 @@ export const ContributorList = memo(function ContributorList({
         {/* Contributors */}
         {contributors.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <UsersIcon
-              size={14}
-              className="text-[var(--monarch-text-muted)] flex-shrink-0"
-            />
-            <span className="text-xs text-[var(--monarch-text-muted)]">
-              Community Devs
-            </span>
+            <UsersIcon size={14} className="text-(--monarch-text-muted) shrink-0" />
+            <span className="text-xs text-(--monarch-text-muted)">Community Devs</span>
             <div className="flex items-center -space-x-1.5 ml-0.5">
               {displayContributors.map((c) => (
                 <ContributorAvatar
@@ -91,7 +81,7 @@ export const ContributorList = memo(function ContributorList({
               ))}
               {overflow > 0 && (
                 <span
-                  className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--monarch-bg-hover)] text-xs text-[var(--monarch-text-muted)] border border-[var(--monarch-border)] ml-1"
+                  className="flex items-center justify-center w-6 h-6 rounded-full bg-(--monarch-bg-hover) text-xs text-(--monarch-text-muted) border border-(--monarch-border) ml-1"
                   title={`+${overflow} more`}
                 >
                   +{overflow}
@@ -110,13 +100,8 @@ export const ContributorList = memo(function ContributorList({
       {/* Ideator */}
       {ideator && (
         <div className="flex items-center gap-2">
-          <LightbulbIcon
-            size={16}
-            className="text-[var(--monarch-warning)] flex-shrink-0"
-          />
-          <span className="text-sm text-[var(--monarch-text-muted)]">
-            Ideated by
-          </span>
+          <LightbulbIcon size={16} className="text-(--monarch-warning) shrink-0" />
+          <span className="text-sm text-(--monarch-text-muted)">Ideated by</span>
           <ContributorAvatar
             username={ideator.username}
             avatarUrl={ideator.avatarUrl}
@@ -130,13 +115,8 @@ export const ContributorList = memo(function ContributorList({
       {/* Contributors */}
       {contributors.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
-          <UsersIcon
-            size={16}
-            className="text-[var(--monarch-text-muted)] flex-shrink-0"
-          />
-          <span className="text-sm text-[var(--monarch-text-muted)]">
-            Community Devs
-          </span>
+          <UsersIcon size={16} className="text-(--monarch-text-muted) shrink-0" />
+          <span className="text-sm text-(--monarch-text-muted)">Community Devs</span>
           <div className="flex items-center gap-2 flex-wrap">
             {contributors.map((c) => (
               <ContributorAvatar

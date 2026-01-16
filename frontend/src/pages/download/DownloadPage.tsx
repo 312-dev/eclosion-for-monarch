@@ -207,7 +207,9 @@ export function DownloadPage() {
         {...(version !== undefined && { version })}
         downloadUrl={primaryDownload.url}
         {...(primaryDownload.size !== undefined && { fileSize: primaryDownload.size })}
-        {...(primaryDownload.architecture !== undefined && { architecture: primaryDownload.architecture })}
+        {...(primaryDownload.architecture !== undefined && {
+          architecture: primaryDownload.architecture,
+        })}
         loading={loading}
         downloadStatus={downloadStatus}
         screenshotUrl={screenshotUrl}
@@ -227,7 +229,7 @@ export function DownloadPage() {
       {!loading && !error && (
         <section className="px-4 sm:px-6 py-6 text-center">
           <div className="max-w-4xl mx-auto">
-            <p className="text-[var(--monarch-text-muted)] mb-4">
+            <p className="text-(--monarch-text-muted) mb-4">
               Looking for downloads for other operating systems?
             </p>
             <div className="flex items-center justify-center gap-4">
@@ -237,12 +239,14 @@ export function DownloadPage() {
                   <a
                     key={platform}
                     href={`/download?platform=${platform}`}
-                    className="flex flex-col items-center justify-center gap-2 w-24 h-24 rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] hover:border-[var(--monarch-orange)] hover:text-[var(--monarch-orange)] transition-colors text-[var(--monarch-text-muted)]"
+                    className="flex flex-col items-center justify-center gap-2 w-24 h-24 rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) hover:border-(--monarch-orange) hover:text-(--monarch-orange) transition-colors text-(--monarch-text-muted)"
                     aria-label={`Download for ${platform === 'macos' ? 'macOS' : platform.charAt(0).toUpperCase() + platform.slice(1)}`}
                   >
                     <PlatformIcon platform={platform} size={28} />
                     <span className="text-sm font-medium">
-                      {platform === 'macos' ? 'macOS' : platform.charAt(0).toUpperCase() + platform.slice(1)}
+                      {platform === 'macos'
+                        ? 'macOS'
+                        : platform.charAt(0).toUpperCase() + platform.slice(1)}
                     </span>
                   </a>
                 ))}

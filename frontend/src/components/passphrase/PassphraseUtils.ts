@@ -84,7 +84,10 @@ export function validatePassphrase(passphrase: string): RequirementCheck[] {
     { label: 'At least 12 characters', met: passphrase.length >= 12 },
     { label: 'At least 1 uppercase letter', met: /[A-Z]/.test(passphrase) },
     { label: 'At least 1 lowercase letter', met: /[a-z]/.test(passphrase) },
-    { label: 'At least 1 number', met: /[0-9]/.test(passphrase) },
-    { label: 'At least 1 special character', met: /[!@#$%^&*()_+\-=[\]{}|;:'",.<>?/\\`~]/.test(passphrase) },
+    { label: 'At least 1 number', met: /\d/.test(passphrase) },
+    {
+      label: 'At least 1 special character',
+      met: /[!@#$%^&*()_+\-=[\]{}|;:'",.<>?/\\`~]/.test(passphrase),
+    },
   ];
 }

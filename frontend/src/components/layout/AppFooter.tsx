@@ -15,7 +15,10 @@ interface AppFooterProps {
 export function AppFooter({ isDesktop, onShowSecurityInfo }: AppFooterProps) {
   return (
     <footer className="app-footer" role="contentinfo">
-      <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+      <div
+        className="flex items-center gap-3 text-xs"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
         <a
           href="https://github.com/312-dev/eclosion"
           target="_blank"
@@ -36,16 +39,16 @@ export function AppFooter({ isDesktop, onShowSecurityInfo }: AppFooterProps) {
             href="https://thenounproject.com/rosa991/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-[var(--monarch-text-dark)] transition-colors"
+            className="hover:text-(--monarch-text-dark) transition-colors"
           >
             Rosa Lia
-          </a>
-          {' '}from{' '}
+          </a>{' '}
+          from{' '}
           <a
             href="https://thenounproject.com/icon/butterfly-7666562/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-[var(--monarch-text-dark)] transition-colors"
+            className="hover:text-(--monarch-text-dark) transition-colors"
           >
             Noun Project
           </a>
@@ -58,7 +61,7 @@ export function AppFooter({ isDesktop, onShowSecurityInfo }: AppFooterProps) {
           <button
             type="button"
             onClick={onShowSecurityInfo}
-            className="flex items-center gap-1 text-xs cursor-pointer hover:text-[var(--monarch-text-dark)] transition-colors"
+            className="flex items-center gap-1 text-xs cursor-pointer hover:text-(--monarch-text-dark) transition-colors"
             style={{ color: 'var(--monarch-text-muted)' }}
             aria-label="View security information"
           >

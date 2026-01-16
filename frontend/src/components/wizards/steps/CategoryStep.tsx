@@ -40,11 +40,12 @@ export function CategoryStep({
         </div>
       )}
 
-      {loading ? (
+      {loading && (
         <div className="py-8 text-center" style={{ color: 'var(--monarch-text-muted)' }}>
           Loading category groups...
         </div>
-      ) : groups.length === 0 ? (
+      )}
+      {!loading && groups.length === 0 && (
         <div className="py-4">
           <p className="mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
             No category groups found. Please create a category group in Monarch Money first.
@@ -59,10 +60,15 @@ export function CategoryStep({
             Open Monarch Money Categories Settings
           </a>
         </div>
-      ) : (
+      )}
+      {!loading && groups.length > 0 && (
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <label htmlFor="category-group" className="block text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+            <label
+              htmlFor="category-group"
+              className="block text-sm font-medium"
+              style={{ color: 'var(--monarch-text-dark)' }}
+            >
               Default Category Group
             </label>
             <a
