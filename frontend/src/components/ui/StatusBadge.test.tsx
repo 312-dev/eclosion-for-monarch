@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '../../test/test-utils';
+import userEvent from '@testing-library/user-event';
 import { StatusBadge } from './StatusBadge';
 
 describe('StatusBadge', () => {
@@ -80,11 +81,13 @@ describe('StatusBadge', () => {
       expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 
-    it('responds to Enter key when onClick is provided', () => {
+    it('responds to Enter key when onClick is provided', async () => {
       const handleClick = vi.fn();
+      const user = userEvent.setup();
       render(<StatusBadge status="on_track" onClick={handleClick} />);
 
-      fireEvent.keyDown(screen.getByRole('button'), { key: 'Enter' });
+      screen.getByRole('button').focus();
+      await user.keyboard('{Enter}');
 
       expect(handleClick).toHaveBeenCalledTimes(1);
     });
