@@ -32,7 +32,7 @@ const MARKETING_HOSTNAMES = [
  */
 export function useIsMarketingSite(): boolean {
   return useMemo(() => {
-    const hostname = window.location.hostname;
+    const hostname = globalThis.location.hostname;
 
     // Development is treated as marketing site for testing
     if (hostname === 'localhost' || hostname === '127.0.0.1') {

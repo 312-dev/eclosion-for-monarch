@@ -70,12 +70,7 @@ describe('Accessibility Patterns', () => {
           <label htmlFor="required-field">
             Required field <span aria-hidden="true">*</span>
           </label>
-          <input
-            id="required-field"
-            type="text"
-            required
-            aria-required="true"
-          />
+          <input id="required-field" type="text" required aria-required="true" />
         </div>
       );
 
@@ -114,11 +109,7 @@ describe('Accessibility Patterns', () => {
     it('modals should trap focus', () => {
       // Pattern: Modals should have role="dialog" and aria-modal="true"
       const Modal = ({ title, children }: { title: string; children: React.ReactNode }) => (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-title"
-        >
+        <div role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <h2 id="modal-title">{title}</h2>
           {children}
         </div>
@@ -171,7 +162,9 @@ describe('Accessibility Patterns', () => {
       const SkeletonLoader = () => (
         <div>
           <div aria-hidden="true" className="skeleton" />
-          <span className="sr-only" role="status">Loading content</span>
+          <span className="sr-only" role="status">
+            Loading content
+          </span>
         </div>
       );
 
@@ -187,8 +180,12 @@ describe('Accessibility Patterns', () => {
       const Navigation = () => (
         <nav aria-label="Main navigation">
           <ul>
-            <li><a href="/dashboard">Dashboard</a></li>
-            <li><a href="/settings">Settings</a></li>
+            <li>
+              <a href="/dashboard">Dashboard</a>
+            </li>
+            <li>
+              <a href="/settings">Settings</a>
+            </li>
           </ul>
         </nav>
       );
@@ -201,7 +198,9 @@ describe('Accessibility Patterns', () => {
     it('current page should be indicated', () => {
       const NavigationWithCurrent = () => (
         <nav aria-label="Main navigation">
-          <a href="/dashboard" aria-current="page">Dashboard</a>
+          <a href="/dashboard" aria-current="page">
+            Dashboard
+          </a>
           <a href="/settings">Settings</a>
         </nav>
       );
@@ -260,9 +259,11 @@ describe('Accessibility Patterns', () => {
       const AnimatedComponent = () => (
         <div
           className="animate-fade-in"
-          style={{
-            // In CSS: @media (prefers-reduced-motion: reduce) { animation: none }
-          }}
+          style={
+            {
+              // In CSS: @media (prefers-reduced-motion: reduce) { animation: none }
+            }
+          }
           data-testid="animated"
         >
           Animated content
@@ -317,9 +318,7 @@ describe('Screen reader announcements', () => {
   });
 
   it('alerts are announced immediately', () => {
-    const AlertMessage = ({ message }: { message: string }) => (
-      <div role="alert">{message}</div>
-    );
+    const AlertMessage = ({ message }: { message: string }) => <div role="alert">{message}</div>;
 
     render(<AlertMessage message="Error: Something went wrong" />);
 

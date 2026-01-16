@@ -27,9 +27,7 @@ export function useUpdateCheck(): UseUpdateCheckReturn {
     return sessionStorage.getItem(DISMISS_KEY) === 'true';
   });
 
-  const clientVersion = typeof __APP_VERSION__ !== 'undefined'
-    ? __APP_VERSION__
-    : '0.0.0';
+  const clientVersion = typeof __APP_VERSION__ === 'undefined' ? '0.0.0' : __APP_VERSION__;
 
   const { data, isLoading, refetch } = useVersionCheckQuery(clientVersion, {
     enabled: !dismissed,
@@ -55,15 +53,15 @@ export function useUpdateCheck(): UseUpdateCheckReturn {
   const triggerUpdate = useCallback(() => {
     // Clear all caches and reload
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
           registration.update();
         });
       });
     }
 
     // Clear query cache and reload
-    window.location.reload();
+    globalThis.location.reload();
   }, []);
 
   const checkForUpdate = useCallback(() => {

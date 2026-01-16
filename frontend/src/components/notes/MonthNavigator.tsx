@@ -135,7 +135,7 @@ export function MonthNavigator({
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           aria-label="Previous month"
         >
           <ChevronLeft size={20} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -143,7 +143,7 @@ export function MonthNavigator({
         <button
           type="button"
           onClick={handleNextMonth}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           aria-label="Next month"
         >
           <ChevronRight size={20} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -153,7 +153,7 @@ export function MonthNavigator({
           onClick={handleToday}
           disabled={isCurrentMonth}
           className={`px-3 py-1 text-sm font-medium rounded-full border transition-colors ${
-            isCurrentMonth ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--monarch-bg-hover)]'
+            isCurrentMonth ? 'opacity-50 cursor-not-allowed' : 'hover:bg-(--monarch-bg-hover)'
           }`}
           style={{
             borderColor: 'var(--monarch-border)',

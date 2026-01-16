@@ -45,7 +45,7 @@ export function AnnotatedImage({
   alt,
   callouts,
   caption,
-}: AnnotatedImageProps): JSX.Element {
+}: AnnotatedImageProps): React.JSX.Element {
   const [activeCallout, setActiveCallout] = useState<number | null>(null);
 
   return (

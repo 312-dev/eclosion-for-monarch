@@ -201,10 +201,7 @@ export function ExportNotesModal({
             {/* Category Selection */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--monarch-text-dark)' }}
-                >
+                <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
                   Categories & Groups
                 </span>
                 <div className="flex gap-2">

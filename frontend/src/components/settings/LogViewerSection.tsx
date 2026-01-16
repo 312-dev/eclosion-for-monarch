@@ -23,9 +23,9 @@ export function LogViewerSection() {
   const contentRef = useRef<HTMLPreElement>(null);
 
   const fetchLogFiles = useCallback(async () => {
-    if (!window.electron) return;
+    if (!globalThis.electron) return;
     try {
-      const files = await window.electron.getLogFiles();
+      const files = await globalThis.electron.getLogFiles();
       setLogFiles(files);
       // Auto-select first file if none selected
       if (!selectedFile && files.length > 0) {
@@ -37,10 +37,10 @@ export function LogViewerSection() {
   }, [selectedFile]);
 
   const fetchLogContent = useCallback(async () => {
-    if (!window.electron || !selectedFile) return;
+    if (!globalThis.electron || !selectedFile) return;
     setLoading(true);
     try {
-      const content = await window.electron.readLogFile(selectedFile.path, {
+      const content = await globalThis.electron.readLogFile(selectedFile.path, {
         lines: MAX_LINES,
         ...(searchTerm ? { search: searchTerm } : {}),
       });
@@ -57,7 +57,7 @@ export function LogViewerSection() {
   }, [selectedFile, searchTerm]);
 
   useEffect(() => {
-    if (window.electron && expanded) {
+    if (globalThis.electron && expanded) {
       fetchLogFiles();
     }
   }, [fetchLogFiles, expanded]);
@@ -82,7 +82,7 @@ export function LogViewerSection() {
   };
 
   // Don't render if not in desktop mode
-  if (!window.electron) return null;
+  if (!globalThis.electron) return null;
 
   return (
     <section className="mb-8">
@@ -104,16 +104,13 @@ export function LogViewerSection() {
         {/* Header - always visible */}
         <button
           type="button"
-          className="w-full p-4 flex items-center justify-between hover:bg-[var(--monarch-bg-page)] transition-colors"
+          className="w-full p-4 flex items-center justify-between hover:bg-(--monarch-bg-page) transition-colors"
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
           aria-label={expanded ? 'Collapse log viewer' : 'Expand log viewer'}
         >
           <div className="flex items-center gap-3">
-            <div
-              className="p-2.5 rounded-lg"
-              style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-            >
+            <div className="p-2.5 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
               <FileText size={20} style={{ color: 'var(--monarch-text-muted)' }} />
             </div>
             <div className="text-left">
@@ -161,8 +158,12 @@ export function LogViewerSection() {
                 ))}
               </select>
 
+              {/* Add spacing between elements to fix ambiguous spacing */}
+              <span style={{ marginLeft: 8 }} />
+
               {/* Search */}
-              <div className="relative flex-1 min-w-[200px]">
+
+              <div className="relative flex-1 min-w-50">
                 <Search
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -188,7 +189,7 @@ export function LogViewerSection() {
                 type="button"
                 onClick={fetchLogContent}
                 disabled={loading}
-                className="p-2 rounded-lg hover:bg-[var(--monarch-bg-page)] transition-colors"
+                className="p-2 rounded-lg hover:bg-(--monarch-bg-page) transition-colors"
                 style={{ border: '1px solid var(--monarch-border)' }}
                 aria-label="Refresh logs"
               >
@@ -199,15 +200,20 @@ export function LogViewerSection() {
                 />
               </button>
 
+              <span style={{ marginLeft: 8 }} />
+
               {/* Auto-refresh toggle */}
-              <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              <label
+                className="flex items-center gap-2 text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 <input
                   type="checkbox"
                   checked={autoRefresh}
                   onChange={(e) => setAutoRefresh(e.target.checked)}
                   className="rounded"
                   aria-label="Auto-refresh logs"
-                />
+                />{' '}
                 Auto-refresh
               </label>
             </div>
@@ -246,7 +252,8 @@ export function LogViewerSection() {
                       backgroundColor: 'var(--monarch-bg-page)',
                       color: 'var(--monarch-text-dark)',
                       maxHeight: '400px',
-                      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-all',
                     }}

@@ -103,9 +103,10 @@ function DeploymentCard({
       className={`
         relative flex flex-col items-start gap-2 p-3 rounded-xl border-2 text-left transition-all w-full
         hover:scale-[1.01] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2
-        ${selected
-          ? 'border-[var(--monarch-orange)] bg-[var(--monarch-orange-bg,rgba(255,107,0,0.08))]'
-          : 'border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] hover:border-[var(--monarch-orange-light,#ff8533)]'
+        ${
+          selected
+            ? 'border-(--monarch-orange) bg-(--monarch-orange-bg,rgba(255,107,0,0.08))'
+            : 'border-(--monarch-border) bg-(--monarch-bg-card) hover:border-(--monarch-orange-light,#ff8533)'
         }
       `}
       style={{
@@ -140,25 +141,16 @@ function DeploymentCard({
 
       {/* Icon and Title */}
       <div className="flex items-center gap-2.5 mt-1">
-        <div
-          className="p-1.5 rounded-lg"
-          style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-        >
+        <div className="p-1.5 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-hover)' }}>
           <Icon size={20} color="var(--monarch-orange)" />
         </div>
-        <h3
-          className="text-sm font-semibold"
-          style={{ color: 'var(--monarch-text-dark)' }}
-        >
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
           {title}
         </h3>
       </div>
 
       {/* Description */}
-      <p
-        className="text-xs leading-relaxed"
-        style={{ color: 'var(--monarch-text)' }}
-      >
+      <p className="text-xs leading-relaxed" style={{ color: 'var(--monarch-text)' }}>
         {description}
       </p>
 
@@ -209,10 +201,7 @@ export function GetStartedDeploymentSelection({
 
   return (
     <div className="space-y-3">
-      <p
-        className="text-sm text-center"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
+      <p className="text-sm text-center" style={{ color: 'var(--monarch-text-muted)' }}>
         {isCoderMode
           ? 'Choose your deployment strategy based on your infrastructure preferences.'
           : 'Pick how you want to run Eclosion. Not sure? Desktop is the easiest way to get started.'}

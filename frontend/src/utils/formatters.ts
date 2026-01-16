@@ -107,6 +107,7 @@ export interface RelativeDateResult {
  * @param dateStr - ISO date string (YYYY-MM-DD)
  * @returns Object with formatted date and relative time
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Date formatting requires many time-range cases
 export function formatDateRelative(dateStr: string): RelativeDateResult {
   const date = new Date(dateStr + 'T00:00:00');
   const today = new Date();
@@ -269,12 +270,12 @@ const HTML_ENTITIES: Record<string, string> = {
 export function decodeHtmlEntities(text: string): string {
   if (!text?.includes('&')) return text;
 
-  return text.replace(/&(#?[\w]+);/g, (match, entity: string) => {
+  return text.replaceAll(/&(#?\w+);/g, (match, entity: string) => {
     // Numeric entity: &#123; or &#x7B;
     if (entity.startsWith('#')) {
       const code = entity.startsWith('#x')
-        ? parseInt(entity.slice(2), 16)
-        : parseInt(entity.slice(1), 10);
+        ? Number.parseInt(entity.slice(2), 16)
+        : Number.parseInt(entity.slice(1), 10);
       return Number.isNaN(code) ? match : String.fromCodePoint(code);
     }
     // Named entity: &amp;, &lt;, etc.
@@ -308,9 +309,9 @@ const LEADING_EMOJI_REGEX = new RegExp(
     '\\u{1F3F4}[\\u{E0020}-\\u{E007E}]+\\u{E007F}|' +
     // Standard emoji (presentation or with variation selector) + optional skin tone
     '(?:\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)[\\u{1F3FB}-\\u{1F3FF}]?' +
-  ')' +
-  // ZWJ sequences: zero-width joiner + emoji element (with optional skin tone), repeated
-  '(?:\\u200D(?:\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)[\\u{1F3FB}-\\u{1F3FF}]?)*',
+    ')' +
+    // ZWJ sequences: zero-width joiner + emoji element (with optional skin tone), repeated
+    '(?:\\u200D(?:\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F)[\\u{1F3FB}-\\u{1F3FF}]?)*',
   'u'
 );
 

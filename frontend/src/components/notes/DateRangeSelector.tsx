@@ -120,19 +120,12 @@ export function DateRangeSelector({
             type="button"
             onClick={() => handlePresetClick(preset)}
             className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-              activePreset === preset.id
-                ? 'text-white'
-                : 'hover:bg-[var(--monarch-bg-hover)]'
+              activePreset === preset.id ? 'text-white' : 'hover:bg-(--monarch-bg-hover)'
             }`}
             style={{
               backgroundColor:
-                activePreset === preset.id
-                  ? 'var(--monarch-orange)'
-                  : 'var(--monarch-bg-page)',
-              color:
-                activePreset === preset.id
-                  ? 'white'
-                  : 'var(--monarch-text-dark)',
+                activePreset === preset.id ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
+              color: activePreset === preset.id ? 'white' : 'var(--monarch-text-dark)',
               border: '1px solid var(--monarch-border)',
             }}
           >
@@ -152,12 +145,14 @@ export function DateRangeSelector({
           className={`px-3 py-1 rounded font-medium transition-colors ${
             selectionMode === 'start' ? 'ring-2' : ''
           }`}
-          style={{
-            backgroundColor: 'var(--monarch-bg-card)',
-            color: 'var(--monarch-text-dark)',
-            border: '1px solid var(--monarch-border)',
-            '--tw-ring-color': 'var(--monarch-orange)',
-          } as React.CSSProperties}
+          style={
+            {
+              backgroundColor: 'var(--monarch-bg-card)',
+              color: 'var(--monarch-text-dark)',
+              border: '1px solid var(--monarch-border)',
+              '--tw-ring-color': 'var(--monarch-orange)',
+            } as React.CSSProperties
+          }
         >
           {formatMonthDisplay(startMonth)}
         </button>
@@ -168,12 +163,14 @@ export function DateRangeSelector({
           className={`px-3 py-1 rounded font-medium transition-colors ${
             selectionMode === 'end' ? 'ring-2' : ''
           }`}
-          style={{
-            backgroundColor: 'var(--monarch-bg-card)',
-            color: 'var(--monarch-text-dark)',
-            border: '1px solid var(--monarch-border)',
-            '--tw-ring-color': 'var(--monarch-orange)',
-          } as React.CSSProperties}
+          style={
+            {
+              backgroundColor: 'var(--monarch-bg-card)',
+              color: 'var(--monarch-text-dark)',
+              border: '1px solid var(--monarch-border)',
+              '--tw-ring-color': 'var(--monarch-orange)',
+            } as React.CSSProperties
+          }
         >
           {formatMonthDisplay(endMonth)}
         </button>
@@ -192,21 +189,18 @@ export function DateRangeSelector({
           <button
             type="button"
             onClick={handlePrevYear}
-            className="p-1 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+            className="p-1 rounded hover:bg-(--monarch-bg-hover) transition-colors"
             aria-label="Previous year"
           >
             <ChevronLeft size={18} style={{ color: 'var(--monarch-text-muted)' }} />
           </button>
-          <span
-            className="text-sm font-semibold"
-            style={{ color: 'var(--monarch-text-dark)' }}
-          >
+          <span className="text-sm font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
             {displayYear}
           </span>
           <button
             type="button"
             onClick={handleNextYear}
-            className="p-1 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+            className="p-1 rounded hover:bg-(--monarch-bg-hover) transition-colors"
             aria-label="Next year"
           >
             <ChevronRight size={18} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -223,6 +217,22 @@ export function DateRangeSelector({
             const isCurrent = displayYear === currentYear && monthNum === currentMonthNum;
             const isRangeEnd = isStartMonth || isEndMonth;
 
+            // Determine background color based on selection state
+            let backgroundColor = 'transparent';
+            if (isRangeEnd) {
+              backgroundColor = 'var(--monarch-orange)';
+            } else if (inRange) {
+              backgroundColor = 'var(--monarch-orange-light)';
+            }
+
+            // Determine text color based on selection state
+            let textColor = 'var(--monarch-text-dark)';
+            if (isRangeEnd) {
+              textColor = 'white';
+            } else if (inRange) {
+              textColor = 'var(--monarch-orange)';
+            }
+
             return (
               <button
                 key={monthName}
@@ -231,19 +241,13 @@ export function DateRangeSelector({
                 className={`py-1.5 px-2 text-xs font-medium rounded transition-colors ${
                   isCurrent && !isRangeEnd ? 'ring-1 ring-inset' : ''
                 }`}
-                style={{
-                  backgroundColor: isRangeEnd
-                    ? 'var(--monarch-orange)'
-                    : inRange
-                      ? 'var(--monarch-orange-light)'
-                      : 'transparent',
-                  color: isRangeEnd
-                    ? 'white'
-                    : inRange
-                      ? 'var(--monarch-orange)'
-                      : 'var(--monarch-text-dark)',
-                  '--tw-ring-color': 'var(--monarch-orange)',
-                } as React.CSSProperties}
+                style={
+                  {
+                    backgroundColor,
+                    color: textColor,
+                    '--tw-ring-color': 'var(--monarch-orange)',
+                  } as React.CSSProperties
+                }
               >
                 {monthName}
               </button>
@@ -253,10 +257,7 @@ export function DateRangeSelector({
 
         {/* Hint text */}
         {selectionMode && (
-          <div
-            className="mt-2 text-xs text-center"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
+          <div className="mt-2 text-xs text-center" style={{ color: 'var(--monarch-text-muted)' }}>
             {selectionMode === 'start'
               ? 'Click a month to set the start date'
               : 'Click a month to set the end date'}

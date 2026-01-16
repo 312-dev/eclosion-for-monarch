@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Terms modal with all legal sections and acknowledgment */
 /**
  * Terms Modal
  *
@@ -37,7 +38,15 @@ export function setTermsAccepted(): void {
 }
 
 /** Table row component for consistent styling */
-function TableRow({ label, value, isWarning = false }: { label: string; value: string; isWarning?: boolean }) {
+function TableRow({
+  label,
+  value,
+  isWarning = false,
+}: {
+  label: string;
+  value: string;
+  isWarning?: boolean;
+}) {
   return (
     <tr className="border-b" style={{ borderColor: 'var(--monarch-border)' }}>
       <td className="py-2 pr-4 font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -81,12 +90,12 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           type="checkbox"
           checked={acknowledged}
           onChange={(e) => setAcknowledged(e.target.checked)}
-          className="mt-1 w-4 h-4 accent-[var(--monarch-orange)]"
+          className="mt-1 w-4 h-4 accent-(--monarch-orange)"
         />
         <span className="text-sm" style={{ color: 'var(--monarch-text)' }}>
           {isDesktop
-            ? 'I understand this is an open-source tool with no support, I accept responsibility for my credentials and usage, and I acknowledge that using Monarch\'s API may not comply with their Terms of Service.'
-            : 'I understand this is a self-hosted tool with no support, I accept responsibility for my credentials and usage, and I acknowledge that using Monarch\'s API may not comply with their Terms of Service.'}
+            ? "I understand this is an open-source tool with no support, I accept responsibility for my credentials and usage, and I acknowledge that using Monarch's API may not comply with their Terms of Service."
+            : "I understand this is a self-hosted tool with no support, I accept responsibility for my credentials and usage, and I acknowledge that using Monarch's API may not comply with their Terms of Service."}
         </span>
       </label>
 
@@ -110,7 +119,9 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           disabled={!acknowledged}
           className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            backgroundColor: acknowledged ? 'var(--monarch-orange)' : 'var(--monarch-orange-disabled)',
+            backgroundColor: acknowledged
+              ? 'var(--monarch-orange)'
+              : 'var(--monarch-orange-disabled)',
           }}
         >
           I Accept
@@ -138,31 +149,58 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
       >
         {/* Summary table */}
         <section>
-          <h3 className="text-base font-semibold mb-3" style={{ color: 'var(--monarch-text-dark)' }}>
+          <h3
+            className="text-base font-semibold mb-3"
+            style={{ color: 'var(--monarch-text-dark)' }}
+          >
             What You're Accepting
           </h3>
           <table className="w-full text-sm">
             <tbody>
-              <TableRow label={isDesktop ? 'Storage' : 'Hosting'} value={isDesktop ? 'Data stored locally on your computer' : 'You manage your own Docker instance'} />
-              <TableRow label="Support" value={isDesktop ? 'No customer support — this is open-source software' : 'No customer support — this is a self-hosted tool'} />
+              <TableRow
+                label={isDesktop ? 'Storage' : 'Hosting'}
+                value={
+                  isDesktop
+                    ? 'Data stored locally on your computer'
+                    : 'You manage your own Docker instance'
+                }
+              />
+              <TableRow
+                label="Support"
+                value={
+                  isDesktop
+                    ? 'No customer support — this is open-source software'
+                    : 'No customer support — this is a self-hosted tool'
+                }
+              />
               <TableRow label="Credentials" value="You secure and maintain your Monarch login" />
-              <TableRow label="Compliance" value="You accept risks of using Monarch's API" isWarning />
+              <TableRow
+                label="Compliance"
+                value="You accept risks of using Monarch's API"
+                isWarning
+              />
             </tbody>
           </table>
         </section>
 
         {/* Self-Managed / Desktop App */}
         <section>
-          <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
+          <h3
+            className="text-base font-semibold mb-2"
+            style={{ color: 'var(--monarch-text-dark)' }}
+          >
             {isDesktop ? 'Desktop Application' : 'Self-Managed Instance'}
           </h3>
           <p className="text-sm mb-3" style={{ color: 'var(--monarch-text)' }}>
             <strong>Eclosion is not a paid service with customer support.</strong>{' '}
             {isDesktop
               ? 'This is an open-source desktop application that runs entirely on your computer.'
-              : 'When you deploy Eclosion, you\'re creating your own personal instance.'}
+              : "When you deploy Eclosion, you're creating your own personal instance."}
           </p>
-          <ul className="text-sm space-y-1.5 list-disc list-inside" style={{ color: 'var(--monarch-text)' }}>
+          <ul
+            className="text-sm space-y-1.5 list-disc list-inside"
+            style={{ color: 'var(--monarch-text)' }}
+          >
             {isDesktop ? (
               <>
                 <li>All data is stored locally on your computer</li>
@@ -196,17 +234,30 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
           </p>
           <table className="w-full text-sm">
             <tbody>
-              <TableRow label="Storage" value={isDesktop ? 'Credentials stored only on YOUR computer' : 'Credentials stored only on YOUR server'} />
+              <TableRow
+                label="Storage"
+                value={
+                  isDesktop
+                    ? 'Credentials stored only on YOUR computer'
+                    : 'Credentials stored only on YOUR server'
+                }
+              />
               <TableRow label="Encryption" value="AES-256 encryption with your passphrase" />
               <TableRow label="Recovery" value="Lost passphrases cannot be recovered" isWarning />
-              <TableRow label="Responsibility" value="You accept full responsibility for security" />
+              <TableRow
+                label="Responsibility"
+                value="You accept full responsibility for security"
+              />
             </tbody>
           </table>
         </section>
 
         {/* Monarch Money Integration */}
         <section>
-          <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
+          <h3
+            className="text-base font-semibold mb-2"
+            style={{ color: 'var(--monarch-text-dark)' }}
+          >
             Monarch Money Integration
           </h3>
           <p className="text-sm mb-3" style={{ color: 'var(--monarch-text)' }}>
@@ -218,19 +269,31 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
             Compliance Considerations
           </h4>
           <div className="text-sm space-y-2 mb-3" style={{ color: 'var(--monarch-text)' }}>
-            <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+            <div
+              className="flex justify-between py-1.5 border-b"
+              style={{ borderColor: 'var(--monarch-border)' }}
+            >
               <span>Uses Monarch API with YOUR credentials</span>
               <StatusIndicator status="ok" text="Your own data" />
             </div>
-            <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+            <div
+              className="flex justify-between py-1.5 border-b"
+              style={{ borderColor: 'var(--monarch-border)' }}
+            >
               <span>Programmatic access</span>
               <StatusIndicator status="warning" text="Technically prohibited" />
             </div>
-            <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+            <div
+              className="flex justify-between py-1.5 border-b"
+              style={{ borderColor: 'var(--monarch-border)' }}
+            >
               <span>Rate limiting implemented</span>
               <StatusIndicator status="ok" text="Responsible usage" />
             </div>
-            <div className="flex justify-between py-1.5 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+            <div
+              className="flex justify-between py-1.5 border-b"
+              style={{ borderColor: 'var(--monarch-border)' }}
+            >
               <span>Account restriction risk</span>
               <StatusIndicator status="warning" text="Theoretically possible" />
             </div>
@@ -253,13 +316,19 @@ export function TermsModal({ isOpen, onClose, onAccept }: TermsModalProps) {
 
         {/* No Warranty */}
         <section>
-          <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
+          <h3
+            className="text-base font-semibold mb-2"
+            style={{ color: 'var(--monarch-text-dark)' }}
+          >
             No Warranty
           </h3>
           <p className="text-sm mb-2" style={{ color: 'var(--monarch-text)' }}>
             Eclosion is open source software provided "as-is" without any warranty.
           </p>
-          <ul className="text-sm space-y-1.5 list-disc list-inside" style={{ color: 'var(--monarch-text)' }}>
+          <ul
+            className="text-sm space-y-1.5 list-disc list-inside"
+            style={{ color: 'var(--monarch-text)' }}
+          >
             <li>Not liable for data loss, service interruptions, or API changes</li>
             <li>Features may break if Monarch changes their API</li>
             <li>You use this tool at your own risk</li>

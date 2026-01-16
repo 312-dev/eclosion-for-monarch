@@ -50,52 +50,61 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
     closeLinkModal,
   } = useRecurringItemActions(onRefresh);
 
-  const enabledCount = items.filter(item => item.is_enabled).length;
+  const enabledCount = items.filter((item) => item.is_enabled).length;
   const disabledCount = items.length - enabledCount;
-  const filteredItems = hideDisabled ? items.filter(item => item.is_enabled) : items;
+  const filteredItems = hideDisabled ? items.filter((item) => item.is_enabled) : items;
 
-  const handleSort = useCallback((field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  }, [sortField, sortDirection]);
-
-  const sortItems = useCallback((itemsToSort: RecurringItem[]) => {
-    return [...itemsToSort].sort((a, b) => {
-      if (a.is_enabled !== b.is_enabled) {
-        return a.is_enabled ? -1 : 1;
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortField(field);
+        setSortDirection('asc');
       }
+    },
+    [sortField, sortDirection]
+  );
 
-      let comparison = 0;
-      switch (sortField) {
-        case 'due_date':
-          comparison = new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime();
-          break;
-        case 'amount':
-          comparison = a.amount - b.amount;
-          break;
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'monthly': {
-          comparison = a.frozen_monthly_target - b.frozen_monthly_target;
-          break;
+  const sortItems = useCallback(
+    (itemsToSort: RecurringItem[]) => {
+      return [...itemsToSort].sort((a, b) => {
+        if (a.is_enabled !== b.is_enabled) {
+          return a.is_enabled ? -1 : 1;
         }
-      }
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  }, [sortField, sortDirection]);
+
+        let comparison = 0;
+        switch (sortField) {
+          case 'due_date':
+            comparison = new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime();
+            break;
+          case 'amount':
+            comparison = a.amount - b.amount;
+            break;
+          case 'name':
+            comparison = a.name.localeCompare(b.name);
+            break;
+          case 'monthly': {
+            comparison = a.frozen_monthly_target - b.frozen_monthly_target;
+            break;
+          }
+        }
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    },
+    [sortField, sortDirection]
+  );
 
   const groupedItems = useMemo(() => {
-    return filteredItems.reduce((acc, item) => {
-      const freq = item.frequency;
-      if (!acc[freq]) acc[freq] = [];
-      acc[freq].push(item);
-      return acc;
-    }, {} as Record<string, RecurringItem[]>);
+    return filteredItems.reduce(
+      (acc, item) => {
+        const freq = item.frequency;
+        if (!acc[freq]) acc[freq] = [];
+        acc[freq].push(item);
+        return acc;
+      },
+      {} as Record<string, RecurringItem[]>
+    );
   }, [filteredItems]);
 
   const sortedFrequencies = useMemo(() => {
@@ -107,9 +116,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
   // Compute tour target IDs for specific items (first of each type)
   const tourTargetIds = useMemo(() => {
     // Flatten all items in render order
-    const allItems = sortedFrequencies.flatMap(
-      (freq) => sortItems(groupedItems[freq] ?? [])
-    );
+    const allItems = sortedFrequencies.flatMap((freq) => sortItems(groupedItems[freq] ?? []));
 
     // Find first item matching each condition
     const firstIndividual = allItems.find((i) => i.is_enabled && !i.is_in_rollup);
@@ -129,9 +136,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
     return (
       <div className="flex flex-col items-center justify-center py-16 text-monarch-text-muted">
         <Inbox size={48} strokeWidth={1.5} className="mb-4 opacity-50" />
-        <p className="text-lg font-medium mb-1 text-monarch-text-light">
-          No recurring items found
-        </p>
+        <p className="text-lg font-medium mb-1 text-monarch-text-light">No recurring items found</p>
         <p className="text-sm">
           Click "Sync Now" to fetch your recurring transactions from Monarch.
         </p>
@@ -154,7 +159,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
             All items hidden by filters
           </p>
           <p className="text-sm">
-            {disabledCount} disabled item{disabledCount !== 1 ? 's are' : ' is'} currently hidden
+            {disabledCount} disabled item{disabledCount === 1 ? ' is' : 's are'} currently hidden
           </p>
         </div>
       </div>
@@ -192,7 +197,8 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
                   onLinkCategory={handleLinkCategory}
                   highlightId={highlightId}
                   showCategoryGroup={showCategoryGroup}
-                  {...(isCardLayout && tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
+                  {...(isCardLayout &&
+                    tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
                 />
               ))}
             </Fragment>
@@ -232,7 +238,8 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
                     onLinkCategory={handleLinkCategory}
                     highlightId={highlightId}
                     showCategoryGroup={showCategoryGroup}
-                    {...(!isCardLayout && tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
+                    {...(!isCardLayout &&
+                      tourTargetIds[item.id] && { dataTourId: tourTargetIds[item.id] })}
                   />
                 ))}
               </Fragment>

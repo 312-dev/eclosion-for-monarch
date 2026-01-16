@@ -34,13 +34,13 @@ export function AutoBackupSection() {
   const [restoreBackup, setRestoreBackup] = useState<AutoBackupFileInfo | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!window.electron?.autoBackup) return;
+    if (!globalThis.electron?.autoBackup) return;
 
     try {
       const [settingsData, optionsData, backupsData] = await Promise.all([
-        window.electron.autoBackup.getSettings(),
-        window.electron.autoBackup.getRetentionOptions(),
-        window.electron.autoBackup.listBackups(),
+        globalThis.electron.autoBackup.getSettings(),
+        globalThis.electron.autoBackup.getRetentionOptions(),
+        globalThis.electron.autoBackup.listBackups(),
       ]);
 
       setSettings(settingsData);
@@ -54,7 +54,7 @@ export function AutoBackupSection() {
   }, []);
 
   useEffect(() => {
-    if (window.electron?.autoBackup) {
+    if (globalThis.electron?.autoBackup) {
       fetchData();
     } else {
       setLoading(false);
@@ -62,19 +62,21 @@ export function AutoBackupSection() {
   }, [fetchData]);
 
   const handleEnabledChange = async () => {
-    if (!window.electron?.autoBackup || !settings) return;
+    if (!globalThis.electron?.autoBackup || !settings) return;
 
     let selectedPath: string | null = null;
     if (!settings.enabled && !settings.folderPath) {
-      selectedPath = await window.electron.autoBackup.selectFolder();
+      selectedPath = await globalThis.electron.autoBackup.selectFolder();
       if (!selectedPath) return;
     }
 
     try {
       const newValue = !settings.enabled;
-      await window.electron.autoBackup.setEnabled(newValue);
+      await globalThis.electron.autoBackup.setEnabled(newValue);
       setSettings((prev) =>
-        prev ? { ...prev, enabled: newValue, ...(selectedPath && { folderPath: selectedPath }) } : null
+        prev
+          ? { ...prev, enabled: newValue, ...(selectedPath && { folderPath: selectedPath }) }
+          : null
       );
 
       if (newValue) toast.success('Auto-backup enabled');
@@ -84,13 +86,13 @@ export function AutoBackupSection() {
   };
 
   const handleSelectFolder = async () => {
-    if (!window.electron?.autoBackup) return;
+    if (!globalThis.electron?.autoBackup) return;
 
     try {
-      const path = await window.electron.autoBackup.selectFolder();
+      const path = await globalThis.electron.autoBackup.selectFolder();
       if (path) {
         setSettings((prev) => (prev ? { ...prev, folderPath: path } : null));
-        const backupsData = await window.electron.autoBackup.listBackups();
+        const backupsData = await globalThis.electron.autoBackup.listBackups();
         setBackups(backupsData);
         toast.success('Backup folder updated');
       }
@@ -100,15 +102,15 @@ export function AutoBackupSection() {
   };
 
   const handleOpenFolder = async () => {
-    if (!window.electron?.autoBackup || !settings?.folderPath) return;
-    await window.electron.autoBackup.openFolder();
+    if (!globalThis.electron?.autoBackup || !settings?.folderPath) return;
+    await globalThis.electron.autoBackup.openFolder();
   };
 
   const handleRetentionChange = async (days: number) => {
-    if (!window.electron?.autoBackup) return;
+    if (!globalThis.electron?.autoBackup) return;
 
     try {
-      await window.electron.autoBackup.setRetention(days);
+      await globalThis.electron.autoBackup.setRetention(days);
       setSettings((prev) => (prev ? { ...prev, retentionDays: days } : null));
     } catch {
       toast.error('Failed to update retention period');
@@ -116,10 +118,10 @@ export function AutoBackupSection() {
   };
 
   const handleScheduledTimeChange = async (time: string) => {
-    if (!window.electron?.autoBackup) return;
+    if (!globalThis.electron?.autoBackup) return;
 
     try {
-      await window.electron.autoBackup.setScheduledTime(time);
+      await globalThis.electron.autoBackup.setScheduledTime(time);
       setSettings((prev) => (prev ? { ...prev, scheduledTime: time } : null));
     } catch {
       toast.error('Failed to update backup time');
@@ -127,11 +129,11 @@ export function AutoBackupSection() {
   };
 
   const handleBackupNow = async () => {
-    if (!window.electron?.autoBackup || isBackingUp) return;
+    if (!globalThis.electron?.autoBackup || isBackingUp) return;
 
     setIsBackingUp(true);
     try {
-      const result = await window.electron.autoBackup.runNow();
+      const result = await globalThis.electron.autoBackup.runNow();
       if (result.success) {
         toast.success('Backup created successfully');
         await fetchData();
@@ -146,9 +148,9 @@ export function AutoBackupSection() {
   };
 
   const handleRestore = async (backup: AutoBackupFileInfo, passphrase?: string) => {
-    if (!window.electron?.autoBackup) return;
+    if (!globalThis.electron?.autoBackup) return;
 
-    const result = await window.electron.autoBackup.restore(backup.filePath, passphrase);
+    const result = await globalThis.electron.autoBackup.restore(backup.filePath, passphrase);
 
     if (result.success) {
       toast.success('Settings restored successfully. Refreshing...');
@@ -161,7 +163,7 @@ export function AutoBackupSection() {
     }
   };
 
-  if (!window.electron?.autoBackup) return null;
+  if (!globalThis.electron?.autoBackup) return null;
 
   const isConfigured = settings?.folderPath != null;
   const lastBackupText = settings?.lastBackupDate
@@ -192,7 +194,10 @@ export function AutoBackupSection() {
         </div>
       </div>
 
-      <SettingsRow label="Enable Auto-Backup" description="Encrypt and save daily backups automatically">
+      <SettingsRow
+        label="Enable Auto-Backup"
+        description="Encrypt and save daily backups automatically"
+      >
         <ToggleSwitch
           checked={settings?.enabled ?? false}
           onChange={handleEnabledChange}
@@ -209,7 +214,10 @@ export function AutoBackupSection() {
               onClick={handleOpenFolder}
               disabled={loading}
               className="px-3 py-1.5 rounded-lg text-sm font-medium hover-bg-page-to-hover flex items-center gap-1.5"
-              style={{ color: 'var(--monarch-text-dark)', border: '1px solid var(--monarch-border)' }}
+              style={{
+                color: 'var(--monarch-text-dark)',
+                border: '1px solid var(--monarch-border)',
+              }}
               aria-label="Open backup folder"
             >
               <ExternalLink size={14} />
@@ -246,7 +254,9 @@ export function AutoBackupSection() {
             aria-label="Select retention period"
           >
             {retentionOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
           <ChevronDown
@@ -279,9 +289,16 @@ export function AutoBackupSection() {
 
       <div
         className="px-4 py-3 ml-14 flex items-center justify-between"
-        style={{ borderBottom: backups.length > 0 ? '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' : undefined }}
+        style={{
+          borderBottom:
+            backups.length > 0
+              ? '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))'
+              : undefined,
+        }}
       >
-        <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>{lastBackupText}</div>
+        <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+          {lastBackupText}
+        </div>
         <button
           type="button"
           onClick={handleBackupNow}
@@ -290,7 +307,7 @@ export function AutoBackupSection() {
           style={{
             color: 'var(--monarch-text-dark)',
             border: '1px solid var(--monarch-border)',
-            opacity: !isConfigured ? 0.6 : 1,
+            opacity: isConfigured ? 1 : 0.6,
           }}
           aria-label="Create backup now"
         >

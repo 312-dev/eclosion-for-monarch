@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Root component with all routes and providers */
 /**
  * App - Root component with routing and providers
  *
@@ -7,7 +8,15 @@
  */
 
 import { useEffect } from 'react';
-import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from './components/ui/Tooltip';
 import { ToastProvider } from './context/ToastContext';
@@ -37,6 +46,7 @@ import { useElectronNavigation } from './hooks/useElectronNavigation';
 import { BetaBanner } from './components/ui/BetaBanner';
 import { MfaReauthPrompt } from './components/MfaReauthPrompt';
 import { SessionExpiredOverlay } from './components/SessionExpiredOverlay';
+import { UpdateProvider } from './context/UpdateContext';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
 
@@ -113,7 +123,8 @@ const queryClient = new QueryClient({
  * Production routes with authentication
  */
 function ProductionRoutes() {
-  const { loading, error, checkAuth, mfaRequiredData, clearMfaRequired, setAuthenticated } = useAuth();
+  const { loading, error, checkAuth, mfaRequiredData, clearMfaRequired, setAuthenticated } =
+    useAuth();
   const navigate = useNavigate();
 
   // Show error page if auth check failed
@@ -224,6 +235,101 @@ function GlobalDemoRoutes() {
 }
 
 /**
+ * Development-only message for docs routes
+ */
+function DocsDevMessage() {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center p-8"
+      style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+    >
+      <div className="text-center max-w-md">
+        <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
+          Docs not available here
+        </h1>
+        <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
+          In development, Docusaurus runs on a separate port. Start it with:
+        </p>
+        <code
+          className="block p-3 rounded-lg text-sm mb-4"
+          style={{ backgroundColor: 'var(--monarch-bg-card)', color: 'var(--monarch-text)' }}
+        >
+          cd docusaurus && npm start
+        </code>
+        <a href="/" className="text-sm" style={{ color: 'var(--monarch-orange)' }}>
+          ← Back to home
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Handles routing for the marketing site (Cloudflare Pages)
+ */
+function MarketingSiteRoutes() {
+  const location = useLocation();
+
+  const isDemo = location.pathname.startsWith('/demo');
+  const isLanding = location.pathname === '/';
+  const isDownload = location.pathname === '/download' || location.pathname === '/download/';
+  const isFeatures =
+    location.pathname === '/features' || location.pathname.startsWith('/features/');
+  const isDocs = location.pathname.startsWith('/docs');
+
+  if (isLanding) {
+    return (
+      <>
+        <BetaBanner />
+        <LandingPage />
+      </>
+    );
+  }
+
+  if (isFeatures) {
+    return (
+      <>
+        <BetaBanner />
+        <Routes>
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/features/:featureId" element={<FeatureDetailPage />} />
+        </Routes>
+      </>
+    );
+  }
+
+  if (isDownload) {
+    return (
+      <>
+        <BetaBanner />
+        <DownloadPage />
+      </>
+    );
+  }
+
+  if (isDemo) {
+    return (
+      <>
+        <BetaBanner />
+        <DemoRoutes />
+      </>
+    );
+  }
+
+  if (isDocs) {
+    const isLocalhost =
+      globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+      return <DocsDevMessage />;
+    }
+    globalThis.location.replace(location.pathname + location.search + location.hash);
+    return null;
+  }
+
+  return <Navigate to="/" replace />;
+}
+
+/**
  * Main router that handles all route matching
  */
 function AppRouter() {
@@ -233,103 +339,18 @@ function AppRouter() {
   // Listen for navigation events from Electron main process (e.g., Settings menu)
   useElectronNavigation();
 
-  const isDemo = location.pathname.startsWith('/demo');
-  const isLanding = location.pathname === '/';
-  const isDownload =
-    location.pathname === '/download' || location.pathname === '/download/';
-  const isFeatures =
-    location.pathname === '/features' ||
-    location.pathname.startsWith('/features/');
-
-  // Marketing site (Cloudflare Pages): Show landing page, docs, and demo at /demo/*
   if (isMarketingSite) {
-    // Landing page
-    if (isLanding) {
-      return (
-        <>
-          <BetaBanner />
-          <LandingPage />
-        </>
-      );
-    }
-
-    // Features pages
-    if (isFeatures) {
-      return (
-        <>
-          <BetaBanner />
-          <Routes>
-            <Route path="/features" element={<FeaturesPage />} />
-            <Route path="/features/:featureId" element={<FeatureDetailPage />} />
-          </Routes>
-        </>
-      );
-    }
-
-    // Download page
-    if (isDownload) {
-      return (
-        <>
-          <BetaBanner />
-          <DownloadPage />
-        </>
-      );
-    }
-
-    // Demo at /demo/* paths
-    if (isDemo) {
-      return (
-        <>
-          <BetaBanner />
-          <DemoRoutes />
-        </>
-      );
-    }
-
-    // Docusaurus paths (/docs/*) - force full page reload to serve static HTML
-    // This handles the edge case where React Router intercepts a /docs navigation
-    if (location.pathname.startsWith('/docs')) {
-      const isLocalhost = globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1';
-      if (isLocalhost) {
-        // Show helpful message on localhost since Docusaurus runs on a separate port
-        return (
-          <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
-            <div className="text-center max-w-md">
-              <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
-                Docs not available here
-              </h1>
-              <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
-                In development, Docusaurus runs on a separate port. Start it with:
-              </p>
-              <code className="block p-3 rounded-lg text-sm mb-4" style={{ backgroundColor: 'var(--monarch-bg-card)', color: 'var(--monarch-text)' }}>
-                cd docusaurus && npm start
-              </code>
-              <a href="/" className="text-sm" style={{ color: 'var(--monarch-orange)' }}>
-                ← Back to home
-              </a>
-            </div>
-          </div>
-        );
-      }
-      globalThis.location.replace(location.pathname + location.search + location.hash);
-      return null;
-    }
-
-    // Catch-all: redirect to landing
-    return <Navigate to="/" replace />;
+    return <MarketingSiteRoutes />;
   }
 
-  // Global demo mode (Cloudflare Pages demo site): Serve demo at root paths
   if (isGlobalDemoMode) {
     return <GlobalDemoRoutes />;
   }
 
-  // Demo mode routes (path-based /demo/*)
-  if (isDemo) {
+  if (location.pathname.startsWith('/demo')) {
     return <DemoRoutes />;
   }
 
-  // Production routes with auth
   return (
     <AuthProvider>
       <ProductionRoutes />
@@ -353,7 +374,9 @@ export default function App() {
               <RateLimitProvider>
                 <DemoProvider>
                   <MonthTransitionProvider>
-                    <AppRouter />
+                    <UpdateProvider>
+                      <AppRouter />
+                    </UpdateProvider>
                   </MonthTransitionProvider>
                 </DemoProvider>
               </RateLimitProvider>

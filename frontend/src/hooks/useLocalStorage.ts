@@ -25,13 +25,13 @@ export function useLocalStorage<T>(
   // Get initial value from localStorage or use provided initial value
   const getStoredValue = useCallback((): T => {
     // SSR-safe: check if window is defined
-    if (typeof window === 'undefined') {
+    if (typeof globalThis.window === 'undefined') {
       return initialValue;
     }
 
     try {
-      const item = window.localStorage.getItem(key);
-      return item !== null ? (JSON.parse(item) as T) : initialValue;
+      const item = globalThis.localStorage.getItem(key);
+      return item === null ? initialValue : (JSON.parse(item) as T);
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
@@ -47,14 +47,13 @@ export function useLocalStorage<T>(
     (value: T | ((prev: T) => T)) => {
       try {
         // Allow value to be a function for same API as useState
-        const valueToStore =
-          value instanceof Function ? value(storedValue) : value;
+        const valueToStore = value instanceof Function ? value(storedValue) : value;
 
         setStoredValue(valueToStore);
 
         // SSR-safe: check if window is defined
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        if (typeof globalThis.window !== 'undefined') {
+          globalThis.localStorage.setItem(key, JSON.stringify(valueToStore));
         }
       } catch (error) {
         console.warn(`Error setting localStorage key "${key}":`, error);
@@ -65,7 +64,7 @@ export function useLocalStorage<T>(
 
   // Sync with localStorage changes from other tabs/windows
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return;
 
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === key && event.newValue !== null) {
@@ -77,8 +76,8 @@ export function useLocalStorage<T>(
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    globalThis.addEventListener('storage', handleStorageChange);
+    return () => globalThis.removeEventListener('storage', handleStorageChange);
   }, [key]);
 
   return [storedValue, setValue];

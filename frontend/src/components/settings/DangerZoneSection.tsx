@@ -4,17 +4,23 @@
  * Destructive actions like resetting credentials and uninstalling.
  */
 
-import { AlertTriangle, Key, Bomb, Trash2, RefreshCw, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Key, RotateCcw, ChevronRight } from 'lucide-react';
 
 interface DangerZoneSectionProps {
   onShowResetModal: () => void;
   onShowUninstallModal: () => void;
 }
 
-export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: DangerZoneSectionProps) {
+export function DangerZoneSection({
+  onShowResetModal,
+  onShowUninstallModal,
+}: DangerZoneSectionProps) {
   return (
     <section>
-      <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-error)' }}>
+      <h2
+        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
+        style={{ color: 'var(--monarch-error)' }}
+      >
         <AlertTriangle size={12} />
         Danger Zone
       </h2>
@@ -23,7 +29,7 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-error)',
-          boxShadow: '0 1px 3px rgba(220, 38, 38, 0.08)'
+          boxShadow: '0 1px 3px rgba(220, 38, 38, 0.08)',
         }}
       >
         {/* Reset App */}
@@ -35,9 +41,9 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
         >
           <div
             className="p-2.5 rounded-lg shrink-0"
-            style={{ backgroundColor: 'var(--monarch-error-bg)' }}
+            style={{ backgroundColor: 'var(--monarch-orange-light)' }}
           >
-            <Key size={20} style={{ color: 'var(--monarch-error)' }} />
+            <Key size={20} style={{ color: 'var(--monarch-orange)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -47,14 +53,17 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
               Clear login but keep tracked subscriptions and settings
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <RefreshCw size={16} style={{ color: 'var(--monarch-error)' }} />
-            <ChevronRight size={16} style={{ color: 'var(--monarch-text-muted)' }} />
-          </div>
+          <ChevronRight
+            size={16}
+            className="shrink-0"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          />
         </button>
 
         {/* Divider */}
-        <div style={{ height: '1px', backgroundColor: 'var(--monarch-border)', margin: '0 1rem' }} />
+        <div
+          style={{ height: '1px', backgroundColor: 'var(--monarch-border)', margin: '0 1rem' }}
+        />
 
         {/* Uninstall */}
         <button
@@ -67,7 +76,7 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
             className="p-2.5 rounded-lg shrink-0"
             style={{ backgroundColor: 'var(--monarch-error-bg)' }}
           >
-            <Bomb size={20} style={{ color: 'var(--monarch-error)' }} />
+            <RotateCcw size={20} style={{ color: 'var(--monarch-error)' }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -77,10 +86,11 @@ export function DangerZoneSection({ onShowResetModal, onShowUninstallModal }: Da
               Remove categories from Monarch and delete all local data
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Trash2 size={16} style={{ color: 'var(--monarch-error)' }} />
-            <ChevronRight size={16} style={{ color: 'var(--monarch-text-muted)' }} />
-          </div>
+          <ChevronRight
+            size={16}
+            className="shrink-0"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          />
         </button>
       </div>
     </section>

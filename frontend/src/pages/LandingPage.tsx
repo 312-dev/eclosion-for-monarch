@@ -62,9 +62,7 @@ function HowItWorksStep({
 
         {/* Content */}
         <div className="flex-1">
-          <h3 className="font-semibold text-lg text-(--monarch-text-dark) mb-2">
-            {title}
-          </h3>
+          <h3 className="font-semibold text-lg text-(--monarch-text-dark) mb-2">{title}</h3>
           <p className="text-(--monarch-text) leading-relaxed">{children}</p>
         </div>
       </div>
@@ -90,126 +88,124 @@ export function LandingPage() {
           {/* Frustration Validation Section */}
           <FrustrationSection onShowSolution={scrollToTransformation} />
 
-      {/* Transformation Preview Section */}
-        <section ref={transformationRef}>
-          <TransformationSection />
-        </section>
+          {/* Transformation Preview Section */}
+          <section ref={transformationRef}>
+            <TransformationSection />
+          </section>
 
-        {/* Features Section (The Toolkit) */}
-        <section className="px-4 sm:px-6 py-16 bg-[var(--monarch-bg-page)]">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-12">
+          {/* Features Section (The Toolkit) */}
+          <section className="px-4 sm:px-6 py-16 bg-(--monarch-bg-page)">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <h2
+                  className="text-3xl font-bold text-(--monarch-text-dark) mb-4"
+                  style={{ fontFamily: "'Unbounded', sans-serif" }}
+                >
+                  Your toolkit, your rules
+                </h2>
+                <p className="text-lg text-(--monarch-text) max-w-2xl mx-auto">
+                  Each feature works independently. Enable only what you need.
+                </p>
+              </div>
+
+              <FeatureGrid features={FEATURES} showComingSoon unified variant="detailed" />
+
+              <div className="text-center mt-8">
+                <Link
+                  to="/features"
+                  className="text-(--monarch-orange) font-medium hover:underline"
+                >
+                  View all features →
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* How It Works Section */}
+          <section className="px-4 sm:px-6 py-16 bg-(--monarch-bg-card)">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-10">
+                <h2
+                  className="text-2xl font-bold text-(--monarch-text-dark) mb-2"
+                  style={{ fontFamily: "'Unbounded', sans-serif" }}
+                >
+                  Ready to emerge?
+                </h2>
+                <p className="text-(--monarch-text)">
+                  Five minutes to set up. Zero maintenance after.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                <HowItWorksStep
+                  icon={CocoonIcon}
+                  iconBg="#3B82F615"
+                  iconColor="text-blue-500"
+                  accentColor="#3B82F6"
+                  title="Spin Your Cocoon"
+                >
+                  Get your own private copy. Download the desktop app or self-host with Docker on
+                  your own server.
+                </HowItWorksStep>
+
+                <HowItWorksStep
+                  icon={ButterflyIcon}
+                  iconBg="#8B5CF615"
+                  iconColor="text-violet-500"
+                  accentColor="#8B5CF6"
+                  title="Unfold Your Wings"
+                >
+                  Sign in with your Monarch credentials. Encrypted and stored only on your server.
+                </HowItWorksStep>
+
+                <HowItWorksStep
+                  icon={CloudSunIcon}
+                  iconBg="#F59E0B15"
+                  iconColor="text-amber-500"
+                  accentColor="#F59E0B"
+                  title="Emerge & Take Flight"
+                >
+                  Enable the features you want. Eclosion handles everything automatically from here.
+                </HowItWorksStep>
+              </div>
+            </div>
+          </section>
+
+          {/* Social Proof Section */}
+          <SocialProofBar />
+
+          {/* Why Eclosion Section */}
+          <WhyEclosionSection />
+
+          {/* CTA Section */}
+          <section className="px-4 sm:px-6 py-20 bg-(--monarch-bg-page)">
+            <div className="max-w-2xl mx-auto text-center">
               <h2
-                className="text-3xl font-bold text-[var(--monarch-text-dark)] mb-4"
+                className="text-3xl font-bold text-(--monarch-text-dark) mb-4"
                 style={{ fontFamily: "'Unbounded', sans-serif" }}
               >
-                Your toolkit, your rules
+                Ready to let your budget take flight?
               </h2>
-              <p className="text-lg text-[var(--monarch-text)] max-w-2xl mx-auto">
-                Each feature works independently. Enable only what you need.
+              <p className="text-lg text-(--monarch-text) mb-8">
+                Try the demo to see how it works, or deploy your own instance today.
               </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  to="/demo/"
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-(--monarch-orange) text-white font-semibold text-lg hover:opacity-90 transition-opacity"
+                >
+                  Try the Demo
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowGetStartedModal(true)}
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-(--monarch-orange) text-(--monarch-orange) font-semibold text-lg hover:bg-(--monarch-orange)/10 transition-colors"
+                >
+                  Get Started
+                </button>
+              </div>
             </div>
-
-            <FeatureGrid features={FEATURES} showComingSoon unified variant="detailed" />
-
-            <div className="text-center mt-8">
-              <Link
-                to="/features"
-                className="text-[var(--monarch-orange)] font-medium hover:underline"
-              >
-                View all features →
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section className="px-4 sm:px-6 py-16 bg-[var(--monarch-bg-card)]">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-10">
-              <h2
-                className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-2"
-                style={{ fontFamily: "'Unbounded', sans-serif" }}
-              >
-                Ready to emerge?
-              </h2>
-              <p className="text-[var(--monarch-text)]">
-                Five minutes to set up. Zero maintenance after.
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              <HowItWorksStep
-                icon={CocoonIcon}
-                iconBg="#3B82F615"
-                iconColor="text-blue-500"
-                accentColor="#3B82F6"
-                title="Spin Your Cocoon"
-              >
-                Get your own private copy. Download the desktop app or self-host with
-                Docker on your own server.
-              </HowItWorksStep>
-
-              <HowItWorksStep
-                icon={ButterflyIcon}
-                iconBg="#8B5CF615"
-                iconColor="text-violet-500"
-                accentColor="#8B5CF6"
-                title="Unfold Your Wings"
-              >
-                Sign in with your Monarch credentials. Encrypted and stored only
-                on your server.
-              </HowItWorksStep>
-
-              <HowItWorksStep
-                icon={CloudSunIcon}
-                iconBg="#F59E0B15"
-                iconColor="text-amber-500"
-                accentColor="#F59E0B"
-                title="Emerge & Take Flight"
-              >
-                Enable the features you want. Eclosion handles everything
-                automatically from here.
-              </HowItWorksStep>
-            </div>
-          </div>
-        </section>
-
-        {/* Social Proof Section */}
-        <SocialProofBar />
-
-        {/* Why Eclosion Section */}
-        <WhyEclosionSection />
-
-        {/* CTA Section */}
-        <section className="px-4 sm:px-6 py-20 bg-(--monarch-bg-page)">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2
-              className="text-3xl font-bold text-[var(--monarch-text-dark)] mb-4"
-              style={{ fontFamily: "'Unbounded', sans-serif" }}
-            >
-              Ready to let your budget take flight?
-            </h2>
-            <p className="text-lg text-[var(--monarch-text)] mb-8">
-              Try the demo to see how it works, or deploy your own instance today.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/demo/"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-[var(--monarch-orange)] text-white font-semibold text-lg hover:opacity-90 transition-opacity"
-              >
-                Try the Demo
-              </Link>
-              <button
-                type="button"
-                onClick={() => setShowGetStartedModal(true)}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl border-2 border-[var(--monarch-orange)] text-[var(--monarch-orange)] font-semibold text-lg hover:bg-(--monarch-orange)/10 transition-colors"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </section>
+          </section>
 
           {/* Get Started Modal */}
           <GetStartedModal

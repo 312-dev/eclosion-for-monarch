@@ -18,7 +18,7 @@ import { AppFooter } from './AppFooter';
 import { appTourStyles } from './appShellTour';
 import { SecurityInfo } from '../SecurityInfo';
 import { UpdateBanner } from '../UpdateBanner';
-import { UpdateReadyBanner, UpdateErrorBanner, DownloadProgressBanner } from '../update';
+import { DesktopUpdateBanner } from '../update';
 import { OfflineIndicator } from '../OfflineIndicator';
 import { RateLimitBanner } from '../ui/RateLimitBanner';
 import { MonthTransitionBanner } from '../ui/MonthTransitionBanner';
@@ -69,7 +69,8 @@ export function AppShell() {
   const pathPrefix = isDemo ? '/demo' : '';
 
   // Check which tour is available for current route
-  const isRecurringPage = location.pathname === '/recurring' || location.pathname === '/demo/recurring';
+  const isRecurringPage =
+    location.pathname === '/recurring' || location.pathname === '/demo/recurring';
   const isNotesPage = location.pathname === '/notes' || location.pathname === '/demo/notes';
   const hasTour = isRecurringPage || isNotesPage;
 
@@ -110,7 +111,15 @@ export function AppShell() {
       let timerId = setTimeout(checkElement, pollInterval);
       return () => clearTimeout(timerId);
     }
-  }, [hasTour, hasCurrentTourSteps, hasSeenCurrentTour, isRecurringPage, isNotesPage, isRecurringConfigured, currentTourSteps]);
+  }, [
+    hasTour,
+    hasCurrentTourSteps,
+    hasSeenCurrentTour,
+    isRecurringPage,
+    isNotesPage,
+    isRecurringConfigured,
+    currentTourSteps,
+  ]);
 
   // Track if we've already notified the tray (only notify once on initial load)
   const hasNotifiedTray = useRef(false);
@@ -118,7 +127,12 @@ export function AppShell() {
   // Sync tray menu with dashboard last_sync on initial load (desktop only)
   // Only runs once when data first loads to avoid excessive tray menu rebuilds
   useEffect(() => {
-    if (!hasNotifiedTray.current && !isDemo && data?.last_sync && globalThis.electron?.pendingSync?.notifyCompleted) {
+    if (
+      !hasNotifiedTray.current &&
+      !isDemo &&
+      data?.last_sync &&
+      globalThis.electron?.pendingSync?.notifyCompleted
+    ) {
       hasNotifiedTray.current = true;
       globalThis.electron.pendingSync.notifyCompleted(data.last_sync).catch(() => {
         // Ignore errors - this is just for tray menu updates
@@ -140,7 +154,6 @@ export function AppShell() {
       });
     }
   }, [isDesktop, data]);
-
 
   // Handle tour close - mark as seen
   const handleTourClose = () => {
@@ -171,7 +184,10 @@ export function AppShell() {
   // Loading state
   if (isLoading || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+      >
         <PageLoadingSpinner />
       </div>
     );
@@ -181,9 +197,21 @@ export function AppShell() {
   if (error) {
     const errorMessage = getErrorMessage(error);
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--monarch-bg-page)' }} role="alert">
-        <div className="rounded-lg shadow-lg max-w-md w-full p-6 text-center" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
-          <div className="mb-4" style={{ color: 'var(--monarch-error)' }}>{errorMessage}</div>
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+        role="alert"
+      >
+        <div
+          className="rounded-lg shadow-lg max-w-md w-full p-6 text-center"
+          style={{
+            backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
+          }}
+        >
+          <div className="mb-4" style={{ color: 'var(--monarch-error)' }}>
+            {errorMessage}
+          </div>
           <button
             type="button"
             onClick={() => refetch()}
@@ -221,9 +249,9 @@ export function AppShell() {
         style={{
           backgroundColor: 'var(--monarch-bg-page)',
           // Increase header height on desktop Electron to account for title bar integration
-          ...(isMacOSElectron && { '--header-height': '73px' } as React.CSSProperties),
+          ...(isMacOSElectron && ({ '--header-height': '73px' } as React.CSSProperties)),
           // Windows: 52px base + 10px top padding + 10px bottom padding + border = ~73px
-          ...(isWindowsElectron && { '--header-height': '73px' } as React.CSSProperties),
+          ...(isWindowsElectron && ({ '--header-height': '73px' } as React.CSSProperties)),
         }}
       >
         {/* Skip to main content link for keyboard users */}
@@ -248,19 +276,16 @@ export function AppShell() {
 
         {/* Update notification banners - sticky below header for visibility on all pages */}
         <div className="app-notification-banners">
+          {/* Web users: UpdateBanner shows dismissible web update notification */}
           <UpdateBanner />
-          <DownloadProgressBanner />
-          <UpdateReadyBanner />
-          <UpdateErrorBanner />
+          {/* Desktop users: DesktopUpdateBanner shows non-dismissible download/ready status */}
+          <DesktopUpdateBanner />
           <MonthTransitionBanner />
           <RateLimitBanner />
           <OfflineIndicator />
         </div>
 
-        <SecurityInfo
-          isOpen={showSecurityInfo}
-          onClose={() => setShowSecurityInfo(false)}
-        />
+        <SecurityInfo isOpen={showSecurityInfo} onClose={() => setShowSecurityInfo(false)} />
 
         {/* What's New modal - shows on first open after upgrade */}
         <WhatsNewModal />
@@ -279,11 +304,7 @@ export function AppShell() {
             {data.notices && data.notices.length > 0 && (
               <section className="px-4 pt-6" aria-label="Notifications">
                 {data.notices.map((notice) => (
-                  <NoticeBanner
-                    key={notice.id}
-                    notice={notice}
-                    onDismiss={() => refetch()}
-                  />
+                  <NoticeBanner key={notice.id} notice={notice} onDismiss={() => refetch()} />
                 ))}
               </section>
             )}

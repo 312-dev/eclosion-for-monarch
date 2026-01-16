@@ -14,18 +14,21 @@ export function OfflineIndicator() {
   const isDesktop = isDesktopMode();
 
   useEffect(() => {
-    if (!isDesktop || !window.electron) return;
+    if (!isDesktop || !globalThis.electron) return;
 
     // Get initial status
-    window.electron.getHealthStatus().then((status) => {
-      setIsOffline(!status.running);
-    }).catch(() => {
-      // Assume online if we can't get status
-      setIsOffline(false);
-    });
+    globalThis.electron
+      .getHealthStatus()
+      .then((status) => {
+        setIsOffline(!status.running);
+      })
+      .catch(() => {
+        // Assume online if we can't get status
+        setIsOffline(false);
+      });
 
     // Listen for status changes
-    const unsubscribe = window.electron.onBackendStatusChanged((status) => {
+    const unsubscribe = globalThis.electron.onBackendStatusChanged((status) => {
       setIsOffline(!status.running);
     });
 
@@ -49,9 +52,7 @@ export function OfflineIndicator() {
       aria-live="polite"
     >
       <WifiOff size={16} aria-hidden="true" />
-      <span>
-        Backend unavailable — Sync is paused. The app will reconnect automatically.
-      </span>
+      <span>Backend unavailable — Sync is paused. The app will reconnect automatically.</span>
     </div>
   );
 }

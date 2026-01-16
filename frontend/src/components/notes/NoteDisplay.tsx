@@ -56,7 +56,11 @@ export function NoteDisplay({
   const { note, sourceMonth, isInherited } = effectiveNote;
 
   // Checkbox state management
-  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
+  const {
+    checkboxStates,
+    toggleCheckbox,
+    isLoading: checkboxesLoading,
+  } = useCheckboxState({
     noteId: note?.id,
     viewingMonth: currentMonth,
     enabled: !!note,
@@ -85,10 +89,7 @@ export function NoteDisplay({
       >
         {/* Inheritance badge */}
         {isInherited && sourceMonth && (
-          <div
-            className="text-xs mb-1"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
+          <div className="text-xs mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
             from {formatSourceMonth(sourceMonth)}
           </div>
         )}
@@ -112,7 +113,7 @@ export function NoteDisplay({
               e.stopPropagation();
               setShowHistory(true);
             }}
-            className="p-1 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors icon-btn-hover"
+            className="p-1 rounded hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
             style={{ color: 'var(--monarch-text-muted)' }}
             aria-label="View revision history"
             title="History"
@@ -125,7 +126,7 @@ export function NoteDisplay({
               e.stopPropagation();
               onEdit();
             }}
-            className="p-1 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors icon-btn-hover"
+            className="p-1 rounded hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
             style={{ color: 'var(--monarch-text-muted)' }}
             aria-label="Edit note"
             title="Edit"

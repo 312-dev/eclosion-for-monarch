@@ -52,14 +52,10 @@ export const ContributorAvatar = memo(function ContributorAvatar({
         <img
           src={avatarUrl}
           alt={`@${username}`}
-          className={`${SIZE_CLASSES[size]} rounded-full border border-[var(--monarch-border)]`}
+          className={`${SIZE_CLASSES[size]} rounded-full border border-(--monarch-border)`}
           loading="lazy"
         />
-        {showUsername && (
-          <span className="text-sm text-[var(--monarch-text-muted)]">
-            @{username}
-          </span>
-        )}
+        {showUsername && <span className="text-sm text-(--monarch-text-muted)">@{username}</span>}
       </a>
     </Tooltip>
   );

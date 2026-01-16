@@ -18,7 +18,14 @@ export interface ItemCardProps {
   readonly pendingLink: PendingLink | undefined;
 }
 
-export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendingLink }: ItemCardProps) {
+export function ItemCard({
+  item,
+  checked,
+  onChange,
+  onLinkClick,
+  onUnlink,
+  pendingLink,
+}: ItemCardProps) {
   // split() always returns at least one element, so [0] is always defined
   const namePart = item.name.split(' (')[0]!;
   const displayName = decodeHtmlEntities(item.merchant_name ?? namePart);
@@ -40,9 +47,7 @@ export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendi
           backgroundColor: checked ? 'var(--monarch-orange)' : 'transparent',
         }}
       >
-        {checked && (
-          <CheckIcon size={12} color="white" strokeWidth={3} />
-        )}
+        {checked && <CheckIcon size={12} color="white" strokeWidth={3} />}
       </div>
 
       <MerchantLogo item={item} size={40} />
@@ -92,7 +97,8 @@ export function ItemCard({ item, checked, onChange, onLinkClick, onUnlink, pendi
             {formatCurrency(item.ideal_monthly_rate, { maximumFractionDigits: 0 })}/mo
           </div>
           <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-            {formatCurrency(item.amount, { maximumFractionDigits: 0 })} {formatFrequency(item.frequency).toLowerCase()}
+            {formatCurrency(item.amount, { maximumFractionDigits: 0 })}{' '}
+            {formatFrequency(item.frequency).toLowerCase()}
           </div>
         </div>
       </div>

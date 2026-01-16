@@ -15,8 +15,18 @@ export interface DateRangePreset {
 }
 
 export const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /**
@@ -161,7 +171,7 @@ export function getMonthDifference(from: MonthKey, to: MonthKey): number {
  */
 export function calculateYearRange(
   currentYear: number,
-  yearsWithNotes: number[],
+  yearsWithNotes: readonly number[],
   minRange: number
 ): number[] {
   const allYears = new Set([currentYear, ...yearsWithNotes]);

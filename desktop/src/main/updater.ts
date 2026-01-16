@@ -7,14 +7,19 @@
  * Channel is determined at build time - no runtime switching.
  * Beta builds see only beta prereleases (versions with '-beta' suffix).
  * Stable builds see only stable releases.
+ *
+ * Auto-update is always enabled - updates are downloaded automatically
+ * and the app restarts to install them.
  */
 
 import { autoUpdater, UpdateInfo } from 'electron-updater';
 import { app, dialog } from 'electron';
 import { showNotification } from './tray';
-import { getMainWindow } from './window';
-import { getStore } from './store';
+import { getMainWindow, setIsQuitting } from './window';
 import { debugLog } from './logger';
+
+/** Update check timeout for boot (10 seconds) */
+const BOOT_UPDATE_TIMEOUT_MS = 10000;
 
 const LOG_PREFIX = '[Updater]';
 
@@ -92,6 +97,7 @@ function getBuildTimeChannel(): UpdateChannel {
 /**
  * Initialize the auto-updater.
  * Channel is determined at build time - beta builds see only prereleases.
+ * Auto-download is always enabled - updates install automatically.
  */
 export function initializeUpdater(): void {
   // Use build-time channel - no runtime switching
@@ -107,17 +113,15 @@ export function initializeUpdater(): void {
   }
   autoUpdater.allowDowngrade = false;
 
-  // Configure auto-updater
-  // Auto-download is disabled by default - user must opt-in via settings
-  const autoUpdateEnabled = getStore().get('autoUpdateEnabled', false);
-  autoUpdater.autoDownload = autoUpdateEnabled;
-  autoUpdater.autoInstallOnAppQuit = autoUpdateEnabled;
+  // Auto-download is always enabled - forced on for all users
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
 
   debugLog(`Build-time channel: ${channel}`, LOG_PREFIX);
   debugLog(`__RELEASE_CHANNEL__ = ${typeof __RELEASE_CHANNEL__ !== 'undefined' ? __RELEASE_CHANNEL__ : 'undefined'}`, LOG_PREFIX);
   debugLog(`autoUpdater.allowPrerelease = ${autoUpdater.allowPrerelease}`, LOG_PREFIX);
   debugLog(`autoUpdater.channel = ${autoUpdater.channel || '(not set, defaults to latest)'}`, LOG_PREFIX);
-  debugLog(`Auto-download: ${autoUpdateEnabled ? 'enabled' : 'disabled'}`, LOG_PREFIX);
+  debugLog('Auto-download: always enabled', LOG_PREFIX);
 
   // Event handlers
   autoUpdater.on('checking-for-update', () => {
@@ -151,13 +155,14 @@ export function initializeUpdater(): void {
     updateDownloaded = true;
     updateInfo = info;
 
-    // Show notification
+    notifyRenderer('update-downloaded', info);
+
+    // Show notification that update is ready
+    // User will see banner in app and can restart when ready
     showNotification(
       'Update Ready',
-      `Version ${info.version} is ready to install. Restart Eclosion to apply the update.`
+      `Version ${info.version} has been downloaded. Restart to install.`
     );
-
-    notifyRenderer('update-downloaded', info);
   });
 
   autoUpdater.on('error', (err) => {
@@ -175,49 +180,6 @@ export function initializeUpdater(): void {
  */
 export function getUpdateChannel(): UpdateChannel {
   return getBuildTimeChannel();
-}
-
-/**
- * Check if auto-update is enabled.
- * When disabled, updates are still checked for and displayed, but not auto-downloaded.
- */
-export function isAutoUpdateEnabled(): boolean {
-  return getStore().get('autoUpdateEnabled', false);
-}
-
-/**
- * Enable or disable auto-update.
- * When enabled, updates are automatically downloaded and installed on quit.
- * When disabled, updates are shown but must be manually downloaded.
- */
-export function setAutoUpdateEnabled(enabled: boolean): void {
-  getStore().set('autoUpdateEnabled', enabled);
-  autoUpdater.autoDownload = enabled;
-  autoUpdater.autoInstallOnAppQuit = enabled;
-  debugLog(`Auto-update ${enabled ? 'enabled' : 'disabled'}`, LOG_PREFIX);
-}
-
-/**
- * Manually download an available update.
- * Use this when auto-update is disabled but the user wants to update.
- */
-export async function downloadUpdate(): Promise<{ success: boolean; error?: string }> {
-  if (!updateAvailable || !updateInfo) {
-    return { success: false, error: 'No update available' };
-  }
-
-  if (updateDownloaded) {
-    return { success: true }; // Already downloaded
-  }
-
-  try {
-    await autoUpdater.downloadUpdate();
-    return { success: true };
-  } catch (err) {
-    const cleanMessage = getCleanErrorMessage(err as Error);
-    debugLog(`Failed to download update: ${cleanMessage}`, LOG_PREFIX);
-    return { success: false, error: cleanMessage };
-  }
 }
 
 /**
@@ -253,9 +215,25 @@ export async function checkForUpdates(): Promise<{ updateAvailable: boolean; ver
  * This will quit the app and install the update.
  */
 export function quitAndInstall(): void {
-  if (updateDownloaded) {
+  if (!updateDownloaded) {
+    debugLog('quitAndInstall called but no update downloaded', LOG_PREFIX);
+    notifyRenderer('update-error', { message: 'No update available to install' });
+    return;
+  }
+
+  try {
     debugLog('Installing update...', LOG_PREFIX);
+    // Set isQuitting flag to prevent window close handler from hiding to tray
+    // instead of actually quitting. Without this, closeToTray=true would
+    // intercept the quit and just hide the window, leaving the app stuck.
+    setIsQuitting(true);
     autoUpdater.quitAndInstall(false, true);
+  } catch (err) {
+    // Reset quitting flag since we're not actually quitting
+    setIsQuitting(false);
+    const cleanMessage = getCleanErrorMessage(err as Error);
+    debugLog(`Failed to install update: ${cleanMessage}`, LOG_PREFIX);
+    notifyRenderer('update-error', { message: `Installation failed: ${cleanMessage}` });
   }
 }
 
@@ -311,6 +289,7 @@ export async function offerUpdateOnStartupFailure(): Promise<boolean> {
 
   if (result.response === 0) {
     debugLog('User chose to install update after startup failure', LOG_PREFIX);
+    setIsQuitting(true);
     autoUpdater.quitAndInstall(false, true);
     return true;
   }
@@ -326,11 +305,75 @@ export function hasDownloadedUpdate(): boolean {
 }
 
 /**
+ * Check for updates at boot time with a timeout.
+ * If an update is available, it will be downloaded automatically and the app will restart.
+ *
+ * @returns Object with update status and whether boot should wait
+ */
+export async function checkForUpdatesOnBoot(): Promise<{
+  updateAvailable: boolean;
+  version?: string;
+  timedOut: boolean;
+}> {
+  // Don't check in dev mode
+  if (!app.isPackaged) {
+    debugLog('Skipping boot update check (development mode)', LOG_PREFIX);
+    return { updateAvailable: false, timedOut: false };
+  }
+
+  debugLog('Checking for updates on boot...', LOG_PREFIX);
+  notifyRenderer('boot-checking', { message: 'Checking for updates...' });
+
+  // Create a timeout promise
+  const timeoutPromise = new Promise<{ timedOut: true }>((resolve) => {
+    setTimeout(() => {
+      debugLog('Boot update check timed out', LOG_PREFIX);
+      resolve({ timedOut: true });
+    }, BOOT_UPDATE_TIMEOUT_MS);
+  });
+
+  // Create the update check promise
+  const updatePromise = (async (): Promise<{
+    updateAvailable: boolean;
+    version?: string;
+    timedOut: false;
+  }> => {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      if (result?.updateInfo?.version && result.updateInfo.version !== app.getVersion()) {
+        debugLog(`Update available on boot: ${result.updateInfo.version}`, LOG_PREFIX);
+        // Auto-download is enabled, so it will start downloading automatically
+        // The 'update-downloaded' event handler will auto-install
+        return {
+          updateAvailable: true,
+          version: result.updateInfo.version,
+          timedOut: false,
+        };
+      }
+      return { updateAvailable: false, timedOut: false };
+    } catch (err) {
+      const cleanMessage = getCleanErrorMessage(err as Error);
+      debugLog(`Boot update check failed: ${cleanMessage}`, LOG_PREFIX);
+      return { updateAvailable: false, timedOut: false };
+    }
+  })();
+
+  // Race between timeout and update check
+  const result = await Promise.race([updatePromise, timeoutPromise]);
+
+  if ('timedOut' in result && result.timedOut) {
+    return { updateAvailable: false, timedOut: true };
+  }
+
+  return result as { updateAvailable: boolean; version?: string; timedOut: false };
+}
+
+/**
  * Schedule periodic update checks.
- * Checks every 6 hours by default.
+ * Checks every 1 hour by default.
  * Only works in packaged builds (dev mode has no app-update.yml).
  */
-export function scheduleUpdateChecks(intervalHours = 6): NodeJS.Timeout | null {
+export function scheduleUpdateChecks(intervalHours = 1): NodeJS.Timeout | null {
   // Don't schedule updates in dev mode
   if (!app.isPackaged) {
     debugLog('Skipping update check scheduling (development mode)', LOG_PREFIX);
@@ -339,10 +382,8 @@ export function scheduleUpdateChecks(intervalHours = 6): NodeJS.Timeout | null {
 
   const intervalMs = intervalHours * 60 * 60 * 1000;
 
-  // Check immediately on startup
-  checkForUpdates();
-
-  // Then check periodically
+  // Don't check immediately - boot check already ran
+  // Just schedule periodic checks
   return setInterval(() => {
     checkForUpdates();
   }, intervalMs);

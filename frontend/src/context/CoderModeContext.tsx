@@ -7,14 +7,7 @@
  * State persists in localStorage.
  */
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 
 const CODER_MODE_STORAGE_KEY = 'eclosion-coder-mode';
 
@@ -30,7 +23,7 @@ interface CoderModeContextValue {
 const CoderModeContext = createContext<CoderModeContextValue | null>(null);
 
 function getStoredCoderMode(): boolean {
-  if (typeof window !== 'undefined') {
+  if (typeof globalThis.window !== 'undefined') {
     const stored = localStorage.getItem(CODER_MODE_STORAGE_KEY);
     return stored === 'true';
   }

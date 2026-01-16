@@ -51,19 +51,26 @@ export function AppHeader({
   return (
     <header className="app-header" role="banner">
       <div
-        className="app-header-content relative"
-        style={isDesktop ? {
-          justifyContent: 'center',
-          paddingLeft: isMacOSElectron ? '80px' : undefined,
-          paddingTop: getDesktopPaddingTop(),
-          paddingRight: isWindowsElectron ? '150px' : undefined,
-        } : undefined}
+        className={`app-header-content ${isDesktop ? 'static' : 'relative'}`}
+        style={
+          isDesktop
+            ? {
+                justifyContent: 'center',
+                minHeight: '70px',
+                paddingLeft: isMacOSElectron ? '80px' : undefined,
+                paddingTop: getDesktopPaddingTop(),
+                paddingRight: isWindowsElectron ? '150px' : undefined,
+              }
+            : undefined
+        }
       >
         {/* Logo/brand - shown on web and Windows/Linux desktop (macOS shows in sidebar) */}
         {(!isDesktop || !isMacOSElectron) && (
           <div
             className="app-brand"
-            style={isDesktop && !isMacOSElectron ? { position: 'absolute', left: '1rem' } : undefined}
+            style={
+              isDesktop && !isMacOSElectron ? { position: 'absolute', left: '1rem' } : undefined
+            }
           >
             <Link
               to={isDemo ? '/' : `${pathPrefix}/`}
@@ -98,16 +105,30 @@ export function AppHeader({
             )}
           </div>
         )}
-        <LeftToBudgetBadge data={readyToAssign} />
+        <div
+          style={
+            isDesktop
+              ? {
+                  position: 'absolute',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                }
+              : undefined
+          }
+        >
+          <LeftToBudgetBadge data={readyToAssign} />
+        </div>
         <div
           className="app-header-actions"
-          role="group"
-          aria-label="Header actions"
-          style={isDesktop ? {
-            position: 'absolute',
-            // On Windows, position further from right to avoid window controls overlay (~140px)
-            right: isWindowsElectron ? '150px' : '1rem',
-          } : undefined}
+          style={
+            isDesktop
+              ? {
+                  position: 'absolute',
+                  // On Windows, position further from right to avoid window controls overlay (~140px)
+                  right: isWindowsElectron ? '150px' : '1rem',
+                }
+              : undefined
+          }
         >
           <SyncButton
             onSync={onSync}

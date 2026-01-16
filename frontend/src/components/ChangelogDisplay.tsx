@@ -10,7 +10,10 @@ export interface ChangelogDisplayProps {
   showUpdateInstructions: boolean | undefined;
 }
 
-const SECTION_CONFIG: Record<keyof ChangelogSection, { icon: string; label: string; color: string }> = {
+const SECTION_CONFIG: Record<
+  keyof ChangelogSection,
+  { icon: string; label: string; color: string }
+> = {
   added: { icon: '+', label: 'Added', color: 'var(--monarch-success)' },
   changed: { icon: '~', label: 'Changed', color: 'var(--monarch-warning)' },
   deprecated: { icon: '!', label: 'Deprecated', color: 'var(--monarch-text-muted)' },
@@ -19,7 +22,11 @@ const SECTION_CONFIG: Record<keyof ChangelogSection, { icon: string; label: stri
   security: { icon: '!', label: 'Security', color: 'var(--monarch-error)' },
 };
 
-export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = false }: ChangelogDisplayProps) {
+export function ChangelogDisplay({
+  version,
+  limit = 5,
+  showUpdateInstructions = false,
+}: ChangelogDisplayProps) {
   const { data, isLoading, error } = useChangelogQuery(limit);
 
   if (isLoading) {
@@ -30,9 +37,7 @@ export function ChangelogDisplay({ version, limit = 5, showUpdateInstructions = 
     return <div style={{ color: 'var(--monarch-text-muted)' }}>No changelog available.</div>;
   }
 
-  const entries = version
-    ? data.entries.filter(e => e.version === version)
-    : data.entries;
+  const entries = version ? data.entries.filter((e) => e.version === version) : data.entries;
 
   // Desktop uses electron-updater, so don't show web update instructions
   const isDesktop = isDesktopMode();
@@ -104,7 +109,15 @@ function UpdateInstructions() {
   );
 }
 
-function CopyableCommand({ command, copied, onCopy }: { command: string; copied: boolean; onCopy: () => void }) {
+function CopyableCommand({
+  command,
+  copied,
+  onCopy,
+}: {
+  command: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
   return (
     <div
       className="flex items-center gap-2 p-2 rounded font-mono text-xs"
@@ -115,12 +128,12 @@ function CopyableCommand({ command, copied, onCopy }: { command: string; copied:
       </code>
       <button
         onClick={onCopy}
-        className="flex-shrink-0 p-1.5 rounded transition-colors hover:bg-[var(--monarch-bg-hover)]"
+        className="shrink-0 p-1.5 rounded transition-colors hover:bg-(--monarch-bg-hover)"
         title={copied ? 'Copied!' : 'Copy to clipboard'}
         aria-label={copied ? 'Copied!' : 'Copy to clipboard'}
       >
         {copied ? (
-          <CheckCircleIcon size={16} className="text-[var(--monarch-success)]" />
+          <CheckCircleIcon size={16} className="text-(--monarch-success)" />
         ) : (
           <CopyIcon size={16} style={{ color: 'var(--monarch-text-muted)' }} />
         )}
@@ -139,12 +152,12 @@ const SUMMARY_LABELS: { key: keyof ChangelogSection; singular: string; plural: s
 ];
 
 function generateAutoSummary(sections: ChangelogSection): string {
-  const parts = SUMMARY_LABELS
-    .filter(({ key }) => sections[key]?.length)
-    .map(({ key, singular, plural }) => {
+  const parts = SUMMARY_LABELS.filter(({ key }) => sections[key]?.length).map(
+    ({ key, singular, plural }) => {
       const count = sections[key]!.length;
       return `${count} ${count > 1 ? plural : singular}`;
-    });
+    }
+  );
 
   if (parts.length === 0) return '';
   if (parts.length === 1) return `This release includes ${parts[0]}.`;
@@ -163,25 +176,16 @@ function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <span
-          className="font-semibold"
-          style={{ color: 'var(--monarch-text)' }}
-        >
+        <span className="font-semibold" style={{ color: 'var(--monarch-text)' }}>
           v{entry.version}
         </span>
-        <span
-          className="text-sm"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
+        <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
           {entry.date}
         </span>
       </div>
 
       {summary && (
-        <p
-          className="text-sm"
-          style={{ color: 'var(--monarch-text)' }}
-        >
+        <p className="text-sm" style={{ color: 'var(--monarch-text)' }}>
           {summary}
         </p>
       )}
@@ -208,30 +212,28 @@ function ChangelogEntryCard({ entry }: { entry: ChangelogEntry }) {
         </button>
       )}
 
-      {isExpanded && sections.map(([section, items]) => (
-        items.length > 0 && (
-          <div key={section} className="space-y-1">
-            <div
-              className="text-sm font-medium flex items-center gap-1"
-              style={{ color: SECTION_CONFIG[section].color }}
-            >
-              <span className="font-mono">{SECTION_CONFIG[section].icon}</span>
-              <span>{SECTION_CONFIG[section].label}</span>
-            </div>
-            <ul className="list-disc list-inside space-y-1 pl-2">
-              {items.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-sm"
-                  style={{ color: 'var(--monarch-text)' }}
+      {isExpanded &&
+        sections.map(
+          ([section, items]) =>
+            items.length > 0 && (
+              <div key={section} className="space-y-1">
+                <div
+                  className="text-sm font-medium flex items-center gap-1"
+                  style={{ color: SECTION_CONFIG[section].color }}
                 >
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )
-      ))}
+                  <span className="font-mono">{SECTION_CONFIG[section].icon}</span>
+                  <span>{SECTION_CONFIG[section].label}</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1 pl-2">
+                  {items.map((item, i) => (
+                    <li key={i} className="text-sm" style={{ color: 'var(--monarch-text)' }}>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+        )}
     </div>
   );
 }

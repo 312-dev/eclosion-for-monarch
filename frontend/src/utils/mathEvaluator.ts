@@ -14,6 +14,7 @@ type Token =
 /**
  * Tokenize a math expression string.
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Lexer requires handling each token type individually
 function tokenize(expr: string): Token[] | null {
   const tokens: Token[] = [];
   let i = 0;
@@ -44,8 +45,8 @@ function tokenize(expr: string): Token[] | null {
         i++;
       }
 
-      const value = parseFloat(numStr);
-      if (isNaN(value)) return null;
+      const value = Number.parseFloat(numStr);
+      if (Number.isNaN(value)) return null;
       tokens.push({ type: 'number', value });
       continue;
     }
@@ -203,7 +204,7 @@ class Parser {
 export function evaluateMathExpression(expression: string): number | null {
   // Normalize: replace 'x' or 'X' with '*' for multiplication
   // (allows $85x2 since * conflicts with markdown bold/italic)
-  const normalized = expression.replace(/x/gi, '*');
+  const normalized = expression.replaceAll(/x/gi, '*');
 
   // Quick validation - only allowed characters
   if (!/^[\d.+\-*/()\s]+$/.test(normalized)) {
@@ -218,7 +219,7 @@ export function evaluateMathExpression(expression: string): number | null {
   const parser = new Parser(tokens);
   const result = parser.parse();
 
-  if (result === null || !isFinite(result)) {
+  if (result === null || !Number.isFinite(result)) {
     return null;
   }
 

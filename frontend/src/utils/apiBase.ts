@@ -19,7 +19,7 @@ let initPromise: Promise<void> | null = null;
  * Check if running in Electron desktop mode.
  */
 export function isDesktopMode(): boolean {
-  return typeof window !== 'undefined' && window.electron !== undefined;
+  return typeof globalThis.window !== 'undefined' && globalThis.electron !== undefined;
 }
 
 /**
@@ -96,8 +96,8 @@ export async function initializeApiBase(): Promise<void> {
   // Start initialization
   initPromise = (async () => {
     const [port, secret] = await Promise.all([
-      window.electron!.getBackendPort(),
-      window.electron!.getDesktopSecret(),
+      globalThis.electron!.getBackendPort(),
+      globalThis.electron!.getDesktopSecret(),
     ]);
     cachedPort = port;
     cachedSecret = secret;

@@ -49,23 +49,24 @@ export function HeroSection({
     <section className="px-4 sm:px-6 pt-8 pb-0">
       <div className="max-w-5xl mx-auto">
         {/* Contained hero with gradient background */}
-        <div className="relative rounded-2xl bg-gradient-to-b from-[var(--monarch-bg-hover)] to-[var(--monarch-bg-page)] overflow-hidden">
+        <div className="relative rounded-2xl bg-linear-to-b from-(--monarch-bg-hover) to-(--monarch-bg-page) overflow-hidden">
           {/* Content area */}
           <div className="px-6 sm:px-12 pt-12 pb-8">
             {/* Header */}
             <div className="text-center mb-8">
-              <p className="text-sm font-semibold text-[var(--monarch-orange)] uppercase tracking-wider mb-3">
+              <p className="text-sm font-semibold text-(--monarch-orange) uppercase tracking-wider mb-3">
                 Free Forever
               </p>
               <h1
-                className="text-4xl sm:text-5xl font-bold text-[var(--monarch-text-dark)] mb-4"
+                className="text-4xl sm:text-5xl font-bold text-(--monarch-text-dark) mb-4"
                 style={{ fontFamily: "'Unbounded', sans-serif" }}
               >
-                Eclosion for {activePlatform === 'unknown' ? 'Desktop' : PLATFORM_LABELS[activePlatform]}
+                Eclosion for{' '}
+                {activePlatform === 'unknown' ? 'Desktop' : PLATFORM_LABELS[activePlatform]}
               </h1>
-              <p className="text-lg text-[var(--monarch-text)] max-w-2xl mx-auto">
-                Expand what's possible with Monarch Money. Track recurring expenses, automate savings
-                targets, and keep everything in sync.
+              <p className="text-lg text-(--monarch-text) max-w-2xl mx-auto">
+                Expand what's possible with Monarch Money. Track recurring expenses, automate
+                savings targets, and keep everything in sync.
               </p>
             </div>
 
@@ -74,7 +75,7 @@ export function HeroSection({
               {downloadUrl && !loading ? (
                 <a
                   href={downloadUrl}
-                  className="inline-flex flex-col items-center px-8 py-3 rounded-lg bg-[var(--monarch-orange)] text-white hover:bg-[var(--monarch-orange-dark,#e65c00)] transition-colors shadow-lg shadow-[var(--monarch-orange)]/20"
+                  className="inline-flex flex-col items-center px-8 py-3 rounded-lg bg-(--monarch-orange) text-white hover:bg-(--monarch-orange-dark,#e65c00) transition-colors shadow-lg shadow-(--monarch-orange)/20"
                 >
                   <span className="inline-flex items-center gap-2 text-base font-semibold">
                     <DownloadIcon size={20} />
@@ -89,14 +90,14 @@ export function HeroSection({
                   )}
                 </a>
               ) : (
-                <div className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg text-base font-semibold bg-[var(--monarch-bg-hover)] text-[var(--monarch-text-muted)]">
+                <div className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg text-base font-semibold bg-(--monarch-bg-hover) text-(--monarch-text-muted)">
                   <SpinnerIcon size={20} />
                   Loading...
                 </div>
               )}
               <Link
                 to="/demo/"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg text-base font-semibold border-2 border-[var(--monarch-border)] text-[var(--monarch-text-dark)] hover:border-[var(--monarch-orange)] hover:text-[var(--monarch-orange)] transition-colors bg-[var(--monarch-bg-card)]"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg text-base font-semibold border-2 border-(--monarch-border) text-(--monarch-text-dark) hover:border-(--monarch-orange) hover:text-(--monarch-orange) transition-colors bg-(--monarch-bg-card)"
               >
                 Try Demo
               </Link>
@@ -106,13 +107,13 @@ export function HeroSection({
             {downloadStatus !== 'idle' && downloadUrl && (
               <div className="mt-4 text-center">
                 {downloadStatus === 'starting' && (
-                  <p className="text-[var(--monarch-text-muted)] flex items-center justify-center gap-2">
+                  <p className="text-(--monarch-text-muted) flex items-center justify-center gap-2">
                     <SpinnerIcon size={18} />
                     Starting download...
                   </p>
                 )}
                 {downloadStatus === 'started' && (
-                  <p className="text-[var(--monarch-green)] flex items-center justify-center gap-2 font-medium">
+                  <p className="text-(--monarch-green) flex items-center justify-center gap-2 font-medium">
                     <CheckCircleIcon size={18} color="var(--monarch-green)" />
                     Download started!
                   </p>
@@ -122,9 +123,12 @@ export function HeroSection({
 
             {/* Manual download link */}
             {downloadStatus === 'started' && downloadUrl && (
-              <p className="mt-2 text-center text-sm text-[var(--monarch-text-muted)]">
+              <p className="mt-2 text-center text-sm text-(--monarch-text-muted)">
                 Download not starting?{' '}
-                <a href={downloadUrl} className="text-[var(--monarch-orange)] hover:underline font-medium">
+                <a
+                  href={downloadUrl}
+                  className="text-(--monarch-orange) hover:underline font-medium"
+                >
                   Click here
                 </a>
               </p>
@@ -132,7 +136,7 @@ export function HeroSection({
 
             {/* Verify download link */}
             {checksumsUrl && !loading && (
-              <p className="mt-4 text-center text-sm text-[var(--monarch-text-muted)]">
+              <p className="mt-4 text-center text-sm text-(--monarch-text-muted)">
                 <a
                   href={checksumsUrl}
                   target="_blank"
@@ -148,9 +152,15 @@ export function HeroSection({
           {/* Product Screenshot - cropped with fade to background */}
           <div className="relative">
             <div className="max-w-4xl mx-auto px-4">
-              <div className="relative rounded-xl overflow-hidden" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 12px 24px -8px rgba(0, 0, 0, 0.3)' }}>
+              <div
+                className="relative rounded-xl overflow-hidden"
+                style={{
+                  boxShadow:
+                    '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 12px 24px -8px rgba(0, 0, 0, 0.3)',
+                }}
+              >
                 {/* Container with fixed height to show ~1/4 of image */}
-                <div className="h-[280px] sm:h-[350px] overflow-hidden">
+                <div className="h-70 sm:h-87.5 overflow-hidden">
                   {screenshotUrl ? (
                     <img
                       src={screenshotUrl}
@@ -188,7 +198,7 @@ export function LoadingState({ loading, error }: Readonly<LoadingStateProps>) {
     return (
       <div className="flex flex-col items-center gap-3 py-8">
         <SpinnerIcon size={32} color="var(--monarch-orange)" />
-        <p className="text-[var(--monarch-text-muted)]">Loading download information...</p>
+        <p className="text-(--monarch-text-muted)">Loading download information...</p>
       </div>
     );
   }
@@ -197,12 +207,12 @@ export function LoadingState({ loading, error }: Readonly<LoadingStateProps>) {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
         <AlertCircleIcon size={32} color="var(--monarch-warning)" />
-        <p className="text-[var(--monarch-text)]">{error}</p>
+        <p className="text-(--monarch-text)">{error}</p>
         <a
           href="https://github.com/312-dev/eclosion/releases"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[var(--monarch-orange)] hover:underline"
+          className="inline-flex items-center gap-1.5 text-(--monarch-orange) hover:underline"
         >
           View releases on GitHub
           <ExternalLinkIcon size={14} />
@@ -248,12 +258,12 @@ export function InstallationSection({ platform }: Readonly<InstallationSectionPr
   if (platform !== 'linux') return null;
 
   return (
-    <section className="px-4 sm:px-6 py-12 border-t border-[var(--monarch-border)]">
+    <section className="px-4 sm:px-6 py-12 border-t border-(--monarch-border)">
       <div className="max-w-4xl mx-auto">
-        <p className="text-sm font-semibold text-[var(--monarch-orange)] uppercase tracking-wider text-center mb-3">
+        <p className="text-sm font-semibold text-(--monarch-orange) uppercase tracking-wider text-center mb-3">
           Get Started
         </p>
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--monarch-text-dark)] mb-8 text-center">
+        <h2 className="text-2xl sm:text-3xl font-bold text-(--monarch-text-dark) mb-8 text-center">
           Installation
         </h2>
         <InstallationInstructions platform={platform} hideHeader />
@@ -275,15 +285,15 @@ function FeatureCard({
   accentColor: string;
 }) {
   return (
-    <div className="p-6 rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] hover:border-[var(--monarch-orange)] transition-colors">
+    <div className="p-6 rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) hover:border-(--monarch-orange) transition-colors">
       <div
         className="w-12 h-12 rounded-lg flex items-center justify-center mb-4"
         style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
       >
         {icon}
       </div>
-      <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-2">{title}</h3>
-      <p className="text-sm text-[var(--monarch-text-muted)] leading-relaxed">{description}</p>
+      <h3 className="font-semibold text-(--monarch-text-dark) mb-2">{title}</h3>
+      <p className="text-sm text-(--monarch-text-muted) leading-relaxed">{description}</p>
     </div>
   );
 }
@@ -291,23 +301,34 @@ function FeatureCard({
 /** Features section with 4 highlight cards */
 export function FeaturesSection() {
   return (
-    <section className="px-4 sm:px-6 py-16 border-t border-[var(--monarch-border)]">
+    <section className="px-4 sm:px-6 py-16 border-t border-(--monarch-border)">
       <div className="max-w-4xl mx-auto">
-        <p className="text-sm font-semibold text-[var(--monarch-orange)] uppercase tracking-wider text-center mb-3">
+        <p className="text-sm font-semibold text-(--monarch-orange) uppercase tracking-wider text-center mb-3">
           Features
         </p>
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--monarch-text-dark)] text-center mb-4">
+        <h2 className="text-2xl sm:text-3xl font-bold text-(--monarch-text-dark) text-center mb-4">
           Discover Eclosion
         </h2>
-        <p className="text-[var(--monarch-text)] text-center max-w-2xl mx-auto mb-10">
-          A powerful companion app that extends Monarch Money with tools for tracking recurring expenses and planning your budget.
+        <p className="text-(--monarch-text) text-center max-w-2xl mx-auto mb-10">
+          A powerful companion app that extends Monarch Money with tools for tracking recurring
+          expenses and planning your budget.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FeatureCard
             accentColor="var(--monarch-orange)"
             icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
             }
             title="Automatic Sync"
@@ -316,8 +337,18 @@ export function FeaturesSection() {
           <FeatureCard
             accentColor="#10b981"
             icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                />
               </svg>
             }
             title="Smart Targets"
@@ -326,8 +357,18 @@ export function FeaturesSection() {
           <FeatureCard
             accentColor="#6366f1"
             icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
             }
             title="Private & Secure"
@@ -336,8 +377,18 @@ export function FeaturesSection() {
           <FeatureCard
             accentColor="#f59e0b"
             icon={
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                />
               </svg>
             }
             title="Open Source"
@@ -354,16 +405,16 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border border-[var(--monarch-border)] rounded-xl bg-[var(--monarch-bg-card)] overflow-hidden">
+    <div className="border border-(--monarch-border) rounded-xl bg-(--monarch-bg-card) overflow-hidden">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-[var(--monarch-bg-hover)] transition-colors gap-4"
+        className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-(--monarch-bg-hover) transition-colors gap-4"
         aria-expanded={isOpen}
       >
-        <span className="font-semibold text-[var(--monarch-text-dark)]">{question}</span>
+        <span className="font-semibold text-(--monarch-text-dark)">{question}</span>
         <svg
-          className={`w-5 h-5 shrink-0 text-[var(--monarch-orange)] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 shrink-0 text-(--monarch-orange) transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -373,7 +424,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         </svg>
       </button>
       {isOpen && (
-        <div className="px-6 pb-5 text-[var(--monarch-text)] leading-relaxed border-t border-[var(--monarch-border)]">
+        <div className="px-6 pb-5 text-(--monarch-text) leading-relaxed border-t border-(--monarch-border)">
           <p className="pt-4">{answer}</p>
         </div>
       )}
@@ -417,12 +468,12 @@ export function FAQSection() {
   ];
 
   return (
-    <section className="px-4 sm:px-6 py-16 border-t border-[var(--monarch-border)]">
+    <section className="px-4 sm:px-6 py-16 border-t border-(--monarch-border)">
       <div className="max-w-4xl mx-auto">
-        <p className="text-sm font-semibold text-[var(--monarch-orange)] uppercase tracking-wider text-center mb-3">
+        <p className="text-sm font-semibold text-(--monarch-orange) uppercase tracking-wider text-center mb-3">
           FAQ
         </p>
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--monarch-text-dark)] text-center mb-10">
+        <h2 className="text-2xl sm:text-3xl font-bold text-(--monarch-text-dark) text-center mb-10">
           Frequently Asked Questions
         </h2>
         <div className="space-y-4">
@@ -437,19 +488,19 @@ export function FAQSection() {
 
 export function PreviousVersionsSection() {
   return (
-    <section className="px-4 sm:px-6 py-12 border-t border-[var(--monarch-border)]">
+    <section className="px-4 sm:px-6 py-12 border-t border-(--monarch-border)">
       <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-xl font-semibold text-[var(--monarch-text-dark)] mb-3">
+        <h2 className="text-xl font-semibold text-(--monarch-text-dark) mb-3">
           Need an older version?
         </h2>
-        <p className="text-[var(--monarch-text-muted)] mb-6">
+        <p className="text-(--monarch-text-muted) mb-6">
           Previous releases are available for compatibility or rollback purposes.
         </p>
         <a
           href="https://github.com/312-dev/eclosion/releases"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border-2 border-[var(--monarch-border)] text-[var(--monarch-text)] hover:border-[var(--monarch-orange)] hover:text-[var(--monarch-orange)] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium border-2 border-(--monarch-border) text-(--monarch-text) hover:border-(--monarch-orange) hover:text-(--monarch-orange) transition-colors"
         >
           View all releases
           <ExternalLinkIcon size={16} />
@@ -461,21 +512,21 @@ export function PreviousVersionsSection() {
 
 export function FooterLinks() {
   return (
-    <section className="px-4 sm:px-6 py-8 text-center border-t border-[var(--monarch-border)]">
+    <section className="px-4 sm:px-6 py-8 text-center border-t border-(--monarch-border)">
       <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-6 text-sm">
         <a
           href="https://github.com/312-dev/eclosion"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)] transition-colors"
+          className="inline-flex items-center gap-1.5 text-(--monarch-text-muted) hover:text-(--monarch-orange) transition-colors"
         >
           Source code
           <ExternalLinkIcon size={14} />
         </a>
-        <span className="text-[var(--monarch-border)]">·</span>
+        <span className="text-(--monarch-border)">·</span>
         <a
           href="/"
-          className="text-[var(--monarch-text-muted)] hover:text-[var(--monarch-orange)] transition-colors"
+          className="text-(--monarch-text-muted) hover:text-(--monarch-orange) transition-colors"
         >
           Back to home
         </a>

@@ -45,14 +45,19 @@ function formatSourceMonth(monthKey: string): string {
  * Render markdown content as simple HTML.
  */
 function renderMarkdown(content: string): string {
+  /* eslint-disable sonarjs/slow-regex -- Using negated char classes to prevent backtracking */
   return content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[var(--monarch-orange)] hover:underline">$1</a>')
-    .replace(/\n/g, '<br />');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replaceAll(/\*([^*]+)\*/g, '<em>$1</em>')
+    .replaceAll(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-(--monarch-orange) hover:underline">$1</a>'
+    )
+    .replaceAll('\n', '<br />');
+  /* eslint-enable sonarjs/slow-regex */
 }
 
 export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderViewProps) {
@@ -60,7 +65,10 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
     return (
       <div
         className="rounded-xl p-12 text-center"
-        style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
       >
         <FileText
           size={48}
@@ -79,19 +87,19 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
 
   // Collect all groups/categories that have notes
   const groupsWithNotes = groups.filter(
-    g => g.effectiveNote.note || g.categories.some(c => c.effectiveNote.note)
+    (g) => g.effectiveNote.note || g.categories.some((c) => c.effectiveNote.note)
   );
 
   return (
     <div
       className="rounded-xl overflow-hidden section-enter"
-      style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+      style={{
+        backgroundColor: 'var(--monarch-bg-card)',
+        border: '1px solid var(--monarch-border)',
+      }}
     >
       {/* Header */}
-      <div
-        className="px-6 py-4 border-b"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
+      <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
         <h2 className="text-xl font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
           Notes for {formatMonth(monthKey)}
         </h2>
@@ -118,7 +126,11 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
 
         {/* Category notes by group */}
         {groupsWithNotes.map((group, index) => (
-          <section key={group.id} className="section-enter" style={{ animationDelay: `${(index + 1) * 50}ms` }}>
+          <section
+            key={group.id}
+            className="section-enter"
+            style={{ animationDelay: `${(index + 1) * 50}ms` }}
+          >
             <h3
               className="text-lg font-semibold mb-3 pb-2 border-b"
               style={{ color: 'var(--monarch-text-dark)', borderColor: 'var(--monarch-border)' }}
@@ -128,7 +140,10 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
 
             {/* Group note */}
             {group.effectiveNote.note && (
-              <div className="mb-4 pl-4 border-l-2" style={{ borderColor: 'var(--monarch-orange)' }}>
+              <div
+                className="mb-4 pl-4 border-l-2"
+                style={{ borderColor: 'var(--monarch-orange)' }}
+              >
                 <div className="flex items-center gap-2 mb-1">
                   <span
                     className="text-xs font-medium uppercase"
@@ -151,7 +166,9 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
                 <div
                   className="text-sm leading-relaxed"
                   style={{ color: 'var(--monarch-text-dark)' }}
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(group.effectiveNote.note.content) }}
+                  dangerouslySetInnerHTML={{
+                    __html: renderMarkdown(group.effectiveNote.note.content),
+                  }}
                 />
               </div>
             )}
@@ -159,9 +176,13 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
             {/* Category notes */}
             <div className="space-y-4">
               {group.categories
-                .filter(c => c.effectiveNote.note)
-                .map(category => (
-                  <div key={category.id} className="pl-4 border-l-2" style={{ borderColor: 'var(--monarch-border)' }}>
+                .filter((c) => c.effectiveNote.note)
+                .map((category) => (
+                  <div
+                    key={category.id}
+                    className="pl-4 border-l-2"
+                    style={{ borderColor: 'var(--monarch-border)' }}
+                  >
                     <div className="flex items-center gap-2 mb-1">
                       {category.icon && (
                         <span className="text-base" aria-hidden="true">
@@ -189,7 +210,9 @@ export function ReaderView({ monthKey, groups, generalNote, hasNotes }: ReaderVi
                     <div
                       className="text-sm leading-relaxed"
                       style={{ color: 'var(--monarch-text-dark)' }}
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(category.effectiveNote.note!.content) }}
+                      dangerouslySetInnerHTML={{
+                        __html: renderMarkdown(category.effectiveNote.note!.content),
+                      }}
                     />
                   </div>
                 ))}

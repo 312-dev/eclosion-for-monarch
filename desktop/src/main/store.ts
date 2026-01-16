@@ -11,15 +11,7 @@
 import Store from 'electron-store';
 
 // Re-define types here to avoid circular dependencies
-// These must match the types in hotkeys.ts and lock-manager.ts
-
-/**
- * Hotkey configuration structure.
- */
-export interface HotkeyConfig {
-  enabled: boolean;
-  accelerator: string;
-}
+// These must match the types in lock-manager.ts
 
 /**
  * Lock trigger options.
@@ -64,14 +56,13 @@ export interface StoreSchema {
   // Index signature for compatibility with Record<string, unknown>
   [key: string]: unknown;
 
-  // Desktop settings (NEW - granular settings)
+  // Desktop settings
   'desktop.launchAtLogin': boolean;
   'desktop.startMinimized': boolean;
-  'desktop.minimizeToTray': boolean;
-  'desktop.closeToTray': boolean;
-  'desktop.showInDock': boolean;
   'desktop.showInTaskbar': boolean;
-  'desktop.globalShortcut': string;
+
+  // Developer settings
+  'settings.developerMode': boolean;
 
   // Legacy desktop settings
   /** @deprecated Use desktop.closeToTray and desktop.showInDock instead */
@@ -84,12 +75,6 @@ export interface StoreSchema {
   'security.monarchCredentials': string;
   'security.requireTouchId': boolean;
   'security.lockTrigger': LockTrigger;
-
-  // Hotkeys (individual keys)
-  'hotkeys.toggle-window': HotkeyConfig;
-  'hotkeys.trigger-sync': HotkeyConfig;
-  // Parent key for deletion
-  hotkeys: Record<string, HotkeyConfig>;
 
   // Onboarding
   'onboarding.complete': boolean;
@@ -107,6 +92,13 @@ export interface StoreSchema {
   'autoBackup.folderPath': string;
   'autoBackup.retentionDays': number;
   'autoBackup.lastBackupDate': string;
+
+  // Crash recovery state
+  'crashRecovery.crashCount': number;
+  'crashRecovery.lastCrashTime': number;
+  'crashRecovery.currentVersion': string;
+  'crashRecovery.lastStableVersion': string;
+  'crashRecovery.versionAtFirstCrash': string | null;
 }
 
 /**

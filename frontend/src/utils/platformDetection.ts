@@ -11,7 +11,7 @@ export type Platform = 'windows' | 'macos' | 'linux' | 'unknown';
  */
 export function detectPlatform(): Platform {
   // Server-side rendering guard
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+  if (typeof globalThis.window === 'undefined' || typeof navigator === 'undefined') {
     return 'unknown';
   }
 

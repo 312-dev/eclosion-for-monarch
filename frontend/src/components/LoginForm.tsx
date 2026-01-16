@@ -10,10 +10,18 @@ import { login, desktopLogin } from '../api/client';
 import { PassphrasePrompt } from './passphrase';
 import { SecurityInfo } from './SecurityInfo';
 import { TermsModal, setTermsAccepted } from './ui/TermsModal';
-import { BetaWarningModal, hasAcknowledgedBetaWarning, setBetaWarningAcknowledged } from './ui/BetaWarningModal';
+import {
+  BetaWarningModal,
+  hasAcknowledgedBetaWarning,
+  setBetaWarningAcknowledged,
+} from './ui/BetaWarningModal';
 import { MfaCodeCaveatsModal } from './MfaCodeCaveatsModal';
 import { CredentialsForm, detectMfaFormat, getInitialStage } from './login';
-import { LoginSecurityNotice, UnofficialNotice, GithubSourceLink } from './login/LoginSecurityNotice';
+import {
+  LoginSecurityNotice,
+  UnofficialNotice,
+  GithubSourceLink,
+} from './login/LoginSecurityNotice';
 import type { LoginStage } from './login';
 import { getErrorMessage } from '../utils';
 import { isBetaEnvironment } from '../utils/environment';
@@ -24,9 +32,11 @@ import { useAuth } from '../context/AuthContext';
  * Check if running in Electron desktop app with credential storage available.
  */
 function isElectronDesktop(): boolean {
-  return typeof window !== 'undefined' &&
-    'electron' in window &&
-    window.electron?.credentials !== undefined;
+  return (
+    typeof globalThis.window !== 'undefined' &&
+    'electron' in globalThis &&
+    globalThis.electron?.credentials !== undefined
+  );
 }
 
 interface LoginFormProps {
@@ -74,6 +84,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   /**
    * Actually perform the login after any confirmations.
    */
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Auth flow requires handling multiple MFA modes, credential storage, and error states
   const performLogin = async (confirmedMfaMode: 'secret' | 'code') => {
     setLoading(true);
     setError(null);
@@ -150,12 +161,12 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
    */
   const handleLoginError = (errorMsg: string | undefined) => {
     const errorLower = errorMsg?.toLowerCase() || '';
-    const isMfaError = errorLower.includes('mfa') ||
-                      errorLower.includes('multi-factor') ||
-                      errorLower.includes('2fa') ||
-                      errorLower.includes('two-factor');
-    const isCredentialsError = errorLower.includes('404') ||
-                               errorLower.includes('not found');
+    const isMfaError =
+      errorLower.includes('mfa') ||
+      errorLower.includes('multi-factor') ||
+      errorLower.includes('2fa') ||
+      errorLower.includes('two-factor');
+    const isCredentialsError = errorLower.includes('404') || errorLower.includes('not found');
     if (isMfaError && !showMfa) {
       setShowMfa(true);
       setError('MFA required. Please enter your TOTP secret key.');
@@ -207,17 +218,37 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   return (
     <>
       <ElectronTitleBar />
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+      >
         <div className="flex flex-col items-center">
           {/* Eclosion branding */}
           <div className="flex items-center gap-3 mb-6">
-            <img src={`${import.meta.env.BASE_URL}icons/icon-192.svg`} alt="Eclosion" className="w-12 h-12" />
-            <span className="text-3xl" style={{ fontFamily: 'Unbounded, sans-serif', fontWeight: 600, color: 'var(--monarch-text-dark)' }}>
+            <img
+              src={`${import.meta.env.BASE_URL}icons/icon-192.svg`}
+              alt="Eclosion"
+              className="w-12 h-12"
+            />
+            <span
+              className="text-3xl"
+              style={{
+                fontFamily: 'Unbounded, sans-serif',
+                fontWeight: 600,
+                color: 'var(--monarch-text-dark)',
+              }}
+            >
               Eclosion
             </span>
           </div>
 
-          <div className="rounded-xl shadow-lg max-w-md w-full p-6" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
+          <div
+            className="rounded-xl shadow-lg max-w-md w-full p-6"
+            style={{
+              backgroundColor: 'var(--monarch-bg-card)',
+              border: '1px solid var(--monarch-border)',
+            }}
+          >
             <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
               Connect to Monarch Money
             </h1>

@@ -195,9 +195,7 @@ export async function getAllNotes(): Promise<AllNotesResponse> {
 /**
  * Save or update a note for a category or group.
  */
-export async function saveCategoryNote(
-  params: SaveCategoryNoteRequest
-): Promise<SaveNoteResponse> {
+export async function saveCategoryNote(params: SaveCategoryNoteRequest): Promise<SaveNoteResponse> {
   await simulateDelay(150);
 
   const now = new Date().toISOString();
@@ -480,10 +478,7 @@ function getCheckboxKey(
 /**
  * Get checkbox states for a category/group note.
  */
-export async function getCheckboxStates(
-  noteId: string,
-  viewingMonth: string
-): Promise<boolean[]> {
+export async function getCheckboxStates(noteId: string, viewingMonth: string): Promise<boolean[]> {
   await simulateDelay(50);
 
   const state = getDemoState();
@@ -525,11 +520,7 @@ export async function updateCheckboxState(params: {
       state.notes.checkboxStates = {};
     }
 
-    const key = getCheckboxKey(
-      params.noteId,
-      params.generalNoteMonthKey,
-      params.viewingMonth
-    );
+    const key = getCheckboxKey(params.noteId, params.generalNoteMonthKey, params.viewingMonth);
 
     // Get or create states array
     const states = state.notes.checkboxStates[key] ? [...state.notes.checkboxStates[key]] : [];
@@ -599,6 +590,7 @@ export async function getMonthCheckboxStates(
  *
  * For demo mode, this returns mock data simulating the inheritance analysis.
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Demo data manipulation requires handling many edge cases for realistic simulation
 export async function getInheritanceImpact(params: {
   categoryType?: 'group' | 'category';
   categoryId?: string;
@@ -643,8 +635,7 @@ export async function getInheritanceImpact(params: {
     // Find category notes by filtering all notes
     const allCategoryNotes = Object.values(state.notes.notes).filter(
       (note: Note) =>
-        note.categoryRef.id === params.categoryId &&
-        note.categoryRef.type === params.categoryType
+        note.categoryRef.id === params.categoryId && note.categoryRef.type === params.categoryType
     );
 
     const pastNotes = allCategoryNotes
@@ -699,9 +690,7 @@ export async function getInheritanceImpact(params: {
   // Check which months have checkbox states
   const monthsWithCheckboxStates: Record<string, number> = {};
   for (const mk of affectedMonths) {
-    const key = sourceNote.id
-      ? `${sourceNote.id}:${mk}`
-      : `general:${sourceNote.monthKey}:${mk}`;
+    const key = sourceNote.id ? `${sourceNote.id}:${mk}` : `general:${sourceNote.monthKey}:${mk}`;
     const states = state.notes.checkboxStates?.[key];
     if (states) {
       const checkedCount = states.filter(Boolean).length;

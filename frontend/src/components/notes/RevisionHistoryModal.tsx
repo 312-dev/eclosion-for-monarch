@@ -54,11 +54,11 @@ export function RevisionHistoryModal({
 }: RevisionHistoryModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const { data: history, isLoading, error } = useNoteHistoryQuery(
-    categoryType,
-    categoryId,
-    { enabled: true }
-  );
+  const {
+    data: history,
+    isLoading,
+    error,
+  } = useNoteHistoryQuery(categoryType, categoryId, { enabled: true });
 
   // Close on escape
   useEffect(() => {
@@ -98,6 +98,11 @@ export function RevisionHistoryModal({
   // Create reversed copy for past versions display (most recent first)
   const pastVersionsReversed = [...pastVersions].reverse();
 
+  // Extract conditional states to avoid nested ternaries
+  const showError = !isLoading && error;
+  const showEmpty = !isLoading && !error && versions.length === 0;
+  const showVersions = !isLoading && !error && versions.length > 0;
+
   return (
     <Portal>
       <div
@@ -126,14 +131,16 @@ export function RevisionHistoryModal({
                 Notes History
               </h2>
               <p className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-                {categoryType === 'group' ? `${decodeHtmlEntities(categoryName)} Group` : decodeHtmlEntities(categoryName)}
+                {categoryType === 'group'
+                  ? `${decodeHtmlEntities(categoryName)} Group`
+                  : decodeHtmlEntities(categoryName)}
                 {groupName && categoryType === 'category' && ` in ${decodeHtmlEntities(groupName)}`}
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+              className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
               aria-label="Close"
             >
               <X size={18} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -142,19 +149,22 @@ export function RevisionHistoryModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
-            {isLoading ? (
+            {isLoading && (
               <div className="text-center py-8" style={{ color: 'var(--monarch-text-muted)' }}>
                 Loading history...
               </div>
-            ) : error ? (
+            )}
+            {showError && (
               <div className="text-center py-8" style={{ color: 'var(--monarch-warning)' }}>
                 Failed to load history
               </div>
-            ) : versions.length === 0 ? (
+            )}
+            {showEmpty && (
               <div className="text-center py-8" style={{ color: 'var(--monarch-text-muted)' }}>
                 No revisions found for this note.
               </div>
-            ) : (
+            )}
+            {showVersions && (
               <div className="space-y-4">
                 {/* Future versions */}
                 {futureVersions.length > 0 && (
@@ -247,9 +257,7 @@ function VersionItem({ version, isCurrent, onClick, animationDelay = 0 }: Versio
   const content = (
     <div
       className={`rounded-lg p-3 list-item-enter ${
-        isCurrent
-          ? ''
-          : 'cursor-pointer hover:bg-[var(--monarch-bg-hover)]'
+        isCurrent ? '' : 'cursor-pointer hover:bg-(--monarch-bg-hover)'
       }`}
       style={{
         backgroundColor: isCurrent ? 'var(--monarch-orange-light)' : 'var(--monarch-bg-page)',
@@ -259,7 +267,10 @@ function VersionItem({ version, isCurrent, onClick, animationDelay = 0 }: Versio
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <Calendar size={14} style={{ color: isCurrent ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)' }} />
+          <Calendar
+            size={14}
+            style={{ color: isCurrent ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)' }}
+          />
           <span
             className={`text-sm ${isCurrent ? 'font-semibold' : 'font-medium'}`}
             style={{ color: isCurrent ? 'var(--monarch-orange)' : 'var(--monarch-text-dark)' }}
@@ -278,14 +289,9 @@ function VersionItem({ version, isCurrent, onClick, animationDelay = 0 }: Versio
             </span>
           )}
         </div>
-        {!isCurrent && (
-          <ArrowRight size={14} style={{ color: 'var(--monarch-text-muted)' }} />
-        )}
+        {!isCurrent && <ArrowRight size={14} style={{ color: 'var(--monarch-text-muted)' }} />}
       </div>
-      <p
-        className="text-sm line-clamp-2"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
+      <p className="text-sm line-clamp-2" style={{ color: 'var(--monarch-text-muted)' }}>
         {version.contentPreview}
       </p>
     </div>
@@ -296,11 +302,7 @@ function VersionItem({ version, isCurrent, onClick, animationDelay = 0 }: Versio
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full text-left"
-    >
+    <button type="button" onClick={onClick} className="w-full text-left">
       {content}
     </button>
   );

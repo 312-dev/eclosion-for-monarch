@@ -25,12 +25,12 @@ export function MarketingDocsContent() {
       <section className="px-4 sm:px-6 py-16 text-center">
         <div className="max-w-3xl mx-auto">
           <h1
-            className="text-4xl sm:text-5xl font-bold text-[var(--monarch-text-dark)] mb-4"
+            className="text-4xl sm:text-5xl font-bold text-(--monarch-text-dark) mb-4"
             style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
             Documentation
           </h1>
-          <p className="text-lg text-[var(--monarch-text)]">
+          <p className="text-lg text-(--monarch-text)">
             Everything you need to get started with Eclosion.
           </p>
         </div>
@@ -43,16 +43,14 @@ export function MarketingDocsContent() {
           <button
             type="button"
             onClick={() => setShowGetStartedModal(true)}
-            className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors text-left"
+            className="flex items-start gap-4 p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors text-left"
           >
-            <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
+            <div className="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
               <ChevronRightIcon size={24} color="var(--monarch-orange)" />
             </div>
             <div>
-              <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-1">
-                Get Started
-              </h3>
-              <p className="text-sm text-[var(--monarch-text)]">
+              <h3 className="font-semibold text-(--monarch-text-dark) mb-1">Get Started</h3>
+              <p className="text-sm text-(--monarch-text)">
                 Deploy your own instance with the desktop app or Docker.
               </p>
             </div>
@@ -61,16 +59,14 @@ export function MarketingDocsContent() {
           {/* Try Demo */}
           <Link
             to="/demo/"
-            className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
+            className="flex items-start gap-4 p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors"
           >
-            <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
+            <div className="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
               <BookmarkIcon size={24} color="var(--monarch-orange)" />
             </div>
             <div>
-              <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-1">
-                Try the Demo
-              </h3>
-              <p className="text-sm text-[var(--monarch-text)]">
+              <h3 className="font-semibold text-(--monarch-text-dark) mb-1">Try the Demo</h3>
+              <p className="text-sm text-(--monarch-text)">
                 Explore Eclosion with sample data. No account required.
               </p>
             </div>
@@ -81,17 +77,17 @@ export function MarketingDocsContent() {
             href="https://github.com/312-dev/eclosion"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
+            className="flex items-start gap-4 p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors"
           >
-            <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
+            <div className="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
               <GitHubIcon size={24} color="var(--monarch-orange)" />
             </div>
             <div>
-              <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-1 flex items-center gap-2">
+              <h3 className="font-semibold text-(--monarch-text-dark) mb-1 flex items-center gap-2">
                 View on GitHub
                 <ExternalLinkIcon size={14} />
               </h3>
-              <p className="text-sm text-[var(--monarch-text)]">
+              <p className="text-sm text-(--monarch-text)">
                 Source code, issues, and contribution guidelines.
               </p>
             </div>
@@ -102,17 +98,17 @@ export function MarketingDocsContent() {
             href="https://github.com/312-dev/eclosion#security"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start gap-4 p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
+            className="flex items-start gap-4 p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors"
           >
-            <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
+            <div className="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
               <ShieldCheckIcon size={24} color="var(--monarch-orange)" />
             </div>
             <div>
-              <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-1 flex items-center gap-2">
+              <h3 className="font-semibold text-(--monarch-text-dark) mb-1 flex items-center gap-2">
                 Security
                 <ExternalLinkIcon size={14} />
               </h3>
-              <p className="text-sm text-[var(--monarch-text)]">
+              <p className="text-sm text-(--monarch-text)">
                 How your credentials are protected and encrypted.
               </p>
             </div>
@@ -121,20 +117,17 @@ export function MarketingDocsContent() {
       </section>
 
       {/* Features Overview */}
-      <section className="px-4 sm:px-6 py-12 bg-[var(--monarch-bg-card)]">
+      <section className="px-4 sm:px-6 py-12 bg-(--monarch-bg-card)">
         <div className="max-w-4xl mx-auto">
           <h2
-            className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-8 text-center"
+            className="text-2xl font-bold text-(--monarch-text-dark) mb-8 text-center"
             style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
             Features
           </h2>
           <FeatureGrid features={FEATURES} showComingSoon unified variant="compact" />
           <div className="text-center mt-8">
-            <Link
-              to="/features"
-              className="text-[var(--monarch-orange)] font-medium hover:underline"
-            >
+            <Link to="/features" className="text-(--monarch-orange) font-medium hover:underline">
               View all features →
             </Link>
           </div>
@@ -142,10 +135,10 @@ export function MarketingDocsContent() {
       </section>
 
       {/* FAQ */}
-      <section className="px-4 sm:px-6 py-12 bg-[var(--monarch-bg-card)]">
+      <section className="px-4 sm:px-6 py-12 bg-(--monarch-bg-card)">
         <div className="max-w-3xl mx-auto">
           <h2
-            className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-8 text-center"
+            className="text-2xl font-bold text-(--monarch-text-dark) mb-8 text-center"
             style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
             Frequently Asked Questions
@@ -171,10 +164,7 @@ export function MarketingDocsContent() {
         </div>
       </section>
 
-      <GetStartedModal
-        isOpen={showGetStartedModal}
-        onClose={() => setShowGetStartedModal(false)}
-      />
+      <GetStartedModal isOpen={showGetStartedModal} onClose={() => setShowGetStartedModal(false)} />
     </>
   );
 }

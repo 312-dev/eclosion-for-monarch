@@ -8,13 +8,24 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Area } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Area,
+} from 'recharts';
 import { Portal } from '../Portal';
 import { Z_INDEX } from '../../constants';
 import { AnchorIcon } from '../icons';
 import type { BurndownPoint } from './burndownUtils';
 
-type FormatCurrencyFn = (amount: number, options?: { minimumFractionDigits?: number; maximumFractionDigits?: number }) => string;
+type FormatCurrencyFn = (
+  amount: number,
+  options?: { minimumFractionDigits?: number; maximumFractionDigits?: number }
+) => string;
 
 interface BurndownChartProps {
   data: BurndownPoint[];
@@ -42,8 +53,8 @@ function CustomTooltip({ active, payload, formatCurrency, coordinate, data }: Cu
   const tooltipHeight = 120;
 
   // Find the stabilization point - the last month where catch-up payments complete
-  const stabilizationIndex = data.reduce((lastIdx, p, i) => p.hasChange ? i : lastIdx, -1);
-  const currentIndex = data.findIndex(p => p.fullLabel === point.fullLabel);
+  const stabilizationIndex = data.reduce((lastIdx, p, i) => (p.hasChange ? i : lastIdx), -1);
+  const currentIndex = data.findIndex((p) => p.fullLabel === point.fullLabel);
   const isStabilizationPoint = currentIndex === stabilizationIndex && stabilizationIndex !== -1;
 
   let left = chartRect.left + coordinate.x + 10;
@@ -186,8 +197,8 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
 
   if (data.length < 2) return null;
 
-  const minAmount = Math.min(...data.map(d => d.amount));
-  const maxAmount = Math.max(...data.map(d => d.amount));
+  const minAmount = Math.min(...data.map((d) => d.amount));
+  const maxAmount = Math.max(...data.map((d) => d.amount));
   // Add some padding to the domain
   const range = maxAmount - minAmount;
   const padding = range > 0 ? range * 0.15 : maxAmount * 0.02;
@@ -239,12 +250,7 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
               allowEscapeViewBox={{ x: true, y: true }}
               wrapperStyle={{ zIndex: Z_INDEX.TOOLTIP, pointerEvents: 'none' }}
             />
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke="none"
-              fill="url(#burndownGradient)"
-            />
+            <Area type="monotone" dataKey="amount" stroke="none" fill="url(#burndownGradient)" />
             <Line
               type="monotone"
               dataKey="amount"
@@ -256,7 +262,10 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
                 const hasChange = point?.hasChange ?? false;
 
                 // Find the stabilization point - the last month where catch-up payments complete
-                const stabilizationIndex = data.reduce((lastIdx, p, i) => p.hasChange ? i : lastIdx, -1);
+                const stabilizationIndex = data.reduce(
+                  (lastIdx, p, i) => (p.hasChange ? i : lastIdx),
+                  -1
+                );
                 const isStabilizationPoint = index === stabilizationIndex;
 
                 // Use anchor icon for the stabilization point
@@ -288,7 +297,10 @@ export function BurndownChart({ data, formatCurrency }: BurndownChartProps) {
               }}
               activeDot={({ cx, cy, index }) => {
                 // Find the stabilization point - the last month where catch-up payments complete
-                const stabilizationIndex = data.reduce((lastIdx, p, i) => p.hasChange ? i : lastIdx, -1);
+                const stabilizationIndex = data.reduce(
+                  (lastIdx, p, i) => (p.hasChange ? i : lastIdx),
+                  -1
+                );
                 const isStabilizationPoint = index === stabilizationIndex;
 
                 if (isStabilizationPoint && cx !== undefined && cy !== undefined) {

@@ -68,7 +68,7 @@ export function DesktopStartupWrapper({ children }: DesktopStartupWrapperProps) 
     // Check if backend is already ready (in case we loaded after startup completed)
     const checkIfAlreadyReady = async () => {
       try {
-        const isComplete = await window.electron!.isBackendStartupComplete();
+        const isComplete = await globalThis.electron!.isBackendStartupComplete();
         if (isComplete) {
           await handleBackendReady();
           return true;
@@ -80,7 +80,7 @@ export function DesktopStartupWrapper({ children }: DesktopStartupWrapperProps) 
     };
 
     // Listen for backend startup status updates
-    const unsubscribe = window.electron!.onBackendStartupStatus((status: StartupStatus) => {
+    const unsubscribe = globalThis.electron!.onBackendStartupStatus((status: StartupStatus) => {
       if (status.phase === 'ready') {
         handleBackendReady();
       } else if (status.phase === 'failed') {
@@ -99,22 +99,12 @@ export function DesktopStartupWrapper({ children }: DesktopStartupWrapperProps) 
   // Show loading screen while waiting for backend
   // Always show immediately in desktop mode to ensure window has content for ready-to-show
   if (!isReady) {
-    return (
-      <StartupLoadingScreen
-        onTimeout={handleTimeout}
-        isConnected={false}
-      />
-    );
+    return <StartupLoadingScreen onTimeout={handleTimeout} isConnected={false} />;
   }
 
   // Show timed out state
   if (hasTimedOut && !isReady) {
-    return (
-      <StartupLoadingScreen
-        onTimeout={handleTimeout}
-        isConnected={false}
-      />
-    );
+    return <StartupLoadingScreen onTimeout={handleTimeout} isConnected={false} />;
   }
 
   // Backend is ready, render the app

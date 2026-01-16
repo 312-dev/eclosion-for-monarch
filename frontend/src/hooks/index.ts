@@ -34,10 +34,7 @@ export { usePageTitle, getAppTitle } from './usePageTitle';
 
 export { useLocalStorage } from './useLocalStorage';
 
-export {
-  useKeyboardShortcut,
-  type UseKeyboardShortcutOptions,
-} from './useKeyboardShortcut';
+export { useKeyboardShortcut, type UseKeyboardShortcutOptions } from './useKeyboardShortcut';
 
 export { useDebounce } from './useDebounce';
 
@@ -47,10 +44,7 @@ export { usePrevious } from './usePrevious';
 
 export { useAsyncAction, type UseAsyncActionReturn } from './useAsyncAction';
 
-export {
-  useItemDisplayStatus,
-  calculateItemDisplayStatus,
-} from './useItemDisplayStatus';
+export { useItemDisplayStatus, calculateItemDisplayStatus } from './useItemDisplayStatus';
 
 export { useApiClient } from './useApiClient';
 
@@ -66,11 +60,6 @@ export {
 
 export { useLandingContent } from './useLandingContent';
 
-export {
-  useElectronUpdates,
-  type UseElectronUpdatesReturn,
-} from './useElectronUpdates';
-
 export { useIsBetaSite } from './useIsBetaSite';
 
 export { useMacOSElectron } from './useMacOSElectron';
@@ -79,19 +68,13 @@ export { useWindowsElectron } from './useWindowsElectron';
 
 export { useElectronNavigation } from './useElectronNavigation';
 
-export {
-  useRecurringTour,
-  TOUR_STATE_KEY,
-  type UseRecurringTourReturn,
-} from './useRecurringTour';
+export { useRecurringTour, TOUR_STATE_KEY, type UseRecurringTourReturn } from './useRecurringTour';
 
-export {
-  useNotesTour,
-  NOTES_TOUR_STATE_KEY,
-  type UseNotesTourReturn,
-} from './useNotesTour';
+export { useNotesTour, NOTES_TOUR_STATE_KEY, type UseNotesTourReturn } from './useNotesTour';
 
 export { useBiometric, type UseBiometricReturn } from './useBiometric';
+
+export { useBackgroundSync, type UseBackgroundSyncReturn } from './useBackgroundSync';
 
 export { useSavingStates, type UseSavingStatesReturn } from './useSavingStates';
 
@@ -101,9 +84,6 @@ export { useCheckboxState, type UseCheckboxStateReturn } from './useCheckboxStat
 
 export { useHiddenCategories } from './useHiddenCategories';
 
-export {
-  useInheritanceWarning,
-  type InheritanceImpact,
-} from './useInheritanceWarning';
+export { useInheritanceWarning, type InheritanceImpact } from './useInheritanceWarning';
 
 export { useCompactWindowSize, useAutoCompactWindowSize } from './useCompactWindowSize';

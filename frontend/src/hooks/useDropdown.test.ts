@@ -193,7 +193,7 @@ describe('useDropdown', () => {
       }));
 
       // Mock window dimensions
-      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      Object.defineProperty(globalThis, 'innerHeight', { value: 768, writable: true });
 
       const { result } = renderHook(() => useDropdown());
 

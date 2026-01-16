@@ -19,12 +19,12 @@ export function HelpDocsContent() {
       <section className="px-4 sm:px-6 py-16 text-center">
         <div className="max-w-3xl mx-auto">
           <h1
-            className="text-4xl sm:text-5xl font-bold text-[var(--monarch-text-dark)] mb-4"
+            className="text-4xl sm:text-5xl font-bold text-(--monarch-text-dark) mb-4"
             style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
             Help & Support
           </h1>
-          <p className="text-lg text-[var(--monarch-text)]">
+          <p className="text-lg text-(--monarch-text)">
             Documentation and resources for your Eclosion instance.
           </p>
         </div>
@@ -34,21 +34,19 @@ export function HelpDocsContent() {
       <section className="px-4 sm:px-6 pb-12">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Version Info */}
-          <div className="p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)]">
+          <div className="p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border)">
             <div className="flex items-center gap-3 mb-4">
               <InfoIcon size={24} color="var(--monarch-orange)" />
-              <h3 className="font-semibold text-[var(--monarch-text-dark)]">
-                Version Information
-              </h3>
+              <h3 className="font-semibold text-(--monarch-text-dark)">Version Information</h3>
             </div>
-            <p className="text-sm text-[var(--monarch-text)] mb-4">
+            <p className="text-sm text-(--monarch-text) mb-4">
               You're running the latest version of Eclosion.
             </p>
             <a
               href="https://github.com/312-dev/eclosion/releases"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-[var(--monarch-orange)] hover:underline flex items-center gap-1"
+              className="text-sm text-(--monarch-orange) hover:underline flex items-center gap-1"
             >
               View Changelog
               <ExternalLinkIcon size={14} />
@@ -60,16 +58,16 @@ export function HelpDocsContent() {
             href="https://github.com/312-dev/eclosion/issues"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
+            className="p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors"
           >
             <div className="flex items-center gap-3 mb-4">
               <GitHubIcon size={24} color="var(--monarch-orange)" />
-              <h3 className="font-semibold text-[var(--monarch-text-dark)] flex items-center gap-2">
+              <h3 className="font-semibold text-(--monarch-text-dark) flex items-center gap-2">
                 Report an Issue
                 <ExternalLinkIcon size={14} />
               </h3>
             </div>
-            <p className="text-sm text-[var(--monarch-text)]">
+            <p className="text-sm text-(--monarch-text)">
               Found a bug or have a feature request? Open an issue on GitHub.
             </p>
           </a>
@@ -79,16 +77,16 @@ export function HelpDocsContent() {
             href="https://github.com/312-dev/eclosion/blob/main/SECURITY.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
+            className="p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors"
           >
             <div className="flex items-center gap-3 mb-4">
               <ShieldCheckIcon size={24} color="var(--monarch-orange)" />
-              <h3 className="font-semibold text-[var(--monarch-text-dark)] flex items-center gap-2">
+              <h3 className="font-semibold text-(--monarch-text-dark) flex items-center gap-2">
                 Security Policy
                 <ExternalLinkIcon size={14} />
               </h3>
             </div>
-            <p className="text-sm text-[var(--monarch-text)]">
+            <p className="text-sm text-(--monarch-text)">
               Report security vulnerabilities responsibly.
             </p>
           </a>
@@ -96,15 +94,13 @@ export function HelpDocsContent() {
           {/* Settings */}
           <Link
             to="/settings"
-            className="p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] transition-colors"
+            className="p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) transition-colors"
           >
             <div className="flex items-center gap-3 mb-4">
               <BookmarkIcon size={24} color="var(--monarch-orange)" />
-              <h3 className="font-semibold text-[var(--monarch-text-dark)]">
-                Settings
-              </h3>
+              <h3 className="font-semibold text-(--monarch-text-dark)">Settings</h3>
             </div>
-            <p className="text-sm text-[var(--monarch-text)]">
+            <p className="text-sm text-(--monarch-text)">
               Configure your instance, manage credentials, and more.
             </p>
           </Link>
@@ -112,10 +108,10 @@ export function HelpDocsContent() {
       </section>
 
       {/* Help Topics */}
-      <section className="px-4 sm:px-6 py-12 bg-[var(--monarch-bg-card)]">
+      <section className="px-4 sm:px-6 py-12 bg-(--monarch-bg-card)">
         <div className="max-w-3xl mx-auto">
           <h2
-            className="text-2xl font-bold text-[var(--monarch-text-dark)] mb-8 text-center"
+            className="text-2xl font-bold text-(--monarch-text-dark) mb-8 text-center"
             style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
             Common Questions

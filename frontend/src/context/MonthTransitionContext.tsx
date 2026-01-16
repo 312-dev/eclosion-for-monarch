@@ -59,14 +59,22 @@ function getCurrentMonth(): string {
 /** Format YYYY-MM to full month name (e.g., "January") */
 export function formatMonthName(monthStr: string): string {
   const [year, month] = monthStr.split('-');
-  const date = new Date(parseInt(year ?? '2026', 10), parseInt(month ?? '1', 10) - 1, 1);
+  const date = new Date(
+    Number.parseInt(year ?? '2026', 10),
+    Number.parseInt(month ?? '1', 10) - 1,
+    1
+  );
   return date.toLocaleDateString('en-US', { month: 'long' });
 }
 
 /** Format YYYY-MM to short month name (e.g., "Jan") */
 export function formatMonthShort(monthStr: string): string {
   const [year, month] = monthStr.split('-');
-  const date = new Date(parseInt(year ?? '2026', 10), parseInt(month ?? '1', 10) - 1, 1);
+  const date = new Date(
+    Number.parseInt(year ?? '2026', 10),
+    Number.parseInt(month ?? '1', 10) - 1,
+    1
+  );
   return date.toLocaleDateString('en-US', { month: 'short' });
 }
 
@@ -194,7 +202,12 @@ export function MonthTransitionProvider({ children }: Readonly<{ children: React
   useEffect(() => {
     if (isDemo) return;
 
-    if (transitionState === 'stale' && !isRateLimited && isMonthStale && !syncAttemptedRef.current) {
+    if (
+      transitionState === 'stale' &&
+      !isRateLimited &&
+      isMonthStale &&
+      !syncAttemptedRef.current
+    ) {
       syncAttemptedRef.current = true;
       requestAnimationFrame(() => {
         void triggerMonthSync();

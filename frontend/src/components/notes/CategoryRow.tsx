@@ -52,7 +52,11 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
   const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Checkbox state management
-  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
+  const {
+    checkboxStates,
+    toggleCheckbox,
+    isLoading: checkboxesLoading,
+  } = useCheckboxState({
     noteId: note?.id,
     viewingMonth: currentMonth,
     enabled: !!note || !!content.trim(),
@@ -93,13 +97,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
 
     try {
       // If content is empty and there was a note, delete it
-      if (!trimmedContent) {
-        const noteId = effectiveNote.note?.id;
-        if (noteId) {
-          await deleteMutation.mutateAsync(noteId);
-          lastSavedRef.current = '';
-        }
-      } else {
+      if (trimmedContent) {
         // Save the note
         await saveMutation.mutateAsync({
           categoryType: 'category',
@@ -111,6 +109,12 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
           content: trimmedContent,
         });
         lastSavedRef.current = trimmedContent;
+      } else {
+        const noteId = effectiveNote.note?.id;
+        if (noteId) {
+          await deleteMutation.mutateAsync(noteId);
+          lastSavedRef.current = '';
+        }
       }
       setIsEditing(false);
       notesEditor?.closeEditor();
@@ -119,7 +123,19 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
     } finally {
       setIsSaving(false);
     }
-  }, [content, effectiveNote.note?.id, category.id, category.name, groupId, groupName, currentMonth, saveMutation, deleteMutation, notesEditor, toast]);
+  }, [
+    content,
+    effectiveNote.note?.id,
+    category.id,
+    category.name,
+    groupId,
+    groupName,
+    currentMonth,
+    saveMutation,
+    deleteMutation,
+    notesEditor,
+    toast,
+  ]);
 
   // Save function - checks inheritance impact first
   const saveNote = useCallback(async () => {
@@ -218,10 +234,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
         <div className="relative">
           {/* Inheritance badge */}
           {effectiveNote.isInherited && effectiveNote.sourceMonth && (
-            <div
-              className="text-xs mb-1"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
+            <div className="text-xs mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
               from {formatSourceMonth(effectiveNote.sourceMonth)}
             </div>
           )}
@@ -280,11 +293,11 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
   return (
     <>
       <div
-        className="flex items-start gap-3 px-4 py-3 border-t hover:bg-[var(--monarch-bg-hover)] transition-colors group"
+        className="flex items-start gap-3 px-4 py-3 border-t hover:bg-(--monarch-bg-hover) transition-colors group"
         style={{ borderColor: 'var(--monarch-border)' }}
       >
         {/* Category icon/name */}
-        <div className="flex items-center gap-2 min-w-[140px] shrink-0">
+        <div className="flex items-center gap-2 min-w-35 shrink-0">
           {category.icon && (
             <span className="text-base" aria-hidden="true">
               {decodeHtmlEntities(category.icon)}
@@ -299,14 +312,15 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
             title={`View ${decodeHtmlEntities(category.name)} in Monarch`}
           >
             {spacifyEmoji(decodeHtmlEntities(category.name))}
-            <ExternalLink size={12} className="opacity-0 group-hover/link:opacity-100 transition-opacity" />
+            <ExternalLink
+              size={12}
+              className="opacity-0 group-hover/link:opacity-100 transition-opacity"
+            />
           </a>
         </div>
 
         {/* Note content area */}
-        <div className="flex-1 min-w-0">
-          {renderNoteContent()}
-        </div>
+        <div className="flex-1 min-w-0">{renderNoteContent()}</div>
       </div>
 
       {/* Revision history modal */}

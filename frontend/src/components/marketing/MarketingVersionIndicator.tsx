@@ -20,7 +20,7 @@ export function MarketingVersionIndicator() {
   const [showChangelog, setShowChangelog] = useState(false);
   const isBetaSite = useIsBetaSite();
 
-  const version = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
+  const version = typeof __APP_VERSION__ === 'undefined' ? '0.0.0' : __APP_VERSION__;
   // Use site-based detection: beta.eclosion.app shows BETA, eclosion.app shows STABLE
   const channel = isBetaSite ? 'beta' : 'stable';
 
@@ -32,7 +32,12 @@ export function MarketingVersionIndicator() {
         className="flex items-center"
         title="View changelog"
       >
-        <VersionBadge version={version} channel={channel} size="md" className="hover:brightness-110 transition-all" />
+        <VersionBadge
+          version={version}
+          channel={channel}
+          size="md"
+          className="hover:brightness-110 transition-all"
+        />
       </button>
 
       <Modal

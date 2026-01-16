@@ -6,8 +6,16 @@ import { useState } from 'react';
 import type { RecurringItem } from '../../../types';
 
 const LOGO_COLORS = [
-  '#FF692D', '#4A90D9', '#50C878', '#9B59B6', '#E74C3C',
-  '#3498DB', '#1ABC9C', '#F39C12', '#E91E63', '#00BCD4'
+  '#FF692D',
+  '#4A90D9',
+  '#50C878',
+  '#9B59B6',
+  '#E74C3C',
+  '#3498DB',
+  '#1ABC9C',
+  '#F39C12',
+  '#E91E63',
+  '#00BCD4',
 ];
 
 interface MerchantLogoProps {
@@ -20,7 +28,9 @@ export function MerchantLogo({ item, size = 40 }: MerchantLogoProps) {
   const displayName = item.merchant_name || item.name;
   const initial = displayName.charAt(0).toUpperCase();
 
-  const colorIndex = displayName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % LOGO_COLORS.length;
+  const colorIndex =
+    displayName.split('').reduce((acc, char) => acc + (char.codePointAt(0) ?? 0), 0) %
+    LOGO_COLORS.length;
   const bgColor = LOGO_COLORS[colorIndex];
 
   if (item.logo_url && !imgError) {

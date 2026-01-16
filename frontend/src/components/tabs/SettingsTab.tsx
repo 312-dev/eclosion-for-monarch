@@ -4,7 +4,7 @@
  * General application settings including:
  * - Appearance (theme, landing page)
  * - Tool settings (recurring tool configuration)
- * - Automation (auto-sync)
+ * - Syncing (auto-sync, background sync)
  * - Updates
  * - Account
  * - Security
@@ -30,7 +30,8 @@ import {
   AppearanceSettings,
   RecurringToolSettings,
   RecurringResetModal,
-  AutomationSection,
+  NotesToolCard,
+  SyncingSection,
   UpdatesSection,
   DesktopSection,
   LogViewerSection,
@@ -40,6 +41,7 @@ import {
   DataManagementSection,
   DangerZoneSection,
   CreditsSection,
+  DeveloperSection,
 } from '../settings';
 
 export function SettingsTab() {
@@ -56,7 +58,7 @@ export function SettingsTab() {
   const toast = useToast();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
-  const recurringSettingsRef = useRef<HTMLElement>(null);
+  const recurringSettingsRef = useRef<HTMLDivElement>(null);
   const client = useApiClient();
 
   usePageTitle('Settings', dashboardData?.config.user_first_name);
@@ -122,9 +124,10 @@ export function SettingsTab() {
   };
 
   // Calculate totals for the reset modal
-  const dedicatedItems = dashboardData?.items.filter(
-    item => item.is_enabled && !item.is_in_rollup && item.category_id
-  ) || [];
+  const dedicatedItems =
+    dashboardData?.items.filter(
+      (item) => item.is_enabled && !item.is_in_rollup && item.category_id
+    ) || [];
   const rollupItems = dashboardData?.rollup?.items || [];
   const totalCategories = dedicatedItems.length + (dashboardData?.rollup?.category_id ? 1 : 0);
   const totalItems = dedicatedItems.length + rollupItems.length;
@@ -153,24 +156,45 @@ export function SettingsTab() {
           </div>
         </div>
 
-        {isDemo && <div id="demo"><DemoModeSection /></div>}
+        {isDemo && (
+          <div id="demo">
+            <DemoModeSection />
+          </div>
+        )}
 
         {/* User-facing settings */}
-        <div id="appearance"><AppearanceSettings /></div>
-
-        <div id="tool-settings">
-          <RecurringToolSettings
-            ref={recurringSettingsRef}
-            dashboardData={dashboardData}
-            loading={loading}
-            onRefreshDashboard={fetchDashboardData}
-            onShowResetModal={() => setShowRecurringResetModal(true)}
-          />
+        <div id="appearance">
+          <AppearanceSettings />
         </div>
 
-        {isDesktop && <div id="desktop"><DesktopSection /></div>}
+        <section id="tool-settings" className="mb-8">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            Tool Settings
+          </h2>
+          <div className="flex flex-col gap-4">
+            <RecurringToolSettings
+              ref={recurringSettingsRef}
+              dashboardData={dashboardData}
+              loading={loading}
+              onRefreshDashboard={fetchDashboardData}
+              onShowResetModal={() => setShowRecurringResetModal(true)}
+            />
+            <NotesToolCard />
+          </div>
+        </section>
 
-        <div id="account"><AccountSection /></div>
+        {isDesktop && (
+          <div id="desktop">
+            <DesktopSection />
+          </div>
+        )}
+
+        <div id="account">
+          <AccountSection />
+        </div>
 
         <div id="updates">
           <UpdatesSection
@@ -179,11 +203,13 @@ export function SettingsTab() {
           />
         </div>
 
-        <div id="credits"><CreditsSection /></div>
+        <div id="credits">
+          <CreditsSection />
+        </div>
 
         {/* Technical settings */}
-        <div id="automation">
-          <AutomationSection
+        <div id="syncing">
+          <SyncingSection
             status={autoSyncStatus}
             onEnable={handleEnableAutoSync}
             onDisable={handleDisableAutoSync}
@@ -192,11 +218,27 @@ export function SettingsTab() {
         </div>
 
         {/* Hide security events on desktop - only relevant for web deployments */}
-        {!isDesktop && <div id="security"><SecuritySection /></div>}
+        {!isDesktop && (
+          <div id="security">
+            <SecuritySection />
+          </div>
+        )}
 
-        <div id="data"><DataManagementSection onShowImportModal={() => setShowImportModal(true)} /></div>
+        <div id="data">
+          <DataManagementSection onShowImportModal={() => setShowImportModal(true)} />
+        </div>
 
-        {isDesktop && <div id="logs"><LogViewerSection /></div>}
+        {isDesktop && (
+          <div id="logs">
+            <LogViewerSection />
+          </div>
+        )}
+
+        {isDesktop && (
+          <div id="developer">
+            <DeveloperSection />
+          </div>
+        )}
 
         <div id="danger">
           <DangerZoneSection
@@ -215,18 +257,9 @@ export function SettingsTab() {
           logout();
         }}
       />
-      <UninstallModal
-        isOpen={showUninstallModal}
-        onClose={() => setShowUninstallModal(false)}
-      />
-      <UpdateModal
-        isOpen={showUpdateModal}
-        onClose={() => setShowUpdateModal(false)}
-      />
-      <ImportSettingsModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-      />
+      <UninstallModal isOpen={showUninstallModal} onClose={() => setShowUninstallModal(false)} />
+      <UpdateModal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)} />
+      <ImportSettingsModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
       <RecurringResetModal
         isOpen={showRecurringResetModal}
         onClose={() => setShowRecurringResetModal(false)}

@@ -36,16 +36,19 @@ export function usePwaInstall(): PwaInstallState {
 
   // Use lazy initialization for values that can be computed synchronously
   const [isInstalled, setIsInstalled] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof globalThis.window === 'undefined') return false;
     return (
-      window.matchMedia('(display-mode: standalone)').matches ||
+      globalThis.matchMedia('(display-mode: standalone)').matches ||
       (navigator as unknown as { standalone: boolean }).standalone === true
     );
   });
 
   const [isIOS] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as { MSStream: unknown }).MSStream;
+    if (typeof globalThis.window === 'undefined') return false;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !(globalThis as unknown as { MSStream: unknown }).MSStream
+    );
   });
 
   useEffect(() => {
@@ -55,7 +58,7 @@ export function usePwaInstall(): PwaInstallState {
       setDeferredPrompt(e);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    globalThis.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Listen for successful install
     const handleAppInstalled = () => {
@@ -63,11 +66,11 @@ export function usePwaInstall(): PwaInstallState {
       setDeferredPrompt(null);
     };
 
-    window.addEventListener('appinstalled', handleAppInstalled);
+    globalThis.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      globalThis.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      globalThis.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 

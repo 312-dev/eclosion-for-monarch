@@ -66,14 +66,7 @@ export interface UpdateCheckResult {
 /**
  * Keys for individual desktop settings.
  */
-export type DesktopSettingKey =
-  | 'launchAtLogin'
-  | 'startMinimized'
-  | 'minimizeToTray'
-  | 'closeToTray'
-  | 'showInDock'
-  | 'showInTaskbar'
-  | 'globalShortcut';
+export type DesktopSettingKey = 'launchAtLogin' | 'startMinimized' | 'showInTaskbar';
 
 /**
  * Desktop settings structure.
@@ -83,16 +76,8 @@ export interface DesktopSettings {
   launchAtLogin: boolean;
   startMinimized: boolean;
 
-  // Window behavior
-  minimizeToTray: boolean;
-  closeToTray: boolean;
-
   // Visibility
-  showInDock: boolean;      // macOS only
-  showInTaskbar: boolean;   // Windows only (future)
-
-  // Shortcut
-  globalShortcut: string;
+  showInTaskbar: boolean; // Windows only (future)
 }
 
 export interface LogFileInfo {
@@ -126,7 +111,12 @@ export interface BackendStatusChange {
   timestamp: string;
 }
 
-export type BackendStartupPhase = 'initializing' | 'spawning' | 'waiting_for_health' | 'ready' | 'failed';
+export type BackendStartupPhase =
+  | 'initializing'
+  | 'spawning'
+  | 'waiting_for_health'
+  | 'ready'
+  | 'failed';
 
 export interface BackendStartupStatus {
   phase: BackendStartupPhase;
@@ -147,15 +137,6 @@ export interface RestoreResult {
   filesRestored?: number;
   settingsRestored?: boolean;
 }
-
-export type HotkeyAction = 'toggle-window' | 'trigger-sync';
-
-export interface HotkeyConfig {
-  enabled: boolean;
-  accelerator: string;
-}
-
-export type HotkeyConfigs = Record<HotkeyAction, HotkeyConfig>;
 
 export interface OnboardingStep {
   id: string;
@@ -214,13 +195,7 @@ export type BiometricType = 'touchId' | 'windowsHello' | null;
 
 // Lock Management Types
 
-export type LockTrigger =
-  | 'system-lock'
-  | 'idle-1'
-  | 'idle-5'
-  | 'idle-15'
-  | 'idle-30'
-  | 'never';
+export type LockTrigger = 'system-lock' | 'idle-1' | 'idle-5' | 'idle-15' | 'idle-30' | 'never';
 
 export interface LockOption {
   value: LockTrigger;
@@ -482,6 +457,10 @@ export interface ElectronAPI {
   getStateDir: () => Promise<string>;
   revealDataFolder: () => Promise<void>;
 
+  // Developer Mode
+  getDeveloperMode: () => Promise<boolean>;
+  setDeveloperMode: (enabled: boolean) => Promise<void>;
+
   // Log Viewer
   getLogFiles: () => Promise<LogFileInfo[]>;
   readLogFile: (filePath: string, options?: ReadLogOptions) => Promise<LogFileContent>;
@@ -491,12 +470,6 @@ export interface ElectronAPI {
   restoreBackup: () => Promise<RestoreResult>;
   getBackupWarning: () => Promise<string>;
   getRestoreWarning: () => Promise<string>;
-
-  // Global Hotkeys
-  getHotkeyConfigs: () => Promise<HotkeyConfigs>;
-  setHotkeyConfig: (action: HotkeyAction, config: HotkeyConfig) => Promise<boolean>;
-  validateShortcut: (accelerator: string, currentAction?: HotkeyAction) => Promise<string | null>;
-  resetHotkeys: () => Promise<void>;
 
   // Onboarding
   getOnboardingData: () => Promise<OnboardingData>;
@@ -571,7 +544,10 @@ export interface ReauthAPI {
   /** Listen for MFA required events during session restore (e.g., 6-digit code users on restart) */
   onMfaRequired: (callback: (data: MfaRequiredData) => void) => () => void;
   /** Submit MFA code to complete session restore */
-  submitMfaCode: (mfaCode: string, mfaMode: 'secret' | 'code') => Promise<{ success: boolean; error?: string }>;
+  submitMfaCode: (
+    mfaCode: string,
+    mfaMode: 'secret' | 'code'
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 /** Window mode for compact (loading/login) vs full (main app) views */

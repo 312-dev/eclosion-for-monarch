@@ -237,7 +237,8 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   });
   logWindowTiming('loadFile completed');
 
-  // Handle close - behavior depends on desktop.closeToTray setting
+  // Handle close - always hide to tray instead of quitting
+  // The app runs in both the dock/taskbar AND the system tray/menu bar
   mainWindow.on('close', (event) => {
     // Always save window bounds regardless of close behavior
     const currentBounds = mainWindow?.getBounds();
@@ -246,34 +247,14 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     }
 
     if (!isQuitting) {
-      const closeToTray = getStore().get('desktop.closeToTray', true);
-      if (closeToTray) {
-        // Hide to tray instead of quitting
-        event.preventDefault();
-        mainWindow?.hide();
-
-        // macOS: Hide dock icon if showInDock setting is disabled
-        if (process.platform === 'darwin' && app.dock) {
-          const showInDock = getStore().get('desktop.showInDock', true);
-          if (!showInDock) {
-            app.dock.hide();
-          }
-        }
-      }
-      // If closeToTray is false, allow the window to close normally
-      // which will trigger app quit via window-all-closed handler
-    }
-  });
-
-  // Handle minimize - behavior depends on desktop.minimizeToTray setting
-  // Note: The minimize event doesn't support preventDefault(), so we hide after minimizing
-  mainWindow.on('minimize', () => {
-    const minimizeToTray = getStore().get('desktop.minimizeToTray', true);
-    if (minimizeToTray) {
-      // Hide the window to tray instead of showing minimized in taskbar
+      // Hide to tray instead of quitting (dock stays visible)
+      event.preventDefault();
       mainWindow?.hide();
     }
   });
+
+  // Handle minimize - use default behavior (minimize to dock/taskbar)
+  // No custom handling needed since we always show in both dock and tray
 
   mainWindow.on('closed', () => {
     mainWindow = null;

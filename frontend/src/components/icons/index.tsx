@@ -47,7 +47,6 @@ import {
   Users,
   LogOut,
   Lock,
-  Mail,
   Shield,
   ShieldCheck,
   Key,
@@ -84,7 +83,6 @@ import {
   RotateCw,
   Gift,
   HeartHandshake,
-  HelpCircle,
   Server,
   Monitor,
   Globe,
@@ -136,7 +134,7 @@ export const TrashIcon = Trash2;
 export const ExternalLinkIcon = ExternalLink;
 export const LinkIcon = Link;
 export const InfoIcon = Info;
-export const HelpIcon = HelpCircle;
+
 export const AlertCircleIcon = AlertCircle;
 export const WarningIcon = AlertTriangle;
 export const CheckCircleIcon = CheckCircle;
@@ -155,7 +153,7 @@ export const UserIcon = User;
 export const UsersIcon = Users;
 export const LogoutIcon = LogOut;
 export const LockIcon = Lock;
-export const MailIcon = Mail;
+
 export const ShieldIcon = Shield;
 export const ShieldCheckIcon = ShieldCheck;
 export const KeyIcon = Key;
@@ -222,30 +220,13 @@ export function SpinnerIcon({
   className = '',
   ...rest
 }: IconProps) {
-  return (
-    <Loader2
-      size={size}
-      color={color}
-      className={`animate-spin ${className}`}
-      {...rest}
-    />
-  );
+  return <Loader2 size={size} color={color} className={`animate-spin ${className}`} {...rest} />;
 }
 
 /** Filled check icon (green background with white check) */
-export function CheckFilledIcon({
-  size = 24,
-  color: _color = 'currentColor',
-  ...rest
-}: IconProps) {
+export function CheckFilledIcon({ size = 24, color: _color = 'currentColor', ...rest }: IconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      {...rest}
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
       <circle cx="12" cy="12" r="10" fill="#10B981" />
       <path
         d="M8 12l2.5 2.5L16 9"
@@ -265,13 +246,7 @@ export function WarningFilledIcon({
   ...rest
 }: IconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      {...rest}
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
       <path
         d="M12 2L2 20h20L12 2z"
         fill="#F59E0B"
@@ -293,13 +268,7 @@ export function AlertCircleFilledIcon({
   ...rest
 }: IconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      {...rest}
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
       <circle cx="12" cy="12" r="10" fill="#EF4444" />
       <path d="M12 8v4" stroke="white" strokeWidth="2" strokeLinecap="round" />
       <circle cx="12" cy="16" r="1" fill="white" />
@@ -308,12 +277,7 @@ export function AlertCircleFilledIcon({
 }
 
 /** GitHub icon (brand icon) */
-export function GitHubIcon({
-  size = 24,
-  color = 'currentColor',
-  className,
-  ...rest
-}: IconProps) {
+export function GitHubIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
     <svg
       width={size}
@@ -329,12 +293,7 @@ export function GitHubIcon({
 }
 
 /** Reddit icon (brand icon not in Lucide) */
-export function RedditIcon({
-  size = 24,
-  color = 'currentColor',
-  className,
-  ...rest
-}: IconProps) {
+export function RedditIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
     <svg
       width={size}
@@ -350,12 +309,7 @@ export function RedditIcon({
 }
 
 /** Cocoon icon (deployment/hosting) */
-export function CocoonIcon({
-  size = 24,
-  color = 'currentColor',
-  className,
-  ...rest
-}: IconProps) {
+export function CocoonIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
     <svg
       width={size}
@@ -389,23 +343,10 @@ export function CocoonIcon({
  * https://thenounproject.com/icon/butterfly-7666562/
  * Licensed under CC BY 3.0 - https://creativecommons.org/licenses/by/3.0/
  */
-export function MonarchIcon({
-  size = 24,
-  color = 'currentColor',
-  ...rest
-}: IconProps) {
+export function MonarchIcon({ size = 24, color = 'currentColor', ...rest }: IconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={color}
-      {...rest}
-    >
-      <path
-        d="M21 12c0-1.5-.5-3-1.5-4L12 12l7.5 4c1-1 1.5-2.5 1.5-4z"
-        opacity="0.3"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} {...rest}>
+      <path d="M21 12c0-1.5-.5-3-1.5-4L12 12l7.5 4c1-1 1.5-2.5 1.5-4z" opacity="0.3" />
       <path d="M12 2C8.5 2 5.5 4 4 7l8 5-8 5c1.5 3 4.5 5 8 5s6.5-2 8-5l-8-5 8-5c-1.5-3-4.5-5-8-5zm0 2c2.5 0 4.5 1.5 5.5 3.5L12 11 6.5 7.5C7.5 5.5 9.5 4 12 4zm0 16c-2.5 0-4.5-1.5-5.5-3.5L12 13l5.5 3.5c-1 2-3 3.5-5.5 3.5z" />
     </svg>
   );
@@ -459,11 +400,7 @@ export function ButterflyEmergingIcon({
       {...rest}
     >
       {/* Cocoon shell at bottom - cracked open */}
-      <path
-        d="M8 22c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5"
-        fill={color}
-        fillOpacity="0.15"
-      />
+      <path d="M8 22c.5-2 2-3.5 4-3.5s3.5 1.5 4 3.5" fill={color} fillOpacity="0.15" />
       <path d="M7 20c1-1.5 2.5-2 5-2s4 .5 5 2" />
       {/* Butterfly body emerging */}
       <path d="M12 18V9" strokeWidth="2" />
@@ -474,23 +411,11 @@ export function ButterflyEmergingIcon({
         fillOpacity="0.2"
       />
       {/* Right wing */}
-      <path
-        d="M12 11c3-2 7-3 9-1 1.5 1.5 1 4-1.5 5.5S15 17 12 14"
-        fill={color}
-        fillOpacity="0.2"
-      />
+      <path d="M12 11c3-2 7-3 9-1 1.5 1.5 1 4-1.5 5.5S15 17 12 14" fill={color} fillOpacity="0.2" />
       {/* Upper left wing */}
-      <path
-        d="M12 9C9 7 5 5 3 7c-1.5 1.5-.5 4 2 5s5.5.5 7-2"
-        fill={color}
-        fillOpacity="0.3"
-      />
+      <path d="M12 9C9 7 5 5 3 7c-1.5 1.5-.5 4 2 5s5.5.5 7-2" fill={color} fillOpacity="0.3" />
       {/* Upper right wing */}
-      <path
-        d="M12 9c3-2 7-4 9-2 1.5 1.5.5 4-2 5s-5.5.5-7-2"
-        fill={color}
-        fillOpacity="0.3"
-      />
+      <path d="M12 9c3-2 7-4 9-2 1.5 1.5.5 4-2 5s-5.5.5-7-2" fill={color} fillOpacity="0.3" />
       {/* Antennae */}
       <path d="M10.5 7.5C9 5.5 8 4 7 4" />
       <path d="M13.5 7.5c1.5-2 2.5-3.5 3.5-3.5" />
@@ -499,12 +424,7 @@ export function ButterflyEmergingIcon({
 }
 
 /** Windows icon (brand icon) */
-export function WindowsIcon({
-  size = 24,
-  color = 'currentColor',
-  className,
-  ...rest
-}: IconProps) {
+export function WindowsIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
     <svg
       width={size}
@@ -520,12 +440,7 @@ export function WindowsIcon({
 }
 
 /** Apple icon (brand icon) */
-export function AppleIcon({
-  size = 24,
-  color = 'currentColor',
-  className,
-  ...rest
-}: IconProps) {
+export function AppleIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
     <svg
       width={size}
@@ -541,12 +456,7 @@ export function AppleIcon({
 }
 
 /** Linux/Tux icon (brand icon) */
-export function LinuxIcon({
-  size = 24,
-  color = 'currentColor',
-  className,
-  ...rest
-}: IconProps) {
+export function LinuxIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
     <svg
       width={size}
@@ -708,3 +618,5 @@ export const Icons = {
   Coins: CoinsIcon,
   Wallet: WalletIcon,
 };
+
+export { Mail as MailIcon, HelpCircle as HelpIcon } from 'lucide-react';

@@ -11,16 +11,18 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Download } from 'lucide-react';
 import { CategoryTree, GeneralMonthNotes, MonthYearSelector, ExportNotesModal } from '../notes';
+import { ContentLoadingSpinner } from '../ui/LoadingSpinner';
 import { EXPAND_FIRST_GROUP_EVENT } from '../layout/notesTourSteps';
-import {
-  useAllNotesQuery,
-  useMonthNotesQuery,
-} from '../../api/queries';
+import { useAllNotesQuery, useMonthNotesQuery } from '../../api/queries';
 import { useCategoriesByGroup } from '../../api/queries/categoryStoreQueries';
 import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
 import { NotesEditorProvider } from '../../context/NotesEditorContext';
-import { buildCategoryGroupsWithNotes, convertEffectiveGeneralNote, hasAnyNotes } from '../../utils';
+import {
+  buildCategoryGroupsWithNotes,
+  convertEffectiveGeneralNote,
+  hasAnyNotes,
+} from '../../utils';
 import type { MonthKey, EffectiveGeneralNote, CategoryGroupWithNotes } from '../../types/notes';
 
 /**
@@ -55,7 +57,9 @@ export function NotesTab() {
   const isLoading = notesLoading || categoriesLoading;
 
   // Extract data from responses
-  const effectiveGeneralNote: EffectiveGeneralNote | null = convertEffectiveGeneralNote(monthData?.effective_general_note);
+  const effectiveGeneralNote: EffectiveGeneralNote | null = convertEffectiveGeneralNote(
+    monthData?.effective_general_note
+  );
 
   // Build hierarchical structure from notes categories
   const allGroups: CategoryGroupWithNotes[] = useMemo(() => {
@@ -68,14 +72,15 @@ export function NotesTab() {
       .filter((group) => !hiddenGroups.includes(group.id))
       .map((group) => ({
         ...group,
-        categories: group.categories.filter(
-          (category) => !hiddenCategories.includes(category.id)
-        ),
+        categories: group.categories.filter((category) => !hiddenCategories.includes(category.id)),
       }));
   }, [allGroups, hiddenGroups, hiddenCategories]);
 
   // Check if there are any notes
-  const hasNotes = useMemo(() => hasAnyNotes(groups, effectiveGeneralNote), [groups, effectiveGeneralNote]);
+  const hasNotes = useMemo(
+    () => hasAnyNotes(groups, effectiveGeneralNote),
+    [groups, effectiveGeneralNote]
+  );
 
   // Get tour state to auto-expand first group for tour
   const { hasSeenTour } = useNotesTour();
@@ -141,11 +146,7 @@ export function NotesTab() {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div style={{ color: 'var(--monarch-text-muted)' }}>Loading notes...</div>
-      </div>
-    );
+    return <ContentLoadingSpinner message="Loading notes..." fullHeight />;
   }
 
   return (
@@ -153,10 +154,7 @@ export function NotesTab() {
       <div className="max-w-7xl mx-auto px-4 tab-content-enter">
         {/* Header with month navigation */}
         <div className="flex items-center justify-between mb-4 lg:mb-6">
-          <MonthYearSelector
-            currentMonth={currentMonth}
-            onMonthChange={setCurrentMonth}
-          />
+          <MonthYearSelector currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
 
           {/* Export button */}
           <button
@@ -164,9 +162,7 @@ export function NotesTab() {
             onClick={handleOpenExportModal}
             disabled={!hasNotes}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              hasNotes
-                ? 'hover:bg-[var(--monarch-bg-hover)]'
-                : 'opacity-50 cursor-not-allowed'
+              hasNotes ? 'hover:bg-(--monarch-bg-hover)' : 'opacity-50 cursor-not-allowed'
             }`}
             style={{ color: 'var(--monarch-text-muted)' }}
             title={hasNotes ? 'Export notes' : 'No notes to export'}
@@ -198,7 +194,11 @@ export function NotesTab() {
 
           {/* General month notes sidebar - desktop only (1/3 width) */}
           <div className="hidden lg:block lg:col-span-1">
-            <GeneralMonthNotes monthKey={currentMonth} effectiveNote={effectiveGeneralNote} dataTourId="general-notes" />
+            <GeneralMonthNotes
+              monthKey={currentMonth}
+              effectiveNote={effectiveGeneralNote}
+              dataTourId="general-notes"
+            />
           </div>
         </div>
 

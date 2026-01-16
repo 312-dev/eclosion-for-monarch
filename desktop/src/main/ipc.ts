@@ -32,20 +32,9 @@ import {
   quitAndInstall,
   getUpdateStatus,
   getUpdateChannel,
-  isAutoUpdateEnabled,
-  setAutoUpdateEnabled,
-  downloadUpdate,
 } from './updater';
 import { exportDiagnostics, getQuickDebugInfo } from './diagnostics';
 import { createBackup, restoreBackup, getBackupWarning, getRestoreWarning } from './backup';
-import {
-  getAllHotkeyConfigs,
-  setHotkeyConfig,
-  validateShortcut,
-  resetHotkeysToDefaults,
-  type HotkeyAction,
-  type HotkeyConfig,
-} from './hotkeys';
 import {
   getOnboardingData,
   completeOnboarding,
@@ -117,11 +106,9 @@ let loadingReadyPromise: Promise<void> | null = null;
  * before starting heavy background work.
  */
 export function createLoadingReadyPromise(): Promise<void> {
-  if (!loadingReadyPromise) {
-    loadingReadyPromise = new Promise((resolve) => {
-      loadingReadyResolve = resolve;
-    });
-  }
+  loadingReadyPromise ??= new Promise((resolve) => {
+    loadingReadyResolve = resolve;
+  });
   return loadingReadyPromise;
 }
 
@@ -265,26 +252,10 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   });
 
   /**
-   * Check if auto-update is enabled.
+   * Get auto-update enabled setting.
    */
   ipcMain.handle('get-auto-update-enabled', () => {
-    return isAutoUpdateEnabled();
-  });
-
-  /**
-   * Enable or disable auto-update.
-   */
-  ipcMain.handle('set-auto-update-enabled', (_event, enabled: boolean) => {
-    setAutoUpdateEnabled(enabled);
-    return enabled;
-  });
-
-  /**
-   * Manually download an available update.
-   * Use when auto-update is disabled but user wants to update.
-   */
-  ipcMain.handle('download-update', async () => {
-    return downloadUpdate();
+    return getStore().get('autoUpdateEnabled', true);
   });
 
   // =========================================================================
@@ -378,11 +349,7 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     return {
       launchAtLogin: store.get('desktop.launchAtLogin', false),
       startMinimized: store.get('desktop.startMinimized', false),
-      minimizeToTray: store.get('desktop.minimizeToTray', true),
-      closeToTray: store.get('desktop.closeToTray', true),
-      showInDock: store.get('desktop.showInDock', true),
       showInTaskbar: store.get('desktop.showInTaskbar', true),
-      globalShortcut: store.get('desktop.globalShortcut', 'CommandOrControl+Shift+E'),
     };
   });
 
@@ -391,8 +358,6 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    *
    * Handles side effects for settings that require immediate action:
    * - launchAtLogin: Updates OS login items
-   * - showInDock: Shows/hides dock icon (macOS)
-   * - globalShortcut: Re-registers the toggle-window hotkey
    */
   ipcMain.handle(
     'set-desktop-setting',
@@ -400,15 +365,7 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
       const store = getStore();
 
       // Validate key is a known desktop setting
-      const validKeys = [
-        'launchAtLogin',
-        'startMinimized',
-        'minimizeToTray',
-        'closeToTray',
-        'showInDock',
-        'showInTaskbar',
-        'globalShortcut',
-      ];
+      const validKeys = ['launchAtLogin', 'startMinimized', 'showInTaskbar'];
       if (!validKeys.includes(key)) {
         debugLog(`Invalid desktop setting key: ${key}`);
         return false;
@@ -420,36 +377,10 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
       debugLog(`Set desktop setting: ${key} = ${value}`);
 
       // Handle side effects
-      switch (key) {
-        case 'launchAtLogin':
-          // Update OS login items
-          app.setLoginItemSettings({ openAtLogin: value as boolean });
-          debugLog(`Updated login item settings: openAtLogin = ${value}`);
-          break;
-
-        case 'showInDock':
-          // macOS: Show/hide dock icon
-          if (process.platform === 'darwin' && app.dock) {
-            if (value) {
-              app.dock.show();
-            } else {
-              app.dock.hide();
-              // Re-focus window after dock hide (macOS loses focus as side effect)
-              getMainWindow()?.focus();
-            }
-            debugLog(`Updated dock visibility: ${value}`);
-          }
-          break;
-
-        case 'globalShortcut':
-          // Re-register the toggle-window hotkey with new shortcut
-          // The globalShortcut setting is specifically for the toggle-window action
-          setHotkeyConfig('toggle-window', {
-            enabled: true,
-            accelerator: value as string,
-          });
-          debugLog(`Updated globalShortcut to: ${value}`);
-          break;
+      if (key === 'launchAtLogin') {
+        // Update OS login items
+        app.setLoginItemSettings({ openAtLogin: value as boolean });
+        debugLog(`Updated login item settings: openAtLogin = ${value}`);
       }
 
       return true;
@@ -614,38 +545,6 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    */
   ipcMain.handle('get-restore-warning', () => {
     return getRestoreWarning();
-  });
-
-  // =========================================================================
-  // Global Hotkeys
-  // =========================================================================
-
-  /**
-   * Get all hotkey configurations.
-   */
-  ipcMain.handle('get-hotkey-configs', () => {
-    return getAllHotkeyConfigs();
-  });
-
-  /**
-   * Set a hotkey configuration.
-   */
-  ipcMain.handle('set-hotkey-config', (_event, action: HotkeyAction, config: HotkeyConfig) => {
-    return setHotkeyConfig(action, config);
-  });
-
-  /**
-   * Validate a keyboard shortcut.
-   */
-  ipcMain.handle('validate-shortcut', (_event, accelerator: string, currentAction?: HotkeyAction) => {
-    return validateShortcut(accelerator, currentAction);
-  });
-
-  /**
-   * Reset hotkeys to defaults.
-   */
-  ipcMain.handle('reset-hotkeys', () => {
-    resetHotkeysToDefaults();
   });
 
   // =========================================================================
@@ -1147,5 +1046,35 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   ipcMain.handle('menu:set-minimal', async () => {
     const { createMinimalMenu } = await import('./menu');
     createMinimalMenu();
+  });
+
+  // =========================================================================
+  // Developer Mode
+  // =========================================================================
+
+  /**
+   * Get developer mode setting.
+   */
+  ipcMain.handle('get-developer-mode', () => {
+    return getStore().get('settings.developerMode', false);
+  });
+
+  /**
+   * Set developer mode setting.
+   * Rebuilds the menu to show/hide developer tools.
+   */
+  ipcMain.handle('set-developer-mode', async (_event, enabled: boolean) => {
+    getStore().set('settings.developerMode', enabled);
+    debugLog(`Developer mode ${enabled ? 'enabled' : 'disabled'}`);
+
+    // Rebuild the menu to show/hide developer tools
+    const { isFullMenu, createAppMenu, getSyncCallback, createMinimalMenu } = await import('./menu');
+    if (isFullMenu()) {
+      createAppMenu(getSyncCallback() ?? undefined);
+    } else {
+      createMinimalMenu();
+    }
+
+    return true;
   });
 }

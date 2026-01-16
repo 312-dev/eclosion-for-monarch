@@ -1,19 +1,22 @@
 /**
  * UpdateModal - Shows deployment-specific instructions for updating to a new version
  *
- * For desktop apps: Shows live update status with download progress and restart button
- * For web deployments: Shows static instructions for Docker or local
+ * This modal is for web deployments (Docker/Local) only.
+ * Desktop app updates are handled by the DesktopUpdateBanner component.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../ui/Modal';
-import { getUpdateInfo, getAvailableReleases, type UpdateInfo, type Release } from '../../api/client';
+import {
+  getUpdateInfo,
+  getAvailableReleases,
+  type UpdateInfo,
+  type Release,
+} from '../../api/client';
 import * as demoApi from '../../api/demoClient';
 import { useDemo } from '../../context/DemoContext';
-import { useElectronUpdates } from '../../hooks';
 import { VersionBadge } from '../VersionBadge';
 import { ReleaseSelector } from './ReleaseSelector';
-import { DesktopUpdateContent } from './DesktopUpdateContent';
 
 interface UpdateModalProps {
   readonly isOpen: boolean;
@@ -21,23 +24,20 @@ interface UpdateModalProps {
   readonly targetVersion?: string | undefined;
 }
 
-function DeploymentIcon({ deploymentType }: { readonly deploymentType: string | undefined }) {
-  const iconClass = "w-5 h-5";
-
-  if (deploymentType === 'electron') {
-    // Monitor icon for Desktop
-    return (
-      <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-        <line x1="8" y1="21" x2="16" y2="21" />
-        <line x1="12" y1="17" x2="12" y2="21" />
-      </svg>
-    );
-  }
+function DeploymentIcon() {
+  const iconClass = 'w-5 h-5';
 
   // Box/container icon for Docker/Local
   return (
-    <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={iconClass}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
@@ -74,8 +74,8 @@ function BetaWarning() {
             Beta Warning
           </div>
           <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-            Beta releases may contain bugs and breaking changes.
-            Your data will be backed up automatically before any migration.
+            Beta releases may contain bugs and breaking changes. Your data will be backed up
+            automatically before any migration.
           </div>
         </div>
       </div>
@@ -85,17 +85,18 @@ function BetaWarning() {
 
 export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps) {
   const isDemo = useDemo();
-  const electronUpdates = useElectronUpdates();
-  const isDesktop = electronUpdates.isDesktop;
 
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
-  const [releases, setReleases] = useState<{ stable: Release[]; beta: Release[] }>({ stable: [], beta: [] });
+  const [releases, setReleases] = useState<{ stable: Release[]; beta: Release[] }>({
+    stable: [],
+    beta: [],
+  });
   const [loading, setLoading] = useState(true);
   const [selectedVersion, setSelectedVersion] = useState<string | null>(targetVersion || null);
 
-  // Fetch update info for web deployments (skip for desktop)
+  // Fetch update info for web deployments
   useEffect(() => {
-    if (isOpen && !isDesktop) {
+    if (isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading state for async fetch
       setLoading(true);
       const fetchUpdateInfo = isDemo ? demoApi.getUpdateInfo : getUpdateInfo;
@@ -108,7 +109,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
             beta: releasesData.beta_releases,
           });
           if (!selectedVersion && releasesData.stable_releases.length > 0) {
-            const latest = releasesData.stable_releases.find(r => !r.is_current);
+            const latest = releasesData.stable_releases.find((r) => !r.is_current);
             if (latest) setSelectedVersion(latest.version);
           }
         })
@@ -116,24 +117,14 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
           // Silently fail
         })
         .finally(() => setLoading(false));
-    } else if (isDesktop) {
-      // For desktop, we don't need to fetch - useElectronUpdates handles it
-      setLoading(false);
     }
-  }, [isOpen, selectedVersion, isDemo, isDesktop]);
+  }, [isOpen, selectedVersion, isDemo]);
 
   const getDeploymentLabel = () => {
-    if (isDesktop) return 'Desktop';
-    switch (updateInfo?.deployment_type) {
-      case 'docker': return 'Docker';
-      case 'electron': return 'Desktop';
-      default: return 'Local';
-    }
+    return updateInfo?.deployment_type === 'docker' ? 'Docker' : 'Local';
   };
 
-  const deploymentIcon = useMemo(() => (
-    <DeploymentIcon deploymentType={isDesktop ? 'electron' : updateInfo?.deployment_type} />
-  ), [updateInfo?.deployment_type, isDesktop]);
+  const deploymentIcon = useMemo(() => <DeploymentIcon />, []);
 
   return (
     <Modal
@@ -156,54 +147,38 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current" />
         </div>
-      ) : isDesktop ? (
-        // Desktop: Show live update status with electron-updater
-        <div className="space-y-6">
-          {/* Current Version */}
-          <div
-            className="p-4 rounded-lg border"
-            style={{ backgroundColor: 'var(--monarch-bg-input)', borderColor: 'var(--monarch-border)' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>Current Version</div>
-                <div className="text-lg font-medium flex items-center gap-2" style={{ color: 'var(--monarch-text-dark)' }}>
-                  v{electronUpdates.currentVersion || '...'}
-                  <VersionBadge version={electronUpdates.currentVersion || ''} channel={electronUpdates.channel} />
-                </div>
-              </div>
-              <div
-                className="p-2 rounded-lg"
-                style={{ backgroundColor: 'var(--monarch-bg-card)', color: 'var(--monarch-text-muted)' }}
-                title={getDeploymentLabel()}
-              >
-                {deploymentIcon}
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop Update Content */}
-          <DesktopUpdateContent electronUpdates={electronUpdates} />
-        </div>
       ) : (
-        // Web: Show deployment-specific instructions
         <div className="space-y-6">
           {/* Current Version */}
           <div
             className="p-4 rounded-lg border"
-            style={{ backgroundColor: 'var(--monarch-bg-input)', borderColor: 'var(--monarch-border)' }}
+            style={{
+              backgroundColor: 'var(--monarch-bg-input)',
+              borderColor: 'var(--monarch-border)',
+            }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>Current Version</div>
-                <div className="text-lg font-medium flex items-center gap-2" style={{ color: 'var(--monarch-text-dark)' }}>
+                <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+                  Current Version
+                </div>
+                <div
+                  className="text-lg font-medium flex items-center gap-2"
+                  style={{ color: 'var(--monarch-text-dark)' }}
+                >
                   v{updateInfo?.current_version}
-                  <VersionBadge version={updateInfo?.current_version || ''} channel={updateInfo?.current_channel} />
+                  <VersionBadge
+                    version={updateInfo?.current_version || ''}
+                    channel={updateInfo?.current_channel}
+                  />
                 </div>
               </div>
               <div
                 className="p-2 rounded-lg"
-                style={{ backgroundColor: 'var(--monarch-bg-card)', color: 'var(--monarch-text-muted)' }}
+                style={{
+                  backgroundColor: 'var(--monarch-bg-card)',
+                  color: 'var(--monarch-text-muted)',
+                }}
                 title={getDeploymentLabel()}
               >
                 {deploymentIcon}
@@ -227,7 +202,7 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
             </h3>
             <ol className="space-y-3">
               {updateInfo?.instructions.steps.map((step, index) => (
-                <li key={index} className="flex items-start gap-3">
+                <li key={`step-${step.slice(0, 20)}`} className="flex items-start gap-3">
                   <span
                     className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium"
                     style={{ backgroundColor: 'var(--monarch-orange)', color: 'white' }}
@@ -250,7 +225,10 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
                 style={{ backgroundColor: 'var(--monarch-bg-input)' }}
               >
                 <code>
-                  {updateInfo.instructions.example_compose.replace('VERSION', selectedVersion || 'X.Y.Z')}
+                  {updateInfo.instructions.example_compose.replace(
+                    'VERSION',
+                    selectedVersion || 'X.Y.Z'
+                  )}
                 </code>
               </pre>
             </div>

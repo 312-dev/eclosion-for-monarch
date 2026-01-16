@@ -34,13 +34,16 @@ export function CategoryTree({
   onCollapseAll,
   currentMonth,
 }: CategoryTreeProps) {
-  const allExpanded = groups.length > 0 && groups.every(g => expandedGroups.has(g.id));
+  const allExpanded = groups.length > 0 && groups.every((g) => expandedGroups.has(g.id));
 
   if (groups.length === 0) {
     return (
       <div
         className="rounded-xl p-8 text-center"
-        style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
       >
         <div className="text-lg font-medium mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
           No categories found
@@ -56,13 +59,16 @@ export function CategoryTree({
     <div className="space-y-2" data-tour="category-tree">
       {/* Header with expand/collapse toggle */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'var(--monarch-text-muted)' }}>
+        <h2
+          className="text-sm font-semibold uppercase tracking-wide"
+          style={{ color: 'var(--monarch-text-muted)' }}
+        >
           Category Notes
         </h2>
         <button
           type="button"
           onClick={allExpanded ? onCollapseAll : onExpandAll}
-          className="px-2 py-1 text-xs rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="px-2 py-1 text-xs rounded hover:bg-(--monarch-bg-hover) transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
         >
@@ -96,17 +102,14 @@ export function CategoryTree({
                 <button
                   type="button"
                   onClick={() => onToggleGroup(group.id)}
-                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--monarch-bg-hover)] transition-colors"
+                  className="w-full flex items-center gap-2 px-4 py-3 hover:bg-(--monarch-bg-hover) transition-colors"
                   aria-expanded={isExpanded}
                   aria-controls={`group-${group.id}-categories`}
                 >
                   <span style={{ color: 'var(--monarch-text-muted)' }}>
                     {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                   </span>
-                  <span
-                    className="font-medium"
-                    style={{ color: 'var(--monarch-text-dark)' }}
-                  >
+                  <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
                     {spacifyEmoji(decodeHtmlEntities(group.name))}
                   </span>
                   <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
@@ -130,12 +133,7 @@ export function CategoryTree({
                 </button>
 
                 {/* Group note - only shown when expanded */}
-                {isExpanded && (
-                  <CategoryGroupRow
-                    group={group}
-                    currentMonth={currentMonth}
-                  />
-                )}
+                {isExpanded && <CategoryGroupRow group={group} currentMonth={currentMonth} />}
               </div>
 
               {/* Categories */}

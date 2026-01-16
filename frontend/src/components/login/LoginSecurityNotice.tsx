@@ -12,7 +12,10 @@ interface LoginSecurityNoticeProps {
   onShowDetails: () => void;
 }
 
-export function LoginSecurityNotice({ isElectronDesktop, onShowDetails }: LoginSecurityNoticeProps) {
+export function LoginSecurityNotice({
+  isElectronDesktop,
+  onShowDetails,
+}: LoginSecurityNoticeProps) {
   return (
     <aside
       className="mt-3 p-3 rounded-lg"
@@ -21,7 +24,7 @@ export function LoginSecurityNotice({ isElectronDesktop, onShowDetails }: LoginS
     >
       <div className="flex items-start gap-2">
         <svg
-          className="w-4 h-4 mt-0.5 flex-shrink-0"
+          className="w-4 h-4 mt-0.5 shrink-0"
           style={{ color: 'var(--monarch-orange)' }}
           fill="none"
           stroke="currentColor"
@@ -88,12 +91,15 @@ export function UnofficialNotice() {
   return (
     <aside
       className="mt-4 p-3 rounded-lg"
-      style={{ backgroundColor: 'var(--monarch-bg-page)', border: '1px solid var(--monarch-border)' }}
+      style={{
+        backgroundColor: 'var(--monarch-bg-page)',
+        border: '1px solid var(--monarch-border)',
+      }}
       aria-label="Important notice"
     >
       <div className="flex items-start gap-2">
         <svg
-          className="w-4 h-4 mt-0.5 flex-shrink-0"
+          className="w-4 h-4 mt-0.5 shrink-0"
           style={{ color: 'var(--monarch-text-muted)' }}
           fill="none"
           stroke="currentColor"
@@ -109,8 +115,8 @@ export function UnofficialNotice() {
         </svg>
         <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
           <p>
-            <strong>Unofficial third-party tool</strong> — not affiliated with or endorsed by Monarch
-            Money.
+            <strong>Unofficial third-party tool</strong> — not affiliated with or endorsed by
+            Monarch Money.
           </p>
         </div>
       </div>

@@ -32,10 +32,9 @@ export function FrequencyGroup({
   onUnlink,
 }: FrequencyGroupProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const groupIds = items.map(i => i.id);
-  const selectedCount = groupIds.filter(id => selectedIds.has(id)).length;
+  const groupIds = items.map((i) => i.id);
+  const selectedCount = groupIds.filter((id) => selectedIds.has(id)).length;
   const allSelected = selectedCount === items.length;
-  const someSelected = selectedCount > 0 && selectedCount < items.length;
   const totalMonthly = items.reduce((sum, i) => sum + i.monthly_contribution, 0);
 
   return (
@@ -55,7 +54,10 @@ export function FrequencyGroup({
           <ChevronDownIcon
             size={16}
             color="var(--monarch-text-muted)"
-            style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+            style={{
+              transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+            }}
           />
         </button>
 
@@ -66,7 +68,7 @@ export function FrequencyGroup({
             {formatFrequency(frequency)}
           </span>
           <span className="text-sm ml-2" style={{ color: 'var(--monarch-text-muted)' }}>
-            ({items.length} item{items.length !== 1 ? 's' : ''})
+            ({items.length} item{items.length === 1 ? '' : 's'})
           </span>
         </div>
 
@@ -85,13 +87,13 @@ export function FrequencyGroup({
             onToggleGroup(groupIds, !allSelected);
           }}
         >
-          {allSelected ? 'Deselect' : someSelected ? 'Select all' : 'Select all'}
+          {allSelected ? 'Deselect' : 'Select all'}
         </button>
       </div>
 
       {!collapsed && (
         <div className="space-y-2 mt-2 pl-2">
-          {items.map(item => (
+          {items.map((item) => (
             <ItemCard
               key={item.id}
               item={item}

@@ -60,7 +60,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-[var(--monarch-bg-hover)] transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-3 hover:bg-(--monarch-bg-hover) transition-colors"
         aria-expanded={isExpanded}
       >
         <Archive size={16} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -93,16 +93,21 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
               {/* Note header */}
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div>
-                  <div className="font-medium text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+                  <div
+                    className="font-medium text-sm"
+                    style={{ color: 'var(--monarch-text-dark)' }}
+                  >
                     {decodeHtmlEntities(note.originalCategoryName)}
                     {note.originalGroupName && (
                       <span className="font-normal" style={{ color: 'var(--monarch-text-muted)' }}>
-                        {' '}in {decodeHtmlEntities(note.originalGroupName)}
+                        {' '}
+                        in {decodeHtmlEntities(note.originalGroupName)}
                       </span>
                     )}
                   </div>
                   <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
-                    from {formatMonth(note.monthKey)} · deleted {new Date(note.archivedAt).toLocaleDateString()}
+                    from {formatMonth(note.monthKey)} · deleted{' '}
+                    {new Date(note.archivedAt).toLocaleDateString()}
                   </div>
                 </div>
 
@@ -121,7 +126,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
                     <button
                       type="button"
                       onClick={() => setDeletingId(null)}
-                      className="px-2 py-1 text-xs rounded hover:bg-[var(--monarch-bg-hover)]"
+                      className="px-2 py-1 text-xs rounded hover:bg-(--monarch-bg-hover)"
                       style={{ color: 'var(--monarch-text-muted)' }}
                     >
                       Cancel
@@ -131,7 +136,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
                   <button
                     type="button"
                     onClick={() => setDeletingId(note.id)}
-                    className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors icon-btn-hover"
+                    className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
                     style={{ color: 'var(--monarch-text-muted)' }}
                     aria-label="Delete archived note"
                   >
@@ -141,10 +146,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
               </div>
 
               {/* Note content preview */}
-              <div
-                className="text-sm line-clamp-2"
-                style={{ color: 'var(--monarch-text-dark)' }}
-              >
+              <div className="text-sm line-clamp-2" style={{ color: 'var(--monarch-text-dark)' }}>
                 {note.content}
               </div>
             </div>

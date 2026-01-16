@@ -81,11 +81,9 @@ export const RecurringCard = memo(function RecurringCard({
   const displayStatus = useItemDisplayStatus(item);
   const { date, relative } = formatDateRelative(item.next_due_date);
 
-  const handleToggle = () =>
-    toggleAction.execute(() => onToggle(item.id, !item.is_enabled));
+  const handleToggle = () => toggleAction.execute(() => onToggle(item.id, !item.is_enabled));
 
-  const handleRecreate = () =>
-    recreateAction.execute(() => onRecreate(item.id));
+  const handleRecreate = () => recreateAction.execute(() => onRecreate(item.id));
 
   const handleChangeGroup = async (groupId: string, groupName: string) => {
     await onChangeGroup(item.id, groupId, groupName);
@@ -95,8 +93,7 @@ export const RecurringCard = memo(function RecurringCard({
     await onEmojiChange(item.id, emoji);
   };
 
-  const handleRefresh = () =>
-    refreshAction.execute(() => onRefreshItem(item.id));
+  const handleRefresh = () => refreshAction.execute(() => onRefreshItem(item.id));
 
   const handleNameChange = async (name: string) => {
     await onNameChange(item.id, name);
@@ -127,7 +124,7 @@ export const RecurringCard = memo(function RecurringCard({
         isHighlighted
           ? 'animate-highlight bg-monarch-orange-light border-monarch-orange'
           : 'bg-monarch-bg-card border-monarch-border'
-      } ${!item.is_enabled ? 'opacity-75' : ''}`}
+      } ${item.is_enabled ? '' : 'opacity-75'}`}
       data-tour={dataTourId}
     >
       {/* Row 1: Header + Status + Actions */}
@@ -208,14 +205,10 @@ export const RecurringCard = memo(function RecurringCard({
           <div>
             <span className="text-xs text-monarch-text-light">Due</span>
             <div className="text-monarch-text-dark">{date}</div>
-            {relative && (
-              <div className="text-sm text-monarch-text-light">{relative}</div>
-            )}
+            {relative && <div className="text-sm text-monarch-text-light">{relative}</div>}
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-xs text-monarch-text-light mb-1">
-              {monthLabel}. Budget
-            </span>
+            <span className="text-xs text-monarch-text-light mb-1">{monthLabel}. Budget</span>
             <RecurringItemBudget
               item={item}
               onAllocate={handleAllocate}

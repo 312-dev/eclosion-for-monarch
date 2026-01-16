@@ -136,24 +136,9 @@ const electronAPI = {
   quitAndInstall: (): Promise<void> => ipcRenderer.invoke('quit-and-install'),
 
   /**
-   * Check if auto-update is enabled.
-   * When disabled, updates are shown but not auto-downloaded.
+   * Get auto-update enabled setting.
    */
   getAutoUpdateEnabled: (): Promise<boolean> => ipcRenderer.invoke('get-auto-update-enabled'),
-
-  /**
-   * Enable or disable auto-update.
-   * When enabled, updates are automatically downloaded and installed on quit.
-   */
-  setAutoUpdateEnabled: (enabled: boolean): Promise<boolean> =>
-    ipcRenderer.invoke('set-auto-update-enabled', enabled),
-
-  /**
-   * Manually download an available update.
-   * Use when auto-update is disabled but user wants to update.
-   */
-  downloadUpdate: (): Promise<{ success: boolean; error?: string }> =>
-    ipcRenderer.invoke('download-update'),
 
   /**
    * Listen for update events.
@@ -248,16 +233,12 @@ const electronAPI = {
   getDesktopSettings: (): Promise<{
     launchAtLogin: boolean;
     startMinimized: boolean;
-    minimizeToTray: boolean;
-    closeToTray: boolean;
-    showInDock: boolean;
     showInTaskbar: boolean;
-    globalShortcut: string;
   }> => ipcRenderer.invoke('get-desktop-settings'),
 
   /**
    * Set a single desktop setting.
-   * Handles side effects for launchAtLogin, showInDock, and globalShortcut.
+   * Handles side effects for launchAtLogin and showInDock.
    */
   setDesktopSetting: (key: string, value: boolean | string): Promise<boolean> =>
     ipcRenderer.invoke('set-desktop-setting', key, value),
@@ -326,35 +307,6 @@ const electronAPI = {
    * Get the warning message for restoring a backup.
    */
   getRestoreWarning: (): Promise<string> => ipcRenderer.invoke('get-restore-warning'),
-
-  // =========================================================================
-  // Global Hotkeys
-  // =========================================================================
-
-  /**
-   * Get all hotkey configurations.
-   */
-  getHotkeyConfigs: (): Promise<Record<string, { enabled: boolean; accelerator: string }>> =>
-    ipcRenderer.invoke('get-hotkey-configs'),
-
-  /**
-   * Set a hotkey configuration.
-   */
-  setHotkeyConfig: (
-    action: string,
-    config: { enabled: boolean; accelerator: string }
-  ): Promise<boolean> => ipcRenderer.invoke('set-hotkey-config', action, config),
-
-  /**
-   * Validate a keyboard shortcut.
-   */
-  validateShortcut: (accelerator: string, currentAction?: string): Promise<string | null> =>
-    ipcRenderer.invoke('validate-shortcut', accelerator, currentAction),
-
-  /**
-   * Reset hotkeys to defaults.
-   */
-  resetHotkeys: (): Promise<void> => ipcRenderer.invoke('reset-hotkeys'),
 
   // =========================================================================
   // Onboarding
@@ -1034,6 +986,23 @@ const electronAPI = {
      */
     setMinimal: (): Promise<void> => ipcRenderer.invoke('menu:set-minimal'),
   },
+
+  // =========================================================================
+  // Developer Mode
+  // =========================================================================
+
+  /**
+   * Get developer mode setting.
+   * When enabled, View menu shows Reload, Force Reload, and Toggle DevTools.
+   */
+  getDeveloperMode: (): Promise<boolean> => ipcRenderer.invoke('get-developer-mode'),
+
+  /**
+   * Set developer mode setting.
+   * Rebuilds the menu to show/hide developer tools.
+   */
+  setDeveloperMode: (enabled: boolean): Promise<boolean> =>
+    ipcRenderer.invoke('set-developer-mode', enabled),
 };
 
 // Expose the API to the renderer process

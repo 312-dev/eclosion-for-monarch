@@ -1,13 +1,13 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import mdx from '@mdx-js/rollup'
-import remarkGfm from 'remark-gfm'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import mdx from '@mdx-js/rollup';
+import remarkGfm from 'remark-gfm';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // Read package.json for version
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 // ============================================================================
 // Changelog Parser
@@ -30,32 +30,37 @@ interface ChangelogEntry {
 }
 
 // Regex patterns for parsing
-const VERSION_PATTERN = /^## \[(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\](?:\([^)]*\))?\s*[-–]?\s*\(?(\d{4}-\d{2}-\d{2})\)?/;
+/* eslint-disable sonarjs/slow-regex -- Safe: operates on single changelog lines, not user input */
+const VERSION_PATTERN =
+  /^## \[(\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?)\](?:\([^)]*\))?\s*[-–]?\s*\(?(\d{4}-\d{2}-\d{2})\)?/;
+/* eslint-enable sonarjs/slow-regex */
 const UNRELEASED_PATTERN = /^## \[Unreleased\]/i;
 const SECTION_PATTERN = /^### (.+)/;
 const LIST_ITEM_PATTERN = /^[*-]\s+(.+)/;
 
 // Map conventional commit categories to Keep a Changelog sections
 const SECTION_MAP: Record<string, keyof ChangelogSection> = {
-  'features': 'added',
-  'added': 'added',
+  features: 'added',
+  added: 'added',
   'bug fixes': 'fixed',
-  'fixed': 'fixed',
+  fixed: 'fixed',
   'code refactoring': 'changed',
-  'changed': 'changed',
-  'documentation': 'changed',
-  'miscellaneous': 'changed',
-  'deprecated': 'deprecated',
-  'removed': 'removed',
-  'security': 'security',
+  changed: 'changed',
+  documentation: 'changed',
+  miscellaneous: 'changed',
+  deprecated: 'deprecated',
+  removed: 'removed',
+  security: 'security',
 };
 
 function cleanItemText(text: string): string {
+  /* eslint-disable sonarjs/slow-regex -- Safe: operates on single changelog lines */
   return text
     .replaceAll(/\s*\(\[[a-f0-9]+\]\([^)]+\)\)$/g, '') // Remove (commit link) at end
-    .replaceAll(/\s*\([#\d]+\]\([^)]+\)\)/g, '')       // Remove (#123](link))
-    .replaceAll(/\s*\(#\d+\)/g, '')                     // Remove (#123)
+    .replaceAll(/\s*\([#\d]+\]\([^)]+\)\)/g, '') // Remove (#123](link))
+    .replaceAll(/\s*\(#\d+\)/g, '') // Remove (#123)
     .trim();
+  /* eslint-enable sonarjs/slow-regex */
 }
 
 function parseVersionLine(line: string): { version: string; date: string } | null {
@@ -178,7 +183,7 @@ export default defineConfig(() => ({
   // See: https://github.com/mdx-editor/editor/issues/494
   resolve: {
     alias: {
-      'react': resolve(__dirname, 'node_modules/react'),
+      react: resolve(__dirname, 'node_modules/react'),
       'react-dom': resolve(__dirname, 'node_modules/react-dom'),
     },
   },
@@ -237,4 +242,4 @@ export default defineConfig(() => ({
       },
     },
   },
-}))
+}));

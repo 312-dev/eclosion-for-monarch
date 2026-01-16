@@ -40,16 +40,24 @@ export const StatusBadge = memo(function StatusBadge({
 
   const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1';
   const interactiveClasses = interactive || onClick ? 'cursor-pointer hover:opacity-80' : '';
+  const baseClasses = `inline-flex items-center rounded-full font-medium whitespace-nowrap ${sizeClasses} ${interactiveClasses} ${className}`;
+
+  // Use native button element when interactive for better accessibility
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={baseClasses}
+        style={{ backgroundColor: styles.bg, color: styles.color }}
+        onClick={onClick}
+      >
+        {label}
+      </button>
+    );
+  }
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full font-medium whitespace-nowrap ${sizeClasses} ${interactiveClasses} ${className}`}
-      style={{ backgroundColor: styles.bg, color: styles.color }}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
-    >
+    <span className={baseClasses} style={{ backgroundColor: styles.bg, color: styles.color }}>
       {label}
     </span>
   );

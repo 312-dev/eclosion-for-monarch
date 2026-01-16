@@ -114,7 +114,8 @@ export function MfaReauthPrompt({
   };
 
   // Mask email for privacy (show first 2 chars and domain)
-  const maskedEmail = email.replace(/^(.{2})(.*)(@.*)$/, '$1***$3');
+  // Use negated character class [^@]* instead of .* to prevent regex backtracking
+  const maskedEmail = email.replace(/^(.{2})[^@]*(@.*)$/, '$1***$2');
 
   return (
     <>
@@ -150,10 +151,7 @@ export function MfaReauthPrompt({
               border: '1px solid var(--monarch-border)',
             }}
           >
-            <h1
-              className="text-2xl font-bold mb-2"
-              style={{ color: 'var(--monarch-text-dark)' }}
-            >
+            <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
               Welcome Back
             </h1>
             <p className="mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
@@ -168,16 +166,10 @@ export function MfaReauthPrompt({
                 border: '1px solid var(--monarch-border)',
               }}
             >
-              <span
-                className="text-sm"
-                style={{ color: 'var(--monarch-text-muted)' }}
-              >
+              <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
                 Logged in as
               </span>
-              <p
-                className="font-medium"
-                style={{ color: 'var(--monarch-text-dark)' }}
-              >
+              <p className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
                 {maskedEmail}
               </p>
             </div>

@@ -17,9 +17,7 @@ export function BenefitsList({ benefits, layout = 'grid' }: BenefitsListProps) {
   return (
     <div
       className={`${
-        layout === 'grid'
-          ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
-          : 'flex flex-col gap-4'
+        layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'flex flex-col gap-4'
       }`}
     >
       {benefits.map((benefit, index) => {
@@ -28,21 +26,17 @@ export function BenefitsList({ benefits, layout = 'grid' }: BenefitsListProps) {
         return (
           <div
             key={index}
-            className="flex items-start gap-4 p-4 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)]"
+            className="flex items-start gap-4 p-4 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border)"
           >
             {/* Icon */}
-            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-(--monarch-orange)/10">
+            <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-(--monarch-orange)/10">
               <IconComponent size={20} color="var(--monarch-orange)" />
             </div>
 
             {/* Content */}
             <div>
-              <h4 className="font-semibold text-[var(--monarch-text-dark)] mb-1">
-                {benefit.title}
-              </h4>
-              <p className="text-sm text-[var(--monarch-text)]">
-                {benefit.description}
-              </p>
+              <h4 className="font-semibold text-(--monarch-text-dark) mb-1">{benefit.title}</h4>
+              <p className="text-sm text-(--monarch-text)">{benefit.description}</p>
             </div>
           </div>
         );

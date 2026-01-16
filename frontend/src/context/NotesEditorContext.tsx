@@ -42,26 +42,31 @@ export function NotesEditorProvider({ children }: NotesEditorProviderProps) {
   const activeEditorRef = useRef<EditorState | null>(null);
   const toast = useToast();
 
-  const requestOpen = useCallback(async (id: string, save: () => Promise<void>): Promise<boolean> => {
-    // If this editor is already active, just return true
-    if (activeEditorRef.current?.id === id) {
-      return true;
-    }
-
-    // If another editor is active, save it first
-    if (activeEditorRef.current) {
-      try {
-        await activeEditorRef.current.save();
-      } catch (err) {
-        console.error('Failed to save previous editor:', err);
-        toast.warning('Previous note may not have saved. Please check your changes.');
+  const requestOpen = useCallback(
+    async (id: string, save: () => Promise<void>): Promise<boolean> => {
+      // If this editor is already active, just return true
+      if (activeEditorRef.current?.id === id) {
+        return true;
       }
-    }
 
-    // Set new active editor
-    activeEditorRef.current = { id, save };
-    return true;
-  }, [toast]);
+      // If another editor is active, save it first
+      if (activeEditorRef.current) {
+        try {
+          await activeEditorRef.current.save();
+        } catch (err) {
+          console.error('Failed to save previous editor:', err);
+          toast.warning('Previous note may not have saved. Please check your changes.');
+          // Block opening new editor if save failed - user should address the issue first
+          return false;
+        }
+      }
+
+      // Set new active editor
+      activeEditorRef.current = { id, save };
+      return true;
+    },
+    [toast]
+  );
 
   const closeEditor = useCallback(() => {
     activeEditorRef.current = null;
@@ -71,17 +76,16 @@ export function NotesEditorProvider({ children }: NotesEditorProviderProps) {
     return activeEditorRef.current?.id === id;
   }, []);
 
-  const value = useMemo<NotesEditorContextValue>(() => ({
-    requestOpen,
-    closeEditor,
-    isActive,
-  }), [requestOpen, closeEditor, isActive]);
-
-  return (
-    <NotesEditorContext.Provider value={value}>
-      {children}
-    </NotesEditorContext.Provider>
+  const value = useMemo<NotesEditorContextValue>(
+    () => ({
+      requestOpen,
+      closeEditor,
+      isActive,
+    }),
+    [requestOpen, closeEditor, isActive]
   );
+
+  return <NotesEditorContext.Provider value={value}>{children}</NotesEditorContext.Provider>;
 }
 
 export function useNotesEditor(): NotesEditorContextValue {

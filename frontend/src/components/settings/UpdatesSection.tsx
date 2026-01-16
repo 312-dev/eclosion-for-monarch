@@ -1,60 +1,118 @@
 /**
  * Updates Section
  *
- * Displays current version and allows checking for updates.
- * On desktop, also shows auto-update toggle.
+ * Displays current version and update status.
+ * - Desktop: Shows update status from UpdateContext (downloading/ready)
+ * - Web: Shows "Check for Updates" button to open update modal
+ *
+ * Auto-update is always enabled for desktop - no toggle needed.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { Download } from 'lucide-react';
+import { useState } from 'react';
+import { Download, RotateCcw, CheckCircle } from 'lucide-react';
 import { VersionBadge } from '../VersionBadge';
-import { SettingsRow } from './SettingsRow';
-import { ToggleSwitch } from './ToggleSwitch';
+import { useUpdate } from '../../context/UpdateContext';
+import { isDesktopMode } from '../../utils/apiBase';
 import type { VersionInfo } from '../../types';
 
 interface UpdatesSectionProps {
-  versionInfo: VersionInfo | null;
-  onShowUpdateModal: () => void;
+  readonly versionInfo: VersionInfo | null;
+  readonly onShowUpdateModal: () => void;
+}
+
+/**
+ * Desktop update action - shows status and Quit & Relaunch button.
+ */
+function DesktopUpdateAction() {
+  const { updateAvailable, updateDownloaded, updateInfo, downloadProgress, quitAndInstall } =
+    useUpdate();
+  const [isRestarting, setIsRestarting] = useState(false);
+
+  const handleQuitAndRelaunch = () => {
+    setIsRestarting(true);
+    setTimeout(() => {
+      quitAndInstall();
+    }, 200);
+  };
+
+  // Update downloaded - show restart button
+  if (updateDownloaded) {
+    return (
+      <button
+        type="button"
+        onClick={handleQuitAndRelaunch}
+        disabled={isRestarting}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-70"
+        style={{
+          backgroundColor: 'var(--monarch-success)',
+          color: 'white',
+        }}
+        aria-label={isRestarting ? 'Restarting application' : 'Quit and relaunch to install update'}
+      >
+        <RotateCcw size={14} className={isRestarting ? 'animate-spin' : ''} />
+        {isRestarting ? 'Restarting...' : 'Quit & Relaunch'}
+      </button>
+    );
+  }
+
+  // Update downloading - show progress text
+  if (updateAvailable && downloadProgress > 0) {
+    return (
+      <div
+        className="flex items-center gap-2 text-sm"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
+        <Download size={14} className="animate-pulse" style={{ color: 'var(--monarch-orange)' }} />
+        Downloading v{updateInfo?.version}...
+      </div>
+    );
+  }
+
+  // No update - show "Up to date"
+  return (
+    <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--monarch-success)' }}>
+      <CheckCircle size={14} />
+      Up to date
+    </span>
+  );
+}
+
+/**
+ * Desktop download progress bar.
+ */
+function DesktopDownloadProgress() {
+  const { updateAvailable, updateDownloaded, downloadProgress } = useUpdate();
+
+  if (!updateAvailable || updateDownloaded || downloadProgress <= 0) {
+    return null;
+  }
+
+  return (
+    <div className="px-4 pb-4">
+      <progress
+        className="w-full h-1.5 rounded-full overflow-hidden"
+        value={downloadProgress}
+        max={100}
+        aria-label={`Download progress: ${Math.round(downloadProgress)}%`}
+        style={{
+          // Style the progress element
+          appearance: 'none',
+          backgroundColor: 'var(--monarch-border)',
+        }}
+      />
+    </div>
+  );
 }
 
 export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectionProps) {
-  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const isDesktop = !!window.electron;
-
-  const fetchAutoUpdateSetting = useCallback(async () => {
-    if (!window.electron) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const enabled = await window.electron.getAutoUpdateEnabled();
-      setAutoUpdateEnabled(enabled);
-    } catch {
-      // Non-critical
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAutoUpdateSetting();
-  }, [fetchAutoUpdateSetting]);
-
-  const handleAutoUpdateChange = async () => {
-    if (!window.electron) return;
-    try {
-      const newValue = !autoUpdateEnabled;
-      await window.electron.setAutoUpdateEnabled(newValue);
-      setAutoUpdateEnabled(newValue);
-    } catch {
-      // Ignore errors
-    }
-  };
+  const isDesktop = isDesktopMode();
 
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
+      <h2
+        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
         <Download size={12} />
         Updates
       </h2>
@@ -63,7 +121,7 @@ export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectio
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         <div className="p-4">
@@ -81,51 +139,36 @@ export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectio
                     v{versionInfo?.version || '...'}
                   </span>
                   {versionInfo && (
-                    <VersionBadge
-                      version={versionInfo.version}
-                      channel={versionInfo.channel}
-                    />
+                    <VersionBadge version={versionInfo.version} channel={versionInfo.channel} />
                   )}
                 </div>
                 <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
                   {versionInfo?.build_time && versionInfo.build_time !== 'unknown'
                     ? `Last updated: ${new Date(versionInfo.build_time).toLocaleDateString()}`
-                    : 'Current version'
-                  }
+                    : 'Current version'}
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onShowUpdateModal}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium hover-bg-page-to-hover"
-              style={{
-                color: 'var(--monarch-text-dark)',
-                border: '1px solid var(--monarch-border)',
-              }}
-            >
-              Check for Updates
-            </button>
+
+            {isDesktop ? (
+              <DesktopUpdateAction />
+            ) : (
+              <button
+                type="button"
+                onClick={onShowUpdateModal}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium hover-bg-page-to-hover"
+                style={{
+                  color: 'var(--monarch-text-dark)',
+                  border: '1px solid var(--monarch-border)',
+                }}
+              >
+                Check for Updates
+              </button>
+            )}
           </div>
         </div>
 
-        {isDesktop && (
-          <>
-            <div style={{ borderTop: '1px solid var(--monarch-border)' }} />
-            <SettingsRow
-              label="Auto-update"
-              description="Automatically download and install updates when available"
-            >
-              <ToggleSwitch
-                checked={autoUpdateEnabled}
-                onChange={handleAutoUpdateChange}
-                disabled={loading}
-                ariaLabel="Toggle auto-update"
-              />
-            </SettingsRow>
-          </>
-        )}
-
+        {isDesktop && <DesktopDownloadProgress />}
       </div>
     </section>
   );

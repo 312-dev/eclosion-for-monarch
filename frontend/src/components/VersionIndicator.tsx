@@ -1,25 +1,23 @@
+/**
+ * Version Indicator
+ *
+ * Shows current version and opens changelog modal.
+ * Indicates when there are unread changelog entries.
+ * For web users, shows update availability and instructions.
+ * For desktop users, just shows changelog (updates are handled by DesktopUpdateBanner).
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
-import { useElectronUpdates } from '../hooks/useElectronUpdates';
 import { useChangelogStatusQuery, useMarkChangelogReadMutation } from '../api/queries';
 import { Modal } from './ui/Modal';
 import { ChangelogDisplay } from './ChangelogDisplay';
 import { UI } from '../constants';
 import { Icons } from './icons';
+import { isDesktopMode } from '../utils/apiBase';
 
 export function VersionIndicator() {
-  const {
-    updateAvailable,
-    serverVersion,
-    clientVersion,
-    checkForUpdate,
-    isChecking,
-  } = useUpdateCheck();
-
-  const {
-    isDesktop,
-    checkForUpdates: checkForDesktopUpdates,
-  } = useElectronUpdates();
+  const { updateAvailable, clientVersion, checkForUpdate, isChecking } = useUpdateCheck();
 
   const { data: changelogStatus } = useChangelogStatusQuery();
   const markAsRead = useMarkChangelogReadMutation();
@@ -27,9 +25,10 @@ export function VersionIndicator() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
-  const [isCheckingDesktop, setIsCheckingDesktop] = useState(false);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasShownTooltipRef = useRef(false);
+
+  const isDesktop = isDesktopMode();
 
   // Show "See what's new" tooltip on initial load if there are unread notes
   useEffect(() => {
@@ -62,59 +61,41 @@ export function VersionIndicator() {
     }
   };
 
-  const hasUnread = changelogStatus?.has_unread ?? false;
-  const isCurrentlyChecking = isChecking || isCheckingDesktop;
-
-  const handleCheckForUpdate = async () => {
+  const handleCheckForUpdate = () => {
     setHasChecked(true);
-    if (isDesktop) {
-      setIsCheckingDesktop(true);
-      await checkForDesktopUpdates();
-      // Give a moment for the update status to come back
-      setTimeout(() => setIsCheckingDesktop(false), UI.DEBOUNCE.SEARCH);
-    } else {
-      checkForUpdate();
-    }
+    checkForUpdate();
   };
+
+  const hasUnread = changelogStatus?.has_unread ?? false;
 
   return (
     <>
       <div className="version-indicator-wrapper">
-        <button
-          onClick={handleOpenChangelog}
-          className="version-indicator"
-          title="View changelog"
-        >
-          {(updateAvailable || hasUnread) && (
-            <span className="version-indicator-orb" />
-          )}
-          <span className="version-indicator-text">
-            v{clientVersion}
-          </span>
-          {updateAvailable && (
-            <span className="version-indicator-update">
-              New version available!
-            </span>
+        <button onClick={handleOpenChangelog} className="version-indicator" title="View changelog">
+          {(updateAvailable || hasUnread) && <span className="version-indicator-orb" />}
+          <span className="version-indicator-text">v{clientVersion}</span>
+          {/* Only show "New version available" for web users */}
+          {updateAvailable && !isDesktop && (
+            <span className="version-indicator-update">New version available!</span>
           )}
         </button>
 
         {showTooltip && hasUnread && !updateAvailable && (
-          <div className="version-indicator-tooltip">
-            See what's new
-          </div>
+          <div className="version-indicator-tooltip">See what's new</div>
         )}
       </div>
 
       <Modal
         isOpen={showChangelog}
         onClose={() => setShowChangelog(false)}
-        title={updateAvailable ? `Update Available: v${serverVersion}` : 'Changelog'}
-        description={updateAvailable ? `You're on v${clientVersion}` : `Current version: v${clientVersion}`}
+        title="Changelog"
+        description={`Current version: v${clientVersion}`}
         maxWidth="lg"
         footer={
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
-              {!updateAvailable && hasChecked && !isCurrentlyChecking && (
+              {/* Show "Up to date" only for web users who checked */}
+              {!isDesktop && !updateAvailable && hasChecked && !isChecking && (
                 <span
                   className="flex items-center gap-1.5 text-sm"
                   style={{ color: 'var(--monarch-green)' }}
@@ -125,10 +106,11 @@ export function VersionIndicator() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              {!updateAvailable && (
+              {/* Only show check button for web users */}
+              {!isDesktop && !updateAvailable && (
                 <button
                   onClick={handleCheckForUpdate}
-                  disabled={isCurrentlyChecking}
+                  disabled={isChecking}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors hover:opacity-80 disabled:opacity-50"
                   style={{
                     backgroundColor: 'var(--monarch-bg-input)',
@@ -136,12 +118,12 @@ export function VersionIndicator() {
                   }}
                   aria-label="Check for updates"
                 >
-                  {isCurrentlyChecking ? (
+                  {isChecking ? (
                     <Icons.Spinner size={16} className="animate-spin" />
                   ) : (
                     <Icons.Refresh size={16} />
                   )}
-                  {isCurrentlyChecking ? 'Checking...' : 'Check for Update'}
+                  {isChecking ? 'Checking...' : 'Check for Update'}
                 </button>
               )}
               <button
@@ -158,7 +140,11 @@ export function VersionIndicator() {
           </div>
         }
       >
-        <ChangelogDisplay version={undefined} showUpdateInstructions={updateAvailable} />
+        {/* Changelog history - always show */}
+        <ChangelogDisplay
+          version={undefined}
+          showUpdateInstructions={updateAvailable && !isDesktop}
+        />
       </Modal>
     </>
   );

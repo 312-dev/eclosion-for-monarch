@@ -12,7 +12,7 @@ interface FinishStepProps {
 }
 
 export function FinishStep({ canInstall, isInstalled, isIOS, onInstall }: FinishStepProps) {
-  const baseUrl = window.location.origin;
+  const baseUrl = globalThis.location.origin;
 
   return (
     <div className="text-center animate-fade-in">
@@ -23,7 +23,8 @@ export function FinishStep({ canInstall, isInstalled, isIOS, onInstall }: Finish
         You're All Set!
       </h2>
       <p className="mb-6" style={{ color: 'var(--monarch-text-muted)' }}>
-        Your recurring savings tracker is ready to go. Before you dive in, save this app for easy access.
+        Your recurring savings tracker is ready to go. Before you dive in, save this app for easy
+        access.
       </p>
 
       <div className="space-y-4 text-left">
@@ -49,14 +50,15 @@ export function FinishStep({ canInstall, isInstalled, isIOS, onInstall }: Finish
                     ? 'Add to your home screen for quick access like a native app.'
                     : 'Install on your device for quick access and offline support.'}
                 </div>
-                {canInstall ? (
+                {canInstall && (
                   <button
                     onClick={onInstall}
                     className="px-4 py-2 text-white rounded-lg text-sm font-medium hover-bg-orange-to-orange-hover"
                   >
                     Install App
                   </button>
-                ) : isIOS ? (
+                )}
+                {!canInstall && isIOS && (
                   <div
                     className="text-sm p-3 rounded"
                     style={{ backgroundColor: 'var(--monarch-bg-page)' }}
@@ -67,7 +69,7 @@ export function FinishStep({ canInstall, isInstalled, isIOS, onInstall }: Finish
                       <strong>"Add to Home Screen"</strong>
                     </div>
                   </div>
-                ) : null}
+                )}
               </div>
             </div>
           </div>
@@ -128,9 +130,17 @@ export function FinishStep({ canInstall, isInstalled, isIOS, onInstall }: Finish
                 {baseUrl}
               </div>
               <div className="text-xs mt-2" style={{ color: 'var(--monarch-text-muted)' }}>
-                Press <kbd className="px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
+                Press{' '}
+                <kbd
+                  className="px-1 py-0.5 rounded"
+                  style={{
+                    backgroundColor: 'var(--monarch-bg-card)',
+                    border: '1px solid var(--monarch-border)',
+                  }}
+                >
                   {navigator.userAgent.includes('Mac') ? 'Cmd' : 'Ctrl'}+D
-                </kbd> to bookmark
+                </kbd>{' '}
+                to bookmark
               </div>
             </div>
           </div>

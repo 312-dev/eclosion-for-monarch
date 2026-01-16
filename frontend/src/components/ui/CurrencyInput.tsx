@@ -58,7 +58,7 @@ export function CurrencyInput({
   }, [autoFocus]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseFloat(e.target.value) || 0;
+    const newValue = Number.parseFloat(e.target.value) || 0;
     let clampedValue = newValue;
 
     if (min !== undefined && newValue < min) {
@@ -71,13 +71,9 @@ export function CurrencyInput({
     onChange(clampedValue);
   };
 
-  const borderColor = warning
-    ? 'var(--monarch-warning)'
-    : 'var(--monarch-border)';
+  const borderColor = warning ? 'var(--monarch-warning)' : 'var(--monarch-border)';
 
-  const focusBorderColor = warning
-    ? 'var(--monarch-warning)'
-    : 'var(--monarch-primary)';
+  const focusBorderColor = warning ? 'var(--monarch-warning)' : 'var(--monarch-primary)';
 
   return (
     <div
@@ -88,10 +84,7 @@ export function CurrencyInput({
         backgroundColor: disabled ? 'var(--monarch-bg-page)' : 'var(--monarch-bg-card)',
       }}
     >
-      <span
-        className="pl-2 text-sm"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
+      <span className="pl-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
         $
       </span>
       <input

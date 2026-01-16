@@ -283,6 +283,48 @@ jobs:
             npx electron-builder --mac --${{ matrix.arch }} --publish never
           fi
 
+      - name: Add blockMapSize to mac yml
+        working-directory: desktop
+        run: |
+          # Add blockMapSize to manifest yml for differential updates
+          # This enables electron-updater to download only changed blocks
+          # Handles both latest-mac.yml (stable) and beta-mac.yml (beta)
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find the manifest file (either latest-mac.yml or beta-mac.yml)
+            const candidates = ['release/latest-mac.yml', 'release/beta-mac.yml'];
+            const ymlPath = candidates.find(f => fs.existsSync(f));
+            if (!ymlPath) {
+              console.log('No mac manifest yml found, skipping');
+              process.exit(0);
+            }
+            console.log('Found manifest: ' + ymlPath);
+
+            let yml = fs.readFileSync(ymlPath, 'utf8');
+            const blockmaps = fs.readdirSync('release').filter(f => f.endsWith('.blockmap'));
+
+            for (const blockmap of blockmaps) {
+              const base = blockmap.replace('.blockmap', '');
+              const size = fs.statSync(path.join('release', blockmap)).size;
+
+              // Check if this file is in the yml and doesn't already have blockMapSize
+              if (yml.includes('url: ' + base) && !yml.includes('blockMapSize:')) {
+                // Add blockMapSize after size line for this file
+                yml = yml.replace(
+                  new RegExp('(url: ' + base.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&') + '[\\\\s\\\\S]*?size: \\\\d+)'),
+                  '\$1\\n    blockMapSize: ' + size
+                );
+                console.log('Added blockMapSize ' + size + ' for ' + base);
+              }
+            }
+
+            fs.writeFileSync(ymlPath, yml);
+            console.log('\\nUpdated ' + path.basename(ymlPath) + ':');
+            console.log(fs.readFileSync(ymlPath, 'utf8'));
+          "
+
       - name: Validate backend binary
         run: |
           echo "## macOS Backend Binary Validation (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
@@ -341,7 +383,8 @@ jobs:
           path: |
             desktop/release/*.dmg
             desktop/release/*.zip
-            desktop/release/latest-mac.yml
+            desktop/release/*.blockmap
+            desktop/release/*-mac.yml
             desktop/release/checksums-macos-${{ matrix.arch }}.txt
           retention-days: 30
 
@@ -408,6 +451,38 @@ jobs:
             npx electron-builder --win --publish never
           }
 
+      - name: Add blockMapSize to windows yml
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          # Add blockMapSize to manifest yml for differential updates
+          # Handles both latest.yml (stable) and beta.yml (beta)
+          $candidates = @("release/latest.yml", "release/beta.yml")
+          $ymlPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $ymlPath) {
+            Write-Host "No windows manifest yml found, skipping"
+            exit 0
+          }
+          Write-Host "Found manifest: $ymlPath"
+
+          $yml = Get-Content $ymlPath -Raw
+          $blockmaps = Get-ChildItem -Path "release" -Filter "*.blockmap"
+
+          foreach ($blockmap in $blockmaps) {
+            $base = $blockmap.Name -replace '\.blockmap$', ''
+            $size = $blockmap.Length
+
+            if ($yml -match [regex]::Escape("url: $base") -and $yml -notmatch "blockMapSize:") {
+              $pattern = "(url: " + [regex]::Escape($base) + "[\s\S]*?size: \d+)"
+              $yml = $yml -replace $pattern, "`$1`n    blockMapSize: $size"
+              Write-Host "Added blockMapSize $size for $base"
+            }
+          }
+
+          Set-Content -Path $ymlPath -Value $yml
+          Write-Host "`nUpdated $(Split-Path -Leaf $ymlPath):"
+          Get-Content $ymlPath
+
       - name: Check binary sizes
         shell: pwsh
         run: |
@@ -443,7 +518,9 @@ jobs:
           name: eclosion-windows
           path: |
             desktop/release/*.exe
+            desktop/release/*.blockmap
             desktop/release/latest.yml
+            desktop/release/beta.yml
             desktop/release/checksums-windows.txt
           retention-days: 30
 
@@ -530,6 +607,47 @@ jobs:
             npx electron-builder --linux --${{ matrix.arch }} --publish never
           fi
 
+      - name: Add blockMapSize to linux yml
+        working-directory: desktop
+        run: |
+          # Add blockMapSize to manifest yml for differential updates
+          # Handles both latest-linux.yml (stable) and beta-linux.yml (beta)
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+
+            // Find the manifest file (either latest-linux.yml or beta-linux.yml)
+            const candidates = ['release/latest-linux.yml', 'release/beta-linux.yml'];
+            const ymlPath = candidates.find(f => fs.existsSync(f));
+            if (!ymlPath) {
+              console.log('No linux manifest yml found, skipping');
+              process.exit(0);
+            }
+            console.log('Found manifest: ' + ymlPath);
+
+            let yml = fs.readFileSync(ymlPath, 'utf8');
+            const blockmaps = fs.readdirSync('release').filter(f => f.endsWith('.blockmap'));
+
+            for (const blockmap of blockmaps) {
+              const base = blockmap.replace('.blockmap', '');
+              const size = fs.statSync(path.join('release', blockmap)).size;
+
+              // Check if this file is in the yml and doesn't already have blockMapSize
+              if (yml.includes('url: ' + base) && !yml.includes('blockMapSize:')) {
+                // Add blockMapSize after size line for this file
+                yml = yml.replace(
+                  new RegExp('(url: ' + base.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&') + '[\\\\s\\\\S]*?size: \\\\d+)'),
+                  '\$1\\n    blockMapSize: ' + size
+                );
+                console.log('Added blockMapSize ' + size + ' for ' + base);
+              }
+            }
+
+            fs.writeFileSync(ymlPath, yml);
+            console.log('\\nUpdated ' + path.basename(ymlPath) + ':');
+            console.log(fs.readFileSync(ymlPath, 'utf8'));
+          "
+
       - name: Check binary sizes
         run: |
           echo "## Linux Artifact Sizes (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
@@ -569,7 +687,8 @@ jobs:
             desktop/release/*.AppImage
             desktop/release/*.deb
             desktop/release/*.rpm
-            desktop/release/latest-linux.yml
+            desktop/release/*.blockmap
+            desktop/release/*-linux.yml
             desktop/release/checksums-linux-${{ matrix.arch }}.txt
           retention-days: 30
 

@@ -6,7 +6,20 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Paintbrush, Wrench, User, Download, Heart, Zap, Monitor, Shield, Database, FileText, AlertTriangle, RotateCcw } from 'lucide-react';
+import {
+  Paintbrush,
+  Wrench,
+  User,
+  Download,
+  Heart,
+  RefreshCw,
+  Monitor,
+  Shield,
+  Database,
+  FileText,
+  AlertTriangle,
+  RotateCcw,
+} from 'lucide-react';
 import { useDemo } from '../../context/DemoContext';
 import { isDesktopMode } from '../../utils/apiBase';
 
@@ -27,7 +40,7 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: 'account', label: 'Account', icon: <User size={14} /> },
   { id: 'updates', label: 'Updates', icon: <Download size={14} /> },
   { id: 'credits', label: 'Credits', icon: <Heart size={14} /> },
-  { id: 'automation', label: 'Automation', icon: <Zap size={14} /> },
+  { id: 'syncing', label: 'Syncing', icon: <RefreshCw size={14} /> },
   { id: 'security', label: 'Security', icon: <Shield size={14} />, webOnly: true },
   { id: 'data', label: 'Data', icon: <Database size={14} /> },
   { id: 'logs', label: 'Logs', icon: <FileText size={14} />, desktopOnly: true },
@@ -84,10 +97,7 @@ export function SettingsSidebar() {
   };
 
   return (
-    <nav
-      className="settings-sidebar"
-      aria-label="Settings sections"
-    >
+    <nav className="settings-sidebar" aria-label="Settings sections">
       <ul className="settings-sidebar-list">
         {visibleSections.map((section) => (
           <li key={section.id}>

@@ -13,17 +13,17 @@ import type { ReactNode } from 'react';
 
 export interface EmptyStateProps {
   /** Icon to display (React node, typically an SVG or icon component) */
-  icon?: ReactNode;
+  readonly icon?: ReactNode;
   /** Main title text */
-  title: string;
+  readonly title: string;
   /** Optional description text */
-  description?: string;
+  readonly description?: string;
   /** Optional action element (typically a Button) */
-  action?: ReactNode;
+  readonly action?: ReactNode;
   /** Size variant */
-  size?: 'sm' | 'md' | 'lg';
+  readonly size?: 'sm' | 'md' | 'lg';
   /** Additional CSS classes */
-  className?: string;
+  readonly className?: string;
 }
 
 const SIZE_CONFIG = {
@@ -77,9 +77,8 @@ export function EmptyState({
   const config = SIZE_CONFIG[size];
 
   return (
-    <div
+    <output
       className={`flex flex-col items-center justify-center text-center ${config.container} ${className}`}
-      role="status"
       aria-label={title}
     >
       {icon && (
@@ -92,10 +91,7 @@ export function EmptyState({
         </div>
       )}
 
-      <h3
-        className={config.title}
-        style={{ color: 'var(--monarch-text)' }}
-      >
+      <h3 className={config.title} style={{ color: 'var(--monarch-text)' }}>
         {title}
       </h3>
 
@@ -108,19 +104,15 @@ export function EmptyState({
         </p>
       )}
 
-      {action && (
-        <div className={config.actionSpacing}>
-          {action}
-        </div>
-      )}
-    </div>
+      {action && <div className={config.actionSpacing}>{action}</div>}
+    </output>
   );
 }
 
 /**
  * Default empty state icon - a simple inbox/empty box icon.
  */
-export function EmptyStateIcon({ className = '' }: { className?: string }) {
+export function EmptyStateIcon({ className = '' }: { readonly className?: string }) {
   return (
     <svg
       className={className}

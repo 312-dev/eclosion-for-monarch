@@ -19,10 +19,7 @@ interface MonthPickerProps {
   onClose: () => void;
 }
 
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /**
  * Parse month key to get year and month
@@ -109,7 +106,7 @@ export function MonthPicker({ currentMonth, onSelect, onClose }: MonthPickerProp
             <button
               type="button"
               onClick={handlePrevYear}
-              className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors icon-btn-hover"
+              className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
               aria-label="Previous year"
             >
               <ChevronLeft size={20} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -128,7 +125,7 @@ export function MonthPicker({ currentMonth, onSelect, onClose }: MonthPickerProp
             <button
               type="button"
               onClick={handleNextYear}
-              className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors icon-btn-hover"
+              className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
               aria-label="Next year"
             >
               <ChevronRight size={20} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -137,7 +134,7 @@ export function MonthPicker({ currentMonth, onSelect, onClose }: MonthPickerProp
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors ml-2"
+              className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors ml-2"
               aria-label="Close month picker"
             >
               <X size={18} style={{ color: 'var(--monarch-text-muted)' }} />
@@ -151,24 +148,34 @@ export function MonthPicker({ currentMonth, onSelect, onClose }: MonthPickerProp
               const isSelected = displayYear === selectedYear && monthNum === selectedMonth;
               const isCurrent = displayYear === currentYear && monthNum === currentMonthNum;
 
+              let buttonClassName =
+                'py-2 px-3 text-sm font-medium rounded-lg transition-colors list-item-enter';
+              if (isSelected) {
+                buttonClassName += ' text-white';
+              } else if (isCurrent) {
+                buttonClassName += ' ring-1 ring-inset';
+              } else {
+                buttonClassName += ' hover:bg-(--monarch-bg-hover)';
+              }
+
+              const backgroundColor = isSelected ? 'var(--monarch-orange)' : 'transparent';
+              const textColor = isSelected ? 'white' : 'var(--monarch-text-dark)';
+              const ringColor = isCurrent && !isSelected ? 'var(--monarch-orange)' : undefined;
+
               return (
                 <button
                   key={monthName}
                   type="button"
                   onClick={() => handleMonthClick(index)}
-                  className={`py-2 px-3 text-sm font-medium rounded-lg transition-colors list-item-enter ${
-                    isSelected
-                      ? 'text-white'
-                      : isCurrent
-                        ? 'ring-1 ring-inset'
-                        : 'hover:bg-[var(--monarch-bg-hover)]'
-                  }`}
-                  style={{
-                    backgroundColor: isSelected ? 'var(--monarch-orange)' : 'transparent',
-                    color: isSelected ? 'white' : 'var(--monarch-text-dark)',
-                    '--tw-ring-color': isCurrent && !isSelected ? 'var(--monarch-orange)' : undefined,
-                    animationDelay: `${index * 25}ms`,
-                  } as React.CSSProperties}
+                  className={buttonClassName}
+                  style={
+                    {
+                      backgroundColor,
+                      color: textColor,
+                      '--tw-ring-color': ringColor,
+                      animationDelay: `${index * 25}ms`,
+                    } as React.CSSProperties
+                  }
                   aria-pressed={isSelected}
                   aria-current={isCurrent ? 'date' : undefined}
                 >
@@ -183,7 +190,7 @@ export function MonthPicker({ currentMonth, onSelect, onClose }: MonthPickerProp
             <button
               type="button"
               onClick={() => onSelect(currentKey)}
-              className="w-full py-2 text-sm font-medium rounded-lg hover:bg-[var(--monarch-bg-hover)] transition-colors"
+              className="w-full py-2 text-sm font-medium rounded-lg hover:bg-(--monarch-bg-hover) transition-colors"
               style={{ color: 'var(--monarch-orange)' }}
             >
               Go to Current Month

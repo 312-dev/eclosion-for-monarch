@@ -160,13 +160,16 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
       ]);
     }, DELAY_BETWEEN_CARDS * 2);
 
-    const timer3Land = setTimeout(() => {
-      setCardStates([
-        { phase: 'landed', bumpCount: 2 },
-        { phase: 'landed', bumpCount: 1 },
-        { phase: 'landed', bumpCount: 0 },
-      ]);
-    }, DELAY_BETWEEN_CARDS * 2 + FALL_DURATION);
+    const timer3Land = setTimeout(
+      () => {
+        setCardStates([
+          { phase: 'landed', bumpCount: 2 },
+          { phase: 'landed', bumpCount: 1 },
+          { phase: 'landed', bumpCount: 0 },
+        ]);
+      },
+      DELAY_BETWEEN_CARDS * 2 + FALL_DURATION
+    );
 
     return () => {
       clearTimeout(timer1);
@@ -201,12 +204,12 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
   return (
     <section
       ref={sectionRef}
-      className="relative px-4 sm:px-6 pt-16 pb-20 bg-[var(--monarch-bg-page)] overflow-x-clip overflow-y-visible"
+      className="relative px-4 sm:px-6 pt-16 pb-20 bg-(--monarch-bg-page) overflow-x-clip overflow-y-visible"
     >
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <h2
-          className="text-2xl sm:text-3xl font-bold text-[var(--monarch-text-dark)] text-center mb-10 transition-opacity duration-300"
+          className="text-2xl sm:text-3xl font-bold text-(--monarch-text-dark) text-center mb-10 transition-opacity duration-300"
           style={{ fontFamily: "'Unbounded', sans-serif" }}
         >
           {isStageMode ? (
@@ -252,7 +255,7 @@ export function FrustrationSection({ onShowSolution }: FrustrationSectionProps) 
         <button
           type="button"
           onClick={onShowSolution}
-          className="px-8 py-3 bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] rounded-full text-lg font-medium text-[var(--monarch-text-dark)] shadow-sm flex items-center gap-2 hover:border-[var(--monarch-orange)] hover:shadow-md transition-all cursor-pointer"
+          className="px-8 py-3 bg-(--monarch-bg-card) border border-(--monarch-border) rounded-full text-lg font-medium text-(--monarch-text-dark) shadow-sm flex items-center gap-2 hover:border-(--monarch-orange) hover:shadow-md transition-all cursor-pointer"
         >
           {isStageMode ? 'In the meantime' : "There's a better way"}
           <ChevronDownIcon size={20} className="animate-bounce-down" />

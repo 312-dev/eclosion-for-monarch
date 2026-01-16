@@ -22,10 +22,10 @@ import { useState, useEffect } from 'react';
 export function useMediaQuery(query: string): boolean {
   // SSR-safe: default to false during server-side rendering
   const getMatches = (): boolean => {
-    if (typeof window === 'undefined') {
+    if (typeof globalThis.window === 'undefined') {
       return false;
     }
-    return window.matchMedia(query).matches;
+    return globalThis.matchMedia(query).matches;
   };
 
   // Use lazy initialization to get initial value synchronously
@@ -33,9 +33,9 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     // SSR-safe: check if window is defined
-    if (typeof window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return;
 
-    const mediaQueryList = window.matchMedia(query);
+    const mediaQueryList = globalThis.matchMedia(query);
 
     // Update state when media query match changes
     const handleChange = (event: MediaQueryListEvent) => {
@@ -47,7 +47,7 @@ export function useMediaQuery(query: string): boolean {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional sync for query changes
     setMatches((prev) => {
       const current = mediaQueryList.matches;
-      return prev !== current ? current : prev;
+      return prev === current ? prev : current;
     });
 
     // Modern browsers support addEventListener

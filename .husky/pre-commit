@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Pre-commit: Fast checks only (runs on every commit)
+# Heavier checks (type-check, tests, build) run on pre-push
+
+echo "Running pre-commit checks..."
+
+# Run lint-staged in frontend directory (eslint --fix + prettier)
+cd frontend && npx lint-staged

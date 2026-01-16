@@ -84,9 +84,8 @@ import {
   showReauthNotification,
 } from './tray';
 import { setupIpcHandlers, createLoadingReadyPromise } from './ipc';
-import { initializeUpdater, scheduleUpdateChecks, offerUpdateOnStartupFailure } from './updater';
+import { initializeUpdater, scheduleUpdateChecks, offerUpdateOnStartupFailure, checkForUpdatesOnBoot } from './updater';
 import { createMinimalMenu, setSyncCallback } from './menu';
-import { initializeHotkeys, unregisterAllHotkeys } from './hotkeys';
 import {
   registerDeepLinkProtocol,
   setupDeepLinkHandlers,
@@ -150,10 +149,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 logStartupTiming(`Single instance lock result: ${gotTheLock}`);
 debugLog(`Got lock: ${gotTheLock}`);
 
-if (!gotTheLock) {
-  debugLog('Another instance is already running - quitting');
-  app.quit();
-} else {
+if (gotTheLock) {
   // Handle second instance - focus existing window and handle deep links
   app.on('second-instance', (_event, commandLine) => {
     const mainWindow = getMainWindow();
@@ -172,6 +168,9 @@ if (!gotTheLock) {
       void handleDeepLink(deepLink);
     }
   });
+} else {
+  debugLog('Another instance is already running - quitting');
+  app.quit();
 }
 
 // Backend manager instance
@@ -279,6 +278,18 @@ async function initialize(): Promise<void> {
       initializeUpdater();
       logStartupTiming('Updater initialized');
       debugLog('Updater initialized');
+
+      // Check for updates on boot with 10-second timeout
+      // If update found, it will auto-download and auto-install (app restarts)
+      logStartupTiming('Checking for updates on boot');
+      const bootUpdateResult = await checkForUpdatesOnBoot();
+      logStartupTiming(`Boot update check complete: ${bootUpdateResult.updateAvailable ? 'update available' : 'no update'}`);
+
+      if (bootUpdateResult.updateAvailable) {
+        debugLog(`Update ${bootUpdateResult.version} found on boot - downloading...`);
+        // The updater will auto-download and auto-install, restarting the app
+        // We don't need to wait here - the app will restart when download completes
+      }
     } else {
       debugLog('Skipping updater initialization (development mode)');
     }
@@ -299,10 +310,6 @@ async function initialize(): Promise<void> {
     logStartupTiming('Creating system tray');
     createTray(handleSyncClick);
     logStartupTiming('System tray created');
-
-    // Initialize global hotkeys
-    logStartupTiming('Initializing hotkeys');
-    initializeHotkeys(handleSyncClick);
 
     // Setup deep link handlers (for eclosion:// URLs)
     logStartupTiming('Setting up deep link handlers');
@@ -369,6 +376,110 @@ async function initialize(): Promise<void> {
 }
 
 /**
+ * Migrate existing users to have biometric protection enabled.
+ * Bug fix for users who logged in before v1.0.1.
+ */
+function migrateExistingBiometricSettings(): void {
+  if (!getRequireTouchId() && isBiometricAvailable()) {
+    setRequireTouchId(true);
+    debugLog('Migration: Auto-enabled biometric protection for existing credentials');
+  }
+}
+
+/**
+ * Notify renderer about rate limit error.
+ */
+function notifyRendererRateLimited(): void {
+  const mainWindow = getMainWindow();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('monarch-rate-limited', {
+      retryAfter: 60,
+    });
+  }
+}
+
+/**
+ * Notify renderer that MFA is required.
+ */
+function notifyRendererMfaRequired(email: string, mfaMode: string): void {
+  const mainWindow = getMainWindow();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('auth:mfa-required', {
+      email,
+      mfaMode,
+    });
+  }
+}
+
+interface SessionRestoreResult {
+  sessionRestored: boolean;
+  mfaRequired: boolean;
+  rateLimited: boolean;
+}
+
+/**
+ * Attempt to restore session from stored credentials.
+ * Handles rate limiting and MFA requirements.
+ */
+async function tryRestoreSession(): Promise<SessionRestoreResult> {
+  const result: SessionRestoreResult = {
+    sessionRestored: false,
+    mfaRequired: false,
+    rateLimited: false,
+  };
+
+  if (!hasMonarchCredentials()) {
+    return result;
+  }
+
+  migrateExistingBiometricSettings();
+
+  const credentials = getMonarchCredentials();
+  if (!credentials) {
+    return result;
+  }
+
+  debugLog('Restoring session from stored credentials...');
+  const restoreResult = await backendManager.restoreSession(credentials);
+
+  if (restoreResult.success) {
+    debugLog('Session restored successfully');
+    result.sessionRestored = true;
+    return result;
+  }
+
+  debugLog(`Session restore failed: ${restoreResult.error}`);
+
+  if (isRateLimitError(restoreResult.error)) {
+    debugLog('Rate limited during session restore - will notify renderer');
+    result.rateLimited = true;
+    notifyRendererRateLimited();
+  } else if (restoreResult.mfaRequired) {
+    debugLog('MFA required for session restore - will prompt user');
+    result.mfaRequired = true;
+    notifyRendererMfaRequired(credentials.email, credentials.mfaMode || 'code');
+  }
+
+  return result;
+}
+
+/**
+ * Check if sync is needed and run it if so.
+ * Updates tray status on successful sync.
+ */
+async function checkAndRunStartupSync(sessionRestored: boolean): Promise<void> {
+  const passphrase = sessionRestored ? undefined : getStoredPassphrase();
+  const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
+
+  if (syncResult.synced && syncResult.success) {
+    const syncTime = new Date().toLocaleTimeString();
+    updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+    updateHealthStatus(true, syncTime);
+  }
+  // Sync failures on startup are silent - user can check tray status or sync manually
+}
+
+/**
  * Start the backend and complete initialization once it's ready.
  * This runs in the background while the window displays the loading screen.
  */
@@ -378,7 +489,7 @@ async function startBackendAndInitialize(): Promise<void> {
   recordMilestone('backendStarted');
   debugLog(`Backend started on port ${backendManager.getPort()}`);
 
-  // Fetch last sync time and check if sync is needed on startup
+  // Fetch last sync time and update tray
   const lastSyncIso = await backendManager.fetchLastSyncTime();
   if (lastSyncIso) {
     const syncStatus = `Last sync: ${formatRelativeTime(lastSyncIso)}`;
@@ -386,76 +497,12 @@ async function startBackendAndInitialize(): Promise<void> {
     updateHealthStatus(true, formatRelativeTime(lastSyncIso));
   }
 
-  // Desktop auto-sync: restore session and sync if needed
-  // New mode: credentials stored directly in safeStorage
-  // Legacy mode: passphrase stored in safeStorage (for self-hosted)
-  let sessionRestored = false;
-  let mfaRequired = false;
-
-  let rateLimited = false;
-
-  if (hasMonarchCredentials()) {
-    // Migration: Enable biometric protection for existing users who have credentials
-    // but never had requireTouchId set (bug fix for users who logged in before v1.0.1)
-    if (!getRequireTouchId() && isBiometricAvailable()) {
-      setRequireTouchId(true);
-      debugLog('Migration: Auto-enabled biometric protection for existing credentials');
-    }
-
-    // New desktop mode: restore session from stored credentials
-    const credentials = getMonarchCredentials();
-    if (credentials) {
-      debugLog('Restoring session from stored credentials...');
-      const restoreResult = await backendManager.restoreSession(credentials);
-      if (restoreResult.success) {
-        debugLog('Session restored successfully');
-        sessionRestored = true;
-      } else {
-        debugLog(`Session restore failed: ${restoreResult.error}`);
-
-        // Check if rate limited - don't redirect to login, let renderer handle it
-        if (isRateLimitError(restoreResult.error)) {
-          debugLog('Rate limited during session restore - will notify renderer');
-          rateLimited = true;
-
-          // Notify renderer about rate limit so it can show banner
-          const mainWindow = getMainWindow();
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('monarch-rate-limited', {
-              retryAfter: 60, // Default to 60 seconds
-            });
-          }
-        }
-        // Check if MFA is required (session expired for 6-digit code users)
-        else if (restoreResult.mfaRequired) {
-          debugLog('MFA required for session restore - will prompt user');
-          mfaRequired = true;
-
-          // Notify renderer that MFA is needed
-          const mainWindow = getMainWindow();
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('auth:mfa-required', {
-              email: credentials.email,
-              mfaMode: credentials.mfaMode || 'code',
-            });
-          }
-        }
-      }
-    }
-  }
+  // Restore session from stored credentials
+  const { sessionRestored, mfaRequired, rateLimited } = await tryRestoreSession();
 
   // Check if sync is needed (skip if MFA is required or rate limited)
-  // New mode: credentials already in session (no passphrase needed)
-  // Legacy mode: pass the passphrase to unlock
   if (!mfaRequired && !rateLimited) {
-    const passphrase = sessionRestored ? undefined : getStoredPassphrase();
-    const syncResult = await backendManager.checkSyncNeeded(passphrase ?? undefined);
-    if (syncResult.synced && syncResult.success) {
-      const syncTime = new Date().toLocaleTimeString();
-      updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
-      updateHealthStatus(true, syncTime);
-    }
-    // Sync failures on startup are silent - user can check tray status or sync manually
+    await checkAndRunStartupSync(sessionRestored);
   }
 
   // Check if daily backup is needed (runs in background, doesn't block startup)
@@ -574,9 +621,6 @@ async function cleanup(): Promise<void> {
     updateCheckInterval = null;
   }
 
-  // Unregister global hotkeys
-  unregisterAllHotkeys();
-
   // Cleanup lock manager
   cleanupLockManager();
 
@@ -638,17 +682,17 @@ app.on('window-all-closed', () => {
 
 // Handle activate (macOS dock click)
 app.on('activate', async () => {
-  let mainWindow = getMainWindow();
-  if (!mainWindow) {
+  const mainWindow = getMainWindow();
+  if (mainWindow) {
+    showWindow();
+  } else {
     // Recreate window if it was closed
     await createWindow(backendManager.getPort());
     // Update lock manager with new window reference
-    mainWindow = getMainWindow();
-    if (mainWindow) {
-      updateMainWindowRef(mainWindow);
+    const newWindow = getMainWindow();
+    if (newWindow) {
+      updateMainWindowRef(newWindow);
     }
-  } else {
-    showWindow();
   }
 });
 

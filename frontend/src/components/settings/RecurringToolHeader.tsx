@@ -9,14 +9,16 @@ interface RecurringToolHeaderProps {
   readonly hasAnythingToReset: boolean;
   readonly totalCategories: number;
   readonly totalItems: number;
-  readonly onNavigate: () => void;
+  readonly isExpanded: boolean;
+  readonly onToggle: () => void;
 }
 
 export function RecurringToolHeader({
   hasAnythingToReset,
   totalCategories,
   totalItems,
-  onNavigate,
+  isExpanded,
+  onToggle,
 }: RecurringToolHeaderProps) {
   const description = hasAnythingToReset ? (
     <span className="flex items-center gap-3">
@@ -51,7 +53,8 @@ export function RecurringToolHeader({
       description={description}
       isActive={hasAnythingToReset}
       statusBadge={statusBadge}
-      onNavigate={onNavigate}
+      isExpanded={isExpanded}
+      onToggle={onToggle}
     />
   );
 }

@@ -85,10 +85,12 @@ export function NoteEditorMDX({
   // Check for math expressions at the end of the content
   const checkForMath = useCallback((text: string) => {
     // Strip trailing markdown formatting (**, *, _, `)
+    // eslint-disable-next-line sonarjs/slow-regex -- Safe: operates on short trailing content
     const stripped = text.replace(/[\s*_`]+$/, '');
 
     // Look for math pattern at end of text, allowing optional leading $
     // Match: optional $, then digits/operators/parens (x allowed for multiply since * conflicts with markdown)
+    // eslint-disable-next-line sonarjs/slow-regex -- Safe: operates on short user input
     const match = stripped.match(/\$?([\d.+\-*/xX()]+)$/);
 
     if (match?.[1] && match[1].length >= 3) {
@@ -252,9 +254,7 @@ export function NoteEditorMDX({
         {/* Math suggestion - Gmail-style inline ghost text */}
         {mathSuggestion && isFocused && (
           <div className="note-editor-math-ghost">
-            <span className="note-editor-math-ghost-text">
-              ={mathSuggestion.result}
-            </span>
+            <span className="note-editor-math-ghost-text">={mathSuggestion.result}</span>
             <span className="note-editor-math-ghost-hint">Tab</span>
           </div>
         )}
@@ -268,7 +268,7 @@ export function NoteEditorMDX({
               type="button"
               onClick={onCancel}
               disabled={isSaving}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:bg-[var(--monarch-bg-hover)] disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:bg-(--monarch-bg-hover) disabled:opacity-50"
               style={{ color: 'var(--monarch-text-muted)' }}
               aria-label="Cancel editing"
               title="Cancel (Escape)"

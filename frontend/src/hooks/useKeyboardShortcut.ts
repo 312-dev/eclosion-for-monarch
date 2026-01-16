@@ -93,9 +93,9 @@ export function useKeyboardShortcut(
     if (!enabled) return;
 
     // SSR-safe: check if window is defined
-    if (typeof window === 'undefined') return;
+    if (typeof globalThis.window === 'undefined') return;
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    globalThis.addEventListener('keydown', handleKeyDown);
+    return () => globalThis.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown, enabled]);
 }

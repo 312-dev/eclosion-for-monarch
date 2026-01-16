@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Pre-push: Heavier checks before sharing code
+# These take longer but ensure code quality before pushing
+
+echo "Running pre-push checks..."
+
+cd frontend
+
+# Type checking (catches type errors across the codebase)
+echo "Type checking..."
+npm run type-check
+if [ $? -ne 0 ]; then
+  echo "Type check failed. Please fix type errors before pushing."
+  exit 1
+fi
+
+# Run tests
+echo "Running tests..."
+npm run test -- --run
+if [ $? -ne 0 ]; then
+  echo "Tests failed. Please fix failing tests before pushing."
+  exit 1
+fi
+
+echo "Pre-push checks passed!"

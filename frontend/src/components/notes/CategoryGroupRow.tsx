@@ -57,7 +57,11 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
   const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Checkbox state management
-  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
+  const {
+    checkboxStates,
+    toggleCheckbox,
+    isLoading: checkboxesLoading,
+  } = useCheckboxState({
     noteId: note?.id,
     viewingMonth: currentMonth,
     enabled: !!note || !!content.trim(),
@@ -98,13 +102,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
 
     try {
       // If content is empty and there was a note, delete it
-      if (!trimmedContent) {
-        const noteId = effectiveNote.note?.id;
-        if (noteId) {
-          await deleteMutation.mutateAsync(noteId);
-          lastSavedRef.current = '';
-        }
-      } else {
+      if (trimmedContent) {
         // Save the note
         await saveMutation.mutateAsync({
           categoryType: 'group',
@@ -114,6 +112,12 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
           content: trimmedContent,
         });
         lastSavedRef.current = trimmedContent;
+      } else {
+        const noteId = effectiveNote.note?.id;
+        if (noteId) {
+          await deleteMutation.mutateAsync(noteId);
+          lastSavedRef.current = '';
+        }
       }
       setIsEditing(false);
       notesEditor?.closeEditor();
@@ -122,7 +126,16 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
     } finally {
       setIsSaving(false);
     }
-  }, [content, effectiveNote.note?.id, group.id, group.name, currentMonth, saveMutation, deleteMutation, notesEditor]);
+  }, [
+    content,
+    effectiveNote.note?.id,
+    group.id,
+    group.name,
+    currentMonth,
+    saveMutation,
+    deleteMutation,
+    notesEditor,
+  ]);
 
   // Save function - checks inheritance impact first
   const saveNote = useCallback(async () => {
@@ -221,10 +234,7 @@ export function CategoryGroupRow({ group, currentMonth }: CategoryGroupRowProps)
         <div className="relative group/note">
           {/* Inheritance badge */}
           {effectiveNote.isInherited && effectiveNote.sourceMonth && (
-            <div
-              className="text-xs mb-1"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
+            <div className="text-xs mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
               from {formatSourceMonth(effectiveNote.sourceMonth)}
             </div>
           )}

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Tailwind v4 Theme Extension - Map CSS custom properties to Tailwind utilities */
 @theme {
@@ -78,7 +78,9 @@
   --z-tooltip: 70;
 
   /* Font family - Plus Jakarta Sans as default */
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:
+    'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 
   /* Custom breakpoints */
   --breakpoint-xs: 480px;
@@ -150,7 +152,9 @@
   --monarch-info-bg: #eff6ff;
 
   /* Font */
-  --monarch-font: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --monarch-font:
+    'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 
   /* App icon */
   --app-icon-bg: #1a1a2e;
@@ -229,7 +233,8 @@ html.dark {
 }
 
 /* Base styles */
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
 }
@@ -246,7 +251,12 @@ body {
 }
 
 /* Headings - Figtree */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Figtree', var(--monarch-font);
 }
 
@@ -259,29 +269,31 @@ h1, h2, h3, h4, h5, h6 {
 /* Improved focus indicator for buttons */
 button:focus-visible,
 a:focus-visible,
-[role="button"]:focus-visible {
+[role='button']:focus-visible {
   outline: 2px solid var(--monarch-orange);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(255, 105, 45, 0.2);
 }
 
 /* Form elements */
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--monarch-orange) !important;
   box-shadow: 0 0 0 3px rgba(255, 105, 45, 0.15) !important;
 }
 
 /* Checkbox and radio focus styles */
-input[type="checkbox"]:focus-visible,
-input[type="radio"]:focus-visible {
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible {
   outline: 2px solid var(--monarch-orange);
   outline-offset: 2px;
 }
 
 /* Checkbox accent color */
-input[type="checkbox"],
-input[type="radio"] {
+input[type='checkbox'],
+input[type='radio'] {
   accent-color: var(--monarch-orange);
 }
 
@@ -338,7 +350,9 @@ input[type="radio"] {
   left: 0;
   right: 0;
   z-index: var(--z-index-sticky);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.1);
   /* Enable window dragging on macOS Electron */
   -webkit-app-region: drag;
 }
@@ -347,7 +361,7 @@ input[type="radio"] {
 .app-header a,
 .app-header button,
 .app-header input,
-.app-header [role="button"] {
+.app-header [role='button'] {
   -webkit-app-region: no-drag;
 }
 
@@ -393,13 +407,23 @@ input[type="radio"] {
 }
 
 @keyframes spin-once {
-  from { transform: rotate(-180deg); opacity: 0; }
-  to { transform: rotate(0deg); opacity: 1; }
+  from {
+    transform: rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .app-title {
@@ -413,7 +437,9 @@ input[type="radio"] {
 .coffee-link {
   display: flex;
   align-items: center;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .coffee-link:hover {
@@ -682,7 +708,9 @@ input[type="radio"] {
   font-size: 0.875rem;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .sidebar-idea-option:hover {
@@ -1129,13 +1157,21 @@ input[type="radio"] {
 
 /* Animation Keyframes */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes fadeInUp {
@@ -1216,19 +1252,35 @@ input[type="radio"] {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 @keyframes highlightFade {
-  0% { background-color: var(--monarch-orange-light); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: var(--monarch-orange-light);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 /* Animation Utility Classes */
@@ -1287,7 +1339,9 @@ input[type="radio"] {
 
 /* Button Hover Effects */
 .btn-hover-lift {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .btn-hover-lift:hover:not(:disabled) {
@@ -1315,21 +1369,45 @@ input[type="radio"] {
 }
 
 /* Stagger delays - applied via inline styles or JS */
-.row-enter:nth-child(1) { animation-delay: 0ms; }
-.row-enter:nth-child(2) { animation-delay: 30ms; }
-.row-enter:nth-child(3) { animation-delay: 60ms; }
-.row-enter:nth-child(4) { animation-delay: 90ms; }
-.row-enter:nth-child(5) { animation-delay: 120ms; }
-.row-enter:nth-child(6) { animation-delay: 150ms; }
-.row-enter:nth-child(7) { animation-delay: 180ms; }
-.row-enter:nth-child(8) { animation-delay: 210ms; }
-.row-enter:nth-child(9) { animation-delay: 240ms; }
-.row-enter:nth-child(10) { animation-delay: 270ms; }
+.row-enter:nth-child(1) {
+  animation-delay: 0ms;
+}
+.row-enter:nth-child(2) {
+  animation-delay: 30ms;
+}
+.row-enter:nth-child(3) {
+  animation-delay: 60ms;
+}
+.row-enter:nth-child(4) {
+  animation-delay: 90ms;
+}
+.row-enter:nth-child(5) {
+  animation-delay: 120ms;
+}
+.row-enter:nth-child(6) {
+  animation-delay: 150ms;
+}
+.row-enter:nth-child(7) {
+  animation-delay: 180ms;
+}
+.row-enter:nth-child(8) {
+  animation-delay: 210ms;
+}
+.row-enter:nth-child(9) {
+  animation-delay: 240ms;
+}
+.row-enter:nth-child(10) {
+  animation-delay: 270ms;
+}
 
 /* Loading skeleton shimmer */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
@@ -1346,7 +1424,9 @@ input[type="radio"] {
 
 /* Error message animation */
 .error-message {
-  animation: shake 0.3s ease-in-out, fadeIn 0.2s ease-out;
+  animation:
+    shake 0.3s ease-in-out,
+    fadeIn 0.2s ease-out;
 }
 
 /* ============================================================================
@@ -1364,6 +1444,29 @@ input[type="radio"] {
   z-index: var(--z-index-toast);
   flex-shrink: 0; /* Don't compress banners */
   animation: slideDown 0.3s ease-out;
+}
+
+/* Progress bar styling for update downloads */
+progress {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+progress::-webkit-progress-bar {
+  background-color: var(--monarch-border);
+  border-radius: 9999px;
+}
+
+progress::-webkit-progress-value {
+  background-color: var(--monarch-orange);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+progress::-moz-progress-bar {
+  background-color: var(--monarch-orange);
+  border-radius: 9999px;
 }
 
 /* ============================================================================
@@ -1458,7 +1561,8 @@ input[type="radio"] {
 }
 
 @keyframes orbGlow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 0 4px var(--monarch-orange),
       0 0 8px var(--monarch-orange),
@@ -1495,7 +1599,9 @@ input[type="radio"] {
   gap: 0.625rem;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
   animation: toastSlideUp 0.25s ease-out forwards;
   pointer-events: auto;
   font-size: 0.875rem;
@@ -1504,16 +1610,16 @@ input[type="radio"] {
 }
 
 /* Dark mode toast backgrounds - use solid colors for readability */
-:root.dark .toast-item[data-type="error"] {
+:root.dark .toast-item[data-type='error'] {
   background-color: var(--monarch-error-bg-solid) !important;
 }
-:root.dark .toast-item[data-type="success"] {
+:root.dark .toast-item[data-type='success'] {
   background-color: var(--monarch-success-bg-solid) !important;
 }
-:root.dark .toast-item[data-type="warning"] {
+:root.dark .toast-item[data-type='warning'] {
   background-color: var(--monarch-warning-bg-solid) !important;
 }
-:root.dark .toast-item[data-type="info"] {
+:root.dark .toast-item[data-type='info'] {
   background-color: var(--monarch-info-bg-solid) !important;
 }
 
@@ -1529,7 +1635,9 @@ input[type="radio"] {
   padding: 0.25rem;
   border-radius: 0.25rem;
   opacity: 0.7;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
   cursor: pointer;
   background: transparent;
   border: none;
@@ -1694,7 +1802,9 @@ input[type="radio"] {
 .hover-link-icon {
   color: var(--monarch-text-muted);
   background-color: transparent;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 .hover-link-icon:hover {
   color: var(--monarch-orange);
@@ -1713,7 +1823,9 @@ input[type="radio"] {
 .hover-settings-icon {
   color: var(--monarch-text-muted);
   background-color: transparent;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 .hover-settings-icon:hover {
   color: var(--monarch-text-dark);
@@ -1748,7 +1860,9 @@ input[type="radio"] {
 
 /* Item card hover - only when not checked/selected */
 .hover-item-card-unchecked:not(.item-card-checked) {
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 .hover-item-card-unchecked:not(.item-card-checked):hover {
   border-color: var(--monarch-orange);
@@ -1854,11 +1968,21 @@ input[type="radio"] {
 }
 
 /* Staggered section entrance */
-.section-enter:nth-child(1) { animation-delay: 0ms; }
-.section-enter:nth-child(2) { animation-delay: 50ms; }
-.section-enter:nth-child(3) { animation-delay: 100ms; }
-.section-enter:nth-child(4) { animation-delay: 150ms; }
-.section-enter:nth-child(5) { animation-delay: 200ms; }
+.section-enter:nth-child(1) {
+  animation-delay: 0ms;
+}
+.section-enter:nth-child(2) {
+  animation-delay: 50ms;
+}
+.section-enter:nth-child(3) {
+  animation-delay: 100ms;
+}
+.section-enter:nth-child(4) {
+  animation-delay: 150ms;
+}
+.section-enter:nth-child(5) {
+  animation-delay: 200ms;
+}
 
 /* ============================================================================
    Micro-Interactions
@@ -1866,8 +1990,9 @@ input[type="radio"] {
 
 /* Button press effect - subtle scale-down on active */
 .btn-press {
-  transition: transform var(--animation-fast) var(--ease-out-smooth),
-              box-shadow var(--animation-fast) var(--ease-out-smooth);
+  transition:
+    transform var(--animation-fast) var(--ease-out-smooth),
+    box-shadow var(--animation-fast) var(--ease-out-smooth);
 }
 
 .btn-press:active:not(:disabled) {
@@ -1876,9 +2001,10 @@ input[type="radio"] {
 
 /* Icon button hover - scale effect */
 .icon-btn-hover {
-  transition: transform var(--animation-fast) var(--ease-out-smooth),
-              color var(--animation-fast) var(--ease-out-smooth),
-              background-color var(--animation-fast) var(--ease-out-smooth);
+  transition:
+    transform var(--animation-fast) var(--ease-out-smooth),
+    color var(--animation-fast) var(--ease-out-smooth),
+    background-color var(--animation-fast) var(--ease-out-smooth);
 }
 
 .icon-btn-hover:hover:not(:disabled) {
@@ -1901,8 +2027,12 @@ input[type="radio"] {
 
 /* Checkbox check animation */
 @keyframes checkMark {
-  0% { stroke-dashoffset: 24; }
-  100% { stroke-dashoffset: 0; }
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
 }
 
 .checkbox-animate path {
@@ -1936,23 +2066,55 @@ input[type="radio"] {
 }
 
 /* Extended stagger support (up to 15 items, then caps) */
-.list-item-enter:nth-child(1) { animation-delay: calc(0 * var(--stagger-delay)); }
-.list-item-enter:nth-child(2) { animation-delay: calc(1 * var(--stagger-delay)); }
-.list-item-enter:nth-child(3) { animation-delay: calc(2 * var(--stagger-delay)); }
-.list-item-enter:nth-child(4) { animation-delay: calc(3 * var(--stagger-delay)); }
-.list-item-enter:nth-child(5) { animation-delay: calc(4 * var(--stagger-delay)); }
-.list-item-enter:nth-child(6) { animation-delay: calc(5 * var(--stagger-delay)); }
-.list-item-enter:nth-child(7) { animation-delay: calc(6 * var(--stagger-delay)); }
-.list-item-enter:nth-child(8) { animation-delay: calc(7 * var(--stagger-delay)); }
-.list-item-enter:nth-child(9) { animation-delay: calc(8 * var(--stagger-delay)); }
-.list-item-enter:nth-child(10) { animation-delay: calc(9 * var(--stagger-delay)); }
-.list-item-enter:nth-child(11) { animation-delay: calc(10 * var(--stagger-delay)); }
-.list-item-enter:nth-child(12) { animation-delay: calc(11 * var(--stagger-delay)); }
-.list-item-enter:nth-child(13) { animation-delay: calc(12 * var(--stagger-delay)); }
-.list-item-enter:nth-child(14) { animation-delay: calc(13 * var(--stagger-delay)); }
-.list-item-enter:nth-child(15) { animation-delay: calc(14 * var(--stagger-delay)); }
+.list-item-enter:nth-child(1) {
+  animation-delay: calc(0 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(2) {
+  animation-delay: calc(1 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(3) {
+  animation-delay: calc(2 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(4) {
+  animation-delay: calc(3 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(5) {
+  animation-delay: calc(4 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(6) {
+  animation-delay: calc(5 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(7) {
+  animation-delay: calc(6 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(8) {
+  animation-delay: calc(7 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(9) {
+  animation-delay: calc(8 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(10) {
+  animation-delay: calc(9 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(11) {
+  animation-delay: calc(10 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(12) {
+  animation-delay: calc(11 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(13) {
+  animation-delay: calc(12 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(14) {
+  animation-delay: calc(13 * var(--stagger-delay));
+}
+.list-item-enter:nth-child(15) {
+  animation-delay: calc(14 * var(--stagger-delay));
+}
 /* Cap at 350ms max delay for items 16+ */
-.list-item-enter:nth-child(n+16) { animation-delay: 350ms; }
+.list-item-enter:nth-child(n + 16) {
+  animation-delay: 350ms;
+}
 
 /* List item removal */
 @keyframes listItemExit {
@@ -1981,11 +2143,22 @@ input[type="radio"] {
 
 /* Error shake - refined version */
 @keyframes errorShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-3px); }
-  40% { transform: translateX(3px); }
-  60% { transform: translateX(-2px); }
-  80% { transform: translateX(2px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
 }
 
 .animate-error-shake {
@@ -1994,8 +2167,13 @@ input[type="radio"] {
 
 /* Success pulse */
 @keyframes successPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 160, 107, 0.4); }
-  50% { box-shadow: 0 0 0 4px rgba(34, 160, 107, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 160, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(34, 160, 107, 0);
+  }
 }
 
 .animate-success {
@@ -2004,8 +2182,13 @@ input[type="radio"] {
 
 /* Loading pulse - subtle */
 @keyframes loadingPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-loading {
@@ -2017,13 +2200,21 @@ input[type="radio"] {
    ============================================================================ */
 
 /* Fade utilities */
-.fade-in { animation: fadeIn var(--animation-fast) ease-out forwards; }
-.fade-in-slow { animation: fadeIn var(--animation-slow) ease-out forwards; }
-.fade-out { animation: fadeOut var(--animation-fast) ease-out forwards; }
+.fade-in {
+  animation: fadeIn var(--animation-fast) ease-out forwards;
+}
+.fade-in-slow {
+  animation: fadeIn var(--animation-slow) ease-out forwards;
+}
+.fade-out {
+  animation: fadeOut var(--animation-fast) ease-out forwards;
+}
 
 /* Flip text - smooth transition for alternating text content */
 .flip-text {
-  transition: opacity var(--animation-normal) ease, color var(--animation-normal) ease;
+  transition:
+    opacity var(--animation-normal) ease,
+    color var(--animation-normal) ease;
 }
 
 /* Flip up animation - for alternating between two text values */
@@ -2050,17 +2241,31 @@ input[type="radio"] {
 }
 
 /* Slide utilities */
-.slide-up { animation: slideUp var(--animation-fast) ease-out forwards; }
-.slide-down { animation: slideDown var(--animation-fast) ease-out forwards; }
+.slide-up {
+  animation: slideUp var(--animation-fast) ease-out forwards;
+}
+.slide-down {
+  animation: slideDown var(--animation-fast) ease-out forwards;
+}
 
 /* Scale utilities */
-.scale-in { animation: scaleIn var(--animation-fast) ease-out forwards; }
-.pop-in { animation: scaleIn var(--animation-fast) var(--ease-out-back) forwards; }
+.scale-in {
+  animation: scaleIn var(--animation-fast) ease-out forwards;
+}
+.pop-in {
+  animation: scaleIn var(--animation-fast) var(--ease-out-back) forwards;
+}
 
 /* Transition duration utilities */
-.transition-fast { transition-duration: var(--animation-fast); }
-.transition-normal { transition-duration: var(--animation-normal); }
-.transition-slow { transition-duration: var(--animation-slow); }
+.transition-fast {
+  transition-duration: var(--animation-fast);
+}
+.transition-normal {
+  transition-duration: var(--animation-normal);
+}
+.transition-slow {
+  transition-duration: var(--animation-slow);
+}
 
 /* Combined transition utilities for common patterns */
 .transition-all-fast {
@@ -2068,9 +2273,10 @@ input[type="radio"] {
 }
 
 .transition-colors-fast {
-  transition: color var(--animation-fast) ease,
-              background-color var(--animation-fast) ease,
-              border-color var(--animation-fast) ease;
+  transition:
+    color var(--animation-fast) ease,
+    background-color var(--animation-fast) ease,
+    border-color var(--animation-fast) ease;
 }
 
 .transition-transform-fast {
@@ -2088,7 +2294,8 @@ input[type="radio"] {
 
 /* Bouncing down arrow - attention-drawing scroll indicator */
 @keyframes bounceDown {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
   }
   50% {
@@ -2353,7 +2560,8 @@ input[type="radio"] {
 }
 
 @keyframes spotlightPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.8;
     transform: scale(1);
   }
@@ -2365,7 +2573,8 @@ input[type="radio"] {
 
 /* Question mark pulse animation */
 @keyframes questionPulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
   }
   50% {
@@ -2690,7 +2899,7 @@ input[type="radio"] {
 }
 
 .price-explainer-popover li::before {
-  content: "•";
+  content: '•';
   position: absolute;
   left: 0;
   color: var(--monarch-orange);
@@ -3048,7 +3257,7 @@ input[type="radio"] {
 }
 
 .note-editor-mdx .mdxeditor {
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   font-family: inherit;
   background: transparent;
 }
@@ -3086,7 +3295,7 @@ input[type="radio"] {
 }
 
 .note-editor-mdx .mdxeditor-toolbar button,
-.note-editor-mdx .mdxeditor-toolbar [role="button"] {
+.note-editor-mdx .mdxeditor-toolbar [role='button'] {
   color: var(--monarch-text-dark, #e5e5e5) !important;
   background: transparent !important;
   border-radius: 4px;
@@ -3094,29 +3303,29 @@ input[type="radio"] {
 }
 
 .note-editor-mdx .mdxeditor-toolbar button svg,
-.note-editor-mdx .mdxeditor-toolbar [role="button"] svg {
+.note-editor-mdx .mdxeditor-toolbar [role='button'] svg {
   color: inherit !important;
   fill: currentColor !important;
 }
 
 .note-editor-mdx .mdxeditor-toolbar button:hover,
-.note-editor-mdx .mdxeditor-toolbar [role="button"]:hover {
+.note-editor-mdx .mdxeditor-toolbar [role='button']:hover {
   background: var(--monarch-bg-card, #2a2a2a) !important;
   color: var(--monarch-orange, #e07f4f) !important;
 }
 
-.note-editor-mdx .mdxeditor-toolbar button[data-state="on"],
-.note-editor-mdx .mdxeditor-toolbar [data-state="on"] {
+.note-editor-mdx .mdxeditor-toolbar button[data-state='on'],
+.note-editor-mdx .mdxeditor-toolbar [data-state='on'] {
   background: var(--monarch-orange, #e07f4f) !important;
   color: white !important;
 }
 
 /* Select/dropdown trigger styling */
 .note-editor-mdx .mdxeditor-toolbar select,
-.note-editor-mdx .mdxeditor-toolbar [role="combobox"],
-.note-editor-mdx .mdxeditor-toolbar button[aria-haspopup="listbox"],
+.note-editor-mdx .mdxeditor-toolbar [role='combobox'],
+.note-editor-mdx .mdxeditor-toolbar button[aria-haspopup='listbox'],
 .note-editor-mdx ._selectTrigger_uazmk_182,
-.note-editor-mdx [class*="selectTrigger"] {
+.note-editor-mdx [class*='selectTrigger'] {
   background: var(--monarch-bg-card) !important;
   color: var(--monarch-text-dark) !important;
   border: 1px solid var(--monarch-border) !important;
@@ -3131,7 +3340,7 @@ input[type="radio"] {
 }
 
 [data-radix-popper-content-wrapper] > div,
-[data-radix-popper-content-wrapper] [role="listbox"] {
+[data-radix-popper-content-wrapper] [role='listbox'] {
   background: var(--monarch-bg-card, #1a1a1a) !important;
   border: 1px solid var(--monarch-border, #333) !important;
   border-radius: 6px !important;
@@ -3139,24 +3348,24 @@ input[type="radio"] {
   overflow: hidden;
 }
 
-[data-radix-popper-content-wrapper] [role="option"],
+[data-radix-popper-content-wrapper] [role='option'],
 [data-radix-popper-content-wrapper] button,
-[data-radix-popper-content-wrapper] [class*="Item"] {
+[data-radix-popper-content-wrapper] [class*='Item'] {
   color: var(--monarch-text-dark, #e5e5e5) !important;
   background: transparent !important;
   padding: 8px 12px !important;
   cursor: pointer;
 }
 
-[data-radix-popper-content-wrapper] [role="option"]:hover,
-[data-radix-popper-content-wrapper] [data-highlighted="true"],
-[data-radix-popper-content-wrapper] [data-state="checked"],
+[data-radix-popper-content-wrapper] [role='option']:hover,
+[data-radix-popper-content-wrapper] [data-highlighted='true'],
+[data-radix-popper-content-wrapper] [data-state='checked'],
 [data-radix-popper-content-wrapper] button:hover {
   background: var(--monarch-bg-hover, #2a2a2a) !important;
 }
 
 /* Editor content area - uses CSS custom property for dynamic min-height */
-.note-editor-mdx .mdxeditor [data-lexical-editor="true"] {
+.note-editor-mdx .mdxeditor [data-lexical-editor='true'] {
   min-height: var(--note-editor-min-height, 120px);
   padding: 12px;
   outline: none;
@@ -3189,9 +3398,15 @@ input[type="radio"] {
   margin-top: 0;
 }
 
-.note-editor-mdx .mdx-editor-content h1 { font-size: 1.5em; }
-.note-editor-mdx .mdx-editor-content h2 { font-size: 1.3em; }
-.note-editor-mdx .mdx-editor-content h3 { font-size: 1.1em; }
+.note-editor-mdx .mdx-editor-content h1 {
+  font-size: 1.5em;
+}
+.note-editor-mdx .mdx-editor-content h2 {
+  font-size: 1.3em;
+}
+.note-editor-mdx .mdx-editor-content h3 {
+  font-size: 1.1em;
+}
 
 .note-editor-mdx .mdx-editor-content p {
   margin: 0.5em 0;
@@ -3216,14 +3431,14 @@ input[type="radio"] {
 }
 
 /* Task list / checkbox styling */
-.note-editor-mdx .mdx-editor-content li[data-checked="true"],
-.note-editor-mdx .mdx-editor-content li[data-checked="false"] {
+.note-editor-mdx .mdx-editor-content li[data-checked='true'],
+.note-editor-mdx .mdx-editor-content li[data-checked='false'] {
   list-style: none;
   margin-left: -1.5em;
   padding-left: 0;
 }
 
-.note-editor-mdx .mdx-editor-content li[data-checked] input[type="checkbox"] {
+.note-editor-mdx .mdx-editor-content li[data-checked] input[type='checkbox'] {
   margin-right: 0.5em;
   accent-color: var(--monarch-orange);
   width: 16px;
@@ -3232,7 +3447,7 @@ input[type="radio"] {
   cursor: pointer;
 }
 
-.note-editor-mdx .mdx-editor-content li[data-checked="true"] {
+.note-editor-mdx .mdx-editor-content li[data-checked='true'] {
   color: var(--monarch-text-muted);
   text-decoration: line-through;
 }
@@ -3276,7 +3491,7 @@ input[type="radio"] {
 }
 
 /* Placeholder styling - multiple selectors for Lexical/MDXEditor compatibility */
-.note-editor-mdx .mdxeditor [data-lexical-editor="true"]:empty::before {
+.note-editor-mdx .mdxeditor [data-lexical-editor='true']:empty::before {
   content: attr(data-placeholder);
   color: var(--monarch-text-muted);
   pointer-events: none;
@@ -3284,7 +3499,7 @@ input[type="radio"] {
 }
 
 /* Lexical placeholder element - uses absolute positioning inside the editor */
-.note-editor-mdx .mdxeditor [class*="placeholder"],
+.note-editor-mdx .mdxeditor [class*='placeholder'],
 .note-editor-mdx .mdxeditor p.PlaygroundEditorTheme__paragraph:only-child:empty::before,
 .note-editor-mdx .mdxeditor [data-lexical-placeholder],
 .note-editor-mdx .mdxeditor .editor-placeholder,
@@ -3295,12 +3510,12 @@ input[type="radio"] {
 }
 
 /* MDXEditor's internal placeholder class (hashed module class) */
-.note-editor-mdx [class*="_placeholder_"] {
+.note-editor-mdx [class*='_placeholder_'] {
   color: var(--monarch-text-muted) !important;
 }
 
 /* Read-only mode */
-.note-editor-mdx[data-readonly="true"] .mdxeditor [data-lexical-editor="true"] {
+.note-editor-mdx[data-readonly='true'] .mdxeditor [data-lexical-editor='true'] {
   cursor: default;
 }
 
@@ -3331,8 +3546,8 @@ input[type="radio"] {
 }
 
 /* Tooltip styling */
-.mdxeditor-toolbar [data-state="delayed-open"] + [role="tooltip"],
-[role="tooltip"] {
+.mdxeditor-toolbar [data-state='delayed-open'] + [role='tooltip'],
+[role='tooltip'] {
   background: var(--monarch-bg-card) !important;
   color: var(--monarch-text-dark) !important;
   border: 1px solid var(--monarch-border) !important;

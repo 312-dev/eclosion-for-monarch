@@ -12,7 +12,9 @@ import { debugLog } from './logger';
  * Migrate legacy settings to new schema.
  *
  * Migrations:
- * - menuBarMode (boolean) → desktop.closeToTray, desktop.showInDock
+ * 1. Clean up legacy menuBarMode setting
+ * 2. Clean up legacy minimizeToTray, closeToTray, showInDock settings
+ * 3. Clean up legacy runInSystemTray setting (now always-on behavior)
  *
  * This function is idempotent - it only runs if legacy settings exist,
  * and deletes them after migration to prevent re-running.
@@ -20,26 +22,13 @@ import { debugLog } from './logger';
 export function migrateSettings(): void {
   const store = getStore();
 
-  // Migrate menuBarMode → new desktop.* settings
+  // Migration 1: Clean up legacy menuBarMode
   const oldMenuBarMode = store.get('menuBarMode');
 
   if (oldMenuBarMode !== undefined) {
-    debugLog(`Migrating menuBarMode=${oldMenuBarMode} to new settings`);
+    debugLog(`Cleaning up legacy menuBarMode=${oldMenuBarMode}`);
 
-    if (oldMenuBarMode === true) {
-      // Menu bar mode enabled: close to tray, hide from dock
-      store.set('desktop.closeToTray', true);
-      store.set('desktop.showInDock', false);
-    } else {
-      // Menu bar mode disabled: don't close to tray, show in dock
-      store.set('desktop.closeToTray', false);
-      store.set('desktop.showInDock', true);
-    }
-
-    // Set defaults for new settings that didn't exist before
-    if (store.get('desktop.minimizeToTray') === undefined) {
-      store.set('desktop.minimizeToTray', true);
-    }
+    // Set defaults for other settings if not already set
     if (store.get('desktop.startMinimized') === undefined) {
       store.set('desktop.startMinimized', false);
     }
@@ -50,9 +39,38 @@ export function migrateSettings(): void {
       store.set('desktop.showInTaskbar', true);
     }
 
-    // Remove old setting to prevent re-migration
+    // Remove old setting
     store.delete('menuBarMode');
 
-    debugLog('Settings migration complete');
+    debugLog('menuBarMode cleanup complete');
+  }
+
+  // Migration 2: Clean up legacy tray settings
+  const oldMinimizeToTray = store.get('desktop.minimizeToTray');
+  const oldCloseToTray = store.get('desktop.closeToTray');
+  const oldShowInDock = store.get('desktop.showInDock');
+
+  if (
+    oldMinimizeToTray !== undefined ||
+    oldCloseToTray !== undefined ||
+    oldShowInDock !== undefined
+  ) {
+    debugLog('Cleaning up legacy tray settings');
+
+    // Clean up old settings
+    store.delete('desktop.minimizeToTray');
+    store.delete('desktop.closeToTray');
+    store.delete('desktop.showInDock');
+
+    debugLog('Legacy tray settings cleanup complete');
+  }
+
+  // Migration 3: Clean up legacy runInSystemTray (now always-on behavior)
+  const oldRunInSystemTray = store.get('desktop.runInSystemTray');
+
+  if (oldRunInSystemTray !== undefined) {
+    debugLog('Cleaning up legacy runInSystemTray setting (now always-on)');
+    store.delete('desktop.runInSystemTray');
+    debugLog('runInSystemTray cleanup complete');
   }
 }

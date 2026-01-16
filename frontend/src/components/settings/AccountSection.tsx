@@ -13,9 +13,11 @@ import { useAuth } from '../../context/AuthContext';
  * Check if running in Electron desktop with credentials API.
  */
 function isElectronDesktop(): boolean {
-  return typeof window !== 'undefined' &&
-    'electron' in window &&
-    window.electron?.credentials !== undefined;
+  return (
+    typeof globalThis.window !== 'undefined' &&
+    'electron' in globalThis &&
+    globalThis.electron?.credentials !== undefined
+  );
 }
 
 export function AccountSection() {
@@ -26,7 +28,7 @@ export function AccountSection() {
     // In desktop mode, only show lock button if Touch ID is required
     if (isElectronDesktop()) {
       // window.electron is guaranteed to exist inside isElectronDesktop()
-      window.electron!.credentials.getRequireTouchId().then((required: boolean) => {
+      globalThis.electron!.credentials.getRequireTouchId().then((required: boolean) => {
         setShowLockButton(required);
       });
     }
@@ -39,7 +41,10 @@ export function AccountSection() {
 
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
+      <h2
+        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
         <Lock size={12} />
         Account
       </h2>
@@ -48,7 +53,7 @@ export function AccountSection() {
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         <button

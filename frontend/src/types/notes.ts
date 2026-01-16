@@ -9,8 +9,14 @@
 /**
  * Month key format: "YYYY-MM" (e.g., "2025-01")
  * Used as the primary identifier for month-based lookups.
+ *
+ * This branded type provides:
+ * 1. Semantic documentation that this is specifically a month key, not any string
+ * 2. Intentional friction when passing arbitrary strings as month keys
+ *
+ * Use `as MonthKey` when creating month keys from known valid sources.
  */
-export type MonthKey = string;
+export type MonthKey = string & { readonly __brand?: 'MonthKey' };
 
 /**
  * Reference to a category or category group in Monarch

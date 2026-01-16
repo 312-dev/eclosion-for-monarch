@@ -64,7 +64,11 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
   const saveNoteRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   // Checkbox state management for general notes
-  const { checkboxStates, toggleCheckbox, isLoading: checkboxesLoading } = useCheckboxState({
+  const {
+    checkboxStates,
+    toggleCheckbox,
+    isLoading: checkboxesLoading,
+  } = useCheckboxState({
     generalNoteMonthKey: sourceMonth ?? monthKey,
     viewingMonth: monthKey,
     enabled: !!note || !!content.trim(),
@@ -107,15 +111,15 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
 
     try {
       // If content is empty and there was a note, delete it
-      if (!trimmedContent) {
+      if (trimmedContent) {
+        // Save the note
+        await saveMutation.mutateAsync({ monthKey, content: trimmedContent });
+        lastSavedRef.current = trimmedContent;
+      } else {
         if (note) {
           await deleteMutation.mutateAsync(monthKey);
           lastSavedRef.current = '';
         }
-      } else {
-        // Save the note
-        await saveMutation.mutateAsync({ monthKey, content: trimmedContent });
-        lastSavedRef.current = trimmedContent;
       }
       setIsEditing(false);
       notesEditor?.closeEditor();
@@ -222,10 +226,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
       return (
         <div className="p-4 relative group">
           {isInherited && sourceMonth && (
-            <div
-              className="text-xs mb-2 italic"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
+            <div className="text-xs mb-2 italic" style={{ color: 'var(--monarch-text-muted)' }}>
               Inherited from {formatMonth(sourceMonth)}
             </div>
           )}
@@ -257,7 +258,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
       <button
         type="button"
         onClick={handleStartEdit}
-        className="w-full p-4 flex items-center justify-center gap-2 text-sm hover:bg-[var(--monarch-bg-hover)] transition-colors"
+        className="w-full p-4 flex items-center justify-center gap-2 text-sm hover:bg-(--monarch-bg-hover) transition-colors"
         style={{ color: 'var(--monarch-text-muted)', minHeight: '100px' }}
       >
         <Plus size={16} />
@@ -276,10 +277,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
       data-tour={dataTourId}
     >
       {/* Header */}
-      <div
-        className="px-4 py-3 border-b"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
+      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
         <h3 className="font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
           Notes for {formatMonth(monthKey)}
         </h3>
@@ -295,5 +293,12 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
  * Wrapper that uses key to reset state when month changes
  */
 export function GeneralMonthNotes({ monthKey, effectiveNote, dataTourId }: GeneralMonthNotesProps) {
-  return <GeneralMonthNotesInner key={monthKey} monthKey={monthKey} effectiveNote={effectiveNote} dataTourId={dataTourId} />;
+  return (
+    <GeneralMonthNotesInner
+      key={monthKey}
+      monthKey={monthKey}
+      effectiveNote={effectiveNote}
+      dataTourId={dataTourId}
+    />
+  );
 }

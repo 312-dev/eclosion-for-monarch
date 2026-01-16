@@ -21,9 +21,9 @@ interface FeatureCardProps {
 
 function StatusBadge({ status }: { status: FeatureDefinition['status'] }) {
   const styles = {
-    available: 'bg-[var(--monarch-success-bg)] text-[var(--monarch-success)]',
-    'coming-soon': 'bg-[var(--monarch-warning-bg)] text-[var(--monarch-warning)]',
-    beta: 'bg-[var(--monarch-info-bg)] text-[var(--monarch-info)]',
+    available: 'bg-(--monarch-success-bg) text-(--monarch-success)',
+    'coming-soon': 'bg-(--monarch-warning-bg) text-(--monarch-warning)',
+    beta: 'bg-(--monarch-info-bg) text-(--monarch-info)',
   };
 
   const labels = {
@@ -48,7 +48,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
 
   if (variant === 'detailed') {
     return (
-      <div className="flex flex-col p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] hover:shadow-lg transition-all duration-200">
+      <div className="flex flex-col p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) hover:shadow-lg transition-all duration-200">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-(--monarch-orange)/10">
@@ -65,7 +65,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
                 href={contributorData.ideator.profileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                className="shrink-0 hover:opacity-80 transition-opacity"
                 aria-label={`Ideated by ${contributorData.ideator.username}`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -77,24 +77,15 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
               </a>
             </Tooltip>
           )}
-          <h3 className="text-xl font-semibold text-[var(--monarch-text-dark)]">
-            {feature.name}
-          </h3>
+          <h3 className="text-xl font-semibold text-(--monarch-text-dark)">{feature.name}</h3>
         </div>
-        <p className="text-sm text-[var(--monarch-text)] mb-4 flex-1">
-          {feature.description}
-        </p>
+        <p className="text-sm text-(--monarch-text) mb-4 flex-1">{feature.description}</p>
 
         {/* Contributors */}
         {contributorData && contributorData.contributors.length > 0 && (
           <div className="flex items-center gap-1.5 mb-4">
-            <UsersIcon
-              size={14}
-              className="text-[var(--monarch-text-muted)] flex-shrink-0"
-            />
-            <span className="text-xs text-[var(--monarch-text-muted)]">
-              Community Devs
-            </span>
+            <UsersIcon size={14} className="text-(--monarch-text-muted) shrink-0" />
+            <span className="text-xs text-(--monarch-text-muted)">Community Devs</span>
             <div className="flex items-center -space-x-1.5 ml-0.5">
               {contributorData.contributors.slice(0, 4).map((c) => (
                 <ContributorAvatar
@@ -107,7 +98,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
               ))}
               {contributorData.contributors.length > 4 && (
                 <Tooltip content={`+${contributorData.contributors.length - 4} more`}>
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--monarch-bg-hover)] text-xs text-[var(--monarch-text-muted)] border border-[var(--monarch-border)] ml-1">
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-(--monarch-bg-hover) text-xs text-(--monarch-text-muted) border border-(--monarch-border) ml-1">
                     +{contributorData.contributors.length - 4}
                   </span>
                 </Tooltip>
@@ -121,7 +112,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
           {isAvailable && feature.demoPath && (
             <Link
               to={feature.demoPath}
-              className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg bg-[var(--monarch-orange)] text-white hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg bg-(--monarch-orange) text-white hover:opacity-90 transition-opacity"
             >
               Try it out
               <ChevronRightIcon size={16} color="white" />
@@ -129,7 +120,7 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
           )}
           <Link
             to={`/features/${feature.id}`}
-            className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--monarch-border)] text-[var(--monarch-text-dark)] hover:bg-[var(--monarch-bg-hover)] transition-colors"
+            className="inline-flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg border border-(--monarch-border) text-(--monarch-text-dark) hover:bg-(--monarch-bg-hover) transition-colors"
           >
             Learn More
           </Link>
@@ -142,10 +133,10 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
   return (
     <Link
       to={`/features/${feature.id}`}
-      className="group flex flex-col items-center p-6 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)] hover:border-[var(--monarch-orange)] hover:shadow-md transition-all duration-200"
+      className="group flex flex-col items-center p-6 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border) hover:border-(--monarch-orange) hover:shadow-md transition-all duration-200"
     >
       {/* Icon */}
-      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-(--monarch-orange)/10 text-[var(--monarch-orange)] mb-4 group-hover:scale-110 transition-transform">
+      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-(--monarch-orange)/10 text-(--monarch-orange) mb-4 group-hover:scale-110 transition-transform">
         <IconComponent size={28} />
       </div>
 
@@ -155,14 +146,12 @@ export function FeatureCard({ feature, variant = 'compact' }: FeatureCardProps) 
       </div>
 
       {/* Name */}
-      <h3 className="text-lg font-semibold text-[var(--monarch-text-dark)] text-center mb-2">
+      <h3 className="text-lg font-semibold text-(--monarch-text-dark) text-center mb-2">
         {feature.name}
       </h3>
 
       {/* Tagline */}
-      <p className="text-sm text-[var(--monarch-text)] text-center">
-        {feature.tagline}
-      </p>
+      <p className="text-sm text-(--monarch-text) text-center">{feature.tagline}</p>
     </Link>
   );
 }

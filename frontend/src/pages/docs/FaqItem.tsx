@@ -9,11 +9,9 @@ interface FaqItemProps {
 
 export function FaqItem({ question, answer }: FaqItemProps) {
   return (
-    <div className="p-5 rounded-xl bg-[var(--monarch-bg-card)] border border-[var(--monarch-border)]">
-      <h3 className="font-semibold text-[var(--monarch-text-dark)] mb-2">
-        {question}
-      </h3>
-      <p className="text-sm text-[var(--monarch-text)]">{answer}</p>
+    <div className="p-5 rounded-xl bg-(--monarch-bg-card) border border-(--monarch-border)">
+      <h3 className="font-semibold text-(--monarch-text-dark) mb-2">{question}</h3>
+      <p className="text-sm text-(--monarch-text)">{answer}</p>
     </div>
   );
 }

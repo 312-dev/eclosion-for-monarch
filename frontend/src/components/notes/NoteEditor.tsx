@@ -57,6 +57,7 @@ export function NoteEditor({
   const checkForMath = useCallback((text: string, cursorPos: number) => {
     // Look for math pattern ending at cursor: digits and operators (x allowed for multiply)
     const beforeCursor = text.slice(0, cursorPos);
+    // eslint-disable-next-line sonarjs/slow-regex -- Safe: operates on short user input at cursor position
     const match = beforeCursor.match(/[\d.+\-*/xX()]+$/);
 
     if (match && match[0].length >= 3) {
@@ -186,7 +187,7 @@ export function NoteEditor({
         <button
           type="button"
           onClick={handleBold}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="Bold"
           title="Bold (Ctrl+B)"
@@ -196,7 +197,7 @@ export function NoteEditor({
         <button
           type="button"
           onClick={handleItalic}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="Italic"
           title="Italic (Ctrl+I)"
@@ -206,7 +207,7 @@ export function NoteEditor({
         <button
           type="button"
           onClick={handleList}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="List"
           title="Bullet list"
@@ -216,7 +217,7 @@ export function NoteEditor({
         <button
           type="button"
           onClick={handleLink}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="Link"
           title="Insert link"
@@ -226,7 +227,7 @@ export function NoteEditor({
         <button
           type="button"
           onClick={handleCode}
-          className="p-1.5 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors"
+          className="p-1.5 rounded hover:bg-(--monarch-bg-hover) transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="Code"
           title="Inline code"
@@ -235,10 +236,7 @@ export function NoteEditor({
         </button>
 
         {/* Character count */}
-        <div
-          className="ml-auto text-xs"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
+        <div className="ml-auto text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
           {value.length} chars
         </div>
       </div>
@@ -263,9 +261,7 @@ export function NoteEditor({
         {/* Math suggestion - Gmail-style inline ghost text */}
         {mathSuggestion && (
           <div className="note-editor-math-ghost">
-            <span className="note-editor-math-ghost-text">
-              ={mathSuggestion.result}
-            </span>
+            <span className="note-editor-math-ghost-text">={mathSuggestion.result}</span>
             <span className="note-editor-math-ghost-hint">Tab</span>
           </div>
         )}

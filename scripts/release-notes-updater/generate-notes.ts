@@ -9,12 +9,14 @@
  *   npx tsx generate-notes.ts --from v1.0.0 --to v1.0.1 --repo-url https://github.com/org/repo
  *   npx tsx generate-notes.ts --from v1.0.0 --to v1.0.1 --repo-url https://github.com/org/repo --beta
  *   npx tsx generate-notes.ts --from v1.0.0 --to v1.0.1 --repo-url https://github.com/org/repo --polish
+ *   npx tsx generate-notes.ts --from v1.0.0 --to v1.0.1 --repo-url https://github.com/org/repo --beta --with-ai-summary
  *
  * Environment:
- *   MODELS_TOKEN - GitHub Models API token for AI polishing (optional)
+ *   MODELS_TOKEN - GitHub Models API token for AI polishing and summary generation
  */
 
 import { execSync } from 'node:child_process';
+import { generateSummary, buildUpdatedReleaseBody } from './generator.js';
 
 const GITHUB_MODELS_ENDPOINT = 'https://models.inference.ai.azure.com/chat/completions';
 const MODEL = 'gpt-4o-mini'; // Using mini for quick polishing tasks
@@ -141,20 +143,12 @@ function buildReleaseNotes(
   categories: CommitCategories,
   repoUrl: string,
   fromTag: string,
-  toTag: string,
-  isBeta: boolean
+  toTag: string
 ): string {
   const lines: string[] = [];
 
-  if (isBeta) {
-    lines.push('## What\'s New in This Beta');
-    lines.push('');
-    lines.push('This is a pre-release build for testing new features before stable release.');
-    lines.push('');
-  } else {
-    lines.push('## What\'s Changed');
-    lines.push('');
-  }
+  lines.push("## What's Changed");
+  lines.push('');
 
   if (categories.features.length > 0) {
     lines.push('### 🚀 Features');
@@ -211,8 +205,14 @@ async function main(): Promise<void> {
   const isBeta = args.includes('--beta');
   const shouldPolish = args.includes('--polish');
 
+  const withAiSummary = args.includes('--with-ai-summary');
+  const versionIndex = args.indexOf('--version');
+  const version = versionIndex !== -1 ? args[versionIndex + 1] : toRef;
+
   if (!fromRef || !repoUrl) {
-    console.error('Usage: npx tsx generate-notes.ts --from <ref> --to <ref> --repo-url <url> [--beta] [--polish]');
+    console.error(
+      'Usage: npx tsx generate-notes.ts --from <ref> --to <ref> --repo-url <url> [--beta] [--polish] [--with-ai-summary] [--version <ver>]'
+    );
     process.exit(1);
   }
 
@@ -229,9 +229,18 @@ async function main(): Promise<void> {
     categories.other = await polishMessages(categories.other);
   }
 
-  // Build and output
-  const notes = buildReleaseNotes(categories, repoUrl, fromRef, toRef, isBeta);
-  console.log(notes);
+  // Build technical notes
+  const technicalNotes = buildReleaseNotes(categories, repoUrl, fromRef, toRef);
+
+  // Generate AI summary if requested
+  if (withAiSummary) {
+    console.error('Generating AI summary...');
+    const summary = await generateSummary(technicalNotes, version, isBeta);
+    const finalNotes = buildUpdatedReleaseBody(summary, technicalNotes);
+    console.log(finalNotes);
+  } else {
+    console.log(technicalNotes);
+  }
 }
 
 main().catch((error) => {

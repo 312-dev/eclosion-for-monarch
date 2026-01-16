@@ -31,9 +31,11 @@ export function formatBackupDate(dateStr: string): string {
   if (isToday) return `Today at ${time}`;
   if (isYesterday) return `Yesterday at ${time}`;
 
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
-  }) + ` at ${time}`;
+  return (
+    date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+    }) + ` at ${time}`
+  );
 }

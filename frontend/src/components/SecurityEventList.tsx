@@ -46,7 +46,7 @@ function formatRelativeTime(timestamp: string): string {
 const EventItem = memo(function EventItem({ event }: { event: SecurityEvent }) {
   const config = EVENT_CONFIG[event.event_type] ?? {
     icon: AlertTriangle,
-    label: event.event_type.replace(/_/g, ' '),
+    label: event.event_type.replaceAll('_', ' '),
   };
   const Icon = config.icon;
   const location = [event.city, event.country].filter(Boolean).join(', ');
@@ -77,10 +77,7 @@ const EventItem = memo(function EventItem({ event }: { event: SecurityEvent }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span
-            className="font-medium text-sm"
-            style={{ color: 'var(--monarch-text-dark)' }}
-          >
+          <span className="font-medium text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
             {config.label}
           </span>
           <span
@@ -98,20 +95,14 @@ const EventItem = memo(function EventItem({ event }: { event: SecurityEvent }) {
           </span>
         </div>
 
-        <div
-          className="text-xs mt-1"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
+        <div className="text-xs mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
           {formatRelativeTime(event.timestamp)}
           {location && ` • ${location}`}
           {event.ip_address && ` • ${event.ip_address}`}
         </div>
 
         {event.details && (
-          <div
-            className="text-xs mt-1 truncate"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
+          <div className="text-xs mt-1 truncate" style={{ color: 'var(--monarch-text-muted)' }}>
             {event.details}
           </div>
         )}
@@ -147,10 +138,7 @@ export function SecurityEventList({ events, loading }: SecurityEventListProps) {
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-hidden="true"
         />
-        <p
-          className="mt-2 text-sm"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
+        <p className="mt-2 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
           No security events recorded
         </p>
       </div>

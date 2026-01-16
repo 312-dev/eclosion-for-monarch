@@ -15,14 +15,30 @@ export interface DeveloperContributor {
 
 // Fake usernames for ideas without authors
 const FAKE_USERNAMES = [
-  'BudgetPro', 'MonarchFan', 'SavvySaver', 'FinanceNinja', 'PennyPincher',
-  'CashFlowKing', 'FrugalFiona', 'WealthBuilder', 'SmartSpender', 'GoalGetter',
+  'BudgetPro',
+  'MonarchFan',
+  'SavvySaver',
+  'FinanceNinja',
+  'PennyPincher',
+  'CashFlowKing',
+  'FrugalFiona',
+  'WealthBuilder',
+  'SmartSpender',
+  'GoalGetter',
 ];
 
 // Developer usernames for animation
 const DEVELOPER_USERNAMES = [
-  'CodeCrafter', 'BugSquasher', 'FeatureSmith', 'DevDynamo', 'ShipItSam',
-  'ReactRocket', 'TypeScriptTitan', 'APIArchitect', 'FullStackFiona', 'CommitKing',
+  'CodeCrafter',
+  'BugSquasher',
+  'FeatureSmith',
+  'DevDynamo',
+  'ShipItSam',
+  'ReactRocket',
+  'TypeScriptTitan',
+  'APIArchitect',
+  'FullStackFiona',
+  'CommitKing',
 ];
 
 // Animation timing configuration
@@ -84,7 +100,7 @@ export function generateRandomDeveloper(id: number, usedSeeds: Set<number>): Dev
 
 /** Generate a deterministic hash from a string */
 function hashString(str: string): number {
-  return str.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return str.split('').reduce((acc, char) => acc + (char.codePointAt(0) ?? 0), 0);
 }
 
 /** Get username for an idea - uses real author if available, falls back to synthetic */

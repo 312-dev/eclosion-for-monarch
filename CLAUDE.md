@@ -20,7 +20,7 @@ onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color)'}
 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
 
 // GOOD - Use Tailwind hover variants
-className="bg-transparent hover:bg-[var(--monarch-bg-page)]"
+className="bg-transparent hover:bg-(--monarch-bg-page)"
 ```
 
 Exception: Complex conditional or stateful hover logic may use JS when CSS cannot achieve the effect.
@@ -499,6 +499,78 @@ frontend/src/
 4. Run tests: `npm test`
 
 All checks must pass before committing.
+
+## Git Hooks
+
+**Git hooks enforce code quality at two stages: commit and push.**
+
+The hooks are configured in `.husky/` and run automatically.
+
+| Hook | When | What it checks | Time |
+|------|------|----------------|------|
+| **pre-commit** | Every commit | lint-staged (eslint --fix, prettier) | ~2-5s |
+| **pre-push** | Before push | Type checking, tests | ~15-30s |
+
+### Why This Split?
+
+- **Pre-commit stays fast** - Frequent commits shouldn't be painful
+- **Pre-push catches errors** - Heavier checks run before sharing code
+- **Both can be bypassed** - Use `--no-verify` if absolutely needed (not recommended)
+
+### Bypassing Hooks (Use Sparingly)
+
+```bash
+# Skip pre-commit (e.g., WIP commit you'll amend later)
+git commit --no-verify -m "WIP: checkpoint"
+
+# Skip pre-push (e.g., pushing to a draft PR for CI feedback)
+git push --no-verify
+```
+
+## Commit Strategy
+
+**Commit frequently to preserve progress and enable easy recovery.**
+
+### When to Commit
+
+- After completing each logical unit of work (a function, a component, a fix)
+- After refactoring that leaves the code in a working state
+- Before starting a risky or experimental change
+- After fixing a bug, even a small one
+- After adding or updating tests
+
+### Commit Guidelines
+
+| Do | Don't |
+|-----|-------|
+| Commit after each meaningful change | Batch many unrelated changes into one commit |
+| Commit working code (passes lint/type-check) | Wait until "everything is done" to commit |
+| Write clear, descriptive commit messages | Use vague messages like "updates" or "fixes" |
+| Commit early, commit often | Accumulate hours of uncommitted work |
+
+### Why This Matters
+
+- **Recovery**: Small commits make it easy to revert if something breaks
+- **Bisecting**: Finding bugs is easier with granular commit history
+- **Context preservation**: Each commit captures intent while it's fresh
+- **Collaboration**: Others can follow the progression of changes
+
+### Example Workflow
+
+```bash
+# Working on a feature with multiple parts
+git commit -m "Add UserProfile component skeleton"
+git commit -m "Implement UserProfile avatar display"
+git commit -m "Add UserProfile edit mode toggle"
+git commit -m "Connect UserProfile to API endpoints"
+git commit -m "Add UserProfile tests"
+```
+
+Not:
+```bash
+# BAD - One giant commit after hours of work
+git commit -m "Add UserProfile feature"
+```
 
 ## Dev Builds (Quick Platform Testing)
 

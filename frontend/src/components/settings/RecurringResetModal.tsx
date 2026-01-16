@@ -69,13 +69,13 @@ export function RecurringResetModal({
 
   return createPortal(
     <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50 modal-backdrop"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/50 modal-backdrop" onClick={handleClose} />
       <div
         className="relative w-full max-w-md mx-4 rounded-xl shadow-xl modal-content"
-        style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
       >
         {/* Header */}
         <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
@@ -94,7 +94,12 @@ export function RecurringResetModal({
                 aria-label="Close modal"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             )}
@@ -104,7 +109,8 @@ export function RecurringResetModal({
         {/* Content */}
         <div className="p-4 space-y-4">
           <p style={{ color: 'var(--monarch-text-muted)' }}>
-            This will completely reset the Recurring tool to its initial state, as if you just installed it.
+            This will completely reset the Recurring tool to its initial state, as if you just
+            installed it.
           </p>
 
           <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-elevated)' }}>
@@ -113,26 +119,75 @@ export function RecurringResetModal({
             </p>
             <ul className="text-sm space-y-1" style={{ color: 'var(--monarch-text-muted)' }}>
               <li className="flex items-start gap-2">
-                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--monarch-error)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: 'var(--monarch-error)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
-                <span>Delete {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} from Monarch</span>
+                <span>
+                  Delete {totalCategories} {totalCategories === 1 ? 'category' : 'categories'} from
+                  Monarch
+                </span>
               </li>
               <li className="flex items-start gap-2">
-                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                <svg
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: 'var(--monarch-orange)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                  />
                 </svg>
-                <span>Disable tracking for {totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
+                <span>
+                  Disable tracking for {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                </span>
               </li>
               <li className="flex items-start gap-2">
-                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--monarch-orange)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: 'var(--monarch-orange)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
                 </svg>
                 <span>Reset the setup wizard</span>
               </li>
               <li className="flex items-start gap-2">
-                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--monarch-success)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  style={{ color: 'var(--monarch-success)' }}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span>Keep your login credentials</span>
               </li>
@@ -154,7 +209,10 @@ export function RecurringResetModal({
           </label>
 
           {error && (
-            <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
+            <div
+              className="p-3 rounded-lg"
+              style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}
+            >
               {error}
             </div>
           )}
@@ -178,15 +236,28 @@ export function RecurringResetModal({
               disabled={!confirmed || resetting || isRateLimited}
               className="flex-1 px-4 py-2 rounded-lg transition-colors text-white flex items-center justify-center gap-2"
               style={{
-                backgroundColor: resetting ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
+                backgroundColor: resetting
+                  ? 'var(--monarch-orange-disabled)'
+                  : 'var(--monarch-orange)',
                 opacity: (!confirmed || isRateLimited) && !resetting ? 0.5 : 1,
               }}
             >
               {resetting ? (
                 <>
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Resetting...
                 </>

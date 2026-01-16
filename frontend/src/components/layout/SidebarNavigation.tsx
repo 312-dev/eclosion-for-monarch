@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Navigation with desktop/mobile layouts and all nav items */
 /**
  * Sidebar Navigation
  *
@@ -7,7 +8,24 @@
 
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
-import { Settings, Lock, Lightbulb, LayoutDashboard, Paintbrush, Wrench, User, Download, Heart, Zap, Monitor, Shield, Database, FileText, AlertTriangle, RotateCcw } from 'lucide-react';
+import {
+  Settings,
+  Lock,
+  Lightbulb,
+  LayoutDashboard,
+  Paintbrush,
+  Wrench,
+  User,
+  Download,
+  Heart,
+  Zap,
+  Monitor,
+  Shield,
+  Database,
+  FileText,
+  AlertTriangle,
+  RotateCcw,
+} from 'lucide-react';
 import { RecurringIcon, NotesIcon, AppIcon } from '../wizards/WizardComponents';
 import { IdeasModal } from '../IdeasModal';
 import { Portal } from '../Portal';
@@ -53,21 +71,40 @@ interface NavItem {
   settingsHash?: string;
 }
 
-function getNavItems(isDemo: boolean): { dashboardItem: NavItem; toolkitItems: NavItem[]; otherItems: NavItem[] } {
+function getNavItems(isDemo: boolean): {
+  dashboardItem: NavItem;
+  toolkitItems: NavItem[];
+  otherItems: NavItem[];
+} {
   const prefix = isDemo ? '/demo' : '';
   return {
-    dashboardItem: { path: `${prefix}/dashboard`, label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    dashboardItem: {
+      path: `${prefix}/dashboard`,
+      label: 'Dashboard',
+      icon: <LayoutDashboard size={20} />,
+    },
     toolkitItems: [
-      { path: `${prefix}/notes`, label: 'Notes', icon: <NotesIcon size={20} />, settingsHash: '#notes' },
-      { path: `${prefix}/recurring`, label: 'Recurring', icon: <RecurringIcon size={20} />, settingsHash: '#recurring' },
+      {
+        path: `${prefix}/notes`,
+        label: 'Notes',
+        icon: <NotesIcon size={20} />,
+        settingsHash: '#notes',
+      },
+      {
+        path: `${prefix}/recurring`,
+        label: 'Recurring',
+        icon: <RecurringIcon size={20} />,
+        settingsHash: '#recurring',
+      },
     ],
-    otherItems: [
-      { path: `${prefix}/settings`, label: 'Settings', icon: <Settings size={20} /> },
-    ],
+    otherItems: [{ path: `${prefix}/settings`, label: 'Settings', icon: <Settings size={20} /> }],
   };
 }
 
-function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSettingsClick?: (hash: string) => void }>) {
+function NavItemLink({
+  item,
+  onSettingsClick,
+}: Readonly<{ item: NavItem; onSettingsClick?: (hash: string) => void }>) {
   const settingsHash = item.settingsHash;
   return (
     <NavLink
@@ -76,7 +113,9 @@ function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSett
         `sidebar-nav-item sidebar-nav-item-with-settings ${isActive ? 'sidebar-nav-item-active' : ''}`
       }
     >
-      <span className="sidebar-nav-icon" aria-hidden="true">{item.icon}</span>
+      <span className="sidebar-nav-icon" aria-hidden="true">
+        {item.icon}
+      </span>
       <span className="sidebar-nav-label">{item.label}</span>
       {settingsHash !== undefined && onSettingsClick && (
         <button
@@ -96,14 +135,20 @@ function NavItemLink({ item, onSettingsClick }: Readonly<{ item: NavItem; onSett
   );
 }
 
-function ComingSoonNavItem({ label, icon, isMobile }: Readonly<{ label: string; icon: React.ReactNode; isMobile: boolean }>) {
+function ComingSoonNavItem({
+  label,
+  icon,
+  isMobile,
+}: Readonly<{ label: string; icon: React.ReactNode; isMobile: boolean }>) {
   return (
     <Tooltip content="Coming Soon" side={isMobile ? 'top' : 'right'} delayDuration={100}>
       <span
         className="sidebar-nav-item sidebar-nav-item-disabled"
         aria-label={`${label} - Coming Soon`}
       >
-        <span className="sidebar-nav-icon" aria-hidden="true">{icon}</span>
+        <span className="sidebar-nav-icon" aria-hidden="true">
+          {icon}
+        </span>
         <span className="sidebar-nav-label">{label}</span>
       </span>
     </Tooltip>
@@ -125,8 +170,8 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
 
   // In desktop mode, only show lock button if Touch ID is required
   useEffect(() => {
-    if (isDesktop && window.electron?.credentials) {
-      window.electron.credentials.getRequireTouchId().then((required: boolean) => {
+    if (isDesktop && globalThis.electron?.credentials) {
+      globalThis.electron.credentials.getRequireTouchId().then((required: boolean) => {
         setShowLockButton(required);
       });
     }
@@ -184,7 +229,9 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
 
           <div className="sidebar-nav-section">
             <div className="sidebar-nav-header-row">
-              <div className="sidebar-nav-header" id="toolkit-heading">TOOLKIT</div>
+              <div className="sidebar-nav-header" id="toolkit-heading">
+                TOOLKIT
+              </div>
               <button
                 type="button"
                 className="sidebar-suggest-btn"
@@ -233,9 +280,7 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
       <div className="sidebar-nav-settings">
         {isMobile ? (
           /* Mobile: simple link */
-          otherItems.map((item) => (
-            <NavItemLink key={item.path} item={item} />
-          ))
+          otherItems.map((item) => <NavItemLink key={item.path} item={item} />)
         ) : (
           <div className="sidebar-settings-expandable">
             {/* Settings main link */}
@@ -245,7 +290,9 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
                 `sidebar-nav-item ${isActive ? 'sidebar-nav-item-active' : ''}`
               }
             >
-              <span className="sidebar-nav-icon" aria-hidden="true"><Settings size={20} /></span>
+              <span className="sidebar-nav-icon" aria-hidden="true">
+                <Settings size={20} />
+              </span>
               <span className="sidebar-nav-label">Settings</span>
             </NavLink>
 
@@ -259,7 +306,9 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
                       onClick={() => handleSettingsSectionClick(section.id)}
                       className="sidebar-settings-submenu-item"
                     >
-                      <span className="sidebar-settings-submenu-icon" aria-hidden="true">{section.icon}</span>
+                      <span className="sidebar-settings-submenu-icon" aria-hidden="true">
+                        {section.icon}
+                      </span>
                       <span className="sidebar-settings-submenu-label">{section.label}</span>
                     </button>
                   </li>
@@ -280,7 +329,9 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
               className="sidebar-nav-item sidebar-lock"
               aria-label="Lock Eclosion"
             >
-              <span className="sidebar-nav-icon" aria-hidden="true"><Lock size={20} /></span>
+              <span className="sidebar-nav-icon" aria-hidden="true">
+                <Lock size={20} />
+              </span>
               <span className="sidebar-nav-label">Lock</span>
             </button>
           </div>

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Hidden Categories Modal
  *
@@ -46,15 +45,10 @@ export function HiddenCategoriesModal({
       .map((g) => ({
         ...g,
         categories: g.categories.filter(
-          (c) =>
-            c.name.toLowerCase().includes(query) ||
-            g.name.toLowerCase().includes(query)
+          (c) => c.name.toLowerCase().includes(query) || g.name.toLowerCase().includes(query)
         ),
       }))
-      .filter(
-        (g) =>
-          g.name.toLowerCase().includes(query) || g.categories.length > 0
-      );
+      .filter((g) => g.name.toLowerCase().includes(query) || g.categories.length > 0);
   }, [notesCategories, searchQuery]);
 
   const toggleExpanded = (groupId: string) => {
@@ -77,10 +71,7 @@ export function HiddenCategoriesModal({
     <Portal>
       <div className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center">
         {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-black/50 modal-backdrop"
-          onClick={onClose}
-        />
+        <div className="absolute inset-0 bg-black/50 modal-backdrop" onClick={onClose} />
 
         {/* Modal */}
         <div className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[80vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
@@ -89,21 +80,14 @@ export function HiddenCategoriesModal({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <EyeOff size={20} style={{ color: 'var(--monarch-orange)' }} />
-                <h2 className="text-lg font-semibold text-monarch-text-dark">
-                  Hidden Categories
-                </h2>
+                <h2 className="text-lg font-semibold text-monarch-text-dark">Hidden Categories</h2>
               </div>
               <button
                 onClick={onClose}
-                className="p-1 rounded hover:bg-[var(--monarch-bg-hover)] transition-colors text-monarch-text-muted"
+                className="p-1 rounded hover:bg-(--monarch-bg-hover) transition-colors text-monarch-text-muted"
                 aria-label="Close modal"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -116,7 +100,7 @@ export function HiddenCategoriesModal({
             <p className="text-sm mt-1 text-monarch-text-muted">
               Select categories to hide from the notes view
               {hiddenCount > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-[var(--monarch-bg-hover)]">
+                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-(--monarch-bg-hover)">
                   {hiddenCount} hidden
                 </span>
               )}
@@ -143,17 +127,15 @@ export function HiddenCategoriesModal({
             </div>
 
             {/* Category List */}
-            {loading ? (
+            {loading && (
+              <div className="text-center py-8 text-monarch-text-muted">Loading categories...</div>
+            )}
+            {!loading && filteredGroups.length === 0 && (
               <div className="text-center py-8 text-monarch-text-muted">
-                Loading categories...
+                {searchQuery ? 'No categories match your search' : 'No categories available'}
               </div>
-            ) : filteredGroups.length === 0 ? (
-              <div className="text-center py-8 text-monarch-text-muted">
-                {searchQuery
-                  ? 'No categories match your search'
-                  : 'No categories available'}
-              </div>
-            ) : (
+            )}
+            {!loading && filteredGroups.length > 0 && (
               <div className="space-y-2">
                 {filteredGroups.map((group) => {
                   const isExpanded = expandedGroups.has(group.id);
@@ -177,10 +159,8 @@ export function HiddenCategoriesModal({
                           <button
                             type="button"
                             onClick={() => toggleExpanded(group.id)}
-                            className="p-0.5 rounded hover:bg-[var(--monarch-bg-card)] transition-colors"
-                            aria-label={
-                              isExpanded ? 'Collapse group' : 'Expand group'
-                            }
+                            className="p-0.5 rounded hover:bg-(--monarch-bg-card) transition-colors"
+                            aria-label={isExpanded ? 'Collapse group' : 'Expand group'}
                           >
                             {isExpanded ? (
                               <ChevronDown
@@ -223,14 +203,10 @@ export function HiddenCategoriesModal({
                           onClick={() => onToggleGroup(group.id)}
                           className={`p-1.5 rounded transition-colors ${
                             isGroupHidden
-                              ? 'bg-[var(--monarch-orange)] text-white'
-                              : 'hover:bg-[var(--monarch-bg-card)]'
+                              ? 'bg-(--monarch-orange) text-white'
+                              : 'hover:bg-(--monarch-bg-card)'
                           }`}
-                          title={
-                            isGroupHidden
-                              ? 'Show entire group'
-                              : 'Hide entire group'
-                          }
+                          title={isGroupHidden ? 'Show entire group' : 'Hide entire group'}
                           aria-label={
                             isGroupHidden
                               ? `Show ${decodeHtmlEntities(group.name)} group`
@@ -240,37 +216,28 @@ export function HiddenCategoriesModal({
                           {isGroupHidden ? (
                             <Eye size={16} />
                           ) : (
-                            <EyeOff
-                              size={16}
-                              style={{ color: 'var(--monarch-text-muted)' }}
-                            />
+                            <EyeOff size={16} style={{ color: 'var(--monarch-text-muted)' }} />
                           )}
                         </button>
                       </div>
 
                       {/* Categories */}
                       {isExpanded && group.categories.length > 0 && (
-                        <div
-                          className="border-t"
-                          style={{ borderColor: 'var(--monarch-border)' }}
-                        >
+                        <div className="border-t" style={{ borderColor: 'var(--monarch-border)' }}>
                           {group.categories.map((category) => {
                             const isCategoryHidden =
-                              hiddenCategories.includes(category.id) ||
-                              isGroupHidden;
+                              hiddenCategories.includes(category.id) || isGroupHidden;
 
                             return (
                               <div
                                 key={category.id}
-                                className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--monarch-bg-hover)] transition-colors"
+                                className="flex items-center gap-2 px-3 py-2 hover:bg-(--monarch-bg-hover) transition-colors"
                                 style={{
                                   paddingLeft: '2.5rem',
                                   opacity: isGroupHidden ? 0.5 : 1,
                                 }}
                               >
-                                {category.icon && (
-                                  <span className="text-sm">{category.icon}</span>
-                                )}
+                                {category.icon && <span className="text-sm">{category.icon}</span>}
                                 <span
                                   className="flex-1 text-sm"
                                   style={{ color: 'var(--monarch-text-dark)' }}
@@ -283,20 +250,14 @@ export function HiddenCategoriesModal({
                                   disabled={isGroupHidden}
                                   className={`p-1.5 rounded transition-colors ${
                                     isCategoryHidden && !isGroupHidden
-                                      ? 'bg-[var(--monarch-orange)] text-white'
-                                      : 'hover:bg-[var(--monarch-bg-card)]'
-                                  } ${
-                                    isGroupHidden
-                                      ? 'opacity-50 cursor-not-allowed'
-                                      : ''
-                                  }`}
-                                  title={
-                                    isGroupHidden
-                                      ? 'Entire group is hidden'
-                                      : isCategoryHidden
-                                        ? 'Show category'
-                                        : 'Hide category'
-                                  }
+                                      ? 'bg-(--monarch-orange) text-white'
+                                      : 'hover:bg-(--monarch-bg-card)'
+                                  } ${isGroupHidden ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  title={(() => {
+                                    if (isGroupHidden) return 'Entire group is hidden';
+                                    if (isCategoryHidden) return 'Show category';
+                                    return 'Hide category';
+                                  })()}
                                   aria-label={
                                     isCategoryHidden
                                       ? `Show ${decodeHtmlEntities(category.name)}`
@@ -309,9 +270,7 @@ export function HiddenCategoriesModal({
                                     <EyeOff
                                       size={14}
                                       style={{
-                                        color: isGroupHidden
-                                          ? 'var(--monarch-text-muted)'
-                                          : 'var(--monarch-text-muted)',
+                                        color: 'var(--monarch-text-muted)',
                                       }}
                                     />
                                   )}

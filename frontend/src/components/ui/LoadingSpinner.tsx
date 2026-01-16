@@ -89,10 +89,82 @@ export function PageLoadingSpinner({
         color="var(--monarch-orange)"
         aria-hidden="true"
       />
-      {message && (
-        <span style={{ color: 'var(--monarch-text-muted)' }}>{message}</span>
-      )}
+      {message && <span style={{ color: 'var(--monarch-text-muted)' }}>{message}</span>}
       <span className="sr-only">{message || 'Loading'}</span>
+    </output>
+  );
+}
+
+/**
+ * A muted, centered loading spinner for content areas.
+ * Use this for section/feature loading states (e.g., Notes tab, settings panels).
+ * Styled consistently with EmptyState for visual harmony.
+ *
+ * @param fullHeight - When true, fills the content pane with a larger centered spinner
+ */
+export function ContentLoadingSpinner({
+  message,
+  size = 'md',
+  fullHeight = false,
+  className = '',
+}: Readonly<{
+  message?: string;
+  size?: 'sm' | 'md' | 'lg';
+  fullHeight?: boolean;
+  className?: string;
+}>) {
+  const sizeConfig = {
+    sm: { spinner: 32, container: 'py-6', text: 'text-xs' },
+    md: { spinner: 48, container: 'py-10', text: 'text-sm' },
+    lg: { spinner: 64, container: 'py-16', text: 'text-base' },
+  };
+
+  const config = sizeConfig[size];
+
+  // Full height mode: larger spinner, fills content pane
+  if (fullHeight) {
+    return (
+      <output
+        className={`flex flex-col items-center justify-center gap-4 min-h-[60vh] ${className}`}
+        aria-live="polite"
+        aria-label={message ?? 'Loading'}
+      >
+        <SpinnerDotted
+          size={80}
+          thickness={100}
+          speed={100}
+          color="var(--monarch-text-muted)"
+          aria-hidden="true"
+        />
+        {message && (
+          <span className="text-base" style={{ color: 'var(--monarch-text-muted)' }}>
+            {message}
+          </span>
+        )}
+        <span className="sr-only">{message ?? 'Loading'}</span>
+      </output>
+    );
+  }
+
+  return (
+    <output
+      className={`flex flex-col items-center justify-center gap-3 ${config.container} ${className}`}
+      aria-live="polite"
+      aria-label={message ?? 'Loading'}
+    >
+      <SpinnerDotted
+        size={config.spinner}
+        thickness={100}
+        speed={100}
+        color="var(--monarch-text-muted)"
+        aria-hidden="true"
+      />
+      {message && (
+        <span className={config.text} style={{ color: 'var(--monarch-text-muted)' }}>
+          {message}
+        </span>
+      )}
+      <span className="sr-only">{message ?? 'Loading'}</span>
     </output>
   );
 }

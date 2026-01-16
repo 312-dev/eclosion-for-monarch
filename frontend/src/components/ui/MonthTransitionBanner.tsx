@@ -45,8 +45,7 @@ function MonthTransitionBannerContent() {
 
   if (transitionState === 'syncing') {
     return (
-      <div
-        role="status"
+      <output
         aria-live="polite"
         className="flex items-center gap-3 py-2 px-4 text-sm"
         style={{
@@ -58,7 +57,7 @@ function MonthTransitionBannerContent() {
       >
         <RefreshCw size={16} className="animate-spin shrink-0" aria-hidden="true" />
         <span>Syncing data for {currentMonthName}...</span>
-      </div>
+      </output>
     );
   }
 

@@ -61,32 +61,32 @@ export function MarkdownRenderer({
     input: ({ type, checked, ...props }) => {
       if (type === 'checkbox') {
         const currentIndex = tracker.next();
-        const isChecked = checkboxStates[currentIndex] ?? (checked ?? false);
+        const isChecked = checkboxStates[currentIndex] ?? checked ?? false;
 
-          return (
-            <input
-              type="checkbox"
-              checked={isChecked}
-              disabled={checkboxesDisabled}
-              onChange={(e) => {
-                e.stopPropagation();
-                if (!checkboxesDisabled) {
-                  onCheckboxToggle?.(currentIndex, e.target.checked);
-                }
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className={`mr-2 ${checkboxesDisabled ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}
-              style={{
-                accentColor: 'var(--monarch-orange)',
-                width: '16px',
-                height: '16px',
-                verticalAlign: 'middle',
-              }}
-            />
-          );
-        }
-        return <input type={type} checked={checked} {...props} />;
-      },
+        return (
+          <input
+            type="checkbox"
+            checked={isChecked}
+            disabled={checkboxesDisabled}
+            onChange={(e) => {
+              e.stopPropagation();
+              if (!checkboxesDisabled) {
+                onCheckboxToggle?.(currentIndex, e.target.checked);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className={`mr-2 ${checkboxesDisabled ? 'cursor-wait opacity-50' : 'cursor-pointer'}`}
+            style={{
+              accentColor: 'var(--monarch-orange)',
+              width: '16px',
+              height: '16px',
+              verticalAlign: 'middle',
+            }}
+          />
+        );
+      }
+      return <input type={type} checked={checked} {...props} />;
+    },
     // Style links
     a: ({ children, href, ...props }) => (
       <a
@@ -140,27 +140,17 @@ export function MarkdownRenderer({
     ),
     // Style horizontal rules
     hr: ({ ...props }) => (
-      <hr
-        className="my-4"
-        style={{ borderTop: '1px solid var(--monarch-border)' }}
-        {...props}
-      />
+      <hr className="my-4" style={{ borderTop: '1px solid var(--monarch-border)' }} {...props} />
     ),
     // Style unordered lists to ensure bullets show
     ul: ({ children, ...props }) => (
-      <ul
-        className="list-disc pl-5 my-2 space-y-1"
-        {...props}
-      >
+      <ul className="list-disc pl-5 my-2 space-y-1" {...props}>
         {children}
       </ul>
     ),
     // Style ordered lists
     ol: ({ children, ...props }) => (
-      <ol
-        className="list-decimal pl-5 my-2 space-y-1"
-        {...props}
-      >
+      <ol className="list-decimal pl-5 my-2 space-y-1" {...props}>
         {children}
       </ol>
     ),
@@ -169,10 +159,7 @@ export function MarkdownRenderer({
       // Task list items have a specific class from remark-gfm
       const isTaskItem = liClassName?.includes('task-list-item');
       return (
-        <li
-          className={isTaskItem ? 'list-none' : ''}
-          {...props}
-        >
+        <li className={isTaskItem ? 'list-none' : ''} {...props}>
           {children}
         </li>
       );

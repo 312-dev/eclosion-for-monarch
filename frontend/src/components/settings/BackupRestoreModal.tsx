@@ -33,7 +33,9 @@ export function BackupRestoreModal({ backup, onClose, onRestore }: BackupRestore
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes('Invalid credentials') || message.includes('decryption failed')) {
         setNeedsCredentials(true);
-        setError('Decryption failed. Please enter the credentials you were using when this backup was created.');
+        setError(
+          'Decryption failed. Please enter the credentials you were using when this backup was created.'
+        );
       } else {
         setError(message);
       }
@@ -57,29 +59,20 @@ export function BackupRestoreModal({ backup, onClose, onRestore }: BackupRestore
         className="rounded-xl p-6 max-w-md w-full mx-4"
         style={{ backgroundColor: 'var(--monarch-bg-card)' }}
       >
-        <h3
-          className="text-lg font-semibold mb-2"
-          style={{ color: 'var(--monarch-text-dark)' }}
-        >
+        <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
           {needsCredentials ? 'Enter Backup Credentials' : 'Restore Backup'}
         </h3>
 
         {needsCredentials ? (
           <>
-            <p
-              className="text-sm mb-4"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
-              This backup was encrypted with different credentials.
-              Enter the Monarch credentials you were using on {backupDate}.
+            <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
+              This backup was encrypted with different credentials. Enter the Monarch credentials
+              you were using on {backupDate}.
             </p>
 
             <div className="space-y-3 mb-4">
               <div>
-                <label
-                  className="block text-sm mb-1"
-                  style={{ color: 'var(--monarch-text-dark)' }}
-                >
+                <label className="block text-sm mb-1" style={{ color: 'var(--monarch-text-dark)' }}>
                   Email
                 </label>
                 <input
@@ -96,10 +89,7 @@ export function BackupRestoreModal({ backup, onClose, onRestore }: BackupRestore
                 />
               </div>
               <div>
-                <label
-                  className="block text-sm mb-1"
-                  style={{ color: 'var(--monarch-text-dark)' }}
-                >
+                <label className="block text-sm mb-1" style={{ color: 'var(--monarch-text-dark)' }}>
                   Password
                 </label>
                 <input
@@ -118,18 +108,13 @@ export function BackupRestoreModal({ backup, onClose, onRestore }: BackupRestore
             </div>
           </>
         ) : (
-          <p
-            className="text-sm mb-4"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
-            Restore settings from the backup created on {backupDate}?
-            This will replace your current configuration.
+          <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
+            Restore settings from the backup created on {backupDate}? This will replace your current
+            configuration.
           </p>
         )}
 
-        {error && (
-          <p className="text-sm mb-4 text-red-600">{error}</p>
-        )}
+        {error && <p className="text-sm mb-4 text-red-600">{error}</p>}
 
         <div className="flex justify-end gap-2">
           <button
@@ -154,7 +139,11 @@ export function BackupRestoreModal({ backup, onClose, onRestore }: BackupRestore
               opacity: isRestoring || (needsCredentials && (!email || !password)) ? 0.5 : 1,
             }}
           >
-            {isRestoring ? 'Restoring...' : needsCredentials ? 'Decrypt & Restore' : 'Restore'}
+            {(() => {
+              if (isRestoring) return 'Restoring...';
+              if (needsCredentials) return 'Decrypt & Restore';
+              return 'Restore';
+            })()}
           </button>
         </div>
       </div>

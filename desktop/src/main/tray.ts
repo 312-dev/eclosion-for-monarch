@@ -7,7 +7,6 @@
 import { Tray, Menu, nativeImage, app, Notification } from 'electron';
 import path from 'path';
 import { getMainWindow, showWindow, toggleWindow, setIsQuitting } from './window';
-import { getStore } from './store';
 
 let tray: Tray | null = null;
 
@@ -211,8 +210,6 @@ function buildTrayMenu(): void {
   if (!tray || !pendingMenuUpdate) return;
 
   const { onSyncClick, syncStatus } = pendingMenuUpdate;
-  const store = getStore();
-  const closeToTray = store.get('desktop.closeToTray', true);
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -237,22 +234,6 @@ function buildTrayMenu(): void {
         showWindow();
         const mainWindow = getMainWindow();
         mainWindow?.webContents.send('navigate', '/settings');
-      },
-    },
-    { type: 'separator' },
-    {
-      label: 'Close to Tray',
-      type: 'checkbox' as const,
-      checked: closeToTray,
-      click: (menuItem: Electron.MenuItem): void => {
-        store.set('desktop.closeToTray', menuItem.checked);
-        // On macOS, also toggle dock visibility to match
-        // When close-to-tray is enabled, hide dock; when disabled, show dock
-        if (process.platform === 'darwin') {
-          const newShowInDock = !menuItem.checked;
-          store.set('desktop.showInDock', newShowInDock);
-          updateDockVisibility(newShowInDock);
-        }
       },
     },
     { type: 'separator' },
@@ -336,25 +317,13 @@ export function updateTrayMenuSyncStatus(isoTimestamp: string): void {
 }
 
 /**
- * Update dock visibility on macOS based on showInDock setting.
- */
-function updateDockVisibility(showInDock: boolean): void {
-  if (process.platform === 'darwin' && app.dock) {
-    if (showInDock) {
-      app.dock.show();
-    } else {
-      app.dock.hide();
-    }
-  }
-}
-
-/**
- * Initialize dock visibility from stored preference.
+ * Initialize dock visibility.
+ * The app always shows in both the system tray/menu bar AND the dock/taskbar.
  */
 export function initializeDockVisibility(): void {
-  if (process.platform === 'darwin') {
-    const showInDock = getStore().get('desktop.showInDock', true);
-    updateDockVisibility(showInDock);
+  // Always show in dock on macOS (app runs in both menu bar and dock)
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.show();
   }
 }
 
