@@ -95,6 +95,7 @@ nsis:
   oneClick: true
   perMachine: false
   deleteAppDataOnUninstall: false
+  updaterCacheDirName: "Eclosion"
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Eclosion

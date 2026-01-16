@@ -108,6 +108,7 @@ nsis:
   oneClick: true
   perMachine: false
   deleteAppDataOnUninstall: false
+  updaterCacheDirName: "Eclosion Beta"
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Eclosion Beta
