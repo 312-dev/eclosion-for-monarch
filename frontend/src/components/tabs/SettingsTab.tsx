@@ -4,7 +4,7 @@
  * General application settings including:
  * - Appearance (theme, landing page)
  * - Tool settings (recurring tool configuration)
- * - Automation (auto-sync)
+ * - Syncing (auto-sync, background sync)
  * - Updates
  * - Account
  * - Security
@@ -30,7 +30,8 @@ import {
   AppearanceSettings,
   RecurringToolSettings,
   RecurringResetModal,
-  AutomationSection,
+  NotesToolCard,
+  SyncingSection,
   UpdatesSection,
   DesktopSection,
   LogViewerSection,
@@ -57,7 +58,7 @@ export function SettingsTab() {
   const toast = useToast();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
-  const recurringSettingsRef = useRef<HTMLElement>(null);
+  const recurringSettingsRef = useRef<HTMLDivElement>(null);
   const client = useApiClient();
 
   usePageTitle('Settings', dashboardData?.config.user_first_name);
@@ -166,15 +167,24 @@ export function SettingsTab() {
           <AppearanceSettings />
         </div>
 
-        <div id="tool-settings">
-          <RecurringToolSettings
-            ref={recurringSettingsRef}
-            dashboardData={dashboardData}
-            loading={loading}
-            onRefreshDashboard={fetchDashboardData}
-            onShowResetModal={() => setShowRecurringResetModal(true)}
-          />
-        </div>
+        <section id="tool-settings" className="mb-8">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            Tool Settings
+          </h2>
+          <div className="flex flex-col gap-4">
+            <RecurringToolSettings
+              ref={recurringSettingsRef}
+              dashboardData={dashboardData}
+              loading={loading}
+              onRefreshDashboard={fetchDashboardData}
+              onShowResetModal={() => setShowRecurringResetModal(true)}
+            />
+            <NotesToolCard />
+          </div>
+        </section>
 
         {isDesktop && (
           <div id="desktop">
@@ -198,8 +208,8 @@ export function SettingsTab() {
         </div>
 
         {/* Technical settings */}
-        <div id="automation">
-          <AutomationSection
+        <div id="syncing">
+          <SyncingSection
             status={autoSyncStatus}
             onEnable={handleEnableAutoSync}
             onDisable={handleDisableAutoSync}

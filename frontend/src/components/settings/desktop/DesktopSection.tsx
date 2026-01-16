@@ -3,10 +3,7 @@
  *
  * Desktop app-specific settings including:
  * - Startup (launch at login, start minimized)
- * - Window Behavior (minimize to tray, close to tray, show in dock)
- * - Keyboard Shortcut (global hotkey)
  * - Sync Schedule (periodic sync)
- * - Background Sync (sync when app is closed)
  * - Security & Locking (auto-lock, biometric)
  * - Automatic Backups (encrypted daily backups)
  * - Data Folder
@@ -22,18 +19,12 @@ import type {
   LockOption,
   PeriodicSyncSettings,
   PeriodicSyncInterval,
-  BackgroundSyncStatus,
-  BackgroundSyncInterval,
-  HotkeyConfig,
 } from '../../../types/electron';
 import {
   StartupSection,
-  WindowBehaviorSection,
-  KeyboardShortcutSection,
   SyncScheduleSection,
   SecuritySection,
   DataFolderSection,
-  BackgroundSyncSection,
 } from './DesktopSectionGroups';
 import { AutoBackupSection } from '../AutoBackupSection';
 
@@ -51,18 +42,6 @@ export function DesktopSection() {
     null
   );
   const [periodicSyncIntervals, setPeriodicSyncIntervals] = useState<PeriodicSyncInterval[]>([]);
-
-  // Background sync settings
-  const [backgroundSyncStatus, setBackgroundSyncStatus] = useState<BackgroundSyncStatus | null>(
-    null
-  );
-  const [backgroundSyncIntervals, setBackgroundSyncIntervals] = useState<BackgroundSyncInterval[]>(
-    []
-  );
-  const [backgroundSyncEnabling, setBackgroundSyncEnabling] = useState(false);
-
-  // Hotkey settings
-  const [toggleWindowHotkey, setToggleWindowHotkey] = useState<HotkeyConfig | null>(null);
 
   // Biometric settings
   const biometric = useBiometric();
@@ -90,18 +69,6 @@ export function DesktopSection() {
       ]);
       setPeriodicSyncSettings(syncSettings);
       setPeriodicSyncIntervals(syncIntervals);
-
-      // Fetch background sync settings
-      const [bgStatus, bgIntervals] = await Promise.all([
-        globalThis.electron.backgroundSync.getStatus(),
-        globalThis.electron.backgroundSync.getIntervals(),
-      ]);
-      setBackgroundSyncStatus(bgStatus);
-      setBackgroundSyncIntervals(bgIntervals);
-
-      // Fetch hotkey settings
-      const hotkeyConfigs = await globalThis.electron.getHotkeyConfigs();
-      setToggleWindowHotkey(hotkeyConfigs['toggle-window'] ?? null);
     } catch {
       // Non-critical if this fails
     } finally {
@@ -145,20 +112,6 @@ export function DesktopSection() {
     }
   };
 
-  const handleHotkeyToggle = async () => {
-    if (!globalThis.electron || !toggleWindowHotkey) return;
-    try {
-      const newEnabled = !toggleWindowHotkey.enabled;
-      await globalThis.electron.setHotkeyConfig('toggle-window', {
-        ...toggleWindowHotkey,
-        enabled: newEnabled,
-      });
-      setToggleWindowHotkey((prev) => (prev ? { ...prev, enabled: newEnabled } : null));
-    } catch {
-      // Ignore errors
-    }
-  };
-
   const handleLockTriggerChange = async (newTrigger: LockTrigger) => {
     if (!globalThis.electron) return;
     try {
@@ -185,90 +138,6 @@ export function DesktopSection() {
     try {
       const result = await globalThis.electron.periodicSync.setInterval(newInterval);
       setPeriodicSyncSettings(result);
-    } catch {
-      // Ignore errors
-    }
-  };
-
-  // eslint-disable-next-line sonarjs/cognitive-complexity -- Multi-step user flow with platform dialogs and error handling
-  const handleBackgroundSyncToggle = async () => {
-    if (!globalThis.electron || !backgroundSyncStatus) return;
-
-    if (backgroundSyncStatus.installed) {
-      // Disable background sync
-      try {
-        const result = await globalThis.electron.backgroundSync.disable();
-        if (result.success) {
-          setBackgroundSyncStatus({
-            installed: false,
-            intervalMinutes: backgroundSyncStatus.intervalMinutes,
-          });
-        } else {
-          await globalThis.electron.showErrorDialog({
-            title: 'Error',
-            content: result.error || 'Failed to disable background sync',
-          });
-        }
-      } catch {
-        // Ignore errors
-      }
-    } else {
-      // Enable background sync - need to get passphrase
-      const confirmed = await globalThis.electron.showConfirmDialog({
-        title: 'Enable Background Sync',
-        message:
-          'Background sync requires storing your passphrase securely in your system keychain.',
-        detail:
-          "This allows Eclosion to sync your recurring expenses even when the app is closed. Your passphrase is encrypted using your operating system's secure credential storage.",
-        confirmText: 'Continue',
-        cancelText: 'Cancel',
-      });
-
-      if (!confirmed) return;
-
-      // Check if passphrase is already stored (from biometric enrollment)
-      const passphraseStored = await globalThis.electron.biometric.isPassphraseStored();
-
-      if (passphraseStored) {
-        // Use the stored passphrase
-        const storedPassphrase = await globalThis.electron.biometric.getStoredPassphrase();
-        if (storedPassphrase) {
-          setBackgroundSyncEnabling(true);
-          try {
-            const result = await globalThis.electron.backgroundSync.enable(60, storedPassphrase);
-            if (result.success) {
-              setBackgroundSyncStatus({ installed: true, intervalMinutes: 60 });
-            } else {
-              await globalThis.electron.showErrorDialog({
-                title: 'Error',
-                content: result.error || 'Failed to enable background sync',
-              });
-            }
-          } finally {
-            setBackgroundSyncEnabling(false);
-          }
-          return;
-        }
-      }
-
-      // Need user to enter passphrase - prompt them to lock and unlock
-      await globalThis.electron.showErrorDialog({
-        title: 'Passphrase Required',
-        content:
-          'Please lock and unlock the app to enable background sync. The next time you unlock with your passphrase, background sync will be configured.',
-      });
-    }
-  };
-
-  const handleBackgroundSyncIntervalChange = async (newInterval: number) => {
-    if (!globalThis.electron) return;
-    try {
-      const result = await globalThis.electron.backgroundSync.setInterval(newInterval);
-      if (result.success) {
-        setBackgroundSyncStatus((prev) =>
-          prev ? { ...prev, intervalMinutes: newInterval } : null
-        );
-      }
     } catch {
       // Ignore errors
     }
@@ -324,35 +193,12 @@ export function DesktopSection() {
           onSettingToggle={handleSettingToggle}
         />
 
-        <WindowBehaviorSection
-          settings={settings}
-          loading={loading}
-          isMac={isMac}
-          onSettingToggle={handleSettingToggle}
-        />
-
-        <KeyboardShortcutSection
-          hotkeyConfig={toggleWindowHotkey}
-          loading={loading}
-          isMac={isMac}
-          onToggle={handleHotkeyToggle}
-        />
-
         <SyncScheduleSection
           periodicSyncSettings={periodicSyncSettings}
           periodicSyncIntervals={periodicSyncIntervals}
           loading={loading}
           onToggle={handlePeriodicSyncToggle}
           onIntervalChange={handlePeriodicSyncIntervalChange}
-        />
-
-        <BackgroundSyncSection
-          status={backgroundSyncStatus}
-          intervals={backgroundSyncIntervals}
-          loading={loading}
-          enabling={backgroundSyncEnabling}
-          onToggle={handleBackgroundSyncToggle}
-          onIntervalChange={handleBackgroundSyncIntervalChange}
         />
 
         <SecuritySection

@@ -1,7 +1,12 @@
 import { RefreshCw, ChevronDown, Clock } from 'lucide-react';
 import { SettingsRow } from '../SettingsRow';
 import { ToggleSwitch } from '../ToggleSwitch';
-import type { PeriodicSyncSettings, PeriodicSyncInterval, BackgroundSyncStatus, BackgroundSyncInterval } from '../../../types/electron';
+import type {
+  PeriodicSyncSettings,
+  PeriodicSyncInterval,
+  BackgroundSyncStatus,
+  BackgroundSyncInterval,
+} from '../../../types/electron';
 
 interface SyncScheduleSectionProps {
   periodicSyncSettings: PeriodicSyncSettings | null;
@@ -27,20 +32,22 @@ export function SyncScheduleSection({
           <div className="p-2.5 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
             <RefreshCw size={20} style={{ color: 'var(--monarch-text-muted)' }} />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-              Sync Schedule
+              Auto-sync
             </div>
             <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
-              Automatically sync while the app is running
+              Sync your recurring expenses at regular intervals
             </div>
           </div>
+          <ToggleSwitch
+            checked={periodicSyncSettings?.enabled ?? false}
+            onChange={onToggle}
+            disabled={loading}
+            ariaLabel="Toggle automatic sync"
+          />
         </div>
       </div>
-
-      <SettingsRow label="Auto-sync" description="Sync your recurring expenses at regular intervals">
-        <ToggleSwitch checked={periodicSyncSettings?.enabled ?? false} onChange={onToggle} disabled={loading} ariaLabel="Toggle automatic sync" />
-      </SettingsRow>
 
       {periodicSyncSettings?.enabled && (
         <SettingsRow label="Sync interval" description="How often to sync while app is open">
@@ -50,7 +57,11 @@ export function SyncScheduleSection({
               onChange={(e) => onIntervalChange(Number(e.target.value))}
               disabled={loading}
               className="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-sm cursor-pointer hover-bg-page-to-hover"
-              style={{ color: 'var(--monarch-text-dark)', border: '1px solid var(--monarch-border)', backgroundColor: 'var(--monarch-bg-card)' }}
+              style={{
+                color: 'var(--monarch-text-dark)',
+                border: '1px solid var(--monarch-border)',
+                backgroundColor: 'var(--monarch-bg-card)',
+              }}
               aria-label="Select sync interval"
             >
               {periodicSyncIntervals.map((option) => (
@@ -59,7 +70,11 @@ export function SyncScheduleSection({
                 </option>
               ))}
             </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--monarch-text-muted)' }} />
+            <ChevronDown
+              size={14}
+              className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            />
           </div>
         </SettingsRow>
       )}
@@ -93,7 +108,7 @@ export function BackgroundSyncSection({
           <div className="p-2.5 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
             <Clock size={20} style={{ color: 'var(--monarch-text-muted)' }} />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
               Background Sync
             </div>
@@ -101,20 +116,14 @@ export function BackgroundSyncSection({
               Sync automatically even when the app is closed
             </div>
           </div>
+          <ToggleSwitch
+            checked={status?.installed ?? false}
+            onChange={onToggle}
+            disabled={loading || enabling}
+            ariaLabel="Toggle background sync"
+          />
         </div>
       </div>
-
-      <SettingsRow
-        label="Sync when closed"
-        description="Uses your system's task scheduler to sync periodically"
-      >
-        <ToggleSwitch
-          checked={status?.installed ?? false}
-          onChange={onToggle}
-          disabled={loading || enabling}
-          ariaLabel="Toggle background sync"
-        />
-      </SettingsRow>
 
       {status?.installed && (
         <SettingsRow label="Background interval" description="How often to sync when app is closed">
@@ -124,7 +133,11 @@ export function BackgroundSyncSection({
               onChange={(e) => onIntervalChange(Number(e.target.value))}
               disabled={loading || enabling}
               className="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-sm cursor-pointer hover-bg-page-to-hover"
-              style={{ color: 'var(--monarch-text-dark)', border: '1px solid var(--monarch-border)', backgroundColor: 'var(--monarch-bg-card)' }}
+              style={{
+                color: 'var(--monarch-text-dark)',
+                border: '1px solid var(--monarch-border)',
+                backgroundColor: 'var(--monarch-bg-card)',
+              }}
               aria-label="Select background sync interval"
             >
               {intervals.map((option) => (
@@ -133,7 +146,11 @@ export function BackgroundSyncSection({
                 </option>
               ))}
             </select>
-            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--monarch-text-muted)' }} />
+            <ChevronDown
+              size={14}
+              className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            />
           </div>
         </SettingsRow>
       )}
@@ -142,7 +159,10 @@ export function BackgroundSyncSection({
         <div className="px-4 pb-4">
           <div
             className="text-xs px-3 py-2 rounded-lg"
-            style={{ backgroundColor: 'var(--monarch-bg-page)', color: 'var(--monarch-text-muted)' }}
+            style={{
+              backgroundColor: 'var(--monarch-bg-page)',
+              color: 'var(--monarch-text-muted)',
+            }}
           >
             Your passphrase is securely stored in your system keychain to enable background sync.
           </div>

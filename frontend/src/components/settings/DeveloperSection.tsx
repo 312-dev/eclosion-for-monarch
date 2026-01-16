@@ -11,13 +11,24 @@ import { ToggleSwitch } from './ToggleSwitch';
 
 export function DeveloperSection() {
   const [developerMode, setDeveloperMode] = useState(false);
+  const [isBetaBuild, setIsBetaBuild] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {
     if (!globalThis.electron?.getDeveloperMode) return;
     try {
-      const enabled = await globalThis.electron.getDeveloperMode();
-      setDeveloperMode(enabled);
+      // Check if this is a beta build
+      const channel = await globalThis.electron.getUpdateChannel();
+      const isBeta = channel === 'beta';
+      setIsBetaBuild(isBeta);
+
+      // In beta builds, developer mode is always on
+      if (isBeta) {
+        setDeveloperMode(true);
+      } else {
+        const enabled = await globalThis.electron.getDeveloperMode();
+        setDeveloperMode(enabled);
+      }
     } catch {
       // Default to false if we can't fetch
     } finally {
@@ -78,7 +89,9 @@ export function DeveloperSection() {
                   Developer Mode
                 </div>
                 <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
-                  Enable Chrome DevTools and other developer features
+                  {isBetaBuild
+                    ? 'Always enabled in beta builds'
+                    : 'Enable Chrome DevTools and other developer features'}
                 </div>
               </div>
             </div>
@@ -92,6 +105,7 @@ export function DeveloperSection() {
                 checked={developerMode}
                 onChange={handleToggle}
                 ariaLabel="Toggle developer mode"
+                disabled={isBetaBuild}
               />
             )}
           </div>

@@ -47,13 +47,16 @@ export function RecurringTab() {
   // Use frontend calculation to ensure chart matches panel (avoids stale backend cache issues)
   const currentMonthlyCost = useMemo(() => {
     if (!data) return 0;
-    const enabledItems = data.items.filter(i => i.is_enabled && !i.is_in_rollup);
+    const enabledItems = data.items.filter((i) => i.is_enabled && !i.is_in_rollup);
     const itemsTotal = enabledItems.reduce((sum, item) => sum + item.frozen_monthly_target, 0);
     const rollupTotal = data.rollup.enabled ? data.rollup.total_frozen_monthly : 0;
     return itemsTotal + rollupTotal;
   }, [data]);
   const { points: burndownPoints } = useMemo(
-    () => data ? calculateBurndownData(data.items, currentMonthlyCost) : { stabilization: null, points: [] },
+    () =>
+      data
+        ? calculateBurndownData(data.items, currentMonthlyCost)
+        : { stabilization: null, points: [] },
     [data, currentMonthlyCost]
   );
 
@@ -105,7 +108,7 @@ export function RecurringTab() {
   // Show loading state while checking configuration
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <PageLoadingSpinner />
       </div>
     );
@@ -164,8 +167,10 @@ export function RecurringTab() {
           <div
             className="mb-4 p-3 rounded-lg"
             style={{
-              backgroundColor: syncResult.success ? 'var(--monarch-success-bg)' : 'var(--monarch-warning-bg)',
-              color: syncResult.success ? 'var(--monarch-success)' : 'var(--monarch-warning)'
+              backgroundColor: syncResult.success
+                ? 'var(--monarch-success-bg)'
+                : 'var(--monarch-warning-bg)',
+              color: syncResult.success ? 'var(--monarch-success)' : 'var(--monarch-warning)',
             }}
           >
             <div className="flex items-start justify-between">
@@ -175,14 +180,10 @@ export function RecurringTab() {
                 </div>
                 <div className="text-sm mt-1">
                   {syncResult.categories_created > 0 && (
-                    <span className="mr-3">
-                      Created: {syncResult.categories_created}
-                    </span>
+                    <span className="mr-3">Created: {syncResult.categories_created}</span>
                   )}
                   {syncResult.categories_updated > 0 && (
-                    <span className="mr-3">
-                      Updated: {syncResult.categories_updated}
-                    </span>
+                    <span className="mr-3">Updated: {syncResult.categories_updated}</span>
                   )}
                   {syncResult.categories_deactivated > 0 && (
                     <span>Deactivated: {syncResult.categories_deactivated}</span>
@@ -210,11 +211,17 @@ export function RecurringTab() {
         {burndownPoints.length >= 2 && (
           <div
             className="rounded-xl shadow-sm overflow-hidden mb-4"
-            style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}
+            style={{
+              backgroundColor: 'var(--monarch-bg-card)',
+              border: '1px solid var(--monarch-border)',
+            }}
             data-tour="burndown-decline"
           >
             <div className="px-5 py-4">
-              <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--monarch-text-dark)' }}>
+              <h3
+                className="text-lg font-semibold mb-1"
+                style={{ color: 'var(--monarch-text-dark)' }}
+              >
                 Monthly Savings Goal
               </h3>
               <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
@@ -237,7 +244,7 @@ export function RecurringTab() {
 
         <div data-tour="recurring-list">
           <RecurringList
-            items={data.items.filter(i => !i.is_in_rollup)}
+            items={data.items.filter((i) => !i.is_in_rollup)}
             onRefresh={handleRefresh}
             showCategoryGroup={data.config.show_category_group ?? true}
           />

@@ -158,7 +158,11 @@ export function LogViewerSection() {
                 ))}
               </select>
 
+              {/* Add spacing between elements to fix ambiguous spacing */}
+              <span style={{ marginLeft: 8 }} />
+
               {/* Search */}
+
               <div className="relative flex-1 min-w-50">
                 <Search
                   size={16}
@@ -196,6 +200,8 @@ export function LogViewerSection() {
                 />
               </button>
 
+              <span style={{ marginLeft: 8 }} />
+
               {/* Auto-refresh toggle */}
               <label
                 className="flex items-center gap-2 text-sm"
@@ -207,7 +213,7 @@ export function LogViewerSection() {
                   onChange={(e) => setAutoRefresh(e.target.checked)}
                   className="rounded"
                   aria-label="Auto-refresh logs"
-                />
+                />{' '}
                 Auto-refresh
               </label>
             </div>
