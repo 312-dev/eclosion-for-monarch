@@ -35,7 +35,7 @@ export function StepPreview({
   title,
   description,
   imagePath,
-}: StepPreviewProps): JSX.Element {
+}: StepPreviewProps): React.JSX.Element {
   return (
     <div
       className="step-preview"

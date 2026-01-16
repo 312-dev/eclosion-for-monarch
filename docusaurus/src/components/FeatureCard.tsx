@@ -36,7 +36,7 @@ export function FeatureCard({
   icon,
   title,
   description,
-}: FeatureCardProps): JSX.Element {
+}: FeatureCardProps): React.JSX.Element {
   return (
     <div
       style={{
@@ -80,7 +80,7 @@ interface FeatureGridProps {
   children: React.ReactNode;
 }
 
-export function FeatureGrid({ children }: FeatureGridProps): JSX.Element {
+export function FeatureGrid({ children }: FeatureGridProps): React.JSX.Element {
   return (
     <div
       style={{

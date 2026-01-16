@@ -31,7 +31,7 @@ function DemoEmbedInner({
   path,
   height = 500,
   title = 'Eclosion Demo',
-}: DemoEmbedProps): JSX.Element {
+}: DemoEmbedProps): React.JSX.Element {
   // Ensure path starts with /demo
   const demoPath = path.startsWith('/demo') ? path : `/demo${path}`;
   // Use current origin - works on any instance (stable, beta, self-hosted)
@@ -81,7 +81,7 @@ function DemoEmbedInner({
 }
 
 // Wrapper component that handles SSR - only renders on client
-export function DemoEmbed(props: DemoEmbedProps): JSX.Element {
+export function DemoEmbed(props: DemoEmbedProps): React.JSX.Element {
   return (
     <BrowserOnly fallback={<div style={{ height: props.height || 500 }}>Loading demo...</div>}>
       {() => <DemoEmbedInner {...props} />}

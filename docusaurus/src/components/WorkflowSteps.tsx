@@ -40,7 +40,7 @@ interface WorkflowStepsProps {
   title?: string;
 }
 
-export function WorkflowSteps({ steps, title }: WorkflowStepsProps): JSX.Element {
+export function WorkflowSteps({ steps, title }: WorkflowStepsProps): React.JSX.Element {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
