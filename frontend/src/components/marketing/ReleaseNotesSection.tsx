@@ -73,12 +73,14 @@ function getExpandedContent(body: string): string {
  * Simple markdown to text conversion for display (strips formatting).
  */
 function markdownToText(markdown: string): string {
+  /* eslint-disable sonarjs/slow-regex -- Already using negated char classes to prevent backtracking */
   return markdown
-    .replace(/\*\*(.*?)\*\*/g, '$1') // Bold
-    .replace(/\*(.*?)\*/g, '$1') // Italic
-    .replace(/`(.*?)`/g, '$1') // Code
-    .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Links
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // Bold
+    .replace(/\*([^*]+)\*/g, '$1') // Italic
+    .replace(/`([^`]+)`/g, '$1') // Code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Links
     .trim();
+  /* eslint-enable sonarjs/slow-regex */
 }
 
 /**
@@ -100,16 +102,30 @@ function markdownToHtml(markdown: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     // Headers (## heading)
-    .replace(/^### (.+)$/gm, '<h4 class="font-semibold text-[var(--monarch-text-dark)] mt-3 mb-1">$1</h4>')
-    .replace(/^## (.+)$/gm, '<h3 class="font-semibold text-[var(--monarch-text-dark)] mt-3 mb-1">$1</h3>')
+    .replace(
+      /^### (.+)$/gm,
+      '<h4 class="font-semibold text-(--monarch-text-dark) mt-3 mb-1">$1</h4>'
+    )
+    .replace(
+      /^## (.+)$/gm,
+      '<h3 class="font-semibold text-(--monarch-text-dark) mt-3 mb-1">$1</h3>'
+    )
+    /* eslint-disable sonarjs/slow-regex -- Already using negated char classes */
     // Bold (**text**)
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     // Italic (*text*)
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
     // Inline code (`code`)
-    .replace(/`([^`]+)`/g, '<code class="bg-[var(--monarch-bg-hover)] px-1 py-0.5 rounded text-xs font-mono">$1</code>')
-    // Links [text](url) - restored > for URLs
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[var(--monarch-orange)] hover:underline">$1</a>')
+    .replace(
+      /`([^`]+)`/g,
+      '<code class="bg-(--monarch-bg-hover) px-1 py-0.5 rounded text-xs font-mono">$1</code>'
+    )
+    // Links [text](url)
+    .replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-(--monarch-orange) hover:underline">$1</a>'
+    )
+    /* eslint-enable sonarjs/slow-regex */
     // Unordered list items (- item or * item)
     .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
     // Wrap consecutive li elements in ul (now they should be consecutive after normalization)
@@ -117,7 +133,10 @@ function markdownToHtml(markdown: string): string {
     // Clean up newlines inside ul tags (between li elements)
     .replace(/<\/li>\n<li>/g, '</li><li>')
     // Blockquotes (> text)
-    .replace(/^&gt; (.+)$/gm, '<blockquote class="border-l-2 border-[var(--monarch-border)] pl-3 italic text-[var(--monarch-text-muted)]">$1</blockquote>')
+    .replace(
+      /^&gt; (.+)$/gm,
+      '<blockquote class="border-l-2 border-(--monarch-border) pl-3 italic text-(--monarch-text-muted)">$1</blockquote>'
+    )
     // Line breaks - convert double newlines to paragraph breaks
     .replace(/\n\n+/g, '</p><p class="my-1">')
     // Single newlines (not inside lists) - be more selective
@@ -152,15 +171,15 @@ export function ReleaseNotesSection({
 
   return (
     <div
-      className="p-6 rounded-xl border border-[var(--monarch-border)]"
+      className="p-6 rounded-xl border border-(--monarch-border)"
       style={{ backgroundColor: 'var(--monarch-bg-card)' }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg text-[var(--monarch-text-dark)]">
+        <h3 className="font-semibold text-lg text-(--monarch-text-dark)">
           What&apos;s New in v{version}
         </h3>
         {publishedAt && (
-          <span className="text-sm text-[var(--monarch-text-muted)]">
+          <span className="text-sm text-(--monarch-text-muted)">
             {new Date(publishedAt).toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -171,9 +190,7 @@ export function ReleaseNotesSection({
       </div>
 
       {summary && (
-        <p className="text-[var(--monarch-text)] mb-4 leading-relaxed">
-          {markdownToText(summary)}
-        </p>
+        <p className="text-(--monarch-text) mb-4 leading-relaxed">{markdownToText(summary)}</p>
       )}
 
       {hasFullNotes && (
@@ -181,7 +198,7 @@ export function ReleaseNotesSection({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1.5 text-sm font-medium text-[var(--monarch-orange)] hover:opacity-80 transition-opacity"
+            className="flex items-center gap-1.5 text-sm font-medium text-(--monarch-orange) hover:opacity-80 transition-opacity"
             aria-expanded={isExpanded}
             aria-label={isExpanded ? 'Hide technical details' : 'Show technical details'}
           >
@@ -199,9 +216,9 @@ export function ReleaseNotesSection({
           </button>
 
           {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-[var(--monarch-border)]">
+            <div className="mt-4 pt-4 border-t border-(--monarch-border)">
               <div
-                className="text-[var(--monarch-text)] leading-relaxed"
+                className="text-(--monarch-text) leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: markdownToHtml(expandedContent) }}
               />
             </div>
@@ -209,12 +226,12 @@ export function ReleaseNotesSection({
         </>
       )}
 
-      <div className="mt-4 pt-4 border-t border-[var(--monarch-border)]">
+      <div className="mt-4 pt-4 border-t border-(--monarch-border)">
         <a
           href={htmlUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--monarch-orange)] hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-(--monarch-orange) hover:underline"
         >
           View on GitHub
           <ExternalLinkIcon size={14} />

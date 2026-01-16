@@ -89,7 +89,7 @@ export function MockupRecurringPreview({
             }}
           >
             {/* Simulated app content */}
-            <div className="p-6 bg-[var(--monarch-bg-page)]">
+            <div className="p-6 bg-(--monarch-bg-page)">
               <div className="flex gap-6">
                 {/* Main content area */}
                 <div className="flex-1 space-y-4">
@@ -105,7 +105,7 @@ export function MockupRecurringPreview({
                 </div>
 
                 {/* Sidebar */}
-                <div className="w-64 flex-shrink-0">
+                <div className="w-64 shrink-0">
                   <MockupMonthlySavings amount={MOCKUP_MONTHLY_TOTAL} />
                 </div>
               </div>

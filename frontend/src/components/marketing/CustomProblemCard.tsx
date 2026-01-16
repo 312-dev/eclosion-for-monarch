@@ -19,8 +19,7 @@ const PLACEHOLDER_PROMPTS = [
   'I want to see my net worth over time...',
 ];
 
-const GITHUB_DISCUSSIONS_URL =
-  'https://github.com/312-dev/eclosion/discussions/new';
+const GITHUB_DISCUSSIONS_URL = 'https://github.com/312-dev/eclosion/discussions/new';
 
 function buildDiscussionUrl(problemText: string): string {
   const params = new URLSearchParams({
@@ -176,7 +175,7 @@ export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomPr
     <article
       className={`frustration-card ${colSpanClass} ${animationClass} ${isFullWidth ? 'spotlight-card' : ''}`.trim()}
     >
-      <h3 className="text-lg font-semibold text-[var(--monarch-text-dark)] mb-3">
+      <h3 className="text-lg font-semibold text-(--monarch-text-dark) mb-3">
         Here&apos;s my problem...
       </h3>
       <form
@@ -194,7 +193,7 @@ export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomPr
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             rows={3}
-            className="w-full px-4 py-3 pr-12 rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-page)] text-[var(--monarch-text-dark)] text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-[var(--monarch-orange)]/50 focus:border-[var(--monarch-orange)] transition-all resize-none overflow-hidden"
+            className="w-full px-4 py-3 pr-12 rounded-xl border border-(--monarch-border) bg-(--monarch-bg-page) text-(--monarch-text-dark) text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-(--monarch-orange)/50 focus:border-(--monarch-orange) transition-all resize-none overflow-hidden"
             style={{ minHeight: MIN_HEIGHT, maxHeight: MAX_HEIGHT }}
             aria-label="Describe your problem"
           />
@@ -202,7 +201,7 @@ export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomPr
           {/* Custom placeholder with typewriter effect */}
           {!inputValue && (
             <div
-              className="absolute left-4 right-12 top-3 pointer-events-none text-sm text-[var(--monarch-text-muted)]"
+              className="absolute left-4 right-12 top-3 pointer-events-none text-sm text-(--monarch-text-muted)"
               aria-hidden="true"
             >
               {displayedPlaceholder}
@@ -214,14 +213,14 @@ export function CustomProblemCard({ animationClass = '', colSpan = 1 }: CustomPr
           <button
             type="submit"
             disabled={!inputValue.trim()}
-            className="absolute right-2 top-3 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--monarch-orange)]/10 text-[var(--monarch-orange)]"
+            className="absolute right-2 top-3 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-(--monarch-orange)/10 text-(--monarch-orange)"
             aria-label="Submit to GitHub Discussions"
           >
             <Send className="h-4 w-4" />
           </button>
         </div>
 
-        <p className="mt-2 text-xs text-[var(--monarch-text-muted)]">
+        <p className="mt-2 text-xs text-(--monarch-text-muted)">
           {getContent('customProblem', 'helperText')}
         </p>
       </form>

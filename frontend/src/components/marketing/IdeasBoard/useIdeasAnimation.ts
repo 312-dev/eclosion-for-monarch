@@ -32,11 +32,11 @@ export type { DeveloperContributor };
 export { getUsernameForIdea, getAvatarUrlForIdea };
 
 export type AnimationPhase =
-  | 'stacking'           // Drop in ideas one at a time
+  | 'stacking' // Drop in ideas one at a time
   | 'accumulating-votes' // Vote count ticks up on top idea
-  | 'morphing-to-dev'    // Smooth transition from voting card to dev card
-  | 'dev-cycle'          // Ship the top idea
-  | 'resetting';         // Fade out before next cycle
+  | 'morphing-to-dev' // Smooth transition from voting card to dev card
+  | 'dev-cycle' // Ship the top idea
+  | 'resetting'; // Fade out before next cycle
 
 interface AnimationState {
   animationPhase: AnimationPhase;
@@ -67,10 +67,18 @@ interface UseIdeasAnimationReturn {
 }
 
 const {
-  STACK_SIZE, DROP_IN_DELAY, DROP_IN_DELAY_INITIAL,
-  VOTE_START_DELAY, VOTE_ANIMATION_DURATION, VOTE_FRAME_INTERVAL,
-  RESET_FADE_DURATION, SHIPPED_DISPLAY_DURATION, MORPH_DURATION,
-  MAX_DEVELOPERS, DEV_APPEAR_INTERVAL_INITIAL, DEV_APPEAR_INTERVAL_MIN,
+  STACK_SIZE,
+  DROP_IN_DELAY,
+  DROP_IN_DELAY_INITIAL,
+  VOTE_START_DELAY,
+  VOTE_ANIMATION_DURATION,
+  VOTE_FRAME_INTERVAL,
+  RESET_FADE_DURATION,
+  SHIPPED_DISPLAY_DURATION,
+  MORPH_DURATION,
+  MAX_DEVELOPERS,
+  DEV_APPEAR_INTERVAL_INITIAL,
+  DEV_APPEAR_INTERVAL_MIN,
   PROGRESS_UPDATE_INTERVAL,
 } = ANIMATION_CONFIG;
 
@@ -105,32 +113,50 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
   }, [openIdeas, state.cycleKey]);
 
   const stackedIdeas = useMemo(() => shuffledIdeas.slice(0, STACK_SIZE), [shuffledIdeas]);
-  const featuredIdea = stackedIdeas.length >= STACK_SIZE ? (stackedIdeas[STACK_SIZE - 1] ?? null) : null;
+  const featuredIdea =
+    stackedIdeas.length >= STACK_SIZE ? (stackedIdeas[STACK_SIZE - 1] ?? null) : null;
 
   const clearCurrentTimeout = useCallback(() => {
-    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
   }, []);
 
   const clearVoteAnimation = useCallback(() => {
-    if (voteAnimationRef.current) { clearInterval(voteAnimationRef.current); voteAnimationRef.current = null; }
+    if (voteAnimationRef.current) {
+      clearInterval(voteAnimationRef.current);
+      voteAnimationRef.current = null;
+    }
   }, []);
 
   const clearDevAnimations = useCallback(() => {
-    if (devAnimationRef.current) { clearTimeout(devAnimationRef.current); devAnimationRef.current = null; }
-    if (progressAnimationRef.current) { clearInterval(progressAnimationRef.current); progressAnimationRef.current = null; }
+    if (devAnimationRef.current) {
+      clearTimeout(devAnimationRef.current);
+      devAnimationRef.current = null;
+    }
+    if (progressAnimationRef.current) {
+      clearInterval(progressAnimationRef.current);
+      progressAnimationRef.current = null;
+    }
   }, []);
 
-  const scheduleNextDeveloper = useCallback((currentCount: number) => {
-    if (currentCount >= MAX_DEVELOPERS || isPaused || prefersReducedMotion) return;
-    const progressRatio = currentCount / MAX_DEVELOPERS;
-    const interval = DEV_APPEAR_INTERVAL_INITIAL - (DEV_APPEAR_INTERVAL_INITIAL - DEV_APPEAR_INTERVAL_MIN) * progressRatio;
+  const scheduleNextDeveloper = useCallback(
+    (currentCount: number) => {
+      if (currentCount >= MAX_DEVELOPERS || isPaused || prefersReducedMotion) return;
+      const progressRatio = currentCount / MAX_DEVELOPERS;
+      const interval =
+        DEV_APPEAR_INTERVAL_INITIAL -
+        (DEV_APPEAR_INTERVAL_INITIAL - DEV_APPEAR_INTERVAL_MIN) * progressRatio;
 
-    devAnimationRef.current = setTimeout(() => {
-      const newDev = generateRandomDeveloper(currentCount, usedSeedsRef.current);
-      setState((s) => ({ ...s, developers: [...s.developers, newDev] }));
-      scheduleNextDeveloper(currentCount + 1);
-    }, interval);
-  }, [isPaused, prefersReducedMotion]);
+      devAnimationRef.current = setTimeout(() => {
+        const newDev = generateRandomDeveloper(currentCount, usedSeedsRef.current);
+        setState((s) => ({ ...s, developers: [...s.developers, newDev] }));
+        scheduleNextDeveloper(currentCount + 1);
+      }, interval);
+    },
+    [isPaused, prefersReducedMotion]
+  );
 
   const startProgressAnimation = useCallback(() => {
     if (progressAnimationRef.current || isPaused || prefersReducedMotion) return;
@@ -165,6 +191,7 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
   }, [isPaused, prefersReducedMotion]);
 
   // Main animation loop
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Animation state machine with multiple phases (stacking, voting, morphing, dev cycle)
   useEffect(() => {
     if (stackedIdeas.length < STACK_SIZE || isPaused || prefersReducedMotion) return;
 
@@ -179,7 +206,12 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
       } else {
         const targetVotes = getRandomOddNumber(51, 499);
         timeoutRef.current = setTimeout(() => {
-          setState((s) => ({ ...s, animationPhase: 'accumulating-votes', targetVotes, isUpvoting: true }));
+          setState((s) => ({
+            ...s,
+            animationPhase: 'accumulating-votes',
+            targetVotes,
+            isUpvoting: true,
+          }));
         }, VOTE_START_DELAY);
       }
     } else if (animationPhase === 'accumulating-votes') {
@@ -195,7 +227,12 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
             if (rawProgress >= 1) {
               clearInterval(voteAnimationRef.current!);
               voteAnimationRef.current = null;
-              return { ...s, voteAccumulationCount: s.targetVotes, isUpvoting: false, animationPhase: 'morphing-to-dev' };
+              return {
+                ...s,
+                voteAccumulationCount: s.targetVotes,
+                isUpvoting: false,
+                animationPhase: 'morphing-to-dev',
+              };
             }
             return { ...s, voteAccumulationCount: newCount };
           });
@@ -234,19 +271,43 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
       }, RESET_FADE_DURATION);
     }
 
-    return () => { clearCurrentTimeout(); };
+    return () => {
+      clearCurrentTimeout();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally depend on specific state properties only
-  }, [state.animationPhase, state.stackCount, state.devCycleStage, stackedIdeas.length, isPaused, prefersReducedMotion, clearCurrentTimeout, scheduleNextDeveloper, startProgressAnimation, clearDevAnimations]);
+  }, [
+    state.animationPhase,
+    state.stackCount,
+    state.devCycleStage,
+    stackedIdeas.length,
+    isPaused,
+    prefersReducedMotion,
+    clearCurrentTimeout,
+    scheduleNextDeveloper,
+    startProgressAnimation,
+    clearDevAnimations,
+  ]);
 
   // Resume after pause
   useEffect(() => {
-    if (!isPaused && state.animationPhase === 'dev-cycle' && state.devCycleStage === 'in-progress') {
+    if (
+      !isPaused &&
+      state.animationPhase === 'dev-cycle' &&
+      state.devCycleStage === 'in-progress'
+    ) {
       if (!progressAnimationRef.current) startProgressAnimation();
       if (!devAnimationRef.current && state.developers.length < MAX_DEVELOPERS) {
         scheduleNextDeveloper(state.developers.length);
       }
     }
-  }, [isPaused, state.animationPhase, state.devCycleStage, state.developers.length, scheduleNextDeveloper, startProgressAnimation]);
+  }, [
+    isPaused,
+    state.animationPhase,
+    state.devCycleStage,
+    state.developers.length,
+    scheduleNextDeveloper,
+    startProgressAnimation,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -259,8 +320,18 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
 
   // Reduced motion: skip to end
   useEffect(() => {
-    if (prefersReducedMotion && stackedIdeas.length >= STACK_SIZE && state.animationPhase === 'stacking') {
-      setState((s) => ({ ...s, stackCount: STACK_SIZE, animationPhase: 'dev-cycle', devCycleStage: 'shipped', devProgress: 100 }));
+    if (
+      prefersReducedMotion &&
+      stackedIdeas.length >= STACK_SIZE &&
+      state.animationPhase === 'stacking'
+    ) {
+      setState((s) => ({
+        ...s,
+        stackCount: STACK_SIZE,
+        animationPhase: 'dev-cycle',
+        devCycleStage: 'shipped',
+        devProgress: 100,
+      }));
     }
   }, [prefersReducedMotion, stackedIdeas.length, state.animationPhase]);
 
@@ -270,7 +341,9 @@ export function useIdeasAnimation(ideas: PublicIdea[]): UseIdeasAnimationReturn 
     clearDevAnimations();
   }, [clearCurrentTimeout, clearDevAnimations]);
 
-  const resume = useCallback(() => { setIsPaused(false); }, []);
+  const resume = useCallback(() => {
+    setIsPaused(false);
+  }, []);
 
   return {
     stackedIdeas,

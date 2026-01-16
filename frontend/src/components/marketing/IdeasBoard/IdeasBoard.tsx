@@ -14,8 +14,7 @@ import { getAvailableFeatures } from '../../../data/features';
 
 // Cloudflare Function URL (production) and GitHub raw fallback (local dev)
 const IDEAS_API_URL = '/api/ideas';
-const IDEAS_GITHUB_URL =
-  'https://raw.githubusercontent.com/312-dev/eclosion/main/data/ideas.json';
+const IDEAS_GITHUB_URL = 'https://raw.githubusercontent.com/312-dev/eclosion/main/data/ideas.json';
 
 // Detect if we're in local development (localhost or 127.0.0.1)
 const isLocalDev =
@@ -111,13 +110,13 @@ export function IdeasBoard() {
   if (loading) {
     return (
       <div className="w-full max-w-sm mx-auto">
-        <div className="rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] p-4 animate-pulse">
+        <div className="rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) p-4 animate-pulse">
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-8 w-8 rounded-full bg-[var(--monarch-bg-page)]" />
-            <div className="h-4 w-24 rounded bg-[var(--monarch-bg-page)]" />
+            <div className="h-8 w-8 rounded-full bg-(--monarch-bg-page)" />
+            <div className="h-4 w-24 rounded bg-(--monarch-bg-page)" />
           </div>
-          <div className="h-4 w-full rounded bg-[var(--monarch-bg-page)] mb-2" />
-          <div className="h-4 w-2/3 rounded bg-[var(--monarch-bg-page)]" />
+          <div className="h-4 w-full rounded bg-(--monarch-bg-page) mb-2" />
+          <div className="h-4 w-2/3 rounded bg-(--monarch-bg-page)" />
         </div>
       </div>
     );
@@ -127,8 +126,8 @@ export function IdeasBoard() {
     // Still show the input even if ideas failed to load
     return (
       <div className="w-full max-w-sm mx-auto space-y-4">
-        <div className="rounded-xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] p-4 text-center">
-          <p className="text-sm text-[var(--monarch-text-muted)]">
+        <div className="rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) p-4 text-center">
+          <p className="text-sm text-(--monarch-text-muted)">
             {error ? 'Community ideas are loading...' : 'No ideas yet. Be the first!'}
           </p>
         </div>
@@ -138,12 +137,9 @@ export function IdeasBoard() {
   }
 
   return (
-    <section
-      className="w-full max-w-sm mx-auto"
-      aria-label="Community ideas board"
-    >
+    <section className="w-full max-w-sm mx-auto" aria-label="Community ideas board">
       {/* Container with subtle border for visual separation */}
-      <div className="rounded-2xl border border-[var(--monarch-border)] bg-[var(--monarch-bg-page)] p-6 space-y-4">
+      <div className="rounded-2xl border border-(--monarch-border) bg-(--monarch-bg-page) p-6 space-y-4">
         {/* Main animation area - fixed height to prevent jarring jumps between phases */}
         {/* Phase containers are absolute with top-5 to accommodate badges above cards */}
         <div
@@ -220,14 +216,14 @@ export function IdeasBoard() {
         </div>
 
         {/* Stats bar */}
-        <div className="flex items-center justify-center gap-4 text-xs text-[var(--monarch-text-muted)]">
+        <div className="flex items-center justify-center gap-4 text-xs text-(--monarch-text-muted)">
           <span className="flex items-center gap-1">
-            <span className="font-semibold text-[var(--monarch-text-dark)]">{openIdeas.length}</span>
+            <span className="font-semibold text-(--monarch-text-dark)">{openIdeas.length}</span>
             open ideas
           </span>
-          <span className="w-1 h-1 rounded-full bg-[var(--monarch-border)]" />
+          <span className="w-1 h-1 rounded-full bg-(--monarch-border)" />
           <span className="flex items-center gap-1">
-            <span className="font-semibold text-[var(--monarch-success)]">{shippedCount}</span>
+            <span className="font-semibold text-(--monarch-success)">{shippedCount}</span>
             shipped
           </span>
         </div>

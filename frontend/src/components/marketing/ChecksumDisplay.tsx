@@ -61,15 +61,13 @@ export function ChecksumDisplay({
   return (
     <div className="mt-2">
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-[var(--monarch-text-muted)] font-medium">
-          {algorithm}:
-        </span>
+        <span className="text-(--monarch-text-muted) font-medium">{algorithm}:</span>
         <button
           type="button"
           onClick={() => setShowFull(!showFull)}
           onMouseEnter={() => setShowFull(true)}
           onMouseLeave={() => setShowFull(false)}
-          className="font-mono text-[var(--monarch-text-muted)] hover:text-[var(--monarch-text)] transition-colors cursor-pointer bg-transparent border-none p-0"
+          className="font-mono text-(--monarch-text-muted) hover:text-(--monarch-text) transition-colors cursor-pointer bg-transparent border-none p-0"
           title={showFull ? checksum : 'Click to show full checksum'}
           aria-label={`${algorithm} checksum for ${filename}: ${checksum}`}
         >
@@ -78,14 +76,16 @@ export function ChecksumDisplay({
         <button
           type="button"
           onClick={handleCopy}
-          className="p-1 rounded transition-colors hover:bg-[var(--monarch-bg-hover)]"
+          className="p-1 rounded transition-colors hover:bg-(--monarch-bg-hover)"
           title={copied ? 'Copied!' : 'Copy checksum'}
-          aria-label={copied ? 'Checksum copied to clipboard' : `Copy ${algorithm} checksum to clipboard`}
+          aria-label={
+            copied ? 'Checksum copied to clipboard' : `Copy ${algorithm} checksum to clipboard`
+          }
         >
           {copied ? (
-            <CheckCircleIcon size={14} className="text-[var(--monarch-success)]" />
+            <CheckCircleIcon size={14} className="text-(--monarch-success)" />
           ) : (
-            <CopyIcon size={14} className="text-[var(--monarch-text-muted)]" />
+            <CopyIcon size={14} className="text-(--monarch-text-muted)" />
           )}
         </button>
       </div>

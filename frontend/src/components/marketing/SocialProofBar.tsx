@@ -45,13 +45,16 @@ export function SocialProofBar() {
   }, [hasAnimated]);
 
   return (
-    <section className="px-4 sm:px-6 py-8 bg-[var(--monarch-bg-page)] border-y border-[var(--monarch-border)]">
+    <section className="px-4 sm:px-6 py-8 bg-(--monarch-bg-page) border-y border-(--monarch-border)">
       <div className="max-w-4xl mx-auto">
         <div className="social-proof-bar">
           {/* Open source */}
           <div className="social-proof-stat" ref={statRef}>
             <GitHubIcon size={18} />
-            <span>{count}{getContent('socialProof', 'openSource')}</span>
+            <span>
+              {count}
+              {getContent('socialProof', 'openSource')}
+            </span>
           </div>
 
           {/* Self-hosted */}

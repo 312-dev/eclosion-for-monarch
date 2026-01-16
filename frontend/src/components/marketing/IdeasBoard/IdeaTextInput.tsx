@@ -24,8 +24,7 @@ const PLACEHOLDER_PROMPTS = [
   'What would make tracking expenses easier?',
 ];
 
-const GITHUB_DISCUSSIONS_URL =
-  'https://github.com/312-dev/eclosion/discussions/new';
+const GITHUB_DISCUSSIONS_URL = 'https://github.com/312-dev/eclosion/discussions/new';
 
 function buildDiscussionUrl(ideaText: string): string {
   const params = new URLSearchParams({
@@ -111,15 +110,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
     }
 
     return clearTypewriter;
-  }, [
-    charIndex,
-    isTyping,
-    currentPrompt,
-    isFocused,
-    reducedMotion,
-    inputValue,
-    clearTypewriter,
-  ]);
+  }, [charIndex, isTyping, currentPrompt, isFocused, reducedMotion, inputValue, clearTypewriter]);
 
   // Reset typewriter when prompt changes - intentional sync for prompt rotation
   useEffect(() => {
@@ -176,14 +167,14 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
           onChange={(e) => setInputValue(e.target.value)}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="w-full px-4 py-3 pr-12 rounded-xl border border-[var(--monarch-text-muted)]/20 bg-[var(--monarch-bg-elevated)] text-[var(--monarch-text-dark)] text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-[var(--monarch-orange)]/50 focus:border-[var(--monarch-orange)] transition-all"
+          className="w-full px-4 py-3 pr-12 rounded-xl border border-(--monarch-text-muted)/20 bg-(--monarch-bg-elevated) text-(--monarch-text-dark) text-sm placeholder:text-transparent focus:outline-none focus:ring-2 focus:ring-(--monarch-orange)/50 focus:border-(--monarch-orange) transition-all"
           aria-label="Share your idea"
         />
 
         {/* Custom placeholder with typewriter effect */}
         {!inputValue && (
           <div
-            className="absolute left-4 right-12 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-[var(--monarch-text-muted)] truncate"
+            className="absolute left-4 right-12 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-(--monarch-text-muted) truncate"
             aria-hidden="true"
           >
             {displayedPlaceholder}
@@ -195,7 +186,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
         <button
           type="submit"
           disabled={!inputValue.trim()}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[var(--monarch-orange)]/10 text-[var(--monarch-orange)]"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-(--monarch-orange)/10 text-(--monarch-orange)"
           aria-label={getContent('ideaSubmission', 'submitAriaLabel')}
         >
           <Send className="h-4 w-4" />
@@ -203,7 +194,7 @@ export function IdeaTextInput({ onFocus, onBlur, reducedMotion }: IdeaTextInputP
       </div>
 
       {/* Helper text */}
-      <p className="mt-2 text-xs text-[var(--monarch-text-muted)] text-center">
+      <p className="mt-2 text-xs text-(--monarch-text-muted) text-center">
         {getContent('ideaSubmission', 'helperText')}
       </p>
     </form>

@@ -56,9 +56,9 @@ export function FrustrationCard({
         >
           <Icon size={20} className={iconColor} aria-hidden="true" />
         </div>
-        <h3 className="text-lg font-semibold text-[var(--monarch-text-dark)]">{title}</h3>
+        <h3 className="text-lg font-semibold text-(--monarch-text-dark)">{title}</h3>
       </div>
-      <p className="text-sm text-[var(--monarch-text-muted)] leading-relaxed mb-4">{description}</p>
+      <p className="text-sm text-(--monarch-text-muted) leading-relaxed mb-4">{description}</p>
       <div className="flex gap-2 items-center">
         {selected === 'yes' ? (
           <span className="px-4 py-1.5 text-sm font-medium rounded-full bg-teal-500 text-white cursor-default">
@@ -74,9 +74,7 @@ export function FrustrationCard({
           </button>
         )}
         {selected === 'yes' ? (
-          <span className="text-sm text-teal-500 animate-fade-in">
-            {solutionMessage}
-          </span>
+          <span className="text-sm text-teal-500 animate-fade-in">{solutionMessage}</span>
         ) : (
           <button
             type="button"

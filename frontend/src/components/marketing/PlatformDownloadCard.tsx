@@ -40,15 +40,21 @@ function SystemRequirementsTooltip({ platform }: { platform: Exclude<Platform, '
   const req = PLATFORM_REQUIREMENTS[platform];
   return (
     <div className="space-y-1 text-left">
-      <div className="font-medium text-[var(--monarch-text-dark)] mb-2">
-        System Requirements
+      <div className="font-medium text-(--monarch-text-dark) mb-2">System Requirements</div>
+      <div>
+        <span className="text-(--monarch-text-muted)">OS:</span> {req.os}
       </div>
-      <div><span className="text-[var(--monarch-text-muted)]">OS:</span> {req.os}</div>
-      <div><span className="text-[var(--monarch-text-muted)]">CPU:</span> {req.arch}</div>
-      <div><span className="text-[var(--monarch-text-muted)]">Memory:</span> {req.ram}</div>
-      <div><span className="text-[var(--monarch-text-muted)]">Storage:</span> {req.disk}</div>
+      <div>
+        <span className="text-(--monarch-text-muted)">CPU:</span> {req.arch}
+      </div>
+      <div>
+        <span className="text-(--monarch-text-muted)">Memory:</span> {req.ram}
+      </div>
+      <div>
+        <span className="text-(--monarch-text-muted)">Storage:</span> {req.disk}
+      </div>
       {req.notes && (
-        <div className="mt-2 text-xs text-[var(--monarch-text-muted)] italic">{req.notes}</div>
+        <div className="mt-2 text-xs text-(--monarch-text-muted) italic">{req.notes}</div>
       )}
     </div>
   );
@@ -74,8 +80,8 @@ export function PlatformDownloadCard({
   `;
 
   const primaryClasses = primary
-    ? 'border-[var(--monarch-orange)] bg-[var(--monarch-orange)] text-white'
-    : 'border-[var(--monarch-border)] bg-[var(--monarch-bg-card)] hover:border-[var(--monarch-orange-light,#ff8533)]';
+    ? 'border-(--monarch-orange) bg-(--monarch-orange) text-white'
+    : 'border-(--monarch-border) bg-(--monarch-bg-card) hover:border-(--monarch-orange-light,#ff8533)';
 
   if (!downloadUrl) {
     return (
@@ -86,23 +92,14 @@ export function PlatformDownloadCard({
           backgroundColor: 'var(--monarch-bg-card)',
         }}
       >
-        <div
-          className="p-3 rounded-lg"
-          style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-        >
+        <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-hover)' }}>
           <Icon size={32} color="var(--monarch-text-muted)" />
         </div>
         <div className="flex-1">
-          <div
-            className="font-semibold"
-            style={{ color: 'var(--monarch-text-dark)' }}
-          >
+          <div className="font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
             {label}
           </div>
-          <div
-            className="text-sm"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
+          <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
             Not available
           </div>
         </div>
@@ -123,15 +120,10 @@ export function PlatformDownloadCard({
       <div
         className="p-3 rounded-lg"
         style={{
-          backgroundColor: primary
-            ? 'rgba(255, 255, 255, 0.2)'
-            : 'var(--monarch-bg-hover)',
+          backgroundColor: primary ? 'rgba(255, 255, 255, 0.2)' : 'var(--monarch-bg-hover)',
         }}
       >
-        <Icon
-          size={primary ? 40 : 32}
-          color={primary ? 'white' : 'var(--monarch-orange)'}
-        />
+        <Icon size={primary ? 40 : 32} color={primary ? 'white' : 'var(--monarch-orange)'} />
       </div>
       <div className="flex-1 min-w-0">
         <div
@@ -172,10 +164,7 @@ export function PlatformDownloadCard({
       </div>
       <div className="flex items-center gap-2">
         {platform !== 'unknown' && (
-          <Tooltip
-            content={<SystemRequirementsTooltip platform={platform} />}
-            side="left"
-          >
+          <Tooltip content={<SystemRequirementsTooltip platform={platform} />} side="left">
             <button
               type="button"
               className="p-1 rounded hover:bg-white/10 transition-colors"

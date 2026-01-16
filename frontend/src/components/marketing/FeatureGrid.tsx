@@ -30,11 +30,12 @@ export function FeatureGrid({
     ? features.filter((f) => f.status === 'available')
     : getAvailableFeatures();
 
-  const comingSoonFeatures = showComingSoon
-    ? features
+  let comingSoonFeatures: FeatureDefinition[] = [];
+  if (showComingSoon) {
+    comingSoonFeatures = features
       ? features.filter((f) => f.status === 'coming-soon')
-      : getComingSoonFeatures()
-    : [];
+      : getComingSoonFeatures();
+  }
 
   const gridClasses = `grid gap-6 ${
     variant === 'detailed'
@@ -71,10 +72,8 @@ export function FeatureGrid({
       {comingSoonFeatures.length > 0 && (
         <div>
           <div className="flex items-center gap-3 mb-6">
-            <h3 className="text-lg font-semibold text-[var(--monarch-text-dark)]">
-              Coming Soon
-            </h3>
-            <div className="flex-1 h-px bg-[var(--monarch-border)]" />
+            <h3 className="text-lg font-semibold text-(--monarch-text-dark)">Coming Soon</h3>
+            <div className="flex-1 h-px bg-(--monarch-border)" />
           </div>
           <div className={gridClasses}>
             {comingSoonFeatures.map((feature) => (
@@ -87,9 +86,7 @@ export function FeatureGrid({
       {/* Empty state */}
       {availableFeatures.length === 0 && comingSoonFeatures.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-[var(--monarch-text-muted)]">
-            No features available yet. Check back soon!
-          </p>
+          <p className="text-(--monarch-text-muted)">No features available yet. Check back soon!</p>
         </div>
       )}
     </div>

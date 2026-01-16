@@ -52,7 +52,13 @@ const STAGE_CONFIG = {
   },
 } as const;
 
-export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devProgress = 0 }: DevCycleCardProps) {
+export function DevCycleCard({
+  idea,
+  stage,
+  reducedMotion,
+  developers = [],
+  devProgress = 0,
+}: DevCycleCardProps) {
   const [animatingStage, setAnimatingStage] = useState<DevCycleStage>(stage);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -84,21 +90,19 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
     }
   }, [stage, animatingStage, reducedMotion]);
 
-  const cardAnimationClass = reducedMotion
-    ? ''
-    : animatingStage === 'shipped'
-      ? 'ship-celebrate'
-      : '';
+  let cardAnimationClass = '';
+  if (!reducedMotion && animatingStage === 'shipped') {
+    cardAnimationClass = 'ship-celebrate';
+  }
 
-  const contentAnimationClass = reducedMotion
-    ? ''
-    : isTransitioning
-      ? 'stage-slide-out'
-      : 'stage-slide-in';
+  let contentAnimationClass = '';
+  if (!reducedMotion) {
+    contentAnimationClass = isTransitioning ? 'stage-slide-out' : 'stage-slide-in';
+  }
 
   return (
     <div
-      className={`relative rounded-xl border-2 bg-[var(--monarch-bg-elevated)] p-4 shadow-lg transition-colors duration-300 ${cardAnimationClass}`}
+      className={`relative rounded-xl border-2 bg-(--monarch-bg-elevated) p-4 shadow-lg transition-colors duration-300 ${cardAnimationClass}`}
       style={{ borderColor: config.bgColor }}
       role="article"
       aria-label={`Development cycle: ${config.label}`}
@@ -116,19 +120,19 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
       </div>
 
       {/* Demo disclaimer */}
-      <span className="absolute -top-2 right-3 px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--monarch-bg-page)] text-[var(--monarch-text-muted)] border border-[var(--monarch-border)]">
+      <span className="absolute -top-2 right-3 px-2 py-0.5 rounded text-[10px] font-medium bg-(--monarch-bg-page) text-(--monarch-text-muted) border border-(--monarch-border)">
         Demo
       </span>
 
       {/* User info */}
       <div className={`flex items-center gap-3 mt-3 mb-3 ${contentAnimationClass}`}>
         <IdeatorAvatar avatarUrl={avatarUrl} username={username} size="md" />
-        <span className="text-sm font-medium text-[var(--monarch-text-dark)]">{username}</span>
+        <span className="text-sm font-medium text-(--monarch-text-dark)">{username}</span>
       </div>
 
       {/* Idea content */}
       <h3
-        className={`text-sm font-medium text-[var(--monarch-text-dark)] leading-snug mb-3 line-clamp-2 ${contentAnimationClass}`}
+        className={`text-sm font-medium text-(--monarch-text-dark) leading-snug mb-3 line-clamp-2 ${contentAnimationClass}`}
       >
         {idea.title}
       </h3>
@@ -137,7 +141,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
       {animatingStage === 'in-progress' && developers.length > 0 && (
         <div className={`mb-3 ${contentAnimationClass}`}>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-[var(--monarch-text-muted)]">Developers</span>
+            <span className="text-xs font-medium text-(--monarch-text-muted)">Developers</span>
             <div className="flex -space-x-2">
               {developers.map((dev, index) => (
                 <img
@@ -145,7 +149,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
                   src={getDeveloperAvatarUrl(dev.seed)}
                   alt={dev.username}
                   title={dev.username}
-                  className="h-6 w-6 rounded-full border-2 border-[var(--monarch-bg-card)] bg-[var(--monarch-bg-page)] dev-avatar-pop-in"
+                  className="h-6 w-6 rounded-full border-2 border-(--monarch-bg-card) bg-(--monarch-bg-page) dev-avatar-pop-in"
                   style={{
                     animationDelay: reducedMotion ? '0ms' : `${index * 50}ms`,
                     zIndex: developers.length - index,
@@ -154,7 +158,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
               ))}
             </div>
             {developers.length > 0 && (
-              <span className="text-xs text-[var(--monarch-text-muted)] ml-1">
+              <span className="text-xs text-(--monarch-text-muted) ml-1">
                 {developers.length === 1 ? '1 contributor' : `${developers.length} contributors`}
               </span>
             )}
@@ -163,7 +167,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
       )}
 
       {/* Progress bar - smooth transition based on devProgress */}
-      <div className="h-2 rounded-full bg-[var(--monarch-bg-page)] overflow-hidden">
+      <div className="h-2 rounded-full bg-(--monarch-bg-page) overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-100 ease-out"
           style={{
@@ -182,10 +186,7 @@ export function DevCycleCard({ idea, stage, reducedMotion, developers = [], devP
           >
             <Check className="h-4 w-4 text-white" />
           </div>
-          <span
-            className="text-sm font-medium"
-            style={{ color: config.color }}
-          >
+          <span className="text-sm font-medium" style={{ color: config.color }}>
             Feature delivered!
           </span>
         </div>
