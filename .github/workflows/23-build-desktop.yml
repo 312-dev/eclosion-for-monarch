@@ -314,7 +314,7 @@ jobs:
                 // Add blockMapSize after size line for this file
                 yml = yml.replace(
                   new RegExp('(url: ' + base.replace(/[.*+?^${}()|[\]\\\\]/g, '\\\\$&') + '[\\\\s\\\\S]*?size: \\\\d+)'),
-                  '\$1\\n    blockMapSize: ' + size
+                  '\\$1\\n    blockMapSize: ' + size
                 );
                 console.log('Added blockMapSize ' + size + ' for ' + base);
               }
@@ -636,8 +636,8 @@ jobs:
               if (yml.includes('url: ' + base) && !yml.includes('blockMapSize:')) {
                 // Add blockMapSize after size line for this file
                 yml = yml.replace(
-                  new RegExp('(url: ' + base.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&') + '[\\\\s\\\\S]*?size: \\\\d+)'),
-                  '\$1\\n    blockMapSize: ' + size
+                  new RegExp('(url: ' + base.replace(/[.*+?^\\${}()|[\\]\\\\]/g, '\\\\\\$&') + '[\\\\s\\\\S]*?size: \\\\d+)'),
+                  '\\$1\\n    blockMapSize: ' + size
                 );
                 console.log('Added blockMapSize ' + size + ' for ' + base);
               }
