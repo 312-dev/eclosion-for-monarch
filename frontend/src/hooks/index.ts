@@ -74,6 +74,8 @@ export { useNotesTour, NOTES_TOUR_STATE_KEY, type UseNotesTourReturn } from './u
 
 export { useBiometric, type UseBiometricReturn } from './useBiometric';
 
+export { useBackgroundSync, type UseBackgroundSyncReturn } from './useBackgroundSync';
+
 export { useSavingStates, type UseSavingStatesReturn } from './useSavingStates';
 
 export { useSelectKeyboard } from './useSelectKeyboard';

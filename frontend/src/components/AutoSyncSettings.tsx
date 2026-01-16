@@ -10,6 +10,8 @@ interface AutoSyncSettingsProps {
   onEnable: (intervalMinutes: number, passphrase: string) => Promise<void>;
   onDisable: () => Promise<void>;
   onRefresh: () => Promise<void>;
+  /** When true, renders without card wrapper (for embedding in a combined card) */
+  embedded?: boolean;
 }
 
 /**
@@ -17,7 +19,13 @@ interface AutoSyncSettingsProps {
  * On desktop, auto-sync works when credentials are stored in OS keychain.
  * Credentials are stored automatically on successful login.
  */
-function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) {
+function DesktopAutoSyncSettings({
+  status,
+  embedded,
+}: {
+  status: AutoSyncStatus | null;
+  embedded?: boolean;
+}) {
   const [credentialsStored, setCredentialsStored] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -33,6 +41,17 @@ function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) 
   }, []);
 
   if (!status || credentialsStored === null) {
+    const loadingContent = (
+      <div className="flex items-center gap-3">
+        <SpinnerIcon size={20} color="var(--monarch-text-muted)" />
+        <span style={{ color: 'var(--monarch-text-muted)' }}>Loading auto-sync status...</span>
+      </div>
+    );
+
+    if (embedded) {
+      return <div className="p-4">{loadingContent}</div>;
+    }
+
     return (
       <div
         className="rounded-lg p-4"
@@ -41,10 +60,7 @@ function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) 
           border: '1px solid var(--monarch-border)',
         }}
       >
-        <div className="flex items-center gap-3">
-          <SpinnerIcon size={20} color="var(--monarch-text-muted)" />
-          <span style={{ color: 'var(--monarch-text-muted)' }}>Loading auto-sync status...</span>
-        </div>
+        {loadingContent}
       </div>
     );
   }
@@ -53,26 +69,23 @@ function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) 
   // This happens automatically on login - no extra setup needed
   const isActive = credentialsStored;
 
-  return (
-    <div
-      className="rounded-lg p-4"
-      style={{
-        backgroundColor: 'var(--monarch-bg-card)',
-        border: '1px solid var(--monarch-border)',
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <ClockIcon size={20} color={isActive ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)'} />
-          <div>
-            <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-              Automatic Background Sync
-            </div>
-            <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-              {isActive
-                ? `Syncs every ${formatInterval(status.interval_minutes || 360)} on startup and wake`
-                : 'Enabled automatically after login'}
-            </div>
+  const content = (
+    <>
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+          <ClockIcon
+            size={20}
+            color={isActive ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)'}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+            Automatic Background Sync
+          </div>
+          <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
+            {isActive
+              ? `Syncs every ${formatInterval(status.interval_minutes || 360)} on startup and wake`
+              : 'Enabled automatically after login'}
           </div>
         </div>
 
@@ -106,7 +119,10 @@ function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) 
         <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
           <div className="text-sm">
             <div style={{ color: 'var(--monarch-text-muted)' }}>Last sync</div>
-            <div className="flex items-center gap-1 mt-0.5" style={{ color: 'var(--monarch-text-dark)' }}>
+            <div
+              className="flex items-center gap-1 mt-0.5"
+              style={{ color: 'var(--monarch-text-dark)' }}
+            >
               {formatDateTime(status.last_sync)}
               {status.last_sync_success === false && (
                 <AlertCircleIcon size={16} color="var(--monarch-error)" />
@@ -117,12 +133,31 @@ function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) 
             </div>
           </div>
           {status.last_sync_error && (
-            <div className="mt-2 p-2 rounded text-sm" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
+            <div
+              className="mt-2 p-2 rounded text-sm"
+              style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}
+            >
               Last error: {status.last_sync_error}
             </div>
           )}
         </div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return <div className="p-4">{content}</div>;
+  }
+
+  return (
+    <div
+      className="rounded-lg p-4"
+      style={{
+        backgroundColor: 'var(--monarch-bg-card)',
+        border: '1px solid var(--monarch-border)',
+      }}
+    >
+      {content}
     </div>
   );
 }
@@ -131,12 +166,7 @@ function DesktopAutoSyncSettings({ status }: { status: AutoSyncStatus | null }) 
  * Web-specific auto-sync settings with enable/disable controls.
  * On web, auto-sync requires server-encrypted credentials.
  */
-function WebAutoSyncSettings({
-  status,
-  onEnable,
-  onDisable,
-  onRefresh,
-}: AutoSyncSettingsProps) {
+function WebAutoSyncSettings({ status, onEnable, onDisable, onRefresh }: AutoSyncSettingsProps) {
   const [showEnableModal, setShowEnableModal] = useState(false);
   const [disabling, setDisabling] = useState(false);
 
@@ -243,7 +273,10 @@ function WebAutoSyncSettings({
               </div>
               <div>
                 <div style={{ color: 'var(--monarch-text-muted)' }}>Last sync</div>
-                <div className="flex items-center gap-1" style={{ color: 'var(--monarch-text-dark)' }}>
+                <div
+                  className="flex items-center gap-1"
+                  style={{ color: 'var(--monarch-text-dark)' }}
+                >
                   {formatDateTime(status.last_sync)}
                   {status.last_sync && status.last_sync_success === false && (
                     <AlertCircleIcon size={16} color="var(--monarch-error)" />
@@ -255,7 +288,13 @@ function WebAutoSyncSettings({
               </div>
             </div>
             {status.last_sync_error && (
-              <div className="mt-2 p-2 rounded text-sm" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
+              <div
+                className="mt-2 p-2 rounded text-sm"
+                style={{
+                  backgroundColor: 'var(--monarch-error-bg)',
+                  color: 'var(--monarch-error)',
+                }}
+              >
                 Last error: {status.last_sync_error}
               </div>
             )}
@@ -275,7 +314,7 @@ function WebAutoSyncSettings({
 export function AutoSyncSettings(props: AutoSyncSettingsProps) {
   // Desktop and web have different auto-sync flows
   if (isDesktopMode()) {
-    return <DesktopAutoSyncSettings status={props.status} />;
+    return <DesktopAutoSyncSettings status={props.status} embedded={props.embedded ?? false} />;
   }
 
   return <WebAutoSyncSettings {...props} />;
