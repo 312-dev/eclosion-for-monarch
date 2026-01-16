@@ -5,10 +5,45 @@
  * Used by UpdateReadyBanner to show what's new in an update.
  */
 
-import { useMemo } from 'react';
-import { Sparkles, ExternalLink } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Sparkles, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { sanitizeHtml } from '../../utils';
+
+/**
+ * Checks if HTML content uses new format with <hr> separator and Technical Details header.
+ */
+function hasNewFormatHtml(html: string): boolean {
+  if (!html) return false;
+  return html.includes('<hr') && />\s*Technical Details\s*</i.test(html);
+}
+
+/**
+ * Extracts the summary from new format HTML (content before <hr>).
+ */
+function extractHtmlSummary(html: string): string | null {
+  if (!html) return null;
+
+  const hrIndex = html.search(/<hr\s*\/?>/i);
+  if (hrIndex === -1) return null;
+
+  const summary = html.slice(0, hrIndex).trim();
+  return summary || null;
+}
+
+/**
+ * Extracts technical details from new format HTML (content after Technical Details header).
+ */
+function extractHtmlTechnicalDetails(html: string): string | null {
+  if (!html) return null;
+
+  // Find the Technical Details header and get everything after it
+  const regex = /<h[1-3][^>]*>\s*Technical Details\s*<\/h[1-3]>/i;
+  const match = regex.exec(html);
+  if (!match?.index) return null;
+
+  return html.slice(match.index + match[0].length).trim();
+}
 
 export interface ReleaseNotesModalProps {
   /** Whether the modal is open */
@@ -30,11 +65,17 @@ export function ReleaseNotesModal({
   version,
   releaseNotes,
 }: ReleaseNotesModalProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const isBeta = version.includes('-beta');
   const githubUrl = `https://github.com/monarchmoney/eclosion/releases/tag/v${version}`;
 
   // Sanitize HTML to prevent XSS from external content
   const sanitizedNotes = useMemo(() => sanitizeHtml(releaseNotes), [releaseNotes]);
+
+  // Check if we have the new format with summary + technical details
+  const isNewFormat = hasNewFormatHtml(sanitizedNotes);
+  const summary = isNewFormat ? extractHtmlSummary(sanitizedNotes) : null;
+  const technicalDetails = isNewFormat ? extractHtmlTechnicalDetails(sanitizedNotes) : null;
 
   return (
     <Modal
@@ -76,11 +117,60 @@ export function ReleaseNotesModal({
         </div>
       }
     >
-      <div
-        className="release-notes-content text-sm leading-relaxed"
-        style={{ color: 'var(--monarch-text)' }}
-        dangerouslySetInnerHTML={{ __html: sanitizedNotes }}
-      />
+      {isNewFormat && summary ? (
+        <div className="space-y-4">
+          {/* Summary */}
+          <div
+            className="release-notes-content text-sm leading-relaxed"
+            style={{ color: 'var(--monarch-text)' }}
+            dangerouslySetInnerHTML={{ __html: summary }}
+          />
+
+          {/* Technical details expander */}
+          {technicalDetails && (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+                style={{ color: 'var(--monarch-orange)' }}
+                aria-expanded={isExpanded}
+                aria-label={isExpanded ? 'Hide technical details' : 'Show technical details'}
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp size={16} />
+                    Hide technical details
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={16} />
+                    Show technical details
+                  </>
+                )}
+              </button>
+
+              {isExpanded && (
+                <div
+                  className="release-notes-content text-sm leading-relaxed pt-4 border-t"
+                  style={{
+                    color: 'var(--monarch-text)',
+                    borderColor: 'var(--monarch-border)',
+                  }}
+                  dangerouslySetInnerHTML={{ __html: technicalDetails }}
+                />
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        // Legacy format: show everything
+        <div
+          className="release-notes-content text-sm leading-relaxed"
+          style={{ color: 'var(--monarch-text)' }}
+          dangerouslySetInnerHTML={{ __html: sanitizedNotes }}
+        />
+      )}
     </Modal>
   );
 }

@@ -103,10 +103,16 @@ const MAX_SUMMARY_LENGTH = 150;
 const FIRST_SENTENCE_PATTERN = /^[^.!?]+[.!?]/;
 
 /**
- * Checks if a line is a paragraph (not header, list, or empty).
+ * Checks if a line is a paragraph (not header, list, separator, or empty).
  */
 function isParagraphLine(line: string): boolean {
-  return Boolean(line) && !line.startsWith('#') && !line.startsWith('-') && !line.startsWith('*');
+  return (
+    Boolean(line) &&
+    !line.startsWith('#') &&
+    !line.startsWith('-') &&
+    !line.startsWith('*') &&
+    !line.startsWith('---')
+  );
 }
 
 /**
@@ -118,11 +124,58 @@ function truncateText(text: string, maxLength: number): string {
 }
 
 /**
+ * Checks if the release body uses the new format with --- separator.
+ * New format: summary at top, then ---, then ## Technical Details
+ */
+export function hasNewFormat(body: string): boolean {
+  if (!body) return false;
+  return body.includes('---') && /##\s*Technical Details/i.test(body);
+}
+
+/**
+ * Extracts the summary from new format release notes.
+ * Summary is everything before the first --- separator.
+ */
+export function extractNewFormatSummary(body: string): string | null {
+  if (!body) return null;
+
+  const separatorIndex = body.indexOf('---');
+  if (separatorIndex === -1) return null;
+
+  const summary = body.slice(0, separatorIndex).trim();
+  if (!summary) return null;
+
+  // Return the full summary (it's already been AI-generated to be concise)
+  return summary;
+}
+
+/**
+ * Extracts the technical details section from new format release notes.
+ * Technical details start after ## Technical Details header.
+ */
+export function extractTechnicalDetails(body: string): string | null {
+  if (!body) return null;
+
+  const regex = /##\s*Technical Details\s*\n/i;
+  const match = regex.exec(body);
+  if (!match?.index) return null;
+
+  return body.slice(match.index + match[0].length).trim();
+}
+
+/**
  * Extracts first paragraph as summary from release body.
+ * Supports both new format (before ---) and legacy format (first paragraph).
  */
 function extractParagraphSummary(body: string): string | null {
   if (!body) return null;
 
+  // Try new format first
+  if (hasNewFormat(body)) {
+    return extractNewFormatSummary(body);
+  }
+
+  // Fall back to legacy format: first paragraph line
   for (const line of body.split('\n')) {
     const trimmed = line.trim();
     if (!isParagraphLine(trimmed)) continue;

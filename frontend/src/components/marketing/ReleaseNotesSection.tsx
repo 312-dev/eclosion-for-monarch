@@ -7,6 +7,11 @@
 
 import { useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, ExternalLinkIcon } from '../icons';
+import {
+  hasNewFormat,
+  extractNewFormatSummary,
+  extractTechnicalDetails,
+} from '../../utils/releaseNotesParser';
 
 interface ReleaseNotesSectionProps {
   readonly body: string;
@@ -17,11 +22,17 @@ interface ReleaseNotesSectionProps {
 
 /**
  * Extracts the first paragraph or summary from markdown release notes.
+ * Supports both new format (summary before ---) and legacy format (blockquotes).
  */
 function extractSummary(body: string): string {
   if (!body) return '';
 
-  // Remove blockquote AI summaries (lines starting with >)
+  // Try new format first (summary before ---)
+  if (hasNewFormat(body)) {
+    return extractNewFormatSummary(body) ?? '';
+  }
+
+  // Legacy format: look for blockquote AI summaries (lines starting with >)
   const lines = body.split('\n');
   const summaryLines: string[] = [];
 
@@ -41,6 +52,21 @@ function extractSummary(body: string): string {
   }
 
   return summaryLines.join(' ').trim();
+}
+
+/**
+ * Gets the content to show when expanded.
+ * For new format, this is the technical details section.
+ * For legacy format, this is the full body.
+ */
+function getExpandedContent(body: string): string {
+  if (!body) return '';
+
+  if (hasNewFormat(body)) {
+    return extractTechnicalDetails(body) ?? body;
+  }
+
+  return body;
 }
 
 /**
@@ -117,7 +143,8 @@ export function ReleaseNotesSection({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const summary = extractSummary(body);
-  const hasFullNotes = body && body.length > (summary?.length || 0) + 50;
+  const expandedContent = getExpandedContent(body);
+  const hasFullNotes = expandedContent && expandedContent.length > 50;
 
   if (!body && !summary) {
     return null;
@@ -156,17 +183,17 @@ export function ReleaseNotesSection({
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-1.5 text-sm font-medium text-[var(--monarch-orange)] hover:opacity-80 transition-opacity"
             aria-expanded={isExpanded}
-            aria-label={isExpanded ? 'Hide full release notes' : 'Show full release notes'}
+            aria-label={isExpanded ? 'Hide technical details' : 'Show technical details'}
           >
             {isExpanded ? (
               <>
                 <ChevronUpIcon size={16} />
-                Hide details
+                Hide technical details
               </>
             ) : (
               <>
                 <ChevronDownIcon size={16} />
-                View full release notes
+                Show technical details
               </>
             )}
           </button>
@@ -175,7 +202,7 @@ export function ReleaseNotesSection({
             <div className="mt-4 pt-4 border-t border-[var(--monarch-border)]">
               <div
                 className="text-[var(--monarch-text)] leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: markdownToHtml(body) }}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(expandedContent) }}
               />
             </div>
           )}
