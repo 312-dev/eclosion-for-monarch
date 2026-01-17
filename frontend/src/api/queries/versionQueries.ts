@@ -30,12 +30,26 @@ export function useVersionQuery() {
 }
 
 /**
+ * Check if a version string is a prerelease (beta, alpha, rc, etc.)
+ */
+function isPrereleaseVersion(version: string): boolean {
+  return /-(beta|alpha|rc|dev|canary)/i.test(version);
+}
+
+/**
  * Fetches changelog from GitHub releases.
  * Beta environments get beta releases, stable environments get stable releases.
+ * Filters baked-in CHANGELOG.md entries by environment to prevent beta versions
+ * from appearing in stable builds.
  */
 async function getChangelogFromGitHub(limit?: number): Promise<ChangelogResponse> {
   const baseResponse = getChangelogResponse(limit);
   const isBeta = isBetaEnvironment();
+
+  // Filter baked-in entries by environment (stable builds shouldn't show beta versions)
+  const filteredBaseEntries = isBeta
+    ? baseResponse.entries
+    : baseResponse.entries.filter((entry) => !isPrereleaseVersion(entry.version));
 
   try {
     // Fetch appropriate releases based on environment
@@ -44,7 +58,11 @@ async function getChangelogFromGitHub(limit?: number): Promise<ChangelogResponse
       : await fetchStableReleasesAsChangelog();
 
     if (releases.length === 0) {
-      return baseResponse;
+      return {
+        ...baseResponse,
+        entries: filteredBaseEntries,
+        total_entries: filteredBaseEntries.length,
+      };
     }
 
     // Convert releases to ChangelogEntry format
@@ -55,8 +73,8 @@ async function getChangelogFromGitHub(limit?: number): Promise<ChangelogResponse
       sections: release.sections,
     }));
 
-    // Merge with any baked-in entries and sort by date (descending)
-    const allEntries = [...baseResponse.entries, ...releaseEntries].sort((a, b) => {
+    // Merge with filtered baked-in entries and sort by date (descending)
+    const allEntries = [...filteredBaseEntries, ...releaseEntries].sort((a, b) => {
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
       return dateB.getTime() - dateA.getTime();
