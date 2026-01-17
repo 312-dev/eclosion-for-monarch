@@ -45,6 +45,7 @@ export function DesktopSection() {
 
   // Biometric settings
   const biometric = useBiometric();
+  const [requireBiometric, setRequireBiometricState] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     if (!globalThis.electron) return;
@@ -69,6 +70,10 @@ export function DesktopSection() {
       ]);
       setPeriodicSyncSettings(syncSettings);
       setPeriodicSyncIntervals(syncIntervals);
+
+      // Fetch biometric setting (desktop mode)
+      const biometricRequired = await globalThis.electron.credentials.getRequireBiometric();
+      setRequireBiometricState(biometricRequired);
     } catch {
       // Non-critical if this fails
     } finally {
@@ -146,25 +151,9 @@ export function DesktopSection() {
   const handleBiometricToggle = async () => {
     if (!globalThis.electron || biometric.loading) return;
 
-    if (biometric.enrolled) {
-      await biometric.clear();
-    } else {
-      const confirmed = await globalThis.electron.showConfirmDialog({
-        title: `Enable ${biometric.displayName}`,
-        message: `To enable ${biometric.displayName}, you'll need to enter your passphrase once to securely store it.`,
-        detail:
-          'After setup, you can unlock the app using biometric authentication instead of typing your passphrase.',
-        confirmText: 'Continue',
-        cancelText: 'Cancel',
-      });
-
-      if (confirmed) {
-        await globalThis.electron.showErrorDialog({
-          title: 'Enrollment',
-          content: `Please lock and unlock the app to complete ${biometric.displayName} setup. The next time you unlock with your passphrase, you'll be prompted to enable biometric authentication.`,
-        });
-      }
-    }
+    const newValue = !requireBiometric;
+    await globalThis.electron.credentials.setRequireBiometric(newValue);
+    setRequireBiometricState(newValue);
   };
 
   // Don't render if not in desktop mode
@@ -207,7 +196,7 @@ export function DesktopSection() {
           loading={loading}
           biometric={{
             available: biometric.available,
-            enrolled: biometric.enrolled,
+            requireBiometric: requireBiometric,
             loading: biometric.loading,
             displayName: biometric.displayName,
           }}

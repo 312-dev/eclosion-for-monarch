@@ -15,7 +15,7 @@ import { getDemoState, updateDemoState, simulateDelay } from './demoState';
 export async function toggleItemTracking(
   recurringId: string,
   enabled: boolean,
-  _options?: { initialBudget?: number; itemData?: Record<string, unknown> }
+  _options?: { itemData?: Record<string, unknown> }
 ): Promise<{ success: boolean; enabled: boolean }> {
   await simulateDelay(150);
 
@@ -66,10 +66,7 @@ export async function toggleItemTracking(
  * When allocating, both current_balance and contributed_this_month increase,
  * keeping rollover constant.
  */
-export async function allocateFunds(
-  recurringId: string,
-  amount: number
-): Promise<AllocateResult> {
+export async function allocateFunds(recurringId: string, amount: number): Promise<AllocateResult> {
   await simulateDelay(200);
 
   updateDemoState((state) => ({
@@ -145,9 +142,7 @@ export async function recreateCategory(
 /**
  * Refresh a recurring item from Monarch.
  */
-export async function refreshItem(
-  _recurringId: string
-): Promise<{ success: boolean }> {
+export async function refreshItem(_recurringId: string): Promise<{ success: boolean }> {
   await simulateDelay(150);
   return { success: true };
 }
@@ -167,9 +162,7 @@ export async function changeCategoryGroup(
     dashboard: {
       ...state.dashboard,
       items: state.dashboard.items.map((item) =>
-        item.id === recurringId
-          ? { ...item, category_group_name: groupName }
-          : item
+        item.id === recurringId ? { ...item, category_group_name: groupName } : item
       ),
     },
   }));

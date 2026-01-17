@@ -9,7 +9,7 @@ interface SecuritySectionProps {
   loading: boolean;
   biometric: {
     available: boolean;
-    enrolled: boolean;
+    requireBiometric: boolean;
     loading: boolean;
     displayName: string;
   };
@@ -45,14 +45,18 @@ export function SecuritySection({
         </div>
       </div>
 
-      <SettingsRow label="Auto-lock" description="When to require passphrase re-entry">
+      <SettingsRow label="Auto-lock" description="When to require unlock">
         <div className="relative">
           <select
             value={lockTrigger}
             onChange={(e) => onLockTriggerChange(e.target.value as LockTrigger)}
             disabled={loading}
             className="appearance-none pl-3 pr-8 py-1.5 rounded-lg text-sm cursor-pointer hover-bg-page-to-hover"
-            style={{ color: 'var(--monarch-text-dark)', border: '1px solid var(--monarch-border)', backgroundColor: 'var(--monarch-bg-card)' }}
+            style={{
+              color: 'var(--monarch-text-dark)',
+              border: '1px solid var(--monarch-border)',
+              backgroundColor: 'var(--monarch-bg-card)',
+            }}
             aria-label="Select auto-lock timing"
           >
             {lockOptions.map((option) => (
@@ -61,13 +65,25 @@ export function SecuritySection({
               </option>
             ))}
           </select>
-          <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--monarch-text-muted)' }} />
+          <ChevronDown
+            size={14}
+            className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          />
         </div>
       </SettingsRow>
 
       {biometric.available && (
-        <SettingsRow label={`Use ${biometric.displayName}`} description={`Unlock with ${biometric.displayName} instead of passphrase`}>
-          <ToggleSwitch checked={biometric.enrolled} onChange={onBiometricToggle} disabled={loading || biometric.loading} ariaLabel={`Toggle ${biometric.displayName}`} />
+        <SettingsRow
+          label={`Use ${biometric.displayName}`}
+          description={`Unlock with ${biometric.displayName} instead of entering your credentials`}
+        >
+          <ToggleSwitch
+            checked={biometric.requireBiometric}
+            onChange={onBiometricToggle}
+            disabled={loading || biometric.loading}
+            ariaLabel={`Toggle ${biometric.displayName}`}
+          />
         </SettingsRow>
       )}
     </>

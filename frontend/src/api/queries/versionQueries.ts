@@ -15,6 +15,7 @@ import {
   fetchBetaReleasesAsChangelog,
   fetchStableReleasesAsChangelog,
 } from '../../utils/githubRelease';
+import { isVersionLte } from '../../utils/semver';
 import type { ChangelogEntry, ChangelogResponse } from '../../types';
 
 /**
@@ -46,10 +47,13 @@ async function getChangelogFromGitHub(limit?: number): Promise<ChangelogResponse
   const baseResponse = getChangelogResponse(limit);
   const isBeta = isBetaEnvironment();
 
+  const currentVersion = baseResponse.current_version;
+
   // Filter baked-in entries by environment (stable builds shouldn't show beta versions)
-  const filteredBaseEntries = isBeta
-    ? baseResponse.entries
-    : baseResponse.entries.filter((entry) => !isPrereleaseVersion(entry.version));
+  // and by current version (don't show future versions)
+  const filteredBaseEntries = baseResponse.entries
+    .filter((entry) => isBeta || !isPrereleaseVersion(entry.version))
+    .filter((entry) => isVersionLte(entry.version, currentVersion));
 
   try {
     // Fetch appropriate releases based on environment
@@ -88,18 +92,27 @@ async function getChangelogFromGitHub(limit?: number): Promise<ChangelogResponse
       return true;
     });
 
+    // Filter out versions newer than current version
+    const filteredEntries = dedupedEntries.filter((entry) =>
+      isVersionLte(entry.version, currentVersion)
+    );
+
     // Apply limit if specified
-    const entries = limit ? dedupedEntries.slice(0, limit) : dedupedEntries;
+    const entries = limit ? filteredEntries.slice(0, limit) : filteredEntries;
 
     return {
       current_version: baseResponse.current_version,
       entries,
-      total_entries: dedupedEntries.length,
+      total_entries: filteredEntries.length,
     };
   } catch (error) {
-    // If fetching releases fails, return base changelog
+    // If fetching releases fails, return filtered base changelog
     console.error('Failed to fetch releases for changelog:', error);
-    return baseResponse;
+    return {
+      ...baseResponse,
+      entries: filteredBaseEntries,
+      total_entries: filteredBaseEntries.length,
+    };
   }
 }
 

@@ -1,15 +1,16 @@
 /**
  * Fallback Authentication Form
  *
- * Shown when Touch ID fails repeatedly or user requests credential fallback.
- * Validates email + password against stored credentials (works offline).
+ * Shown when biometric auth (Touch ID/Windows Hello) fails or user requests
+ * credential fallback. Validates email + password against stored credentials
+ * (works offline).
  */
 
 import { useState } from 'react';
 import { EyeIcon, EyeOffIcon, SpinnerIcon, MailIcon, LockIcon } from '../icons';
 
 interface FallbackAuthFormProps {
-  /** Called when user wants to go back to Touch ID */
+  /** Called when user wants to go back to biometric */
   onCancel: () => void;
   /** Optional error from previous attempts */
   initialError?: string | null;
@@ -17,6 +18,8 @@ interface FallbackAuthFormProps {
   setAuthenticated?: (value: boolean) => void;
   /** Auth state setter - sets needsUnlock to false */
   setNeedsUnlock?: (value: boolean) => void;
+  /** Display name for biometric (e.g., "Touch ID" or "Windows Hello") */
+  biometricDisplayName?: string;
 }
 
 export function FallbackAuthForm({
@@ -24,6 +27,7 @@ export function FallbackAuthForm({
   initialError,
   setAuthenticated,
   setNeedsUnlock,
+  biometricDisplayName = 'biometric',
 }: Readonly<FallbackAuthFormProps>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,10 +43,7 @@ export function FallbackAuthForm({
     setError(null);
 
     try {
-      const result = await globalThis.electron?.biometric.validateFallback(
-        email.trim(),
-        password
-      );
+      const result = await globalThis.electron?.biometric.validateFallback(email.trim(), password);
 
       if (result?.success) {
         // Update auth state - useEffect in UnlockPage will handle navigation
@@ -62,16 +63,10 @@ export function FallbackAuthForm({
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="text-center mb-6">
-        <h2
-          className="text-xl font-semibold mb-2"
-          style={{ color: 'var(--monarch-text-dark)' }}
-        >
+        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
           Sign In with Credentials
         </h2>
-        <p
-          className="text-sm"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        >
+        <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
           Use the last credentials you used for Eclosion
         </p>
       </div>
@@ -192,17 +187,14 @@ export function FallbackAuthForm({
           className="w-full py-2 text-sm font-medium transition-colors"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
-          Try Touch ID again
+          Try {biometricDisplayName} again
         </button>
       </form>
 
       {/* Info note */}
-      <p
-        className="text-xs text-center mt-6"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        If you&apos;ve changed your Monarch password since logging into Eclosion,
-        you&apos;ll need to log out and sign in again.
+      <p className="text-xs text-center mt-6" style={{ color: 'var(--monarch-text-muted)' }}>
+        If you&apos;ve changed your Monarch password since logging into Eclosion, you&apos;ll need
+        to log out and sign in again.
       </p>
     </div>
   );

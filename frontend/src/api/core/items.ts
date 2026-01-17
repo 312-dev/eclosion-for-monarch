@@ -10,23 +10,19 @@ import { fetchApi } from './fetchApi';
 export async function toggleItemTracking(
   recurringId: string,
   enabled: boolean,
-  options?: { initialBudget?: number; itemData?: Record<string, unknown> }
+  options?: { itemData?: Record<string, unknown> }
 ): Promise<{ success: boolean; enabled: boolean }> {
   return fetchApi('/recurring/toggle', {
     method: 'POST',
     body: JSON.stringify({
       recurring_id: recurringId,
       enabled,
-      initial_budget: options?.initialBudget,
       item_data: options?.itemData,
     }),
   });
 }
 
-export async function allocateFunds(
-  recurringId: string,
-  amount: number
-): Promise<AllocateResult> {
+export async function allocateFunds(recurringId: string, amount: number): Promise<AllocateResult> {
   return fetchApi<AllocateResult>('/recurring/allocate', {
     method: 'POST',
     body: JSON.stringify({ recurring_id: recurringId, amount }),

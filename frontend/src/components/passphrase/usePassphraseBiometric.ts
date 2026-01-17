@@ -41,11 +41,11 @@ export function usePassphraseBiometric({
   const [biometricWasReset, setBiometricWasReset] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Desktop mode: Track if Touch ID is required
-  const [requireTouchId, setRequireTouchId] = useState(false);
+  // Desktop mode: Track if biometric is required
+  const [requireBiometric, setRequireBiometric] = useState(false);
   useEffect(() => {
     if (isDesktopMode() && globalThis.electron?.credentials) {
-      globalThis.electron.credentials.getRequireTouchId().then(setRequireTouchId);
+      globalThis.electron.credentials.getRequireBiometric().then(setRequireBiometric);
     }
   }, []);
 
@@ -117,13 +117,14 @@ export function usePassphraseBiometric({
   ]);
 
   // Auto-trigger biometric authentication on mount if enrolled/enabled (unlock mode only)
-  // Check both requireTouchId (desktop mode) and biometric.enrolled (legacy mode)
+  // Mode-aware: Desktop uses requireBiometric setting, self-hosted uses biometric.enrolled
+  const shouldAutoPrompt = isDesktopMode() ? requireBiometric : biometric.enrolled;
   useEffect(() => {
     if (
       mode === 'unlock' &&
       autoPromptBiometric &&
       biometric.available &&
-      (requireTouchId || biometric.enrolled) &&
+      shouldAutoPrompt &&
       !biometric.loading &&
       !biometricAttempted.current
     ) {
@@ -134,9 +135,8 @@ export function usePassphraseBiometric({
     mode,
     autoPromptBiometric,
     biometric.available,
-    biometric.enrolled,
     biometric.loading,
-    requireTouchId,
+    shouldAutoPrompt,
     handleBiometricUnlock,
   ]);
 

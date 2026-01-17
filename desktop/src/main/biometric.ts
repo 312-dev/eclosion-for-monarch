@@ -54,9 +54,15 @@ const MONARCH_CREDENTIALS_KEY = 'security.monarchCredentials' as const;
 const NOTES_KEY_STORAGE_KEY = 'security.notesEncryptionKey' as const;
 
 /**
- * Storage key for "Require Touch ID to unlock" setting.
+ * Storage key for "Require biometric to unlock" setting.
+ * Controls whether Touch ID (macOS) or Windows Hello is required to unlock.
  */
-const REQUIRE_TOUCH_ID_KEY = 'security.requireTouchId' as const;
+const REQUIRE_BIOMETRIC_KEY = 'security.requireBiometric' as const;
+
+/**
+ * Old storage key for migration (pre-v1.0.4).
+ */
+const REQUIRE_BIOMETRIC_KEY_OLD = 'security.requireTouchId' as const;
 
 /**
  * Biometric type available on this device.
@@ -209,7 +215,7 @@ export async function authenticateWithBiometric(): Promise<BiometricAuthResult> 
 
         return {
           success: false,
-          error: 'Touch ID authentication failed. Please use your passphrase.',
+          error: `${getBiometricDisplayName()} authentication failed. Please use your passphrase.`,
         };
       }
     }
@@ -223,7 +229,7 @@ export async function authenticateWithBiometric(): Promise<BiometricAuthResult> 
       clearBiometricEnrollment();
       return {
         success: false,
-        error: 'Touch ID setup was reset. Please unlock with your passphrase and re-enable Touch ID in settings.',
+        error: `${getBiometricDisplayName()} setup was reset. Please unlock with your passphrase and re-enable ${getBiometricDisplayName()} in settings.`,
       };
     }
 
@@ -454,14 +460,6 @@ export function storeMonarchCredentials(credentials: MonarchCredentials): boolea
     getStore().set(MONARCH_CREDENTIALS_KEY, base64);
 
     debugLog('Credentials: Monarch credentials stored successfully');
-
-    // Auto-enable biometric protection on platforms that support it
-    // This ensures the unlock screen shows Touch ID/Windows Hello instead of passphrase
-    if (isBiometricAvailable()) {
-      setRequireTouchId(true);
-      debugLog('Credentials: Auto-enabled biometric protection for unlock');
-    }
-
     return true;
   } catch (error) {
     debugLog(`Credentials: Failed to store credentials: ${error}`);
@@ -515,23 +513,32 @@ export function clearMonarchCredentials(): void {
 }
 
 /**
- * Get the "Require Touch ID to unlock" setting.
+ * Get the "Require biometric to unlock" setting.
+ * Includes migration from old storage key.
  */
-export function getRequireTouchId(): boolean {
-  return getStore().get(REQUIRE_TOUCH_ID_KEY, false);
+export function getRequireBiometric(): boolean {
+  const store = getStore();
+  // Migration: check old key first
+  if (store.has(REQUIRE_BIOMETRIC_KEY_OLD) && !store.has(REQUIRE_BIOMETRIC_KEY)) {
+    const oldValue = store.get(REQUIRE_BIOMETRIC_KEY_OLD, false);
+    store.set(REQUIRE_BIOMETRIC_KEY, oldValue);
+    store.delete(REQUIRE_BIOMETRIC_KEY_OLD);
+    debugLog(`Biometric: Migrated setting from ${REQUIRE_BIOMETRIC_KEY_OLD} to ${REQUIRE_BIOMETRIC_KEY}`);
+  }
+  return store.get(REQUIRE_BIOMETRIC_KEY, false);
 }
 
 /**
- * Set the "Require Touch ID to unlock" setting.
+ * Set the "Require biometric to unlock" setting.
  */
-export function setRequireTouchId(required: boolean): void {
-  getStore().set(REQUIRE_TOUCH_ID_KEY, required);
-  debugLog(`Credentials: Require Touch ID set to ${required}`);
+export function setRequireBiometric(required: boolean): void {
+  getStore().set(REQUIRE_BIOMETRIC_KEY, required);
+  debugLog(`Biometric: Require biometric set to ${required}`);
 }
 
 /**
- * Authenticate and retrieve credentials with optional Touch ID.
- * If Touch ID is required (setting enabled), prompts for biometric.
+ * Authenticate and retrieve credentials with optional biometric.
+ * If biometric is required (setting enabled), prompts for Touch ID/Windows Hello.
  * Otherwise, retrieves credentials directly.
  *
  * @returns Credentials on success, error on failure
@@ -544,10 +551,10 @@ export async function authenticateAndGetCredentials(): Promise<CredentialAuthRes
     };
   }
 
-  const requireTouchId = getRequireTouchId();
+  const requireBiometric = getRequireBiometric();
 
-  // If Touch ID is required and available, prompt for it
-  if (requireTouchId && process.platform === 'darwin') {
+  // If biometric is required and available, prompt for it
+  if (requireBiometric && process.platform === 'darwin') {
     try {
       const canPrompt = systemPreferences.canPromptTouchID();
       if (canPrompt) {
@@ -567,7 +574,7 @@ export async function authenticateAndGetCredentials(): Promise<CredentialAuthRes
 
       return {
         success: false,
-        error: 'Touch ID authentication failed',
+        error: `${getBiometricDisplayName()} authentication failed`,
       };
     }
   }
@@ -594,7 +601,8 @@ export async function authenticateAndGetCredentials(): Promise<CredentialAuthRes
 export function clearAllAuthData(): void {
   // Clear desktop mode credentials
   getStore().delete(MONARCH_CREDENTIALS_KEY);
-  getStore().delete(REQUIRE_TOUCH_ID_KEY);
+  getStore().delete(REQUIRE_BIOMETRIC_KEY);
+  getStore().delete(REQUIRE_BIOMETRIC_KEY_OLD); // Clean up migrated key too
 
   // Clear legacy passphrase-based data
   getStore().delete(PASSPHRASE_STORAGE_KEY);
@@ -647,7 +655,7 @@ export async function promptTouchIdForSetup(): Promise<TouchIdSetupResult> {
 
     return {
       success: false,
-      error: 'Touch ID not available. Please check your system settings.',
+      error: `${getBiometricDisplayName()} not available. Please check your system settings.`,
     };
   }
 }

@@ -15,7 +15,7 @@ import { CredentialUpdateForm } from '../components/CredentialUpdateForm';
 import { ResetAppModal } from '../components/ResetAppModal';
 import { ElectronTitleBar } from '../components/ElectronTitleBar';
 import { useState, useEffect } from 'react';
-import { usePageTitle } from '../hooks';
+import { usePageTitle, useBiometric } from '../hooks';
 import { isDesktopMode } from '../utils/apiBase';
 
 type UnlockStage = 'passphrase' | 'fallback' | 'credential_update';
@@ -24,6 +24,7 @@ export function UnlockPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { authenticated, needsUnlock, lockReason, setAuthenticated, setNeedsUnlock } = useAuth();
+  const biometric = useBiometric();
 
   // Stage management
   const [stage, setStage] = useState<UnlockStage>('passphrase');
@@ -108,13 +109,17 @@ export function UnlockPage() {
   // Render fallback auth form when Touch ID fails
   if (stage === 'fallback' && isDesktopMode()) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+      <div
+        className="min-h-screen flex flex-col"
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+      >
         <ElectronTitleBar />
         <div className="flex-1 flex items-center justify-center p-4">
           <FallbackAuthForm
             onCancel={handleFallbackCancel}
             setAuthenticated={setAuthenticated}
             setNeedsUnlock={setNeedsUnlock}
+            biometricDisplayName={biometric.displayName}
           />
         </div>
       </div>

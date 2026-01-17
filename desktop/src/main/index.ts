@@ -101,9 +101,6 @@ import {
   hasMonarchCredentials,
   isPassphraseStored,
   clearStoredPassphrase,
-  getRequireTouchId,
-  setRequireTouchId,
-  isBiometricAvailable,
 } from './biometric';
 import { setPendingSync } from './sync-pending';
 import {
@@ -376,17 +373,6 @@ async function initialize(): Promise<void> {
 }
 
 /**
- * Migrate existing users to have biometric protection enabled.
- * Bug fix for users who logged in before v1.0.1.
- */
-function migrateExistingBiometricSettings(): void {
-  if (!getRequireTouchId() && isBiometricAvailable()) {
-    setRequireTouchId(true);
-    debugLog('Migration: Auto-enabled biometric protection for existing credentials');
-  }
-}
-
-/**
  * Notify renderer about rate limit error.
  */
 function notifyRendererRateLimited(): void {
@@ -431,8 +417,6 @@ async function tryRestoreSession(): Promise<SessionRestoreResult> {
   if (!hasMonarchCredentials()) {
     return result;
   }
-
-  migrateExistingBiometricSettings();
 
   const credentials = getMonarchCredentials();
   if (!credentials) {

@@ -507,11 +507,28 @@ input[type='radio'] {
      This may be overridden for macOS Electron (73px) to account for traffic lights.
      See AppShell.tsx for platform-specific adjustments. */
   --header-height: 55px;
+  --rate-limit-banner-height: 40px;
   --footer-height: 45px; /* Match .app-footer height */
   min-height: 100vh;
   padding-top: var(--header-height);
   padding-bottom: var(--footer-height);
   box-sizing: border-box;
+}
+
+/* When rate limit banner is visible inside header, increase effective header height */
+.app-layout:has(.app-header .rate-limit-banner) {
+  padding-top: calc(var(--header-height) + var(--rate-limit-banner-height));
+}
+
+.app-layout:has(.app-header .rate-limit-banner) .app-notification-banners {
+  top: calc(var(--header-height) + var(--rate-limit-banner-height));
+}
+
+.app-layout:has(.app-header .rate-limit-banner) .sidebar-nav {
+  top: calc(var(--header-height) + var(--rate-limit-banner-height));
+  max-height: calc(
+    100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
+  );
 }
 
 /* Notification banners container - fixed below header for reliable positioning

@@ -73,6 +73,8 @@ export interface StoreSchema {
   'security.encryptedPassphrase': string;
   'security.biometricEnabled': boolean;
   'security.monarchCredentials': string;
+  'security.requireBiometric': boolean;
+  /** @deprecated Migrated to security.requireBiometric */
   'security.requireTouchId': boolean;
   'security.lockTrigger': LockTrigger;
 

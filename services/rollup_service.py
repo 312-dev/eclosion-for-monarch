@@ -156,9 +156,6 @@ class RollupService:
             icon=emoji,
         )
 
-        # Set the budget in Monarch
-        await self.category_manager.set_category_budget(category_id, budget, apply_to_future=True)
-
         # Update state
         self.state_manager.set_rollup_category_id(category_id)
         state = self.state_manager.load()
@@ -221,13 +218,6 @@ class RollupService:
         )
         monthly_rate = calc.ideal_monthly_rate
 
-        # Set individual category budget to $0 if it exists
-        cat_state = state.categories.get(recurring_id)
-        if cat_state and cat_state.monarch_category_id:
-            await self.category_manager.set_category_budget(
-                cat_state.monarch_category_id, 0, apply_to_future=True
-            )
-
         # Add to rollup (local state only - user controls Monarch budget via input)
         rollup = self.state_manager.add_to_rollup(recurring_id, monthly_rate)
 
@@ -276,16 +266,6 @@ class RollupService:
 
         # Also clear the removed item's frozen target
         self.state_manager.clear_frozen_target(f"rollup_{recurring_id}")
-
-        # Restore individual category budget if item is enabled
-        if state.is_item_enabled(recurring_id):
-            cat_state = state.categories.get(recurring_id)
-            if cat_state and cat_state.monarch_category_id:
-                await self.category_manager.set_category_budget(
-                    cat_state.monarch_category_id,
-                    calc.monthly_contribution,
-                    apply_to_future=True,
-                )
 
         return {
             "success": True,

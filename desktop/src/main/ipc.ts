@@ -56,8 +56,8 @@ import {
   getMonarchCredentials,
   hasMonarchCredentials,
   clearMonarchCredentials,
-  getRequireTouchId,
-  setRequireTouchId,
+  getRequireBiometric,
+  setRequireBiometric,
   authenticateAndGetCredentials,
   clearAllAuthData,
   promptTouchIdForSetup,
@@ -732,21 +732,21 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   });
 
   /**
-   * Get the "Require Touch ID to unlock" setting.
+   * Get the "Require biometric to unlock" setting.
    */
-  ipcMain.handle('credentials:get-require-touch-id', () => {
-    return getRequireTouchId();
+  ipcMain.handle('credentials:get-require-biometric', () => {
+    return getRequireBiometric();
   });
 
   /**
-   * Set the "Require Touch ID to unlock" setting.
+   * Set the "Require biometric to unlock" setting.
    */
-  ipcMain.handle('credentials:set-require-touch-id', (_event, required: boolean) => {
-    setRequireTouchId(required);
+  ipcMain.handle('credentials:set-require-biometric', (_event, required: boolean) => {
+    setRequireBiometric(required);
   });
 
   /**
-   * Authenticate and get credentials with optional Touch ID.
+   * Authenticate and get credentials with optional biometric.
    */
   ipcMain.handle('credentials:authenticate', async () => {
     return authenticateAndGetCredentials();

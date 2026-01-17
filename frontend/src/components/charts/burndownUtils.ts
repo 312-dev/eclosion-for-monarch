@@ -117,8 +117,15 @@ export function calculateBurndownData(
   }
 
   // Calculate stabilization info using UTC month/year from the due date string
+  // Stabilization is when you first reach the stable rate at the START of a month.
+  // This is the month AFTER the last catch-up completes (since catch-ups drop at end of month).
   const latestDue = getDueDateMonth(latestDueDateStr);
-  const stabilizationMonth = new Date(latestDue.year, latestDue.month, 1);
+  const lastCatchUpMonth = new Date(latestDue.year, latestDue.month, 1);
+  const stabilizationMonth = new Date(
+    lastCatchUpMonth.getFullYear(),
+    lastCatchUpMonth.getMonth() + 1,
+    1
+  );
   const monthsUntilStable = Math.max(
     0,
     (stabilizationMonth.getFullYear() - currentMonth.getFullYear()) * 12 +
@@ -139,7 +146,7 @@ export function calculateBurndownData(
     (a, b) => new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime()
   );
 
-  // End at stabilization month (not after), ensure at least 6 months shown
+  // End at stabilization month (first month at stable rate), ensure at least 6 months shown
   const minEndMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 6, 1);
   const endMonth = new Date(Math.max(stabilizationMonth.getTime(), minEndMonth.getTime()));
 
@@ -153,7 +160,7 @@ export function calculateBurndownData(
   const processedItems = new Set<string>();
 
   while (iterMonth <= endMonth) {
-    // Check which items complete in this month
+    // Check which items complete in this month (bill hits, catch-up ends)
     const completingThisMonth = sortedItems.filter((item) => {
       if (processedItems.has(item.id)) return false;
       // Use UTC to get the correct month from the due date string
@@ -168,24 +175,13 @@ export function calculateBurndownData(
       return due.year === iterMonth.getFullYear() && due.month === iterMonth.getMonth();
     });
 
-    // Calculate how much catch-up drops when items complete
-    for (const item of completingThisMonth) {
-      const currentRate = item.frozen_monthly_target || item.ideal_monthly_rate || 0;
-      const catchUpAmount = currentRate - item.ideal_monthly_rate;
-      if (catchUpAmount > 0) {
-        runningTotal -= catchUpAmount;
-        if (item.is_in_rollup) {
-          rollupRunningTotal -= catchUpAmount;
-        }
-      }
-      processedItems.add(item.id);
-    }
-
     const isStabilizationMonth = iterMonth.getTime() === stabilizationMonth.getTime();
     const monthLabel = iterMonth.toLocaleDateString('en-US', { month: 'short' });
     const yearLabel = iterMonth.getFullYear().toString().slice(-2);
 
-    // At stabilization month, use the stable rate (all catch-ups complete)
+    // Record point FIRST with current running total (beginning-of-month state)
+    // This ensures the tooltip shows what you need to budget IN this month,
+    // not what the state will be after this month's bills hit.
     const amount = isStabilizationMonth ? stableMonthlyRate : Math.max(0, Math.round(runningTotal));
     const rollupAmount = isStabilizationMonth
       ? Math.round(lowestRollupCost)
@@ -199,6 +195,20 @@ export function calculateBurndownData(
       hasChange: completingThisMonth.length > 0,
       completingItems: completingThisMonth.map((i) => i.name),
     });
+
+    // THEN subtract catch-up amounts for items completing this month
+    // This affects the NEXT month's beginning-of-month state
+    for (const item of completingThisMonth) {
+      const currentRate = item.frozen_monthly_target || item.ideal_monthly_rate || 0;
+      const catchUpAmount = currentRate - item.ideal_monthly_rate;
+      if (catchUpAmount > 0) {
+        runningTotal -= catchUpAmount;
+        if (item.is_in_rollup) {
+          rollupRunningTotal -= catchUpAmount;
+        }
+      }
+      processedItems.add(item.id);
+    }
 
     iterMonth = new Date(iterMonth.getFullYear(), iterMonth.getMonth() + 1, 1);
   }

@@ -12,8 +12,18 @@
  * 2. Mid-session rate limit: fetchApi emits custom DOM event on 429
  */
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import { useDemo } from './DemoContext';
+import { getApiBaseSync, getDesktopSecret } from '../utils/apiBase';
 
 // ============================================================================
 // Types
@@ -97,7 +107,11 @@ function loadPersistedState(): PersistedRateLimitState | null {
 /**
  * Save rate limit state to localStorage.
  */
-function persistState(rateLimitedAt: Date, retryAfter: number | null, source: RateLimitSource): void {
+function persistState(
+  rateLimitedAt: Date,
+  retryAfter: number | null,
+  source: RateLimitSource
+): void {
   const state: PersistedRateLimitState = {
     rateLimitedAt: rateLimitedAt.getTime(),
     retryAfter,
@@ -162,8 +176,18 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
     if (isDemo) return;
 
     try {
-      const response = await fetch('/health/monarch', {
+      // Build fetch options with proper headers for desktop mode
+      const headers: Record<string, string> = {};
+      const desktopSecret = getDesktopSecret();
+      if (desktopSecret) {
+        headers['X-Desktop-Secret'] = desktopSecret;
+      }
+
+      // Use API base URL for desktop mode (file:// URLs need absolute backend URL)
+      const apiBase = getApiBaseSync();
+      const response = await fetch(`${apiBase}/health/monarch`, {
         credentials: 'include',
+        headers,
       });
 
       if (response.ok) {
@@ -207,22 +231,25 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
    * Mark the app as rate limited.
    * Called when fetchApi receives 429 or desktop IPC notifies.
    */
-  const setRateLimitedFn = useCallback((retryAfterSeconds?: number, rateLimitSource?: RateLimitSource) => {
-    // Don't set rate limit in demo mode
-    if (isDemo) return;
+  const setRateLimitedFn = useCallback(
+    (retryAfterSeconds?: number, rateLimitSource?: RateLimitSource) => {
+      // Don't set rate limit in demo mode
+      if (isDemo) return;
 
-    const now = new Date();
-    setIsRateLimited(true);
-    setRateLimitedAt(now);
-    if (retryAfterSeconds) {
-      setRetryAfter(retryAfterSeconds);
-    }
-    setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
-    setSource(rateLimitSource ?? null);
+      const now = new Date();
+      setIsRateLimited(true);
+      setRateLimitedAt(now);
+      if (retryAfterSeconds) {
+        setRetryAfter(retryAfterSeconds);
+      }
+      setNextPingAt(new Date(Date.now() + PING_INTERVAL_MS));
+      setSource(rateLimitSource ?? null);
 
-    // Persist to survive app restarts
-    persistState(now, retryAfterSeconds ?? null, rateLimitSource ?? null);
-  }, [isDemo]);
+      // Persist to survive app restarts
+      persistState(now, retryAfterSeconds ?? null, rateLimitSource ?? null);
+    },
+    [isDemo]
+  );
 
   /**
    * Clear rate limit state.
@@ -255,7 +282,11 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
   // Listen for rate limit events from fetchApi (mid-session rate limits)
   useEffect(() => {
     const handleRateLimitEvent = (event: Event) => {
-      const customEvent = event as CustomEvent<{ retryAfter: number; endpoint: string; source?: string }>;
+      const customEvent = event as CustomEvent<{
+        retryAfter: number;
+        endpoint: string;
+        source?: string;
+      }>;
       const eventSource = customEvent.detail.source as RateLimitSource;
       setRateLimitedFn(customEvent.detail.retryAfter, eventSource);
     };
@@ -270,33 +301,43 @@ export function RateLimitProvider({ children }: Readonly<{ children: ReactNode }
   useEffect(() => {
     if (!globalThis.electron?.rateLimit?.onRateLimited) return;
 
-    const unsubscribe = globalThis.electron.rateLimit.onRateLimited((data: { retryAfter: number }) => {
-      setRateLimitedFn(data.retryAfter);
-    });
+    const unsubscribe = globalThis.electron.rateLimit.onRateLimited(
+      (data: { retryAfter: number }) => {
+        setRateLimitedFn(data.retryAfter);
+      }
+    );
 
     return () => {
       unsubscribe();
     };
   }, [setRateLimitedFn]);
 
-  const value = useMemo<RateLimitContextValue>(() => ({
-    // State
-    isRateLimited,
-    rateLimitedAt,
-    retryAfter,
-    nextPingAt,
-    source,
-    // Actions
-    setRateLimited: setRateLimitedFn,
-    clearRateLimit,
-    triggerPing: pingMonarch,
-  }), [isRateLimited, rateLimitedAt, retryAfter, nextPingAt, source, setRateLimitedFn, clearRateLimit, pingMonarch]);
-
-  return (
-    <RateLimitContext.Provider value={value}>
-      {children}
-    </RateLimitContext.Provider>
+  const value = useMemo<RateLimitContextValue>(
+    () => ({
+      // State
+      isRateLimited,
+      rateLimitedAt,
+      retryAfter,
+      nextPingAt,
+      source,
+      // Actions
+      setRateLimited: setRateLimitedFn,
+      clearRateLimit,
+      triggerPing: pingMonarch,
+    }),
+    [
+      isRateLimited,
+      rateLimitedAt,
+      retryAfter,
+      nextPingAt,
+      source,
+      setRateLimitedFn,
+      clearRateLimit,
+      pingMonarch,
+    ]
   );
+
+  return <RateLimitContext.Provider value={value}>{children}</RateLimitContext.Provider>;
 }
 
 // ============================================================================

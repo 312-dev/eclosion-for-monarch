@@ -113,14 +113,11 @@ async def toggle_item():
     recurring_id = sanitize_id(data.get("recurring_id"))
     enabled = data.get("enabled", False)
     item_data = data.get("item_data")
-    initial_budget = data.get("initial_budget")  # Optional: use this instead of calculated amount
 
     if not recurring_id:
         raise ValidationError("Missing 'recurring_id'")
 
-    result = await services.sync_service.toggle_item(
-        recurring_id, enabled, item_data, initial_budget
-    )
+    result = await services.sync_service.toggle_item(recurring_id, enabled, item_data)
     return result
 
 

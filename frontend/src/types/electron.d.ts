@@ -367,8 +367,8 @@ export interface CredentialsAPI {
   get: () => Promise<StoredCredentials | null>;
   has: () => Promise<boolean>;
   clear: () => Promise<void>;
-  getRequireTouchId: () => Promise<boolean>;
-  setRequireTouchId: (required: boolean) => Promise<void>;
+  getRequireBiometric: () => Promise<boolean>;
+  setRequireBiometric: (required: boolean) => Promise<void>;
   authenticate: () => Promise<CredentialsAuthResult>;
   clearAll: () => Promise<void>;
   /** Get or create the notes encryption key for desktop mode */

@@ -4,8 +4,9 @@
  * Tests verify that the burndown chart correctly:
  * - Includes rollup items in calculations (even though is_enabled = false)
  * - Calculates stable monthly rate from all tracked items (dedicated + rollup)
- * - Sheds catch-up amounts as items complete
- * - Determines stabilization date from the latest due date among catch-up items
+ * - Shows beginning-of-month amounts (what you need to budget IN that month)
+ * - Sheds catch-up amounts for the NEXT month after items complete
+ * - Determines stabilization date as the first month at stable rate (month AFTER last catch-up)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -107,10 +108,10 @@ describe('calculateBurndownData', () => {
 
       // Should detect catch-up from rollup item
       expect(result.stabilization.hasCatchUp).toBe(true);
-      // Stabilization should be May 2026 (rollup item's due date)
-      // This tests that UTC parsing works correctly for first-of-month dates
-      expect(result.stabilization.stabilizationDate).toBe("May '26");
-      expect(result.stabilization.monthsUntilStable).toBe(4);
+      // Stabilization should be June 2026 (month AFTER rollup item completes in May)
+      // This is when you first reach stable rate at the START of a month
+      expect(result.stabilization.stabilizationDate).toBe("Jun '26");
+      expect(result.stabilization.monthsUntilStable).toBe(5);
     });
 
     it('processes rollup items in burndown points', () => {
@@ -158,9 +159,13 @@ describe('calculateBurndownData', () => {
       // First point (Jan) should have full rollup frozen target
       expect(result.points[0]?.rollupAmount).toBe(50);
 
-      // After March, rollup should drop to ideal rate
+      // March shows beginning-of-month (BEFORE the March bill hits), so still 50
       const marchPoint = result.points.find((p) => p.month === 'Mar');
-      expect(marchPoint?.rollupAmount).toBe(40);
+      expect(marchPoint?.rollupAmount).toBe(50);
+
+      // April shows beginning-of-month (AFTER March bill completed), now at ideal rate
+      const aprilPoint = result.points.find((p) => p.month === 'Apr');
+      expect(aprilPoint?.rollupAmount).toBe(40);
     });
   });
 
@@ -257,7 +262,8 @@ describe('calculateBurndownData', () => {
       // Stable rate should only include enabled item
       expect(result.stabilization.stableMonthlyRate).toBe(80);
       // Disabled item should not affect stabilization date
-      expect(result.stabilization.stabilizationDate).toBe("Mar '26");
+      // Stabilization is April (month AFTER March when enabled item completes)
+      expect(result.stabilization.stabilizationDate).toBe("Apr '26");
     });
 
     it('handles empty items array', () => {
@@ -291,10 +297,10 @@ describe('calculateBurndownData', () => {
 
       const result = calculateBurndownData([earlyItem, lateRollupItem], 150);
 
-      // Stabilization should be November (latest catch-up item)
-      // This tests that UTC parsing works correctly for first-of-month dates
-      expect(result.stabilization.stabilizationDate).toBe("Nov '26");
-      expect(result.stabilization.monthsUntilStable).toBe(10);
+      // Stabilization should be December (month AFTER November when last catch-up completes)
+      // This is when you first reach stable rate at the START of a month
+      expect(result.stabilization.stabilizationDate).toBe("Dec '26");
+      expect(result.stabilization.monthsUntilStable).toBe(11);
     });
   });
 });

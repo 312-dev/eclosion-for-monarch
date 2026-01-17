@@ -20,7 +20,6 @@ import { SecurityInfo } from '../SecurityInfo';
 import { UpdateBanner } from '../UpdateBanner';
 import { DesktopUpdateBanner } from '../update';
 import { OfflineIndicator } from '../OfflineIndicator';
-import { RateLimitBanner } from '../ui/RateLimitBanner';
 import { MonthTransitionBanner } from '../ui/MonthTransitionBanner';
 import { WhatsNewModal } from '../WhatsNewModal';
 import { NoticeBanner } from '../ui/NoticeBanner';
@@ -281,7 +280,6 @@ export function AppShell() {
           {/* Desktop users: DesktopUpdateBanner shows non-dismissible download/ready status */}
           <DesktopUpdateBanner />
           <MonthTransitionBanner />
-          <RateLimitBanner />
           <OfflineIndicator />
         </div>
 

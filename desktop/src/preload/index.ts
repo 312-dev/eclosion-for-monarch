@@ -529,20 +529,20 @@ const electronAPI = {
     clear: (): Promise<void> => ipcRenderer.invoke('credentials:clear'),
 
     /**
-     * Get the "Require Touch ID to unlock" setting.
+     * Get the "Require biometric to unlock" setting.
      */
-    getRequireTouchId: (): Promise<boolean> =>
-      ipcRenderer.invoke('credentials:get-require-touch-id'),
+    getRequireBiometric: (): Promise<boolean> =>
+      ipcRenderer.invoke('credentials:get-require-biometric'),
 
     /**
-     * Set the "Require Touch ID to unlock" setting.
+     * Set the "Require biometric to unlock" setting.
      */
-    setRequireTouchId: (required: boolean): Promise<void> =>
-      ipcRenderer.invoke('credentials:set-require-touch-id', required),
+    setRequireBiometric: (required: boolean): Promise<void> =>
+      ipcRenderer.invoke('credentials:set-require-biometric', required),
 
     /**
-     * Authenticate and get credentials with optional Touch ID.
-     * If "Require Touch ID" is enabled, prompts for biometric.
+     * Authenticate and get credentials with optional biometric.
+     * If "Require biometric" is enabled, prompts for Touch ID/Windows Hello.
      */
     authenticate: (): Promise<{
       success: boolean;

@@ -2,7 +2,7 @@
  * Recurring Tool Settings
  *
  * Settings card for the recurring expense tracking tool.
- * Includes category group selection, auto-add, threshold, and auto-update settings.
+ * Includes category group selection, auto-add, threshold, and display settings.
  */
 
 import { useState, forwardRef, useCallback } from 'react';
@@ -40,13 +40,7 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
 
     const toggleExpanded = useCallback(() => setIsExpanded((prev) => !prev), []);
 
-    type SettingKey =
-      | 'group'
-      | 'autoTrack'
-      | 'threshold'
-      | 'autoUpdateTargets'
-      | 'autoCategorize'
-      | 'showCategoryGroup';
+    type SettingKey = 'group' | 'autoTrack' | 'threshold' | 'autoCategorize' | 'showCategoryGroup';
     const { isSaving, withSaving } = useSavingStates<SettingKey>();
 
     // Calculate recurring tool info
@@ -100,19 +94,6 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
       });
     };
 
-    const handleAutoUpdateTargetsChange = async () => {
-      const newValue = !(dashboardData?.config.auto_update_targets ?? false);
-      await withSaving('autoUpdateTargets', async () => {
-        try {
-          await client.updateSettings({ auto_update_targets: newValue });
-          await onRefreshDashboard();
-          toast.success(newValue ? 'Auto-update targets enabled' : 'Auto-update targets disabled');
-        } catch {
-          toast.error('Failed to update setting');
-        }
-      });
-    };
-
     const handleAutoCategorizeChange = async () => {
       const newValue = !(dashboardData?.config.auto_categorize_enabled ?? false);
       await withSaving('autoCategorize', async () => {
@@ -159,7 +140,6 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
     };
 
     const autoSyncEnabled = dashboardData?.config.auto_sync_new ?? false;
-    const autoUpdateEnabled = dashboardData?.config.auto_update_targets ?? false;
     const autoCategorizeEnabled = dashboardData?.config.auto_categorize_enabled ?? false;
     const showCategoryGroupEnabled = dashboardData?.config.show_category_group ?? true;
 
@@ -233,23 +213,6 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
                     />
                   </SettingsRow>
                 )}
-
-                {/* Auto-update targets */}
-                <SettingsRow
-                  label="Auto-update category targets"
-                  description="Update targets when recurring amounts change"
-                >
-                  <ToggleSwitch
-                    checked={autoUpdateEnabled}
-                    onChange={handleAutoUpdateTargetsChange}
-                    disabled={isSaving('autoUpdateTargets')}
-                    ariaLabel={
-                      autoUpdateEnabled
-                        ? 'Disable auto-update targets'
-                        : 'Enable auto-update targets'
-                    }
-                  />
-                </SettingsRow>
 
                 {/* Auto-categorize transactions */}
                 <SettingsRow

@@ -56,12 +56,18 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
 
   const canProceed = (): boolean => {
     switch (currentStep) {
-      case 0: return true;
-      case 1: return !!categoryGroups.selectedGroupId;
-      case 2: return true;
-      case 3: return rollupConfig.rollupMode === 'new' || !!rollupConfig.selectedRollupCategoryId;
-      case 4: return true;
-      default: return false;
+      case 0:
+        return true;
+      case 1:
+        return !!categoryGroups.selectedGroupId;
+      case 2:
+        return true;
+      case 3:
+        return rollupConfig.rollupMode === 'new' || !!rollupConfig.selectedRollupCategoryId;
+      case 4:
+        return true;
+      default:
+        return false;
     }
   };
 
@@ -79,7 +85,10 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
       }
 
       if (rollupConfig.rollupMode === 'existing' && rollupConfig.selectedRollupCategoryId) {
-        await linkRollupToCategory(rollupConfig.selectedRollupCategoryId, rollupConfig.rollupSyncName);
+        await linkRollupToCategory(
+          rollupConfig.selectedRollupCategoryId,
+          rollupConfig.rollupSyncName
+        );
       } else {
         await createRollupCategory(0);
       }
@@ -97,7 +106,7 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
       const enablePromises = Array.from(itemSelection.selectedItemIds)
         .filter((id) => !linkedItemIds.has(id))
         .map((id) =>
-          toggleItemTracking(id, true, { initialBudget: 0 }).catch((err) => ({
+          toggleItemTracking(id, true).catch((err) => ({
             id,
             error: err instanceof Error ? err.message : 'Failed',
           }))

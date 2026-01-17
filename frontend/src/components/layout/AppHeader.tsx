@@ -9,6 +9,7 @@ import { SyncButton } from '../SyncButton';
 import { HelpDropdown } from './HelpDropdown';
 import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
 import { AppIcon } from '../wizards/WizardComponents';
+import { RateLimitBanner } from '../ui/RateLimitBanner';
 import type { ReadyToAssign } from '../../types';
 
 interface AppHeaderProps {
@@ -140,6 +141,7 @@ export function AppHeader({
           <HelpDropdown hasTour={hasTour} onStartTour={onStartTour} />
         </div>
       </div>
+      <RateLimitBanner />
     </header>
   );
 }

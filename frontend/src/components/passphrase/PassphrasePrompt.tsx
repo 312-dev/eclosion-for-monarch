@@ -39,15 +39,20 @@ export function PassphrasePrompt({
   onFallbackRequest,
   autoPromptBiometric = true,
 }: Readonly<PassphrasePromptProps>) {
-  const { setPassphrase: savePassphrase, unlockCredentials, setAuthenticated, setNeedsUnlock } = useAuth();
+  const {
+    setPassphrase: savePassphrase,
+    unlockCredentials,
+    setAuthenticated,
+    setNeedsUnlock,
+  } = useAuth();
   const [passphrase, setPassphrase] = useState('');
   const [confirmPassphrase, setConfirmPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassphrase, setShowPassphrase] = useState(false);
 
-  // Desktop mode: Track if Touch ID is required (separate from legacy passphrase-based enrollment)
-  const [requireTouchId, setRequireTouchId] = useState(false);
+  // Desktop mode: Track if biometric is required (separate from legacy passphrase-based enrollment)
+  const [requireBiometric, setRequireBiometric] = useState(false);
 
   // Progressive cooldown state (persisted across restarts)
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -62,13 +67,6 @@ export function PassphrasePrompt({
       setCooldownUntil(state.cooldownUntil);
       setLockoutLoaded(true);
     });
-  }, []);
-
-  // Load desktop mode Touch ID setting
-  useEffect(() => {
-    if (isDesktopMode() && globalThis.electron?.credentials) {
-      globalThis.electron.credentials.getRequireTouchId().then(setRequireTouchId);
-    }
   }, []);
 
   const clearCooldown = useCallback(() => {
@@ -102,15 +100,42 @@ export function PassphrasePrompt({
   const passwordsMatch = passphrase === confirmPassphrase;
   const isInCooldown = cooldownRemaining > 0;
   // Wait for lockout state to load before allowing submission (prevents race condition)
-  const isValid = mode === 'unlock'
-    ? passphrase.length > 0 && !isInCooldown && lockoutLoaded
-    : allRequirementsMet && passwordsMatch;
+  const isValid =
+    mode === 'unlock'
+      ? passphrase.length > 0 && !isInCooldown && lockoutLoaded
+      : allRequirementsMet && passwordsMatch;
   const displayError = error || biometricError;
 
   // On desktop with Touch ID enabled, only show Touch ID for unlock (no passphrase form)
   // Desktop doesn't use encryption passwords - only biometric authentication
-  // Check requireTouchId (desktop mode) OR biometric.enrolled (legacy passphrase mode)
-  const isDesktopBiometricOnly = isDesktopMode() && mode === 'unlock' && biometric.available && (requireTouchId || biometric.enrolled);
+  // Only requireBiometric matters here since this condition is desktop-mode-only
+  const isDesktopBiometricOnly =
+    isDesktopMode() && mode === 'unlock' && biometric.available && requireBiometric;
+
+  // Desktop mode with Touch ID disabled: redirect to fallback (email/password) form
+  // Desktop mode doesn't use passphrases, so the passphrase form is never appropriate
+  const [requireBiometricLoaded, setRequireBiometricLoaded] = useState(false);
+  useEffect(() => {
+    if (isDesktopMode() && globalThis.electron?.credentials) {
+      globalThis.electron.credentials.getRequireBiometric().then((value) => {
+        setRequireBiometric(value);
+        setRequireBiometricLoaded(true);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      isDesktopMode() &&
+      mode === 'unlock' &&
+      requireBiometricLoaded &&
+      !requireBiometric &&
+      onFallbackRequest
+    ) {
+      // Touch ID is disabled in desktop mode - go straight to email/password form
+      onFallbackRequest();
+    }
+  }, [mode, requireBiometric, requireBiometricLoaded, onFallbackRequest]);
 
   // Cooldown timer effect
   useEffect(() => {
@@ -195,11 +220,23 @@ export function PassphrasePrompt({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+    >
       <ElectronTitleBar />
-      <div className="rounded-xl shadow-lg max-w-md w-full p-6" style={{ backgroundColor: 'var(--monarch-bg-card)', border: '1px solid var(--monarch-border)' }}>
+      <div
+        className="rounded-xl shadow-lg max-w-md w-full p-6"
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
+      >
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--monarch-orange-bg)' }}>
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: 'var(--monarch-orange-bg)' }}
+          >
             <LockIcon size={20} color="var(--monarch-orange)" />
           </div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -211,15 +248,20 @@ export function PassphrasePrompt({
           {getDescriptionText()}
         </p>
 
-        {biometricWasReset && biometric.available && <BiometricResetBanner displayName={biometric.displayName} />}
+        {biometricWasReset && biometric.available && (
+          <BiometricResetBanner displayName={biometric.displayName} />
+        )}
 
         {displayError && !biometricWasReset && (
-          <div className="mb-4 p-3 rounded-lg text-sm" style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}>
+          <div
+            className="mb-4 p-3 rounded-lg text-sm"
+            style={{ backgroundColor: 'var(--monarch-error-bg)', color: 'var(--monarch-error)' }}
+          >
             {displayError}
           </div>
         )}
 
-        {mode === 'unlock' && biometric.available && (requireTouchId || biometric.enrolled) && (
+        {mode === 'unlock' && biometric.available && (requireBiometric || biometric.enrolled) && (
           <BiometricUnlockButton
             displayName={biometric.displayName}
             loading={biometricLoading}
@@ -251,7 +293,9 @@ export function PassphrasePrompt({
               onChange={setPassphrase}
               showPassword={showPassphrase}
               onToggleShow={() => setShowPassphrase(!showPassphrase)}
-              placeholder={mode === 'create' ? 'Create a strong passphrase' : 'Enter your passphrase'}
+              placeholder={
+                mode === 'create' ? 'Create a strong passphrase' : 'Enter your passphrase'
+              }
             />
 
             {mode === 'create' && (
@@ -274,13 +318,21 @@ export function PassphrasePrompt({
               type="submit"
               disabled={loading || !isValid || isInCooldown}
               className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
-              style={{ backgroundColor: loading || !isValid || isInCooldown ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)' }}
+              style={{
+                backgroundColor:
+                  loading || !isValid || isInCooldown
+                    ? 'var(--monarch-orange-disabled)'
+                    : 'var(--monarch-orange)',
+              }}
             >
               {getButtonText()}
             </button>
 
             {isInCooldown && mode === 'unlock' && (
-              <p className="text-xs text-center mt-2" style={{ color: 'var(--monarch-text-muted)' }}>
+              <p
+                className="text-xs text-center mt-2"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 Too many failed attempts. Please wait before trying again.
               </p>
             )}
@@ -289,7 +341,12 @@ export function PassphrasePrompt({
 
         {/* Hide reset option on desktop - no passphrase to forget */}
         {mode === 'unlock' && onResetApp && !isDesktopBiometricOnly && (
-          <button type="button" onClick={onResetApp} className="w-full mt-3 text-sm hover:underline" style={{ color: 'var(--monarch-text-muted)' }}>
+          <button
+            type="button"
+            onClick={onResetApp}
+            className="w-full mt-3 text-sm hover:underline"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
             Forgot passphrase? Reset my app
           </button>
         )}

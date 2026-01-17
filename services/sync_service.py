@@ -151,7 +151,6 @@ class SyncService:
         recurring_id: str,
         enabled: bool,
         item_data: dict[str, Any] | None = None,
-        initial_budget: float | None = None,
     ) -> dict[str, Any]:
         """
         Enable or disable tracking for a recurring item.
@@ -162,9 +161,6 @@ class SyncService:
             item_data: Optional pre-fetched item data to avoid API call.
                        Should contain: name, category_name, amount, months_until_due,
                        next_due_date, frequency_months
-            initial_budget: Optional initial budget amount. If provided, uses this
-                           instead of calculated monthly contribution. Use 0 for
-                           newly created categories during wizard setup.
         """
         state = self.state_manager.load()
 
@@ -176,9 +172,7 @@ class SyncService:
                     item_data.get("category_name") or item_data.get("name") or "Unknown"
                 )
                 item_amount = float(item_data.get("amount", 0))
-                months_until_due = float(item_data.get("months_until_due", 0))
                 next_due_date = str(item_data.get("next_due_date") or "")
-                frequency_months = float(item_data.get("frequency_months", 1))
             else:
                 # Fetch from cache (won't make API call if recently fetched)
                 recurring_items = await self.recurring_service.get_all_recurring()
@@ -187,9 +181,7 @@ class SyncService:
                     return {"success": False, "error": "Recurring item not found"}
                 item_name = item.category_name
                 item_amount = item.amount
-                months_until_due = item.months_until_due
                 next_due_date = item.next_due_date.isoformat()
-                frequency_months = item.frequency_months
 
             # Get or create category
             cat_state = state.categories.get(recurring_id)
@@ -216,24 +208,6 @@ class SyncService:
                         name=item_name,
                         icon=emoji,
                     )
-
-            # Calculate monthly contribution
-            calc = self.savings_calculator.calculate(
-                target_amount=item_amount,
-                current_balance=0,  # New category starts at 0
-                months_until_due=int(months_until_due),
-                tracked_over_contribution=0,
-                frequency_months=frequency_months,
-            )
-
-            # Set budget in Monarch
-            # Use initial_budget if provided (e.g., $0 for wizard setup), else calculated amount
-            budget_amount = (
-                initial_budget if initial_budget is not None else calc.monthly_contribution
-            )
-            await self.category_manager.set_category_budget(
-                category_id, budget_amount, apply_to_future=True
-            )
 
             # Update state
             self.state_manager.update_category(
@@ -343,20 +317,6 @@ class SyncService:
             group_id=state.target_group_id,
             name=item.category_name,
             icon=emoji,
-        )
-
-        # Calculate monthly contribution
-        calc = self.savings_calculator.calculate(
-            target_amount=item.amount,
-            current_balance=0,  # New category starts at 0
-            months_until_due=item.months_until_due,
-            tracked_over_contribution=0,
-            frequency_months=item.frequency_months,
-        )
-
-        # Set budget in Monarch
-        await self.category_manager.set_category_budget(
-            category_id, calc.monthly_contribution, apply_to_future=True
         )
 
         # Update state with new category ID
@@ -469,25 +429,11 @@ class SyncService:
             else:
                 display_name = existing_name
 
-        # Calculate monthly contribution using budget data
+        # Get budget data for frozen target initialization
         all_budget_data = await self.category_manager.get_all_category_budget_data()
         budget_data = all_budget_data.get(category_id, {})
         rollover_amount = budget_data.get("rollover", 0.0)
         budgeted_this_month = budget_data.get("budgeted", 0.0)
-        current_balance = budget_data.get("remaining", 0.0)
-
-        calc = self.savings_calculator.calculate(
-            target_amount=item.amount,
-            current_balance=current_balance,
-            months_until_due=item.months_until_due,
-            tracked_over_contribution=0,
-            frequency_months=item.frequency_months,
-        )
-
-        # Set budget in Monarch
-        await self.category_manager.set_category_budget(
-            category_id, calc.monthly_contribution, apply_to_future=True
-        )
 
         # Update state with the linked category
         self.state_manager.update_category(
@@ -757,13 +703,6 @@ class SyncService:
 
         for recurring_id, cat_state in removed_ids:
             try:
-                # Set budget to 0 if it's not already 0
-                current_budget = all_planned_budgets.get(cat_state.monarch_category_id, 0)
-                if current_budget != 0:
-                    await self.category_manager.set_category_budget(
-                        cat_state.monarch_category_id, 0
-                    )
-
                 # Check if this item was in the rollup
                 was_in_rollup = recurring_id in state.rollup.item_ids
 
@@ -906,7 +845,7 @@ class SyncService:
                 # This is a heuristic - in practice we'd track expected contributions
                 pass
 
-        # Calculate monthly contribution
+        # Calculate monthly contribution (for state tracking and display, not for setting budget)
         calc = self.savings_calculator.calculate(
             target_amount=item.amount,
             current_balance=current_balance,
@@ -914,14 +853,6 @@ class SyncService:
             tracked_over_contribution=tracked_over_contribution,
             frequency_months=item.frequency_months,
         )
-
-        # Only update budget if it changed (avoid unnecessary API calls)
-        new_budget = int(calc.monthly_contribution)
-        current_budget = all_planned_budgets.get(category_id, 0)
-        if new_budget != current_budget or created:
-            await self.category_manager.set_category_budget(
-                category_id, calc.monthly_contribution, apply_to_future=True
-            )
 
         # Update state
         self.state_manager.update_category(
