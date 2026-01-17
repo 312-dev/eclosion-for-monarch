@@ -8,6 +8,21 @@
 import type { RecurringItem } from '../../types';
 
 /**
+ * Parse a due date string and return its UTC year and month.
+ *
+ * Due dates are stored as ISO date strings (e.g., '2026-05-01'). When parsed,
+ * JavaScript interprets these as UTC midnight. Using getMonth() would return
+ * the month in local time, which can be wrong for users west of UTC
+ * (e.g., '2026-05-01' at UTC midnight is April 30th in PST).
+ *
+ * This helper ensures we get the intended month from the date string.
+ */
+function getDueDateMonth(dateStr: string): { year: number; month: number } {
+  const date = new Date(dateStr);
+  return { year: date.getUTCFullYear(), month: date.getUTCMonth() };
+}
+
+/**
  * Information about when the monthly rate stabilizes
  */
 export interface StabilizationInfo {
@@ -53,10 +68,14 @@ export function calculateBurndownData(
   const now = new Date();
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Get all enabled items
-  const enabledItems = items.filter((i) => i.is_enabled);
-  const dedicatedItems = enabledItems.filter((i) => !i.is_in_rollup);
-  const rollupItems = enabledItems.filter((i) => i.is_in_rollup);
+  // Dedicated items: individually enabled AND not in rollup
+  const dedicatedItems = items.filter((i) => i.is_enabled && !i.is_in_rollup);
+
+  // Rollup items: in rollup (regardless of is_enabled - they share rollup category)
+  const rollupItems = items.filter((i) => i.is_in_rollup);
+
+  // All tracked items for catch-up and stabilization processing
+  const allTrackedItems = [...dedicatedItems, ...rollupItems];
 
   // Calculate stable rate (sum of ideal rates) - single source of truth
   const stableMonthlyRate = Math.round(
@@ -66,12 +85,12 @@ export function calculateBurndownData(
   const lowestRollupCost = rollupItems.reduce((sum, i) => sum + (i.ideal_monthly_rate || 0), 0);
 
   // Find items with catch-up (frozen_target > ideal_rate)
-  const itemsWithCatchUp = enabledItems.filter(
+  const itemsWithCatchUp = allTrackedItems.filter(
     (i) => (i.frozen_monthly_target || 0) > (i.ideal_monthly_rate || 0)
   );
 
   // If no items or no catch-up, return early with current month as stabilization
-  if (enabledItems.length === 0 || itemsWithCatchUp.length === 0) {
+  if (allTrackedItems.length === 0 || itemsWithCatchUp.length === 0) {
     const monthLabel = currentMonth.toLocaleDateString('en-US', { month: 'short' });
     const yearLabel = currentMonth.getFullYear().toString().slice(-2);
     return {
@@ -86,16 +105,20 @@ export function calculateBurndownData(
   }
 
   // Find the latest due date among items with catch-up
-  let latestDueDate = new Date(itemsWithCatchUp[0]!.next_due_date);
+  // Use UTC to avoid timezone issues (e.g., May 1st UTC midnight becoming April 30th in PST)
+  let latestDueDateStr = itemsWithCatchUp[0]!.next_due_date;
+  let latestDueTime = new Date(latestDueDateStr).getTime();
   for (const item of itemsWithCatchUp) {
-    const dueDate = new Date(item.next_due_date);
-    if (dueDate > latestDueDate) {
-      latestDueDate = dueDate;
+    const dueTime = new Date(item.next_due_date).getTime();
+    if (dueTime > latestDueTime) {
+      latestDueTime = dueTime;
+      latestDueDateStr = item.next_due_date;
     }
   }
 
-  // Calculate stabilization info
-  const stabilizationMonth = new Date(latestDueDate.getFullYear(), latestDueDate.getMonth(), 1);
+  // Calculate stabilization info using UTC month/year from the due date string
+  const latestDue = getDueDateMonth(latestDueDateStr);
+  const stabilizationMonth = new Date(latestDue.year, latestDue.month, 1);
   const monthsUntilStable = Math.max(
     0,
     (stabilizationMonth.getFullYear() - currentMonth.getFullYear()) * 12 +
@@ -112,7 +135,7 @@ export function calculateBurndownData(
   };
 
   // Generate burndown points
-  const sortedItems = [...enabledItems].sort(
+  const sortedItems = [...allTrackedItems].sort(
     (a, b) => new Date(a.next_due_date).getTime() - new Date(b.next_due_date).getTime()
   );
 
@@ -133,18 +156,16 @@ export function calculateBurndownData(
     // Check which items complete in this month
     const completingThisMonth = sortedItems.filter((item) => {
       if (processedItems.has(item.id)) return false;
-      const dueDate = new Date(item.next_due_date);
-      const dueMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
+      // Use UTC to get the correct month from the due date string
+      const due = getDueDateMonth(item.next_due_date);
+      const dueMonth = new Date(due.year, due.month, 1);
 
       // On first month, also catch any overdue items (due before start)
       if (points.length === 0 && dueMonth < currentMonth) {
         return true;
       }
 
-      return (
-        dueDate.getFullYear() === iterMonth.getFullYear() &&
-        dueDate.getMonth() === iterMonth.getMonth()
-      );
+      return due.year === iterMonth.getFullYear() && due.month === iterMonth.getMonth();
     });
 
     // Calculate how much catch-up drops when items complete
