@@ -198,7 +198,9 @@ export function formatDueDate(dateStr: string): string {
  * @returns Formatted date (e.g., "Jan 15")
  */
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  // Append T00:00:00 to interpret as local midnight, not UTC
+  // Without this, '2026-05-01' becomes April 30th in western timezones
+  const date = new Date(dateStr + 'T00:00:00');
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
