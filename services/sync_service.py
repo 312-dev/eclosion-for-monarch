@@ -1304,7 +1304,11 @@ class SyncService:
 
             if is_enabled and is_active:
                 # Use ideal rate for summary - frontend recomputes actual totals
-                ideal_rate = item.amount / item.frequency_months if item.frequency_months > 0 else item.amount
+                ideal_rate = (
+                    item.amount / item.frequency_months
+                    if item.frequency_months > 0
+                    else item.amount
+                )
                 total_monthly += ideal_rate
                 # Progress = rollover + budgeted (what's been allocated toward the goal)
                 total_saved += rollover_amount + budgeted_this_month

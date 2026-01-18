@@ -205,7 +205,9 @@ class RollupService:
             return {"success": False, "error": "Recurring item not found"}
 
         # Calculate ideal monthly rate (simple: amount / frequency_months)
-        monthly_rate = round(item.amount / item.frequency_months) if item.frequency_months > 0 else item.amount
+        monthly_rate = (
+            round(item.amount / item.frequency_months) if item.frequency_months > 0 else item.amount
+        )
 
         # Add to rollup (local state only - user controls Monarch budget via input)
         rollup = self.state_manager.add_to_rollup(recurring_id, monthly_rate)
@@ -238,7 +240,9 @@ class RollupService:
             return {"success": False, "error": "Recurring item not found"}
 
         # Calculate ideal monthly rate (simple: amount / frequency_months)
-        monthly_rate = round(item.amount / item.frequency_months) if item.frequency_months > 0 else item.amount
+        monthly_rate = (
+            round(item.amount / item.frequency_months) if item.frequency_months > 0 else item.amount
+        )
 
         # Remove from rollup (local state only - user controls Monarch budget via input)
         rollup = self.state_manager.remove_from_rollup(recurring_id, monthly_rate)

@@ -108,5 +108,3 @@ def configured_state() -> TrackerState:
     state.enabled_items.add("recurring-001")
 
     return state
-
-
