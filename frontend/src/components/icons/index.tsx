@@ -291,22 +291,6 @@ export function GitHubIcon({ size = 24, color = 'currentColor', className, ...re
   );
 }
 
-/** Reddit icon (brand icon not in Lucide) */
-export function RedditIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={color}
-      className={className}
-      {...rest}
-    >
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm6.67-10a1.46 1.46 0 0 0-2.47-1 7.12 7.12 0 0 0-3.85-1.23l.65-3.08 2.13.45a1.04 1.04 0 1 0 .11-.52l-2.39-.5a.26.26 0 0 0-.3.2l-.72 3.44a7.14 7.14 0 0 0-3.89 1.23 1.46 1.46 0 1 0-1.6 2.39 2.87 2.87 0 0 0 0 .44c0 2.24 2.61 4.06 5.83 4.06s5.83-1.82 5.83-4.06a2.87 2.87 0 0 0 0-.44 1.46 1.46 0 0 0 .88-1.38zm-9.78 1.22a1.04 1.04 0 1 1 2.08 0 1.04 1.04 0 0 1-2.08 0zm5.98 2.77c-.73.73-2.12.79-2.87.79s-2.14-.06-2.87-.79a.26.26 0 0 1 .37-.37c.46.46 1.44.62 2.5.62s2.04-.16 2.5-.62a.26.26 0 0 1 .37.37zm-.2-1.73a1.04 1.04 0 1 1 0-2.08 1.04 1.04 0 0 1 0 2.08z" />
-    </svg>
-  );
-}
-
 /** Cocoon icon (deployment/hosting) */
 export function CocoonIcon({ size = 24, color = 'currentColor', className, ...rest }: IconProps) {
   return (
@@ -588,7 +572,6 @@ export const Icons = {
 
   // Brand
   GitHub: GitHubIcon,
-  Reddit: RedditIcon,
   Monarch: MonarchIcon,
   Cocoon: CocoonIcon,
   Butterfly: ButterflyIcon,
