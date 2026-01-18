@@ -120,6 +120,9 @@ export function initializeUpdater(): void {
   // CRITICAL: Disable differential downloads to prevent corrupted files.
   // The blockmap-based differential update mechanism can corrupt binary files
   // (especially large extraResources like the Python backend). Force full downloads.
+  // Note: v1.0.9 was released to trigger a full re-download for users with corrupted
+  // backends from earlier differential updates (the fix only takes effect when the
+  // NEW version's updater code runs, so we needed one more release cycle).
   autoUpdater.disableDifferentialDownload = true;
 
   debugLog(`Build-time channel: ${channel}`, LOG_PREFIX);
