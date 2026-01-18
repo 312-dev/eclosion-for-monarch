@@ -1,9 +1,9 @@
 /**
  * AI Release Notes Summarizer
  *
- * Takes technical release notes and generates a summary paragraph.
- * - Stable releases: friendly, conversational tone (2-4 sentences)
- * - Beta releases: technical, matter-of-fact tone (2-3 sentences)
+ * Takes technical release notes and generates a brief, user-friendly summary.
+ * - Stable releases: proportional tone (brief for fixes, warmer for features)
+ * - Beta releases: technical, matter-of-fact tone
  */
 
 const GITHUB_MODELS_ENDPOINT = 'https://models.inference.ai.azure.com/chat/completions';
@@ -25,11 +25,12 @@ function buildPrompt(technicalNotes: string, version: string, isPrerelease: bool
 - Focus on what changed, not how exciting it is
 - Neutral, informative tone suitable for beta testers`
     : `**Voice & Tone:**
-- Casual and celebratory, like announcing something you're genuinely proud of
-- Action-oriented language with moderate enthusiasm (exclamation points welcome!)
-- Benefit-first: focus on what users gain, not technical details
-- Conversational but professional - like a product team sharing good news
-- Use "you" and "your" to make it personal ("See more of your...", "Now you can...")`;
+- Match your enthusiasm to the significance of the changes
+- For bug fixes and minor updates: straightforward and brief ("Fixes an issue with...", "Resolves...")
+- For notable features: warm but not over-the-top ("You can now...", "Adds support for...")
+- For major releases only: celebratory language is appropriate
+- Avoid marketing superlatives ("amazing", "exciting", "incredible") - just describe what changed
+- Plain language a non-technical user would understand`;
 
   const formatGuidelines = isPrerelease
     ? `**Format:**
@@ -38,10 +39,10 @@ function buildPrompt(technicalNotes: string, version: string, isPrerelease: bool
 - Keep it factual and concise
 - If ALL changes are truly internal/technical with no user impact, respond with exactly: "Internal improvements and maintenance updates."`
     : `**Format:**
-- Write 2-4 sentences as a flowing paragraph
-- Start with a casual, celebratory opener
-- Keep sentences punchy and benefit-focused
-- If ALL changes are truly internal/technical with no user impact, respond with exactly: "This release includes internal improvements and maintenance updates under the hood."`;
+- Write 1-3 sentences - shorter is better for minor updates
+- Get straight to the point - no fanfare for small fixes
+- For bug fixes: a single sentence is often enough
+- If ALL changes are truly internal/technical with no user impact, respond with exactly: "Internal improvements and maintenance."`;
 
   const examples = isPrerelease
     ? `**Good Examples:**
@@ -52,15 +53,19 @@ function buildPrompt(technicalNotes: string, version: string, isPrerelease: bool
 - "Get ready for awesome improvements!" (too marketing-focused for beta)
 - "Bug fixes and improvements" (too vague)
 - "Fixed NSIS installer BUILD_UNINSTALLER check" (too low-level technical)`
-    : `**Good Examples:**
-- "Say hello to a fresh new look on Windows! This release brings a modern frameless window design and new focus settings so you can customize exactly how Eclosion behaves. Plus, we've squashed several installer bugs for a smoother experience."
-- "Get more control over your desktop experience with new window focus settings and a sleek title bar redesign on Windows!"
+    : `**Good Examples (bug fix release):**
+- "Fixes an issue where the app could become slow after auto-updating."
+- "Resolves a crash that occurred when opening settings on older Windows versions."
+
+**Good Examples (feature release):**
+- "You can now customize window focus behavior in settings. Also fixes several installer issues on Windows."
+- "Adds dark mode support and improves sync reliability."
 
 **Bad Examples:**
-- "Bug fixes and improvements" (too vague)
-- "We've made some exciting updates!" (empty marketing, no substance)
-- "Fixed NSIS installer BUILD_UNINSTALLER check" (too technical)
-- Long lists of every change (focus on highlights instead)`;
+- "Bug fixes and improvements" (too vague - say WHAT was fixed)
+- "Say hello to amazing new features!" (over-the-top for minor updates)
+- "We're excited to announce..." (unnecessary preamble)
+- "Fixed NSIS installer BUILD_UNINSTALLER check" (too technical for users)`;
 
   return `You are writing release notes for Eclosion, a desktop and web app that extends Monarch Money (a personal finance app) with additional features like recurring expense tracking and category notes.
 
@@ -80,9 +85,9 @@ ${contextSection}
 ${toneGuidelines}
 
 **What to Include:**
-- The most impactful features or improvements users will notice
-- Bug fixes that affected user experience (briefly, if significant)
-${isPrerelease ? '- Technical changes that beta testers should be aware of' : '- Frame improvements as meaningful upgrades ("new level of", "reimagined")'}
+- What was fixed or added, in plain terms
+- Bug fixes that users might have noticed
+${isPrerelease ? '- Technical changes that beta testers should be aware of' : '- Keep it proportional - small fix = brief mention'}
 
 **What to Exclude:**
 - CI/CD pipeline changes, internal refactoring, dependency updates
