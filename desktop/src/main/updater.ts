@@ -117,11 +117,17 @@ export function initializeUpdater(): void {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  // CRITICAL: Disable differential downloads to prevent corrupted files.
+  // The blockmap-based differential update mechanism can corrupt binary files
+  // (especially large extraResources like the Python backend). Force full downloads.
+  autoUpdater.disableDifferentialDownload = true;
+
   debugLog(`Build-time channel: ${channel}`, LOG_PREFIX);
   debugLog(`__RELEASE_CHANNEL__ = ${typeof __RELEASE_CHANNEL__ !== 'undefined' ? __RELEASE_CHANNEL__ : 'undefined'}`, LOG_PREFIX);
   debugLog(`autoUpdater.allowPrerelease = ${autoUpdater.allowPrerelease}`, LOG_PREFIX);
   debugLog(`autoUpdater.channel = ${autoUpdater.channel || '(not set, defaults to latest)'}`, LOG_PREFIX);
   debugLog('Auto-download: always enabled', LOG_PREFIX);
+  debugLog('Differential download: disabled (full downloads only)', LOG_PREFIX);
 
   // Event handlers
   autoUpdater.on('checking-for-update', () => {
