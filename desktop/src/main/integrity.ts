@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import https from 'node:https';
+import { URL } from 'node:url';
 import { app, dialog, shell } from 'electron';
 import { debugLog as log } from './logger';
 import { createWriteStream } from 'node:fs';
