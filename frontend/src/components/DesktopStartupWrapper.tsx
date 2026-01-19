@@ -34,6 +34,10 @@ export function DesktopStartupWrapper({ children }: DesktopStartupWrapperProps) 
   // For non-desktop mode, start as ready immediately
   const [isReady, setIsReady] = useState(!isDesktopEnvironment);
   const [hasTimedOut, setHasTimedOut] = useState(false);
+  // Custom status message from backend (e.g., "Migrating backend to new version...")
+  const [customStatus, setCustomStatus] = useState<{ message: string; progress: number } | null>(
+    null
+  );
 
   // Initialize API and render app once backend is ready
   const handleBackendReady = useCallback(async () => {
@@ -82,9 +86,13 @@ export function DesktopStartupWrapper({ children }: DesktopStartupWrapperProps) 
     // Listen for backend startup status updates
     const unsubscribe = globalThis.electron!.onBackendStartupStatus((status: StartupStatus) => {
       if (status.phase === 'ready') {
+        setCustomStatus(null);
         handleBackendReady();
       } else if (status.phase === 'failed') {
         setHasTimedOut(true);
+      } else if (status.message) {
+        // Track custom status messages (e.g., during backend migration)
+        setCustomStatus({ message: status.message, progress: status.progress });
       }
     });
 
@@ -99,12 +107,24 @@ export function DesktopStartupWrapper({ children }: DesktopStartupWrapperProps) 
   // Show loading screen while waiting for backend
   // Always show immediately in desktop mode to ensure window has content for ready-to-show
   if (!isReady) {
-    return <StartupLoadingScreen onTimeout={handleTimeout} isConnected={false} />;
+    return (
+      <StartupLoadingScreen
+        onTimeout={handleTimeout}
+        isConnected={false}
+        customStatus={customStatus}
+      />
+    );
   }
 
   // Show timed out state
   if (hasTimedOut && !isReady) {
-    return <StartupLoadingScreen onTimeout={handleTimeout} isConnected={false} />;
+    return (
+      <StartupLoadingScreen
+        onTimeout={handleTimeout}
+        isConnected={false}
+        customStatus={customStatus}
+      />
+    );
   }
 
   // Backend is ready, render the app

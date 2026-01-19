@@ -23,11 +23,14 @@ interface StartupLoadingScreenProps {
   onTimeout?: () => void;
   /** Whether the backend is connected (triggers transition) */
   isConnected?: boolean;
+  /** Custom status message from backend (e.g., during migration) */
+  customStatus?: { message: string; progress: number } | null;
 }
 
 export function StartupLoadingScreen({
   onTimeout,
   isConnected = false,
+  customStatus = null,
 }: StartupLoadingScreenProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [messageRotationCount, setMessageRotationCount] = useState(0);
@@ -43,7 +46,13 @@ export function StartupLoadingScreen({
 
   // Derive fading state and final progress from isConnected
   const isFadingOut = isConnected;
-  const progress = isConnected ? 100 : animatedProgress;
+  // Use custom progress during migration, otherwise use animated progress
+  const getProgress = (): number => {
+    if (isConnected) return 100;
+    if (customStatus) return customStatus.progress;
+    return animatedProgress;
+  };
+  const progress = getProgress();
 
   // Set a smaller compact window size for the loading screen (desktop only)
   useEffect(() => {
@@ -223,7 +232,7 @@ export function StartupLoadingScreen({
 
         {/* Status text */}
         <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
-          {getStatusText(elapsedSeconds, isTimedOut)}
+          {customStatus ? customStatus.message : getStatusText(elapsedSeconds, isTimedOut)}
         </p>
 
         {/* Progress bar */}
@@ -247,15 +256,14 @@ export function StartupLoadingScreen({
           )}
         </div>
 
-        {/* Rotating message */}
-        <div className="min-h-12 flex items-center justify-center" key={currentMessage}>
-          <p
-            className="text-sm italic animate-fade-in"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
-            {isTimedOut ? TIMEOUT_ERROR_MESSAGE : `"${currentMessage}"`}
-          </p>
-        </div>
+        {/* Rotating message - only show when not in custom status mode */}
+        {!customStatus && (
+          <div className="min-h-12 flex items-center justify-center" key={currentMessage}>
+            <p className="text-sm animate-fade-in" style={{ color: 'var(--monarch-text-muted)' }}>
+              {isTimedOut ? TIMEOUT_ERROR_MESSAGE : currentMessage}
+            </p>
+          </div>
+        )}
 
         {/* Elapsed time (shown after 30 seconds) */}
         {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && (

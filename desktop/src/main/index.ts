@@ -109,6 +109,7 @@ import {
   cleanupAutoBackup,
 } from './auto-backup';
 import { migrateSettings } from './settings-migration';
+import { checkAndRepairBackend } from './integrity';
 
 /**
  * Check if the app is running from a macOS DMG volume mount.
@@ -256,6 +257,27 @@ async function initialize(): Promise<void> {
     logStartupTiming('Loading screen ready (or timeout)');
 
     // --- Everything below runs while the loading screen is visible ---
+
+    // Check backend integrity and repair if corrupted
+    // This repairs backends corrupted by electron-updater differential updates
+    logStartupTiming('Checking backend integrity');
+    const mainWindowForIntegrity = getMainWindow();
+    const integrityOk = await checkAndRepairBackend((message, progress) => {
+      // Send status to loading screen via the same channel as backend startup
+      if (mainWindowForIntegrity && !mainWindowForIntegrity.isDestroyed()) {
+        mainWindowForIntegrity.webContents.send('backend-startup-status', {
+          phase: 'initializing',
+          message,
+          progress,
+        });
+      }
+    });
+    if (!integrityOk) {
+      debugLog('Backend integrity check failed - cannot continue');
+      app.quit();
+      return;
+    }
+    logStartupTiming('Backend integrity check passed');
 
     // Initialize auto-backup manager
     logStartupTiming('Initializing auto-backup');
