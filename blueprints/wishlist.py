@@ -3,13 +3,14 @@
 
 import logging
 
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 
 from core import (
     api_handler,
     sanitize_emoji,
     sanitize_id,
     sanitize_name,
+    sanitize_path,
     sanitize_response,
     sanitize_url,
 )
@@ -161,7 +162,7 @@ async def create_item():
     source_url = sanitize_url(data.get("source_url"))
     source_bookmark_id = data.get("source_bookmark_id")
     logo_url = sanitize_url(data.get("logo_url"))
-    custom_image_path = data.get("custom_image_path")
+    custom_image_path = sanitize_path(data.get("custom_image_path"))
 
     result = await service.create_item(
         name=name,
@@ -213,13 +214,13 @@ async def update_item(item_id: str):
     if "source_url" in data:
         updates["source_url"] = sanitize_url(data["source_url"])
     if "custom_image_path" in data:
-        updates["custom_image_path"] = data["custom_image_path"]
+        updates["custom_image_path"] = sanitize_path(data["custom_image_path"])
 
     if not updates:
         raise ValidationError("No valid fields to update")
 
     result = await service.update_item(item_id, **updates)
-    return sanitize_response(result)
+    return jsonify(sanitize_response(result))
 
 
 @wishlist_bp.route("/<item_id>", methods=["DELETE"])
