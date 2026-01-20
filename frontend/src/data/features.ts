@@ -148,6 +148,45 @@ export const FEATURES: FeatureDefinition[] = [
     sourcePaths: ['frontend/src/components/tabs/NotesTab.tsx', 'frontend/src/components/notes/'],
   },
   {
+    id: 'wishlist',
+    name: 'Wishlist',
+    tagline: 'Save for one-time purchases with browser sync',
+    description:
+      'Create savings goals for one-time purchases and sync them from your browser bookmarks. Track progress with visual cards you can resize and rearrange.',
+    icon: 'Gift',
+    status: 'available',
+    benefits: [
+      {
+        icon: 'Bookmark',
+        title: 'Browser Sync',
+        description:
+          'Sync wishlist items from Firefox, Chrome, Edge, or Safari bookmarks automatically.',
+      },
+      {
+        icon: 'Target',
+        title: 'Target Dates',
+        description: 'Set goal dates and see monthly savings targets calculated automatically.',
+      },
+      {
+        icon: 'Package',
+        title: 'Visual Dashboard',
+        description: 'Drag, drop, and resize cards to organize your savings goals your way.',
+      },
+      {
+        icon: 'CheckCircle',
+        title: 'Progress Tracking',
+        description: "See status badges showing if you're funded, on track, or behind.",
+      },
+    ],
+    demoPath: '/demo/wishlist/',
+    appPath: '/wishlist',
+    sourcePaths: [
+      'frontend/src/components/tabs/WishlistTab.tsx',
+      'frontend/src/components/wishlist/',
+      'services/wishlist_service.py',
+    ],
+  },
+  {
     id: 'linked-goals',
     name: 'Joint Goals',
     tagline: 'Privacy-first shared goals',

@@ -36,6 +36,16 @@ const sidebars: SidebarsConfig = {
           },
           items: [],
         },
+        {
+          type: 'category',
+          label: 'Wishlist',
+          collapsed: false,
+          link: {
+            type: 'doc',
+            id: 'wishlist/overview',
+          },
+          items: [],
+        },
       ],
     },
     'faq',

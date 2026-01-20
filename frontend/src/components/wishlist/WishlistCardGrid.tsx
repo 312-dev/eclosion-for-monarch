@@ -7,6 +7,7 @@
  */
 
 import { memo, useCallback } from 'react';
+import type { PointerEvent } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -26,6 +27,51 @@ import { CSS } from '@dnd-kit/utilities';
 import type { WishlistItem } from '../../types';
 import { WishlistCard } from './WishlistCard';
 import { Icons } from '../icons';
+
+/**
+ * Check if the event target is an interactive element that should not trigger drag.
+ * This prevents dragging when clicking on inputs, buttons, links, etc.
+ */
+function shouldHandleEvent(element: Element | null): boolean {
+  if (!element) return true;
+
+  // Check element and its ancestors for interactive elements
+  let el: Element | null = element;
+  while (el) {
+    const tagName = el.tagName.toUpperCase();
+    // Skip if it's an interactive element
+    if (
+      tagName === 'INPUT' ||
+      tagName === 'TEXTAREA' ||
+      tagName === 'BUTTON' ||
+      tagName === 'A' ||
+      tagName === 'SELECT' ||
+      (el as HTMLElement).isContentEditable ||
+      el.getAttribute('role') === 'button' ||
+      (el as HTMLElement).dataset['noDnd'] === 'true'
+    ) {
+      return false;
+    }
+    // Stop at the drag handle (image area)
+    if (el.classList.contains('wishlist-card-image')) {
+      return true;
+    }
+    el = el.parentElement;
+  }
+  return true;
+}
+
+/** Custom PointerSensor that ignores interactive elements */
+class WishlistPointerSensor extends PointerSensor {
+  static readonly activators = [
+    {
+      eventName: 'onPointerDown' as const,
+      handler: (event: PointerEvent) => {
+        return shouldHandleEvent(event.target as Element);
+      },
+    },
+  ];
+}
 
 interface WishlistCardGridProps {
   readonly items: WishlistItem[];
@@ -93,10 +139,7 @@ function PlaceholderCard() {
         />
         {/* Status badge placeholder */}
         <div className="absolute top-2 right-2">
-          <div
-            className="w-16 h-5 rounded"
-            style={{ backgroundColor: 'var(--monarch-border)' }}
-          />
+          <div className="w-16 h-5 rounded" style={{ backgroundColor: 'var(--monarch-border)' }} />
         </div>
       </div>
 
@@ -135,10 +178,7 @@ function PlaceholderCard() {
         />
 
         {/* Progress bar placeholder */}
-        <div
-          className="h-2 rounded-full"
-          style={{ backgroundColor: 'var(--monarch-border)' }}
-        />
+        <div className="h-2 rounded-full" style={{ backgroundColor: 'var(--monarch-border)' }} />
       </div>
     </div>
   );
@@ -180,7 +220,7 @@ export const WishlistCardGrid = memo(function WishlistCardGrid({
   emptyMessage = 'No wishlist items yet. Add your first item to start saving!',
 }: WishlistCardGridProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(WishlistPointerSensor, {
       activationConstraint: {
         distance: 8, // 8px movement before drag starts (allows clicks)
       },

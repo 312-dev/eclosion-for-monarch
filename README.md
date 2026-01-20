@@ -62,6 +62,7 @@
 |---------|-------------|
 | **Recurring Expenses** | Monthly savings targets for non-monthly expenses (annual, quarterly, semi-annual). Calculates targets, tracks progress, syncs to Monarch. Supports rollup categories for aggregating subscriptions. |
 | **Monthly Notes** | Persistent notes for Monarch categories/groups. Auto-carry-forward, revision history, inline math evaluation. |
+| **Wishlist** | Savings goals for one-time purchases with browser bookmark sync. Visual card grid with drag/drop and resize. Supports Firefox, Chrome, Edge, Safari. |
 
 ### Planned
 
