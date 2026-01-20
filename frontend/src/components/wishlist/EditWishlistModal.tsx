@@ -469,20 +469,22 @@ export function EditWishlistModal({
               }}
             />
             {getSafeHref(url) && (
-              <a
-                href={getSafeHref(url)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => {
+                  const safeUrl = getSafeHref(url);
+                  if (safeUrl) window.open(safeUrl, '_blank', 'noopener,noreferrer');
+                }}
                 className="flex items-center justify-center w-10 rounded-md hover:opacity-70"
                 style={{
                   backgroundColor: 'var(--monarch-bg-page)',
                   border: '1px solid var(--monarch-border)',
                   color: 'var(--monarch-teal)',
                 }}
-                aria-label="Open URL"
+                aria-label="Open URL in new tab"
               >
                 <Icons.ExternalLink className="w-4 h-4" />
-              </a>
+              </button>
             )}
           </div>
         </div>
