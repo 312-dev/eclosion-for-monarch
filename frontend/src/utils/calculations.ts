@@ -409,22 +409,6 @@ export function calculateMonthlyTarget(
     const nextOccDate = parseLocalDate(nextOcc);
     const targetDate = parseLocalDate(targetMonth);
 
-    // DEBUG: Log quarterly calculations
-    if (frequency === 'quarterly') {
-      console.log('[DEBUG] calculateMonthlyTarget quarterly:', {
-        effectiveBaseDate,
-        frequency,
-        targetMonth,
-        nextOcc,
-        nextOccDate: nextOccDate.toISOString(),
-        targetDate: targetDate.toISOString(),
-        nextOccMonth: nextOccDate.getMonth(),
-        targetDateMonth: targetDate.getMonth(),
-        amount,
-        rollover,
-      });
-    }
-
     if (
       nextOccDate.getFullYear() === targetDate.getFullYear() &&
       nextOccDate.getMonth() === targetDate.getMonth()
@@ -436,16 +420,6 @@ export function calculateMonthlyTarget(
       // Due in future - spread the shortfall over months INCLUDING due month
       const monthsRemaining = monthsBetween(targetDate, nextOccDate) + 1;
       const shortfall = Math.max(0, amount - rollover);
-
-      // DEBUG: Log the months calculation
-      if (frequency === 'quarterly') {
-        console.log('[DEBUG] quarterly monthsRemaining:', {
-          monthsRemaining,
-          shortfall,
-          rate: shortfall / Math.max(1, monthsRemaining),
-          rounded: roundMonthlyRate(shortfall / Math.max(1, monthsRemaining)),
-        });
-      }
 
       if (shortfall <= 0) {
         return 0;

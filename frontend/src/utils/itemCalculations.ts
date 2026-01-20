@@ -188,24 +188,6 @@ export function computeItemValues(
     targetMonth
   );
 
-  // DEBUG: Log calculation for quarterly items to trace the $58 bug
-  if (raw.frequency === 'quarterly' && raw.name.toLowerCase().includes('hims')) {
-    console.log('[DEBUG] Hims calculation:', {
-      name: raw.name,
-      amount: raw.amount,
-      frequency: raw.frequency,
-      base_date: raw.base_date,
-      next_due_date: raw.next_due_date,
-      effectiveDate: raw.base_date || raw.next_due_date,
-      rollover_amount_raw: raw.rollover_amount,
-      rolloverAmount,
-      targetMonth,
-      frozenMonthlyTarget,
-      current_balance: raw.current_balance,
-      planned_budget: raw.planned_budget,
-    });
-  }
-
   // Calculate ideal monthly rate
   const idealMonthlyRate = calculateIdealMonthlyRate(raw.amount, frequencyMonths);
 
