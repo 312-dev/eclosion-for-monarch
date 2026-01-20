@@ -465,6 +465,21 @@ export interface ElectronAPI {
   getLogFiles: () => Promise<LogFileInfo[]>;
   readLogFile: (filePath: string, options?: ReadLogOptions) => Promise<LogFileContent>;
 
+  // Diagnostics
+  /** Get shareable diagnostics for email support (PII-stripped) */
+  getShareableDiagnostics: () => Promise<string>;
+  /** Open email with diagnostics attachment (macOS: native, others: manual) */
+  openEmailWithDiagnostics: (
+    subject: string,
+    recipient: string
+  ) => Promise<{
+    success: boolean;
+    method: 'native' | 'manual';
+    filePath?: string;
+    filename?: string;
+    error?: string;
+  }>;
+
   // Backup & Restore
   createBackup: () => Promise<BackupResult>;
   restoreBackup: () => Promise<RestoreResult>;
@@ -519,6 +534,12 @@ export interface ElectronAPI {
 
   // Menu Management (macOS only)
   menu: MenuAPI;
+
+  // Bookmark Sync (desktop only)
+  bookmarks: BookmarksAPI;
+
+  // Wishlist (desktop only)
+  wishlist: WishlistAPI;
 
   // Loading Screen Signal
   /** Signal to main process that the loading screen is visible and rendered */
@@ -579,6 +600,161 @@ export interface MenuAPI {
   setFull: () => Promise<void>;
   /** Switch to the minimal application menu (after logout/lock) */
   setMinimal: () => Promise<void>;
+}
+
+// Wishlist Types (custom image storage)
+
+/** Result of saving a wishlist image */
+export interface WishlistSaveImageResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+}
+
+/** Wishlist API for custom image storage */
+export interface WishlistAPI {
+  /** Save a custom image for a wishlist item (base64 encoded) */
+  saveImage: (itemId: string, base64Data: string) => Promise<WishlistSaveImageResult>;
+  /** Delete a custom image for a wishlist item */
+  deleteImage: (imagePath: string) => Promise<boolean>;
+  /** Get the file:// URL for displaying a local image */
+  getImageUrl: (imagePath: string) => Promise<string>;
+}
+
+// Bookmark Sync Types (import from bookmarks.ts for implementation, inline here for .d.ts)
+
+/** Supported browser types for bookmark sync */
+export type BookmarkBrowserType = 'chrome' | 'edge' | 'brave' | 'safari';
+
+/** Bookmark sync API for reading browser bookmarks */
+export interface BookmarksAPI {
+  /** Detect installed browsers with accessible bookmark files */
+  detectBrowsers: () => Promise<
+    Array<{
+      type: BookmarkBrowserType;
+      displayName: string;
+      bookmarkFilePath: string;
+      accessible: boolean;
+      permissionStatus: 'granted' | 'denied' | 'not_required' | 'unknown';
+      error?: string;
+    }>
+  >;
+
+  /** Get the full bookmark tree for a browser */
+  getBookmarkTree: (browserType: BookmarkBrowserType) => Promise<{
+    id: string;
+    name: string;
+    type: 'url' | 'folder';
+    url?: string;
+    dateAdded?: string;
+    parentId?: string;
+    children?: unknown[];
+  } | null>;
+
+  /** Get flat list of folders for selection UI */
+  getFolders: (browserType: BookmarkBrowserType) => Promise<
+    Array<{
+      id: string;
+      name: string;
+      path: string;
+      bookmarkCount: number;
+      subfolderCount: number;
+    }>
+  >;
+
+  /** Get hierarchical folder tree for selection UI */
+  getFolderTree: (browserType: BookmarkBrowserType) => Promise<
+    Array<{
+      id: string;
+      name: string;
+      bookmarkCount: number;
+      totalBookmarkCount: number;
+      children: unknown[];
+    }>
+  >;
+
+  /** Request permission to access bookmarks (mainly for Safari on macOS) */
+  requestPermission: (browserType: BookmarkBrowserType) => Promise<{
+    granted: boolean;
+    requiresManualGrant: boolean;
+    instructions?: string;
+  }>;
+
+  /** Save sync configuration for a browser */
+  saveConfig: (config: {
+    browserType: BookmarkBrowserType;
+    selectedFolderIds: string[];
+    enabled: boolean;
+    lastSyncAt?: string;
+  }) => Promise<void>;
+
+  /** Get all sync configurations */
+  getConfigs: () => Promise<
+    Array<{
+      browserType: BookmarkBrowserType;
+      selectedFolderIds: string[];
+      enabled: boolean;
+      lastSyncAt?: string;
+    }>
+  >;
+
+  /** Perform sync for a specific browser, optionally filtering to specific folders */
+  sync: (
+    browserType: BookmarkBrowserType,
+    folderIds?: string[]
+  ) => Promise<{
+    success: boolean;
+    changes: Array<{
+      changeType: 'added' | 'modified' | 'deleted';
+      bookmark: {
+        id: string;
+        name: string;
+        type: 'url' | 'folder';
+        url?: string;
+        dateAdded?: string;
+        parentId?: string;
+      };
+      previousName?: string;
+      previousUrl?: string;
+    }>;
+    totalBookmarks: number;
+    syncedAt: string;
+    error?: string;
+  }>;
+
+  /** Perform sync for all enabled browsers */
+  syncAll: () => Promise<
+    Array<{
+      success: boolean;
+      changes: unknown[];
+      totalBookmarks: number;
+      syncedAt: string;
+      error?: string;
+    }>
+  >;
+
+  /** Start watching bookmark files for changes */
+  startWatcher: () => Promise<void>;
+
+  /** Stop watching bookmark files */
+  stopWatcher: () => Promise<void>;
+
+  /** Listen for bookmark change events from the watcher */
+  onBookmarkChange: (
+    callback: (change: {
+      changeType: 'added' | 'modified' | 'deleted';
+      bookmark: {
+        id: string;
+        name: string;
+        type: 'url' | 'folder';
+        url?: string;
+        dateAdded?: string;
+        parentId?: string;
+      };
+      previousName?: string;
+      previousUrl?: string;
+    }) => void
+  ) => () => void;
 }
 
 declare global {
