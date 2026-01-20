@@ -5,11 +5,12 @@
  * Produces a ZIP file that users can attach to bug reports.
  */
 
-import { app, dialog } from 'electron';
+import { app, dialog, shell } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { getAllLogFiles, getLogDir } from './logger';
+import { exec } from 'node:child_process';
+import { getAllLogFiles, getAllRedactedLogFiles, getLogDir, debugLog } from './logger';
 import { getUpdateChannel } from './updater';
 import { getStateDir } from './paths';
 import { isSentryEnabled } from './sentry';
@@ -223,4 +224,157 @@ export function getQuickDebugInfo(): string {
     `Crash Reporting: ${(info.app as Record<string, unknown>).crashReporting}`,
   ];
   return lines.join('\n');
+}
+
+/**
+ * Get shareable diagnostics for email support.
+ * Uses the redacted log (PII stripped) to ensure no sensitive data is shared.
+ * Returns a compact report suitable for email body.
+ */
+export function getShareableDiagnostics(): string {
+  const info = getSystemInfo();
+  const appInfo = info.app as Record<string, unknown>;
+  const systemInfo = info.system as Record<string, unknown>;
+  const electronInfo = info.electron as Record<string, unknown>;
+
+  // Build compact header with essential system info
+  const header = [
+    `Eclosion v${appInfo.version} (${appInfo.updateChannel})`,
+    `${systemInfo.platform} ${systemInfo.arch} | ${systemInfo.osType} ${systemInfo.osVersion}`,
+    `Electron ${electronInfo.version}`,
+    '',
+  ].join('\n');
+
+  // Read redacted logs (last ~50KB to keep email reasonable)
+  const maxLogSize = 50 * 1024;
+  const redactedFiles = getAllRedactedLogFiles();
+  let logContent = '';
+
+  if (redactedFiles.length > 0) {
+    // Read the most recent redacted log
+    const mainRedactedLog = redactedFiles[0];
+    logContent = readLogFile(mainRedactedLog, maxLogSize);
+  } else {
+    logContent = '[No redacted logs available]';
+  }
+
+  return `${header}--- Recent Logs (PII Redacted) ---\n${logContent}`;
+}
+
+/**
+ * Save diagnostics to a file and return the path.
+ * Used for email attachment workflow.
+ */
+export function saveDiagnosticsFile(): string {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const filename = `eclosion-diagnostics-${timestamp}.txt`;
+  const filePath = path.join(app.getPath('downloads'), filename);
+
+  const content = getShareableDiagnostics();
+  fs.writeFileSync(filePath, content, 'utf8');
+
+  return filePath;
+}
+
+export interface EmailWithDiagnosticsResult {
+  success: boolean;
+  /** 'native' if macOS Mail opened with attachment, 'manual' if user needs to attach */
+  method: 'native' | 'manual';
+  /** Path to the saved diagnostics file (for manual attachment) */
+  filePath?: string;
+  /** Filename for display */
+  filename?: string;
+  error?: string;
+}
+
+/**
+ * Open email client with diagnostics.
+ * - macOS: Uses AppleScript to open Mail with attachment
+ * - Other platforms: Saves file, opens it for user to attach manually
+ */
+export async function openEmailWithDiagnostics(
+  subject: string,
+  recipient: string
+): Promise<EmailWithDiagnosticsResult> {
+  // Save diagnostics file
+  const filePath = saveDiagnosticsFile();
+  const filename = path.basename(filePath);
+
+  debugLog(`[diagnostics] Saved diagnostics file to: ${filePath}`);
+
+  if (process.platform === 'darwin') {
+    // macOS: Use AppleScript to open Mail with attachment
+    // Write script to temp file to avoid shell escaping issues
+    return new Promise((resolve) => {
+      const scriptPath = path.join(os.tmpdir(), 'eclosion-mail-script.scpt');
+
+      const appleScript = `
+tell application "Mail"
+  set newMessage to make new outgoing message with properties {subject:"${subject.replace(/"/g, '\\"')}", visible:true}
+  tell newMessage
+    make new to recipient at end of to recipients with properties {address:"${recipient.replace(/"/g, '\\"')}"}
+    make new attachment with properties {file name:POSIX file "${filePath}"} at after the last paragraph
+  end tell
+  activate
+end tell
+`;
+
+      debugLog(`[diagnostics] Writing AppleScript to: ${scriptPath}`);
+
+      try {
+        fs.writeFileSync(scriptPath, appleScript, 'utf8');
+      } catch (writeError) {
+        debugLog(`[diagnostics] Failed to write AppleScript: ${writeError}`);
+        shell.openPath(filePath);
+        resolve({
+          success: true,
+          method: 'manual',
+          filePath,
+          filename,
+        });
+        return;
+      }
+
+      exec(`osascript "${scriptPath}"`, (error, _stdout, stderr) => {
+        // Clean up temp script
+        try {
+          fs.unlinkSync(scriptPath);
+        } catch {
+          // Ignore cleanup errors
+        }
+
+        if (error) {
+          debugLog(`[diagnostics] AppleScript error: ${error.message}`);
+          debugLog(`[diagnostics] AppleScript stderr: ${stderr}`);
+          // Fallback: open file and let user attach manually
+          shell.openPath(filePath);
+          resolve({
+            success: true,
+            method: 'manual',
+            filePath,
+            filename,
+          });
+        } else {
+          debugLog(`[diagnostics] AppleScript succeeded, Mail opened with attachment`);
+          resolve({
+            success: true,
+            method: 'native',
+            filePath,
+            filename,
+          });
+        }
+      });
+    });
+  } else {
+    // Windows/Linux: Open the file so user can see it, they'll attach manually
+    debugLog(`[diagnostics] Non-macOS platform, opening file for manual attachment`);
+    shell.openPath(filePath);
+
+    return {
+      success: true,
+      method: 'manual',
+      filePath,
+      filename,
+    };
+  }
 }

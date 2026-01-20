@@ -7,11 +7,18 @@
  * Privacy note: Crash reports are sent only if SENTRY_DSN is configured.
  * Reports include stack traces, OS info, and app version. No personal data
  * or authentication tokens are included.
+ *
+ * Note: Sentry is only loaded in packaged builds. In dev mode, all Sentry
+ * functions are no-ops. This avoids @sentry/electron's eager initialization
+ * that tries to access Electron APIs at import time.
  */
 
-import * as Sentry from '@sentry/electron/main';
 import { app } from 'electron';
 import { URL } from 'node:url';
+
+// Sentry module - loaded dynamically only in packaged builds
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let Sentry: typeof import('@sentry/electron/main') | null = null;
 
 let sentryInitialized = false;
 
@@ -28,6 +35,12 @@ const SENTRY_DSN = process.env.SENTRY_DSN || '';
  * @returns true if Sentry was initialized, false if disabled
  */
 export function initSentry(): boolean {
+  // Skip in dev mode - @sentry/electron tries to use Electron APIs at import time
+  if (!app.isPackaged) {
+    console.log('Sentry: Disabled (development mode)');
+    return false;
+  }
+
   // Skip if no DSN configured
   if (!SENTRY_DSN) {
     console.log('Sentry: Disabled (no SENTRY_DSN configured)');
@@ -40,6 +53,14 @@ export function initSentry(): boolean {
   }
 
   try {
+    // Dynamic import to avoid @sentry/electron's eager initialization in dev mode
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Sentry = require('@sentry/electron/main');
+    if (!Sentry) {
+      console.error('Sentry: Failed to load module');
+      return false;
+    }
+
     Sentry.init({
       dsn: SENTRY_DSN,
       release: `eclosion@${app.getVersion()}`,
@@ -131,12 +152,12 @@ export function isSentryEnabled(): boolean {
  * No-op if Sentry is not initialized.
  */
 export function captureException(error: Error, context?: Record<string, unknown>): void {
-  if (!sentryInitialized) return;
+  if (!sentryInitialized || !Sentry) return;
 
   if (context) {
     Sentry.withScope((scope) => {
       scope.setExtras(context);
-      Sentry.captureException(error);
+      Sentry?.captureException(error);
     });
   } else {
     Sentry.captureException(error);
@@ -151,7 +172,7 @@ export function captureMessage(
   message: string,
   level: 'fatal' | 'error' | 'warning' | 'info' | 'debug' = 'info'
 ): void {
-  if (!sentryInitialized) return;
+  if (!sentryInitialized || !Sentry) return;
   Sentry.captureMessage(message, level);
 }
 
@@ -165,7 +186,7 @@ export function addBreadcrumb(breadcrumb: {
   level?: 'fatal' | 'error' | 'warning' | 'info' | 'debug';
   data?: Record<string, unknown>;
 }): void {
-  if (!sentryInitialized) return;
+  if (!sentryInitialized || !Sentry) return;
   Sentry.addBreadcrumb(breadcrumb);
 }
 
@@ -174,7 +195,7 @@ export function addBreadcrumb(breadcrumb: {
  * We don't set this by default to respect privacy.
  */
 export function setUserContext(id: string): void {
-  if (!sentryInitialized) return;
+  if (!sentryInitialized || !Sentry) return;
   Sentry.setUser({ id });
 }
 
@@ -182,6 +203,6 @@ export function setUserContext(id: string): void {
  * Clear user context.
  */
 export function clearUserContext(): void {
-  if (!sentryInitialized) return;
+  if (!sentryInitialized || !Sentry) return;
   Sentry.setUser(null);
 }
