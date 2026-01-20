@@ -82,18 +82,18 @@ class SettingsExportService:
 
     def _get_notes_repo(self) -> NotesRepository:
         """Get NotesRepository, creating session if needed."""
-        from state.db import get_session
+        from state.db.database import get_session_factory
         from state.db.repositories.notes_repo import NotesRepository
 
-        session = self._db_session or get_session()
+        session = self._db_session or get_session_factory()()
         return NotesRepository(session)
 
     def _get_tracker_repo(self) -> TrackerRepository:
         """Get TrackerRepository, creating session if needed."""
-        from state.db import get_session
+        from state.db.database import get_session_factory
         from state.db.repositories.tracker_repo import TrackerRepository
 
-        session = self._db_session or get_session()
+        session = self._db_session or get_session_factory()()
         return TrackerRepository(session)
 
     def export_settings(
@@ -786,6 +786,7 @@ class SettingsExportService:
         for item in items:
             try:
                 repo.create_wishlist_item(
+                    item_id=str(uuid.uuid4()),
                     name=item["name"],
                     amount=item["amount"],
                     target_date=item["target_date"],
