@@ -9,7 +9,6 @@ import { app, dialog, shell } from 'electron';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import * as crypto from 'node:crypto';
 import { exec } from 'node:child_process';
 import { getAllLogFiles, getAllRedactedLogFiles, getLogDir, debugLog } from './logger';
 import { getUpdateChannel } from './updater';
@@ -307,9 +306,9 @@ export async function openEmailWithDiagnostics(
     // macOS: Use AppleScript to open Mail with attachment
     // Write script to temp file to avoid shell escaping issues
     return new Promise((resolve) => {
-      // Use a random suffix to prevent predictable temp file attacks
-      const randomSuffix = crypto.randomBytes(8).toString('hex');
-      const scriptPath = path.join(os.tmpdir(), `eclosion-mail-script-${randomSuffix}.scpt`);
+      // Use mkdtemp to create a unique temp directory atomically (prevents TOCTOU attacks)
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'eclosion-mail-'));
+      const scriptPath = path.join(tempDir, 'script.scpt');
 
       // Escape both backslashes and double quotes for AppleScript strings
       const escapeForAppleScript = (str: string): string =>
@@ -343,9 +342,10 @@ end tell
       }
 
       exec(`osascript "${scriptPath}"`, (error, _stdout, stderr) => {
-        // Clean up temp script
+        // Clean up temp script and directory
         try {
           fs.unlinkSync(scriptPath);
+          fs.rmdirSync(tempDir);
         } catch {
           // Ignore cleanup errors
         }

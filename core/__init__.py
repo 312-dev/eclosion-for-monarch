@@ -26,6 +26,7 @@ from .sanitization import (
     sanitize_id,
     sanitize_name,
     sanitize_string,
+    sanitize_url,
 )
 from .scheduler import SyncScheduler
 from .session import SessionManager
@@ -60,4 +61,5 @@ __all__ = [
     "sanitize_name",
     "sanitize_response",
     "sanitize_string",
+    "sanitize_url",
 ]

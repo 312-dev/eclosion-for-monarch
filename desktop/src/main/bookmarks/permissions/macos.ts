@@ -23,12 +23,11 @@ export async function checkPermission(
   }
 
   // For Safari, try to read the file to check if FDA is granted
+  // Use a single open+read operation to avoid TOCTOU race condition
   try {
-    await fs.promises.access(filePath, fs.constants.R_OK);
-
-    // Try to actually read a small portion of the file
     const fd = await fs.promises.open(filePath, 'r');
     try {
+      // Try to actually read a small portion of the file
       const buffer = Buffer.alloc(16);
       await fd.read(buffer, 0, 16, 0);
     } finally {

@@ -11,6 +11,7 @@ from core import (
     sanitize_id,
     sanitize_name,
     sanitize_response,
+    sanitize_url,
 )
 from core.exceptions import ValidationError
 from core.middleware import sanitize_api_result
@@ -157,9 +158,9 @@ async def create_item():
 
     # Optional fields
     emoji = sanitize_emoji(data.get("emoji", "🎯"))
-    source_url = data.get("source_url")
+    source_url = sanitize_url(data.get("source_url"))
     source_bookmark_id = data.get("source_bookmark_id")
-    logo_url = data.get("logo_url")
+    logo_url = sanitize_url(data.get("logo_url"))
     custom_image_path = data.get("custom_image_path")
 
     result = await service.create_item(
@@ -210,7 +211,7 @@ async def update_item(item_id: str):
     if "emoji" in data:
         updates["emoji"] = sanitize_emoji(data["emoji"])
     if "source_url" in data:
-        updates["source_url"] = data["source_url"]
+        updates["source_url"] = sanitize_url(data["source_url"])
     if "custom_image_path" in data:
         updates["custom_image_path"] = data["custom_image_path"]
 
