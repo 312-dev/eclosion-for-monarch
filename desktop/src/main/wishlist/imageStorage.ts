@@ -76,7 +76,9 @@ export function saveWishlistImage(itemId: string, base64Data: string): SaveImage
     fs.writeFileSync(filePath, imageBuffer);
     debugLog(`Saved wishlist image: ${filePath}`);
 
-    return { success: true, path: filePath };
+    // Return just the filename (not the full path) for database storage
+    // This avoids path sanitization issues and is portable across platforms
+    return { success: true, path: filename };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     debugLog(`Failed to save wishlist image: ${message}`);
@@ -101,25 +103,41 @@ function deleteExistingImages(safeId: string): void {
 }
 
 /**
+ * Resolve an image path to a full filesystem path.
+ * Accepts either a filename (e.g., "item-123.png") or full path.
+ */
+function resolveImagePath(imagePath: string): string {
+  const imagesDir = getImagesDir();
+
+  // If it's just a filename (no directory separators), construct full path
+  if (!imagePath.includes('/') && !imagePath.includes('\\')) {
+    return path.join(imagesDir, imagePath);
+  }
+
+  // Otherwise use as-is (for backward compatibility)
+  return path.normalize(imagePath);
+}
+
+/**
  * Delete a wishlist item image.
  *
- * @param imagePath - The full path to the image file
+ * @param imagePath - The image filename or full path
  * @returns True if deleted successfully or file didn't exist
  */
 export function deleteWishlistImage(imagePath: string): boolean {
   try {
-    // Security check: ensure the path is within the images directory
     const imagesDir = getImagesDir();
-    const normalizedPath = path.normalize(imagePath);
+    const fullPath = resolveImagePath(imagePath);
 
-    if (!normalizedPath.startsWith(imagesDir)) {
+    // Security check: ensure the resolved path is within the images directory
+    if (!fullPath.startsWith(imagesDir)) {
       debugLog(`Security: Attempted to delete file outside images directory: ${imagePath}`);
       return false;
     }
 
-    if (fs.existsSync(normalizedPath)) {
-      fs.unlinkSync(normalizedPath);
-      debugLog(`Deleted wishlist image: ${normalizedPath}`);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      debugLog(`Deleted wishlist image: ${fullPath}`);
     }
 
     return true;
@@ -137,26 +155,28 @@ export function deleteWishlistImage(imagePath: string): boolean {
  * We use data URLs instead of file:// URLs because:
  * - file:// URLs are blocked by Electron's security policies (CSP, cross-origin)
  * - data URLs are always allowed and work reliably in the renderer
+ *
+ * @param imagePath - The image filename (e.g., "item-123.png") or full path
  */
 export function getImageUrl(imagePath: string): string {
   try {
-    // Security check: ensure the path is within the images directory
     const imagesDir = getImagesDir();
-    const normalizedPath = path.normalize(imagePath);
+    const fullPath = resolveImagePath(imagePath);
 
-    if (!normalizedPath.startsWith(imagesDir)) {
+    // Security check: ensure the resolved path is within the images directory
+    if (!fullPath.startsWith(imagesDir)) {
       debugLog(`Security: Attempted to read file outside images directory: ${imagePath}`);
       return '';
     }
 
-    if (!fs.existsSync(normalizedPath)) {
-      debugLog(`Image file not found: ${normalizedPath}`);
+    if (!fs.existsSync(fullPath)) {
+      debugLog(`Image file not found: ${fullPath}`);
       return '';
     }
 
     // Read the file and convert to base64 data URL
-    const imageBuffer = fs.readFileSync(normalizedPath);
-    const extension = path.extname(normalizedPath).slice(1).toLowerCase();
+    const imageBuffer = fs.readFileSync(fullPath);
+    const extension = path.extname(fullPath).slice(1).toLowerCase();
     const mimeType = extension === 'jpg' ? 'image/jpeg' : `image/${extension}`;
 
     return `data:${mimeType};base64,${imageBuffer.toString('base64')}`;

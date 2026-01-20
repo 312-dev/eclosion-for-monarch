@@ -10,6 +10,24 @@ import { useToast } from '../../context/ToastContext';
 import { useDemo } from '../../context/DemoContext';
 import * as api from '../../api/core/wishlist';
 
+/**
+ * Convert a base64 data URL to a File object without using fetch.
+ * This avoids CSP connect-src restrictions on data URLs.
+ */
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const commaIndex = dataUrl.indexOf(',');
+  const header = dataUrl.slice(0, commaIndex);
+  const base64Data = dataUrl.slice(commaIndex + 1);
+  const mimeMatch = header.match(/data:([^;]+)/);
+  const mimeType = mimeMatch?.[1] ?? 'image/jpeg';
+  const binaryString = atob(base64Data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.codePointAt(i) ?? 0;
+  }
+  return new File([bytes], filename, { type: mimeType });
+}
+
 interface NewWishlistImageUploadProps {
   readonly sourceUrl?: string | undefined;
   readonly selectedImage: File | null;
@@ -46,9 +64,7 @@ export function NewWishlistImageUpload({
         const imageData = await api.fetchOgImage(sourceUrl);
         if (ogFetchIdRef.current === currentFetchId && imageData) {
           onPreviewChange(imageData);
-          const response = await fetch(imageData);
-          const blob = await response.blob();
-          const file = new File([blob], 'og-image.jpg', { type: blob.type });
+          const file = dataUrlToFile(imageData, 'og-image.jpg');
           onImageSelect(file);
         }
       } catch {
