@@ -13,6 +13,7 @@ import * as demoApi from '../demoClient';
 import { queryKeys, getQueryKey } from './keys';
 import type { CategoryGroup, UnmappedCategory } from '../../types/category';
 import type { CategoryGroupStore } from '../../types/categoryGroupStore';
+import { decodeHtmlEntities } from '../../utils';
 
 // ============================================================================
 // Normalization
@@ -21,13 +22,18 @@ import type { CategoryGroupStore } from '../../types/categoryGroupStore';
 /**
  * Normalize category groups into store shape
  */
-function normalizeGroups(groups: CategoryGroup[]): Pick<CategoryGroupStore, 'groups' | 'groupOrder'> {
+function normalizeGroups(
+  groups: CategoryGroup[]
+): Pick<CategoryGroupStore, 'groups' | 'groupOrder'> {
   const normalized: Record<string, CategoryGroup> = {};
   const order: string[] = [];
 
   for (const group of groups) {
     order.push(group.id);
-    normalized[group.id] = group;
+    normalized[group.id] = {
+      ...group,
+      name: decodeHtmlEntities(group.name),
+    };
   }
 
   return { groups: normalized, groupOrder: order };
@@ -52,7 +58,11 @@ function normalizeUnmappedCategories(
 
   for (const cat of sorted) {
     order.push(cat.id);
-    normalized[cat.id] = cat;
+    normalized[cat.id] = {
+      ...cat,
+      name: decodeHtmlEntities(cat.name),
+      group_name: decodeHtmlEntities(cat.group_name),
+    };
   }
 
   return { unmappedCategories: normalized, unmappedCategoryOrder: order };
@@ -73,9 +83,7 @@ export function useCategoryGroupsStore() {
   return useQuery({
     queryKey: getQueryKey(queryKeys.categoryGroups, isDemo),
     queryFn: async () => {
-      const groups = isDemo
-        ? await demoApi.getCategoryGroups()
-        : await api.getCategoryGroups();
+      const groups = isDemo ? await demoApi.getCategoryGroups() : await api.getCategoryGroups();
       return normalizeGroups(groups);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -116,7 +124,7 @@ export function useCategoryGroupsList(): {
 } {
   const { data, isLoading, error } = useCategoryGroupsStore();
 
-  const groups = data
+  const groups = data?.groupOrder
     ? data.groupOrder
         .map((id) => data.groups[id])
         .filter((g): g is CategoryGroup => g !== undefined)
