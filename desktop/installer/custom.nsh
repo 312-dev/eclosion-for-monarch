@@ -1,14 +1,21 @@
 ; Eclosion Custom NSIS Script
 ; Uninstaller customization to prompt for user data deletion
 
+!include "FileFunc.nsh"
+
 ; ============================================================================
 ; UNINSTALLER CUSTOMIZATIONS
 ; ============================================================================
 
 !macro customUnInstall
-  ; Skip prompt during silent uninstall (upgrade scenario) - preserve data
-  ; When electron-builder upgrades, it runs the uninstaller with /S flag
+  ; Skip prompt during silent uninstall
   IfSilent done
+
+  ; Skip prompt during upgrade - electron-builder calls uninstaller with _?=$INSTDIR
+  ; when upgrading, which tells it to run from install dir instead of temp
+  ${GetParameters} $R0
+  ${GetOptions} $R0 "_?=" $R1
+  IfErrors 0 done  ; If _?= option exists (no error), it's an upgrade - skip prompt
 
   ; Manual uninstall - ask user if they want to delete app data
   ; Note: ${PRODUCT_NAME} is set by electron-builder (e.g., "Eclosion" or "Eclosion Beta")
