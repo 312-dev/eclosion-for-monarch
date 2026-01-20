@@ -506,10 +506,12 @@ input[type='radio'] {
   --header-height: 55px;
   --rate-limit-banner-height: 40px;
   --footer-height: 45px; /* Match .app-footer height */
-  min-height: 100vh;
+  height: 100vh;
   padding-top: var(--header-height);
   padding-bottom: var(--footer-height);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 /* When rate limit banner is visible inside header, increase effective header height */
@@ -550,6 +552,8 @@ input[type='radio'] {
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  flex: 1;
+  min-height: 0; /* Allow flex children to shrink below content size */
 }
 
 .app-content-wrapper {
