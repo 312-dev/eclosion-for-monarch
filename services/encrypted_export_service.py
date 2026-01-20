@@ -65,6 +65,8 @@ class EncryptedExportService:
         self,
         passphrase: str,
         app_settings: dict[str, Any] | None = None,
+        include_notes: bool = True,
+        include_wishlist: bool = True,
     ) -> EncryptedExportResult:
         """
         Export settings as encrypted JSON.
@@ -72,12 +74,24 @@ class EncryptedExportService:
         Args:
             passphrase: Encryption passphrase (email + password)
             app_settings: Optional frontend app settings
+            include_notes: Include notes tool data (default True for encrypted exports)
+            include_wishlist: Include wishlist tool data (default True)
 
         Returns:
             EncryptedExportResult with salt and encrypted data
+
+        Security:
+            - Notes are decrypted from DB using passphrase, then included in export
+            - Entire export is then encrypted with the same passphrase
+            - This allows backup restoration with the correct credentials
         """
-        # Get the export data
-        export_result = self.export_service.export_settings(app_settings)
+        # Get the export data (including notes since we have the passphrase)
+        export_result = self.export_service.export_settings(
+            app_settings=app_settings,
+            passphrase=passphrase,
+            include_notes=include_notes,
+            include_wishlist=include_wishlist,
+        )
         if not export_result.success or export_result.data is None:
             return EncryptedExportResult(
                 success=False,
@@ -156,6 +170,11 @@ class EncryptedExportService:
 
         Returns:
             EncryptedImportResult with import status
+
+        Security:
+            - Passphrase is used both for decryption AND for re-encrypting notes
+            - Notes content is re-encrypted with the importing user's passphrase
+            - This ensures notes remain encrypted in the target database
         """
         # Decrypt
         success, data, error = self.decrypt_export(salt, encrypted_data, passphrase)
@@ -175,8 +194,12 @@ class EncryptedExportService:
                 error="Decrypted data is empty",
             )
 
-        # Import the decrypted data
-        import_result = self.export_service.import_settings(data, tools)
+        # Import the decrypted data (passphrase used for re-encrypting notes)
+        import_result = self.export_service.import_settings(
+            data=data,
+            tools=tools,
+            passphrase=passphrase,
+        )
 
         return EncryptedImportResult(
             success=import_result.success,

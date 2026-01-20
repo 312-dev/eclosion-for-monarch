@@ -44,16 +44,24 @@ settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 @api_handler(handle_mfa=False)
 def export_settings():
     """
-    Export user settings and tool configurations as JSON.
+    Export user settings and tool configurations as JSON (plaintext).
 
     Returns a portable backup that can be imported later.
     Excludes credentials and runtime state.
+
+    SECURITY NOTE: This endpoint EXCLUDES the notes tool because notes content
+    is encrypted and should not be exposed in plaintext exports. Use the
+    /export-encrypted endpoint for full backups including notes.
     """
     from services.settings_export_service import SettingsExportService
 
     services = get_services()
     export_service = SettingsExportService(services.sync_service.state_manager)
-    result = export_service.export_settings()
+    # Explicitly exclude notes from plaintext exports (security requirement)
+    result = export_service.export_settings(
+        include_notes=False,  # Notes require encrypted export
+        include_wishlist=True,
+    )
 
     if result.success:
         return result.data
@@ -70,9 +78,13 @@ def import_settings():
     Body: {
         "data": { ... },  # The export data
         "options": {
-            "tools": ["recurring"],  # Optional: specific tools to import
+            "tools": ["recurring", "notes", "wishlist"],  # Optional: specific tools
+            "passphrase": "email+password"  # Required for notes import
         }
     }
+
+    Note: If the export contains notes and passphrase is not provided,
+    notes will be skipped with a warning.
     """
     from services.settings_export_service import SettingsExportService
 
@@ -84,9 +96,14 @@ def import_settings():
     export_data = request_data["data"]
     options = request_data.get("options", {})
     tools = options.get("tools")
+    passphrase = options.get("passphrase")
 
     export_service = SettingsExportService(services.sync_service.state_manager)
-    result = export_service.import_settings(export_data, tools=tools)
+    result = export_service.import_settings(
+        data=export_data,
+        tools=tools,
+        passphrase=passphrase,
+    )
 
     return {
         "success": result.success,
