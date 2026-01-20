@@ -25,9 +25,8 @@ function IgnoredBookmarkRow({ item, onCreateTarget, animationIndex = 0 }: Ignore
   }
 
   // Use list-item-enter for staggered animation
-  const animationStyle = animationIndex < 15
-    ? { animationDelay: `${animationIndex * 30}ms` }
-    : undefined;
+  const animationStyle =
+    animationIndex < 15 ? { animationDelay: `${animationIndex * 30}ms` } : undefined;
 
   return (
     <div
@@ -46,6 +45,7 @@ function IgnoredBookmarkRow({ item, onCreateTarget, animationIndex = 0 }: Ignore
         }}
       >
         {item.logo_url ? (
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError is not user interaction
           <img
             src={item.logo_url}
             alt=""

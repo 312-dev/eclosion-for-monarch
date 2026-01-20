@@ -109,21 +109,26 @@ export function AppShell() {
   const isRecurringConfigured = data?.config.target_group_id != null;
 
   // Get the correct tour state based on current page
-  const currentTourSteps = isWishlistPage
-    ? wishlistTourSteps
-    : isNotesPage
-      ? notesTourSteps
-      : recurringTourSteps;
-  const hasSeenCurrentTour = isWishlistPage
-    ? hasSeenWishlistTour
-    : isNotesPage
-      ? hasSeenNotesTour
-      : hasSeenRecurringTour;
-  const hasCurrentTourSteps = isWishlistPage
-    ? hasWishlistTourSteps
-    : isNotesPage
-      ? hasNotesTourSteps
-      : hasRecurringTourSteps;
+  const getTourConfig = () => {
+    if (isWishlistPage)
+      return {
+        steps: wishlistTourSteps,
+        seen: hasSeenWishlistTour,
+        hasSteps: hasWishlistTourSteps,
+      };
+    if (isNotesPage)
+      return { steps: notesTourSteps, seen: hasSeenNotesTour, hasSteps: hasNotesTourSteps };
+    return {
+      steps: recurringTourSteps,
+      seen: hasSeenRecurringTour,
+      hasSteps: hasRecurringTourSteps,
+    };
+  };
+  const {
+    steps: currentTourSteps,
+    seen: hasSeenCurrentTour,
+    hasSteps: hasCurrentTourSteps,
+  } = getTourConfig();
 
   // Auto-start tour on first visit to a page with a tour
   useEffect(() => {
@@ -272,11 +277,12 @@ export function AppShell() {
   }
 
   // Key to force TourProvider remount when switching between tour types
-  const tourKey = isWishlistPage
-    ? 'wishlist-tour'
-    : isNotesPage
-      ? 'notes-tour'
-      : 'recurring-tour';
+  const getTourKey = () => {
+    if (isWishlistPage) return 'wishlist-tour';
+    if (isNotesPage) return 'notes-tour';
+    return 'recurring-tour';
+  };
+  const tourKey = getTourKey();
 
   return (
     <TourProvider

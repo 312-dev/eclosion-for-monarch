@@ -153,7 +153,7 @@ export const WishlistRow = memo(function WishlistRow({
   const dateDisplay = targetDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: targetDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+    year: targetDate.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
   });
 
   // Create a compatible item for RecurringItemBudget
@@ -213,10 +213,9 @@ export const WishlistRow = memo(function WishlistRow({
                       {decodeHtmlEntities(item.name)}
                     </a>
                   ) : (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark"
+                    <button
+                      type="button"
+                      className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark text-left"
                       onDoubleClick={() => setIsEditingName(true)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -226,7 +225,7 @@ export const WishlistRow = memo(function WishlistRow({
                       title="Double-click to rename"
                     >
                       {decodeHtmlEntities(item.name)}
-                    </span>
+                    </button>
                   )}
                 </>
               )}

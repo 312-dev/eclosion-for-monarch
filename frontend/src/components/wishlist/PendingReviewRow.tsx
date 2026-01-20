@@ -41,9 +41,8 @@ export function PendingReviewRow({
 
   // Use list-item-enter for staggered animation (supports up to 15 items via CSS nth-child)
   // For items beyond 15, animation plays immediately
-  const animationStyle = animationIndex < 15
-    ? { animationDelay: `${animationIndex * 30}ms` }
-    : undefined;
+  const animationStyle =
+    animationIndex < 15 ? { animationDelay: `${animationIndex * 30}ms` } : undefined;
 
   return (
     <div
@@ -62,6 +61,7 @@ export function PendingReviewRow({
         }}
       >
         {item.logo_url ? (
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onError is not user interaction
           <img
             src={item.logo_url}
             alt=""
@@ -86,7 +86,10 @@ export function PendingReviewRow({
         >
           {displayName}
         </div>
-        <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+        <div
+          className="flex items-center gap-1.5 text-xs"
+          style={{ color: 'var(--monarch-text-muted)' }}
+        >
           <span className="truncate">{hostname}</span>
           <a
             href={decodedUrl}

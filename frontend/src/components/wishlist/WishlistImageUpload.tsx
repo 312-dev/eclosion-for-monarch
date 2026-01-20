@@ -137,11 +137,16 @@ export function WishlistImageUpload({
 
   const hasImage = !!previewUrl;
 
+  const getBorderColor = () => {
+    if (isDragging) return 'var(--monarch-orange)';
+    if (error) return 'var(--monarch-error)';
+    return 'var(--monarch-border)';
+  };
+
   return (
     <div className="space-y-2">
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         onDrop={handleDrop}
@@ -149,11 +154,7 @@ export function WishlistImageUpload({
         onDragLeave={handleDragLeave}
         className="relative w-full h-32 rounded-lg border-2 border-dashed transition-all cursor-pointer overflow-hidden"
         style={{
-          borderColor: isDragging
-            ? 'var(--monarch-orange)'
-            : error
-              ? 'var(--monarch-error)'
-              : 'var(--monarch-border)',
+          borderColor: getBorderColor(),
           backgroundColor: isDragging ? 'var(--monarch-orange-bg)' : 'var(--monarch-bg-card)',
         }}
         aria-label={hasImage ? 'Change image' : 'Upload image'}
@@ -165,7 +166,7 @@ export function WishlistImageUpload({
           accept="image/*"
           onChange={handleInputChange}
           className="hidden"
-          aria-hidden="true"
+          tabIndex={-1}
         />
 
         {/* Loading overlay */}
@@ -174,11 +175,7 @@ export function WishlistImageUpload({
             className="absolute inset-0 flex items-center justify-center z-10"
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           >
-            <Icons.Refresh
-              size={24}
-              className="animate-spin"
-              style={{ color: 'white' }}
-            />
+            <Icons.Refresh size={24} className="animate-spin" style={{ color: 'white' }} />
           </div>
         )}
 
@@ -187,7 +184,7 @@ export function WishlistImageUpload({
           <>
             <img
               src={previewUrl}
-              alt="Custom item image"
+              alt="Item preview"
               className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Remove button */}
@@ -228,7 +225,7 @@ export function WishlistImageUpload({
             </span>
           </div>
         )}
-      </div>
+      </button>
 
       {/* Error message */}
       {error && (

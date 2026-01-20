@@ -122,7 +122,10 @@ export const WishlistCard = memo(function WishlistCard({
   today.setHours(0, 0, 0, 0);
   const target = new Date(item.target_date);
   target.setHours(0, 0, 0, 0);
-  const daysRemaining = Math.max(0, Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  const daysRemaining = Math.max(
+    0,
+    Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  );
 
   // Get current month abbreviation for budget label
   const currentMonthAbbr = new Date().toLocaleDateString('en-US', { month: 'short' });
@@ -153,6 +156,7 @@ export const WishlistCard = memo(function WishlistCard({
   );
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- double-click is supplementary; Edit button provides accessible interaction
     <div
       className="group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col"
       style={{
@@ -162,7 +166,7 @@ export const WishlistCard = memo(function WishlistCard({
       onDoubleClick={handleDoubleClick}
     >
       {/* Image Area - drag handle (fills remaining space after content) */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+      {}
       <div
         className="wishlist-card-image flex-1 min-h-28 flex items-center justify-center relative group cursor-grab active:cursor-grabbing"
         style={{
@@ -193,15 +197,16 @@ export const WishlistCard = memo(function WishlistCard({
 
         {/* Status badge - bottom right */}
         <div className="absolute bottom-2 right-2">
-          <StatusBadge status={displayStatus} isArchived={item.is_archived} archivedAt={item.archived_at} />
+          <StatusBadge
+            status={displayStatus}
+            isArchived={item.is_archived}
+            archivedAt={item.archived_at}
+          />
         </div>
       </div>
 
       {/* Content Area - fixed max height, image fills the rest */}
-      <div
-        className="p-4 shrink-0 flex flex-col"
-        style={{ maxHeight: 140 }}
-      >
+      <div className="p-4 shrink-0 flex flex-col" style={{ maxHeight: 140 }}>
         {/* Top row: Title + info on left, budget input on right */}
         <div className="flex items-start justify-between gap-3 mb-3">
           {/* Left side: Title and date */}
@@ -217,7 +222,8 @@ export const WishlistCard = memo(function WishlistCard({
                   style={{ color: 'var(--monarch-text-dark)' }}
                   title={item.name}
                 >
-                  {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}{item.name}
+                  {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                  {item.name}
                 </a>
               ) : (
                 <h3
@@ -225,7 +231,8 @@ export const WishlistCard = memo(function WishlistCard({
                   style={{ color: 'var(--monarch-text-dark)' }}
                   title={item.name}
                 >
-                  {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}{item.name}
+                  {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                  {item.name}
                 </h3>
               )}
               {!item.is_archived && (
@@ -240,7 +247,10 @@ export const WishlistCard = memo(function WishlistCard({
               )}
             </div>
             {/* Target date */}
-            <div className="flex items-center gap-1 text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+            <div
+              className="flex items-center gap-1 text-sm"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            >
               <Icons.Calendar size={14} />
               <span>{dateDisplay}</span>
               {!item.is_archived && daysRemaining > 0 && (
@@ -292,7 +302,6 @@ export const WishlistCard = memo(function WishlistCard({
             budgetedThisMonth={budgetedThisMonth}
           />
         )}
-
       </div>
     </div>
   );

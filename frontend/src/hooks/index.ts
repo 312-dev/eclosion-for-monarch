@@ -111,3 +111,5 @@ export {
   useWishlistImageUpload,
   type UseWishlistImageUploadResult,
 } from './useWishlistImageUpload';
+
+export { useWishlistSync } from './useWishlistSync';

@@ -23,3 +23,4 @@ export { CreditsSection } from './CreditsSection';
 export { LogViewerSection } from './LogViewerSection';
 export { HiddenCategoriesModal } from './HiddenCategoriesModal';
 export { DeveloperSection } from './DeveloperSection';
+export { SettingsHeader } from './SettingsHeader';

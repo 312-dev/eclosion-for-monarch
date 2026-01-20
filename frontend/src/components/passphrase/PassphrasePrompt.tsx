@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../utils';
 import { isDesktopMode } from '../../utils/apiBase';
 import { UI } from '../../constants';
-import { LockIcon } from '../icons';
 import { ElectronTitleBar } from '../ElectronTitleBar';
 import {
   getCooldownSeconds,
@@ -13,6 +12,7 @@ import {
   clearLockoutState,
 } from './PassphraseUtils';
 import { usePassphraseBiometric } from './usePassphraseBiometric';
+import { PassphraseHeader } from './PassphraseHeader';
 import {
   PasswordInput,
   RequirementsList,
@@ -26,7 +26,6 @@ interface PassphrasePromptProps {
   onSuccess: () => void;
   onCredentialUpdateNeeded?: (passphrase: string) => void;
   onResetApp?: () => void;
-  /** Called when user wants to use email/password fallback (desktop mode only) */
   onFallbackRequest?: () => void;
   autoPromptBiometric?: boolean;
 }
@@ -50,17 +49,13 @@ export function PassphrasePrompt({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassphrase, setShowPassphrase] = useState(false);
-
-  // Desktop mode: Track if biometric is required (separate from legacy passphrase-based enrollment)
   const [requireBiometric, setRequireBiometric] = useState(false);
-
-  // Progressive cooldown state (persisted across restarts)
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [lockoutLoaded, setLockoutLoaded] = useState(false);
+  const [requireBiometricLoaded, setRequireBiometricLoaded] = useState(false);
 
-  // Load persisted lockout state on mount
   useEffect(() => {
     getLockoutState().then((state) => {
       setFailedAttempts(state.failedAttempts);
@@ -99,22 +94,14 @@ export function PassphrasePrompt({
   const allRequirementsMet = requirements.every((r) => r.met);
   const passwordsMatch = passphrase === confirmPassphrase;
   const isInCooldown = cooldownRemaining > 0;
-  // Wait for lockout state to load before allowing submission (prevents race condition)
   const isValid =
     mode === 'unlock'
       ? passphrase.length > 0 && !isInCooldown && lockoutLoaded
       : allRequirementsMet && passwordsMatch;
   const displayError = error || biometricError;
-
-  // On desktop with Touch ID enabled, only show Touch ID for unlock (no passphrase form)
-  // Desktop doesn't use encryption passwords - only biometric authentication
-  // Only requireBiometric matters here since this condition is desktop-mode-only
   const isDesktopBiometricOnly =
     isDesktopMode() && mode === 'unlock' && biometric.available && requireBiometric;
 
-  // Desktop mode with Touch ID disabled: redirect to fallback (email/password) form
-  // Desktop mode doesn't use passphrases, so the passphrase form is never appropriate
-  const [requireBiometricLoaded, setRequireBiometricLoaded] = useState(false);
   useEffect(() => {
     if (isDesktopMode() && globalThis.electron?.credentials) {
       globalThis.electron.credentials.getRequireBiometric().then((value) => {
@@ -132,12 +119,10 @@ export function PassphrasePrompt({
       !requireBiometric &&
       onFallbackRequest
     ) {
-      // Touch ID is disabled in desktop mode - go straight to email/password form
       onFallbackRequest();
     }
   }, [mode, requireBiometric, requireBiometricLoaded, onFallbackRequest]);
 
-  // Cooldown timer effect
   useEffect(() => {
     if (!cooldownUntil) {
       setCooldownRemaining(0);
@@ -157,17 +142,14 @@ export function PassphrasePrompt({
     const seconds = getCooldownSeconds(attempts);
     const newCooldownUntil = seconds > 0 ? Date.now() + seconds * 1000 : null;
     if (newCooldownUntil) setCooldownUntil(newCooldownUntil);
-    // Persist lockout state
     setLockoutState({ failedAttempts: attempts, cooldownUntil: newCooldownUntil });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || loading) return;
-
     setLoading(true);
     setError(null);
-
     try {
       if (mode === 'create') {
         const result = await savePassphrase(passphrase);
@@ -213,11 +195,11 @@ export function PassphrasePrompt({
     if (mode === 'create') {
       return 'Your Monarch credentials will be encrypted with this passphrase. Only you can decrypt them.';
     }
-    if (isDesktopBiometricOnly) {
-      return `Use ${biometric.displayName} to unlock your credentials.`;
-    }
+    if (isDesktopBiometricOnly) return `Use ${biometric.displayName} to unlock your credentials.`;
     return 'Enter your passphrase to unlock your encrypted credentials.';
   };
+
+  const isButtonDisabled = loading || !isValid || isInCooldown;
 
   return (
     <div
@@ -232,18 +214,7 @@ export function PassphrasePrompt({
           border: '1px solid var(--monarch-border)',
         }}
       >
-        <div className="flex items-center gap-3 mb-2">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'var(--monarch-orange-bg)' }}
-          >
-            <LockIcon size={20} color="var(--monarch-orange)" />
-          </div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--monarch-text-dark)' }}>
-            {mode === 'create' ? 'Create Encryption Passphrase' : 'Log back in'}
-          </h1>
-        </div>
-
+        <PassphraseHeader mode={mode} />
         <p className="mb-6" style={{ color: 'var(--monarch-text-muted)' }}>
           {getDescriptionText()}
         </p>
@@ -271,7 +242,6 @@ export function PassphrasePrompt({
           />
         )}
 
-        {/* Fallback link for desktop mode when Touch ID fails or user prefers credentials */}
         {isDesktopBiometricOnly && onFallbackRequest && (
           <button
             type="button"
@@ -283,7 +253,6 @@ export function PassphrasePrompt({
           </button>
         )}
 
-        {/* On desktop with biometric enrolled, hide the passphrase form - only show Touch ID */}
         {!isDesktopBiometricOnly && (
           <form onSubmit={handleSubmit}>
             <PasswordInput
@@ -297,7 +266,6 @@ export function PassphrasePrompt({
                 mode === 'create' ? 'Create a strong passphrase' : 'Enter your passphrase'
               }
             />
-
             {mode === 'create' && (
               <>
                 <PasswordInput
@@ -313,21 +281,18 @@ export function PassphrasePrompt({
                 <RequirementsList requirements={requirements} />
               </>
             )}
-
             <button
               type="submit"
-              disabled={loading || !isValid || isInCooldown}
+              disabled={isButtonDisabled}
               className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
               style={{
-                backgroundColor:
-                  loading || !isValid || isInCooldown
-                    ? 'var(--monarch-orange-disabled)'
-                    : 'var(--monarch-orange)',
+                backgroundColor: isButtonDisabled
+                  ? 'var(--monarch-orange-disabled)'
+                  : 'var(--monarch-orange)',
               }}
             >
               {getButtonText()}
             </button>
-
             {isInCooldown && mode === 'unlock' && (
               <p
                 className="text-xs text-center mt-2"
@@ -339,7 +304,6 @@ export function PassphrasePrompt({
           </form>
         )}
 
-        {/* Hide reset option on desktop - no passphrase to forget */}
         {mode === 'unlock' && onResetApp && !isDesktopBiometricOnly && (
           <button
             type="button"
