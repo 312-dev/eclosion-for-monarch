@@ -265,18 +265,38 @@ def enforce_desktop_secret(services: "Services") -> tuple[Response, int] | None:
 
 
 def restore_session_credentials(services: "Services") -> None:
-    """Restore credentials from session cookie if not in memory.
+    """Restore credentials from session cookie or dev session file if not in memory.
 
     This handles the case where:
     - Server restarted but user's session cookie is still valid
     - Page was refreshed and session cookie contains unlock state
+    - Flask restarted in dev mode and dev session file exists
     """
     from core.audit import audit_log  # Local import to avoid circular dependency
-    from services.credentials_service import CredentialsService
+    from services.credentials_service import (
+        CredentialsService,
+        _is_dev_desktop_mode,
+        _load_dev_session,
+    )
 
     # Skip if credentials already in memory
     if CredentialsService._session_credentials:
         return
+
+    # In dev desktop mode, try to restore from dev session file first
+    # This handles Flask restarts that clear in-memory credentials
+    if _is_dev_desktop_mode():
+        dev_session = _load_dev_session()
+        if dev_session:
+            CredentialsService._session_credentials = dev_session
+            audit_log(
+                services.security_service,
+                "DEV_SESSION_RESTORE",
+                True,
+                "Credentials restored from dev session file",
+            )
+            SessionManager.update_activity()
+            return
 
     # Check if session indicates user was unlocked
     if not session.get("auth_unlocked"):
