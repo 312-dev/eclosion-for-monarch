@@ -82,6 +82,25 @@ vi.mock('@sentry/electron/main', () => ({
   addBreadcrumb: vi.fn(),
 }));
 
+// Mock electron-context-menu
+vi.mock('electron-context-menu', () => ({
+  default: vi.fn(),
+}));
+
+// Mock bplist-parser (Safari bookmarks parser)
+vi.mock('bplist-parser', () => ({
+  parseFile: vi.fn(() => Promise.resolve([])),
+  parseBuffer: vi.fn(() => []),
+}));
+
+// Mock chokidar (file watching)
+vi.mock('chokidar', () => ({
+  watch: vi.fn(() => ({
+    on: vi.fn().mockReturnThis(),
+    close: vi.fn(),
+  })),
+}));
+
 // Mock electron-store
 vi.mock('electron-store', () => {
   return {
