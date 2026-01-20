@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
 import { StartupUpdateStatus } from './StartupUpdateStatus';
 import { AppIcon } from '../wizards/SetupWizardIcons';
+import { ElectronTitleBar } from '../ElectronTitleBar';
 import {
   STARTUP_THRESHOLDS,
   MESSAGE_INTERVAL,
@@ -172,118 +173,118 @@ export function StartupLoadingScreen({
   const isTimedOut = elapsedSeconds >= STARTUP_THRESHOLDS.TIMEOUT;
 
   return (
-    <div
-      className={`fixed inset-0 flex flex-col items-center justify-center transition-opacity duration-500 ${
-        isFadingOut ? 'opacity-0' : 'opacity-100'
-      }`}
-      style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-    >
-      <div className="flex flex-col items-center gap-6 max-w-md px-6 text-center">
-        {/* Logo/Brand - draggable region for window */}
-        <div
-          className="flex items-center gap-3 mb-4 cursor-default"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        >
-          <AppIcon size={48} />
-          <span
-            className="text-2xl font-semibold"
-            style={{
-              color: 'var(--monarch-text-dark)',
-              fontFamily: 'var(--font-logo)',
-            }}
-          >
-            Eclosion
-          </span>
-        </div>
-
-        {/* Spinner or error icon */}
-        {isTimedOut ? (
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'var(--monarch-error-bg)' }}
-          >
-            <svg
-              className="w-8 h-8"
-              style={{ color: 'var(--monarch-error)' }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-        ) : (
-          <LoadingSpinner size="lg" color="var(--monarch-orange)" label="Starting application" />
-        )}
-
-        {/* Status text */}
-        <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
-          {getStatusText(elapsedSeconds, isTimedOut)}
-        </p>
-
-        {/* Progress bar */}
-        <div className="w-full">
-          <div
-            className="h-2 rounded-full overflow-hidden"
-            style={{ backgroundColor: 'var(--monarch-border)' }}
-          >
-            <div
-              className="h-full rounded-full transition-all duration-300 ease-out"
+    <>
+      <ElectronTitleBar variant="compact" />
+      <div
+        className={`fixed inset-0 flex flex-col items-center justify-center transition-opacity duration-500 ${
+          isFadingOut ? 'opacity-0' : 'opacity-100'
+        }`}
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+      >
+        <div className="flex flex-col items-center gap-6 max-w-md px-6 text-center">
+          {/* Logo/Brand */}
+          <div className="flex items-center gap-3 mb-4">
+            <AppIcon size={48} />
+            <span
+              className="text-2xl font-semibold"
               style={{
-                width: `${progress}%`,
-                backgroundColor: isTimedOut ? 'var(--monarch-error)' : 'var(--monarch-orange)',
+                color: 'var(--monarch-text-dark)',
+                fontFamily: 'var(--font-logo)',
               }}
-            />
+            >
+              Eclosion
+            </span>
           </div>
-          {!isTimedOut && (
-            <p className="mt-2 text-xs" style={{ color: 'var(--monarch-text-light)' }}>
-              {Math.round(progress)}%
+
+          {/* Spinner or error icon */}
+          {isTimedOut ? (
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'var(--monarch-error-bg)' }}
+            >
+              <svg
+                className="w-8 h-8"
+                style={{ color: 'var(--monarch-error)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+          ) : (
+            <LoadingSpinner size="lg" color="var(--monarch-orange)" label="Starting application" />
+          )}
+
+          {/* Status text */}
+          <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
+            {getStatusText(elapsedSeconds, isTimedOut)}
+          </p>
+
+          {/* Progress bar */}
+          <div className="w-full">
+            <div
+              className="h-2 rounded-full overflow-hidden"
+              style={{ backgroundColor: 'var(--monarch-border)' }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-300 ease-out"
+                style={{
+                  width: `${progress}%`,
+                  backgroundColor: isTimedOut ? 'var(--monarch-error)' : 'var(--monarch-orange)',
+                }}
+              />
+            </div>
+            {!isTimedOut && (
+              <p className="mt-2 text-xs" style={{ color: 'var(--monarch-text-light)' }}>
+                {Math.round(progress)}%
+              </p>
+            )}
+          </div>
+
+          {/* Rotating message */}
+          <div className="min-h-12 flex items-center justify-center" key={currentMessage}>
+            <p
+              className="text-sm italic animate-fade-in"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            >
+              {isTimedOut ? TIMEOUT_ERROR_MESSAGE : `"${currentMessage}"`}
+            </p>
+          </div>
+
+          {/* Elapsed time (shown after 30 seconds) */}
+          {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && (
+            <p className="text-xs animate-fade-in" style={{ color: 'var(--monarch-text-light)' }}>
+              Waiting for {elapsedSeconds} seconds...
             </p>
           )}
+
+          <StartupUpdateStatus
+            status={updateStatus}
+            version={updateVersion}
+            progress={downloadProgress}
+          />
+
+          {/* Timeout action */}
+          {isTimedOut && (
+            <button
+              onClick={() => globalThis.location.reload()}
+              className="mt-4 px-4 py-2 rounded-lg font-medium transition-colors btn-press"
+              style={{
+                backgroundColor: 'var(--monarch-orange)',
+                color: 'white',
+              }}
+            >
+              Try Again
+            </button>
+          )}
         </div>
-
-        {/* Rotating message */}
-        <div className="min-h-12 flex items-center justify-center" key={currentMessage}>
-          <p
-            className="text-sm italic animate-fade-in"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
-            {isTimedOut ? TIMEOUT_ERROR_MESSAGE : `"${currentMessage}"`}
-          </p>
-        </div>
-
-        {/* Elapsed time (shown after 30 seconds) */}
-        {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && (
-          <p className="text-xs animate-fade-in" style={{ color: 'var(--monarch-text-light)' }}>
-            Waiting for {elapsedSeconds} seconds...
-          </p>
-        )}
-
-        <StartupUpdateStatus
-          status={updateStatus}
-          version={updateVersion}
-          progress={downloadProgress}
-        />
-
-        {/* Timeout action */}
-        {isTimedOut && (
-          <button
-            onClick={() => globalThis.location.reload()}
-            className="mt-4 px-4 py-2 rounded-lg font-medium transition-colors btn-press"
-            style={{
-              backgroundColor: 'var(--monarch-orange)',
-              color: 'white',
-            }}
-          >
-            Try Again
-          </button>
-        )}
       </div>
-    </div>
+    </>
   );
 }

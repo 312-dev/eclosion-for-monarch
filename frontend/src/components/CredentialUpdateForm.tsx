@@ -60,7 +60,7 @@ export function CredentialUpdateForm({
       style={{ backgroundColor: 'var(--monarch-bg-page)' }}
     >
       {/* Draggable title bar for macOS Electron */}
-      <ElectronTitleBar />
+      <ElectronTitleBar variant="compact" />
       <div
         className="rounded-xl shadow-lg max-w-md w-full p-6"
         style={{

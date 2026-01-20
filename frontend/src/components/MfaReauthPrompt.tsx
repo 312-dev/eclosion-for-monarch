@@ -119,7 +119,7 @@ export function MfaReauthPrompt({
 
   return (
     <>
-      <ElectronTitleBar />
+      <ElectronTitleBar variant="compact" />
       <div
         className="min-h-screen flex items-center justify-center p-4"
         style={{ backgroundColor: 'var(--monarch-bg-page)' }}
