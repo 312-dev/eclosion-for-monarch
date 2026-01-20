@@ -616,7 +616,7 @@ class CategoryManager:
                 continue
             for amount_data in goal_data.get("monthlyAmounts", []):
                 if amount_data.get("month") == start:
-                    planned_savings += amount_data.get("plannedAmount", 0)
+                    planned_savings += amount_data.get("plannedAmount") or 0
 
         totals_by_month = budgets.get("budgetData", {}).get("totalsByMonth", [])
         for totals in totals_by_month:
