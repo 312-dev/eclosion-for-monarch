@@ -31,7 +31,7 @@ describe('Settings Export (Demo Mode)', () => {
       const result = await demoApi.exportSettings();
 
       expect(result.eclosion_export).toBeDefined();
-      expect(result.eclosion_export.version).toBe('1.0');
+      expect(result.eclosion_export.version).toBe('1.1');
       expect(result.eclosion_export.source_mode).toBe('demo');
       expect(result.eclosion_export.exported_at).toBeDefined();
     });
@@ -270,8 +270,12 @@ describe('Settings Export (Demo Mode)', () => {
       const restoredDashboard = await demoApi.getDashboard();
 
       // Config settings should match
-      expect(restoredDashboard.config.target_group_id).toBe(originalDashboard.config.target_group_id);
-      expect(restoredDashboard.config.target_group_name).toBe(originalDashboard.config.target_group_name);
+      expect(restoredDashboard.config.target_group_id).toBe(
+        originalDashboard.config.target_group_id
+      );
+      expect(restoredDashboard.config.target_group_name).toBe(
+        originalDashboard.config.target_group_name
+      );
       expect(restoredDashboard.config.auto_sync_new).toBe(true);
       expect(restoredDashboard.config.auto_track_threshold).toBe(75);
       expect(restoredDashboard.config.auto_update_targets).toBe(true);
@@ -305,7 +309,7 @@ describe('Settings Export (Demo Mode)', () => {
     it('should preserve enabled items list through export/import', async () => {
       // Get initial dashboard
       const dashboard = await demoApi.getDashboard();
-      const allItemIds = dashboard.items.map(i => i.id);
+      const allItemIds = dashboard.items.map((i) => i.id);
 
       // Disable some items
       if (allItemIds.length > 0) {
@@ -327,7 +331,7 @@ describe('Settings Export (Demo Mode)', () => {
       // Verify the item is still disabled after import
       const restoredDashboard = await demoApi.getDashboard();
       if (allItemIds.length > 0) {
-        const item = restoredDashboard.items.find(i => i.id === allItemIds[0]);
+        const item = restoredDashboard.items.find((i) => i.id === allItemIds[0]);
         expect(item?.is_enabled).toBe(false);
       }
     });
