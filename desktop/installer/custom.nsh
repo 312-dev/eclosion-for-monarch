@@ -6,9 +6,13 @@
 ; ============================================================================
 
 !macro customUnInstall
-  ; Ask user if they want to delete app data
+  ; Skip prompt during silent uninstall (upgrade scenario) - preserve data
+  ; When electron-builder upgrades, it runs the uninstaller with /S flag
+  IfSilent done
+
+  ; Manual uninstall - ask user if they want to delete app data
   ; Note: ${PRODUCT_NAME} is set by electron-builder (e.g., "Eclosion" or "Eclosion Beta")
-  MessageBox MB_YESNO|MB_ICONQUESTION "Do you want to delete all ${PRODUCT_NAME} app data?$\n$\nThis includes your saved credentials, settings, and logs.$\n$\nChoose 'No' to keep your data for future reinstallation." IDYES deleteData IDNO skipDelete
+  MessageBox MB_YESNO|MB_ICONQUESTION "Do you want to delete all ${PRODUCT_NAME} app data?$\n$\nThis includes your saved credentials, settings, and logs.$\n$\nChoose 'No' to keep your data for future reinstallation." IDYES deleteData IDNO done
 
   deleteData:
     ; Delete app data directory (uses product name for correct folder)
@@ -20,11 +24,6 @@
     ; Delete legacy electron-store config file (old versions used this path)
     Delete "$APPDATA\eclosion-desktop\config.json"
     RMDir "$APPDATA\eclosion-desktop"
-
-    Goto done
-
-  skipDelete:
-    ; User chose to keep data
 
   done:
 !macroend
