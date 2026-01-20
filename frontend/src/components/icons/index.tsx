@@ -73,8 +73,10 @@ import {
   Eye,
   EyeOff,
   Download,
+  Upload,
   Copy,
   Folder,
+  FolderCheck,
   Bookmark,
   Circle,
   Frown,
@@ -100,6 +102,8 @@ import {
   PiggyBank,
   Coins,
   Wallet,
+  Square,
+  CheckSquare,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -180,8 +184,10 @@ export const BlockedIcon = Ban;
 export const EyeIcon = Eye;
 export const EyeOffIcon = EyeOff;
 export const DownloadIcon = Download;
+export const UploadIcon = Upload;
 export const CopyIcon = Copy;
 export const FolderIcon = Folder;
+export const FolderCheckIcon = FolderCheck;
 export const BookmarkIcon = Bookmark;
 export const CircleIcon = Circle;
 export const SadFaceIcon = Frown;
@@ -207,6 +213,8 @@ export const AwardIcon = Award;
 export const PiggyBankIcon = PiggyBank;
 export const CoinsIcon = Coins;
 export const WalletIcon = Wallet;
+export const SquareIcon = Square;
+export const CheckSquareIcon = CheckSquare;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -555,8 +563,10 @@ export const Icons = {
   Eye: EyeIcon,
   EyeOff: EyeOffIcon,
   Download: DownloadIcon,
+  Upload: UploadIcon,
   Copy: CopyIcon,
   Folder: FolderIcon,
+  FolderCheck: FolderCheckIcon,
   Bookmark: BookmarkIcon,
   Circle: CircleIcon,
   SadFace: SadFaceIcon,
@@ -599,6 +609,10 @@ export const Icons = {
   PiggyBank: PiggyBankIcon,
   Coins: CoinsIcon,
   Wallet: WalletIcon,
+
+  // Selection
+  Square: SquareIcon,
+  CheckSquare: CheckSquareIcon,
 };
 
 export { Mail as MailIcon, HelpCircle as HelpIcon } from 'lucide-react';

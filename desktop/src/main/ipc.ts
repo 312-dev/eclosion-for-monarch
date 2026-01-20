@@ -33,7 +33,12 @@ import {
   getUpdateStatus,
   getUpdateChannel,
 } from './updater';
-import { exportDiagnostics, getQuickDebugInfo } from './diagnostics';
+import {
+  exportDiagnostics,
+  getQuickDebugInfo,
+  getShareableDiagnostics,
+  openEmailWithDiagnostics,
+} from './diagnostics';
 import { createBackup, restoreBackup, getBackupWarning, getRestoreWarning } from './backup';
 import {
   getOnboardingData,
@@ -103,6 +108,8 @@ import {
   uninstallBackgroundSync,
   updateBackgroundSyncInterval,
 } from './background-sync';
+import { setupBookmarkIpcHandlers } from './bookmarks';
+import { setupWishlistIpcHandlers } from './wishlist';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -447,6 +454,26 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     clipboard.writeText(info);
     return info;
   });
+
+  /**
+   * Get shareable diagnostics for email support.
+   * Returns redacted (PII-stripped) diagnostics suitable for email body.
+   */
+  ipcMain.handle('get-shareable-diagnostics', () => {
+    return getShareableDiagnostics();
+  });
+
+  /**
+   * Open email with diagnostics attachment.
+   * On macOS: Opens Mail with attachment via AppleScript.
+   * On other platforms: Saves file and opens it for manual attachment.
+   */
+  ipcMain.handle(
+    'open-email-with-diagnostics',
+    async (_event, subject: string, recipient: string) => {
+      return openEmailWithDiagnostics(subject, recipient);
+    }
+  );
 
   // =========================================================================
   // Log Viewer
@@ -1193,4 +1220,18 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     }
     return { success: false, error: 'Failed to update interval' };
   });
+
+  // =========================================================================
+  // Bookmarks
+  // =========================================================================
+
+  // Setup bookmark-related IPC handlers (browser detection, parsing, sync)
+  setupBookmarkIpcHandlers();
+
+  // =========================================================================
+  // Wishlist
+  // =========================================================================
+
+  // Setup wishlist-related IPC handlers (image storage)
+  setupWishlistIpcHandlers();
 }

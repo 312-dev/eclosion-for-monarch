@@ -75,3 +75,4 @@ state/*.migrated*
 
 # Temporary backups
 lib/
+dev.log

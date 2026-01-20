@@ -224,7 +224,7 @@ export function PassphrasePrompt({
       className="min-h-screen flex items-center justify-center p-4"
       style={{ backgroundColor: 'var(--monarch-bg-page)' }}
     >
-      <ElectronTitleBar />
+      <ElectronTitleBar variant="compact" />
       <div
         className="rounded-xl shadow-lg max-w-md w-full p-6"
         style={{

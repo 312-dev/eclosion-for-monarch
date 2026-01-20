@@ -102,3 +102,8 @@ def register_blueprints(app: Flask) -> None:
     from .recurring import recurring_bp
 
     app.register_blueprint(recurring_bp)
+
+    # Phase 8: Wishlist blueprint
+    from .wishlist import wishlist_bp
+
+    app.register_blueprint(wishlist_bp)

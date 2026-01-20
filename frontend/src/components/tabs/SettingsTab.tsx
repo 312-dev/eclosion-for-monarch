@@ -12,7 +12,8 @@
  * - Danger zone (reset, uninstall)
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 import { ResetAppModal } from '../ResetAppModal';
 import { UninstallModal } from '../UninstallModal';
@@ -31,6 +32,7 @@ import {
   RecurringToolSettings,
   RecurringResetModal,
   NotesToolCard,
+  WishlistToolSettings,
   SyncingSection,
   UpdatesSection,
   DesktopSection,
@@ -43,6 +45,11 @@ import {
   CreditsSection,
   DeveloperSection,
 } from '../settings';
+import { BrowserBookmarksSetupWizard } from '../wizards/wishlist/BrowserBookmarksSetupWizard';
+import {
+  useUpdateWishlistConfigMutation,
+  useClearUnconvertedBookmarksMutation,
+} from '../../api/queries';
 
 export function SettingsTab() {
   const [showResetModal, setShowResetModal] = useState(false);
@@ -50,6 +57,7 @@ export function SettingsTab() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showRecurringResetModal, setShowRecurringResetModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showBookmarkSetupModal, setShowBookmarkSetupModal] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [autoSyncStatus, setAutoSyncStatus] = useState<AutoSyncStatus | null>(null);
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
@@ -59,7 +67,21 @@ export function SettingsTab() {
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
   const recurringSettingsRef = useRef<HTMLDivElement>(null);
+  const notesSettingsRef = useRef<HTMLDivElement>(null);
+  const wishlistSettingsRef = useRef<HTMLDivElement>(null);
   const client = useApiClient();
+  const updateWishlistConfig = useUpdateWishlistConfigMutation();
+  const clearUnconvertedBookmarks = useClearUnconvertedBookmarksMutation();
+  const location = useLocation();
+
+  // Determine which tool settings should be auto-expanded based on URL hash
+  const initialHash = useMemo(() => location.hash, [location.hash]);
+  const expandedTool = useMemo(() => {
+    if (initialHash === '#recurring') return 'recurring';
+    if (initialHash === '#notes') return 'notes';
+    if (initialHash === '#wishlist') return 'wishlist';
+    return null;
+  }, [initialHash]);
 
   usePageTitle('Settings', dashboardData?.config.user_first_name);
 
@@ -67,15 +89,22 @@ export function SettingsTab() {
     fetchDashboardData();
     fetchAutoSyncStatus();
     fetchVersionInfo();
-
-    // Both #recurring and #notes scroll to Tool Settings section
-    if (globalThis.location.hash === '#recurring' || globalThis.location.hash === '#notes') {
-      setTimeout(() => {
-        recurringSettingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, UI.SCROLL.AFTER_MOUNT);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Initial mount only, functions are stable
   }, []);
+
+  // Scroll to the specific tool settings card based on URL hash
+  useEffect(() => {
+    if (expandedTool) {
+      setTimeout(() => {
+        const refMap = {
+          recurring: recurringSettingsRef,
+          notes: notesSettingsRef,
+          wishlist: wishlistSettingsRef,
+        };
+        refMap[expandedTool].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, UI.SCROLL.AFTER_MOUNT);
+    }
+  }, [expandedTool]);
 
   const fetchVersionInfo = async () => {
     try {
@@ -121,6 +150,43 @@ export function SettingsTab() {
     if (!result.success) {
       throw new Error(result.error || 'Failed to disable auto-sync');
     }
+  };
+
+  const handleChangeBookmarkSource = async () => {
+    try {
+      // First: Unlink - clear unconverted bookmarks and reset browser sync settings
+      await clearUnconvertedBookmarks.mutateAsync();
+      await updateWishlistConfig.mutateAsync({
+        isConfigured: false,
+        selectedBrowser: null,
+        selectedFolderIds: [],
+        selectedFolderNames: [],
+      });
+      // Second: Open the browser bookmark selection modal
+      setShowBookmarkSetupModal(true);
+    } catch {
+      toast.error('Failed to reset bookmark source');
+    }
+  };
+
+  const handleUnlinkBookmarks = async () => {
+    try {
+      // Clear all unconverted bookmarks and reset browser sync settings
+      await clearUnconvertedBookmarks.mutateAsync();
+      await updateWishlistConfig.mutateAsync({
+        isConfigured: false,
+        selectedBrowser: null,
+        selectedFolderIds: [],
+        selectedFolderNames: [],
+      });
+      toast.success('Bookmark sync unlinked');
+    } catch {
+      toast.error('Failed to unlink bookmark sync');
+    }
+  };
+
+  const handleSetupBookmarkSync = () => {
+    setShowBookmarkSetupModal(true);
   };
 
   // Calculate totals for the reset modal
@@ -181,8 +247,19 @@ export function SettingsTab() {
               loading={loading}
               onRefreshDashboard={fetchDashboardData}
               onShowResetModal={() => setShowRecurringResetModal(true)}
+              defaultExpanded={expandedTool === 'recurring'}
             />
-            <NotesToolCard />
+            <NotesToolCard
+              ref={notesSettingsRef}
+              defaultExpanded={expandedTool === 'notes'}
+            />
+            <WishlistToolSettings
+              ref={wishlistSettingsRef}
+              defaultExpanded={expandedTool === 'wishlist'}
+              onSetupBookmarkSync={isDesktop ? handleSetupBookmarkSync : undefined}
+              onChangeBookmarkSource={isDesktop ? handleChangeBookmarkSource : undefined}
+              onUnlinkBookmarks={isDesktop ? handleUnlinkBookmarks : undefined}
+            />
           </div>
         </section>
 
@@ -266,6 +343,19 @@ export function SettingsTab() {
         totalCategories={totalCategories}
         totalItems={totalItems}
       />
+
+      {/* Bookmark Setup Modal */}
+      {showBookmarkSetupModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        >
+          <BrowserBookmarksSetupWizard
+            onComplete={() => setShowBookmarkSetupModal(false)}
+            onCancel={() => setShowBookmarkSetupModal(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }

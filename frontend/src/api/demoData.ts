@@ -16,6 +16,10 @@ import type {
   Note,
   GeneralMonthNote,
   ArchivedNote,
+  WishlistItem,
+  WishlistData,
+  WishlistConfig,
+  PendingBookmark,
 } from '../types';
 import type { NotesCategoryGroup } from '../types/notes';
 import { calculateMonthlyTarget, type Frequency } from '../utils/calculations';
@@ -51,6 +55,9 @@ export interface DemoState {
     show_category_group: boolean;
   };
   notes: DemoNotesState;
+  wishlist: WishlistData;
+  wishlistConfig: WishlistConfig;
+  pendingBookmarks: PendingBookmark[];
 }
 
 // ============================================================================
@@ -1576,6 +1583,204 @@ function createInitialDemoNotes(): DemoNotesState {
   };
 }
 
+// ============================================================================
+// Wishlist Seed Data
+// ============================================================================
+
+function getTargetDate(monthsFromNow: number): string {
+  const date = new Date();
+  date.setMonth(date.getMonth() + monthsFromNow);
+  // Set to end of month
+  date.setMonth(date.getMonth() + 1, 0);
+  const isoDate = date.toISOString().split('T')[0];
+  return isoDate ?? date.toISOString().substring(0, 10);
+}
+
+const DEMO_WISHLIST_ITEMS: WishlistItem[] = [
+  // Funded item - ready to purchase
+  {
+    type: 'wishlist',
+    id: 'wishlist-headphones',
+    name: 'Sony WH-1000XM5',
+    amount: 350,
+    current_balance: 350,
+    planned_budget: 0,
+    category_id: 'cat-wishlist-headphones',
+    category_name: 'Sony WH-1000XM5',
+    category_group_id: 'group-wishlist',
+    category_group_name: 'Wishlist',
+    is_enabled: true,
+    status: 'funded',
+    progress_percent: 100,
+    emoji: '🎧',
+    target_date: getTargetDate(0),
+    months_remaining: 0,
+    source_url:
+      'https://www.amazon.com/Sony-WH-1000XM5-Canceling-Headphones-Hands-Free/dp/B09XS7JWHH',
+    monthly_target: 0,
+    shortfall: 0,
+    is_archived: false,
+    sort_order: 0,
+    grid_x: 0,
+    grid_y: 0,
+    col_span: 1,
+    row_span: 1,
+  },
+  // On track - saving steadily
+  {
+    type: 'wishlist',
+    id: 'wishlist-guitar',
+    name: 'Fender Player Stratocaster',
+    amount: 850,
+    current_balance: 425,
+    planned_budget: 142,
+    category_id: 'cat-wishlist-guitar',
+    category_name: 'Fender Guitar',
+    category_group_id: 'group-wishlist',
+    category_group_name: 'Wishlist',
+    is_enabled: true,
+    status: 'on_track',
+    progress_percent: 50,
+    emoji: '🎸',
+    target_date: getTargetDate(3),
+    months_remaining: 3,
+    source_url: 'https://www.fender.com/en-US/electric-guitars/stratocaster/player-stratocaster/',
+    monthly_target: 142,
+    shortfall: 425,
+    is_archived: false,
+    sort_order: 1,
+    grid_x: 1,
+    grid_y: 0,
+    col_span: 1,
+    row_span: 1,
+  },
+  // Behind - needs to catch up
+  {
+    type: 'wishlist',
+    id: 'wishlist-camera',
+    name: 'Sony A7 IV',
+    amount: 2500,
+    current_balance: 800,
+    planned_budget: 200,
+    category_id: 'cat-wishlist-camera',
+    category_name: 'Sony A7 IV',
+    category_group_id: 'group-wishlist',
+    category_group_name: 'Wishlist',
+    is_enabled: true,
+    status: 'behind',
+    progress_percent: 32,
+    emoji: '📷',
+    target_date: getTargetDate(6),
+    months_remaining: 6,
+    source_url: 'https://www.sony.com/en/alpha-interchangeable-lens-cameras/alpha-7-iv/',
+    monthly_target: 283,
+    shortfall: 1700,
+    is_archived: false,
+    sort_order: 2,
+    grid_x: 2,
+    grid_y: 0,
+    col_span: 1,
+    row_span: 1,
+  },
+];
+
+const DEMO_ARCHIVED_WISHLIST: WishlistItem[] = [
+  {
+    type: 'wishlist',
+    id: 'wishlist-keyboard',
+    name: 'Keychron Q1 Pro',
+    amount: 200,
+    current_balance: 200,
+    planned_budget: 0,
+    category_id: 'cat-wishlist-keyboard',
+    category_name: 'Keychron Q1 Pro',
+    category_group_id: 'group-wishlist',
+    category_group_name: 'Wishlist',
+    is_enabled: true,
+    status: 'funded',
+    progress_percent: 100,
+    emoji: '⌨️',
+    target_date: getTargetDate(-1),
+    months_remaining: 0,
+    source_url:
+      'https://www.keychron.com/products/keychron-q1-pro-qmk-via-wireless-custom-mechanical-keyboard',
+    monthly_target: 0,
+    shortfall: 0,
+    is_archived: true,
+    archived_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+    sort_order: 0,
+    grid_x: 0,
+    grid_y: 0,
+    col_span: 1,
+    row_span: 1,
+  },
+];
+
+export function createInitialWishlistData(): WishlistData {
+  const items = DEMO_WISHLIST_ITEMS;
+  const archivedItems = DEMO_ARCHIVED_WISHLIST;
+
+  return {
+    items,
+    archived_items: archivedItems,
+    total_target: items.reduce((sum, item) => sum + item.amount, 0),
+    total_saved: items.reduce((sum, item) => sum + item.current_balance, 0),
+    total_monthly_target: items.reduce((sum, item) => sum + item.monthly_target, 0),
+  };
+}
+
+export function createInitialWishlistConfig(): WishlistConfig {
+  return {
+    isConfigured: false,
+    defaultCategoryGroupId: null,
+    defaultCategoryGroupName: null,
+    selectedBrowser: null,
+    selectedFolderIds: [],
+    selectedFolderNames: [],
+    autoArchiveOnBookmarkDelete: true,
+    autoArchiveOnGoalMet: true,
+  };
+}
+
+/**
+ * Create initial demo pending bookmarks.
+ * These are sample bookmarks awaiting user review.
+ */
+export function createInitialPendingBookmarks(): PendingBookmark[] {
+  return [
+    {
+      id: 'pending-1',
+      url: 'https://www.apple.com/shop/buy-mac/macbook-pro',
+      name: 'MacBook Pro - Apple',
+      bookmark_id: 'bm-123',
+      browser_type: 'chrome',
+      logo_url: 'https://www.apple.com/favicon.ico',
+      status: 'pending',
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'pending-2',
+      url: 'https://www.amazon.com/dp/B0CXYZ123',
+      name: 'Sony WH-1000XM5 Wireless Headphones',
+      bookmark_id: 'bm-456',
+      browser_type: 'chrome',
+      logo_url: 'https://www.amazon.com/favicon.ico',
+      status: 'pending',
+      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'pending-3',
+      url: 'https://www.rei.com/product/camp-tent',
+      name: 'REI Co-op Half Dome 2 Plus Tent',
+      bookmark_id: 'bm-789',
+      browser_type: 'chrome',
+      logo_url: 'https://www.rei.com/favicon.ico',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    },
+  ];
+}
+
 export function createInitialDemoState(): DemoState {
   return {
     dashboard: createDashboardData(DEMO_RECURRING_ITEMS),
@@ -1589,6 +1794,9 @@ export function createInitialDemoState(): DemoState {
       show_category_group: true,
     },
     notes: createInitialDemoNotes(),
+    wishlist: createInitialWishlistData(),
+    wishlistConfig: createInitialWishlistConfig(),
+    pendingBookmarks: createInitialPendingBookmarks(),
   };
 }
 

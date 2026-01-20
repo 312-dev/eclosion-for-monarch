@@ -10,10 +10,13 @@ from .tracker import (
     AutoSyncState,
     Category,
     EnabledItem,
+    PendingBookmark,
     RemovedItemNotice,
     Rollup,
     RollupItem,
     TrackerConfig,
+    WishlistConfig,
+    WishlistItem,
 )
 
 __all__ = [
@@ -29,10 +32,13 @@ __all__ = [
     "GeolocationCache",
     "KnownCategory",
     "Note",
+    "PendingBookmark",
     "RemovedItemNotice",
     "Rollup",
     "RollupItem",
     "SecurityEvent",
     "SecurityPreference",
     "TrackerConfig",
+    "WishlistConfig",
+    "WishlistItem",
 ]

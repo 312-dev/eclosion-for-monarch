@@ -11,6 +11,7 @@
  */
 
 import { SadFaceIcon, HourglassIcon } from '../icons';
+import { ElectronTitleBar } from '../ElectronTitleBar';
 
 interface ErrorPageProps {
   title?: string;
@@ -26,13 +27,15 @@ export function ErrorPage({
   retryLabel = "Try Again"
 }: ErrorPageProps) {
   return (
-    <main
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-      role="main"
-      aria-labelledby="error-title"
-    >
-      <div className="max-w-md w-full text-center">
+    <>
+      <ElectronTitleBar variant="compact" />
+      <main
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+        role="main"
+        aria-labelledby="error-title"
+      >
+        <div className="max-w-md w-full text-center">
         {/* Error illustration */}
         <div className="mb-6" aria-hidden="true">
           <SadFaceIcon
@@ -99,6 +102,7 @@ export function ErrorPage({
         </aside>
       </div>
     </main>
+    </>
   );
 }
 
@@ -112,11 +116,13 @@ interface RateLimitPageProps {
 
 export function RateLimitPage({ retryAfter, onRetry }: RateLimitPageProps) {
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ backgroundColor: 'var(--monarch-bg-page)' }}
-    >
-      <div className="max-w-md w-full text-center">
+    <>
+      <ElectronTitleBar variant="compact" />
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+      >
+        <div className="max-w-md w-full text-center">
         {/* Hourglass illustration */}
         <div className="mb-6">
           <HourglassIcon
@@ -161,7 +167,8 @@ export function RateLimitPage({ retryAfter, onRetry }: RateLimitPageProps) {
             Try Again
           </button>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

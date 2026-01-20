@@ -26,9 +26,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
-import { RecurringIcon, NotesIcon, AppIcon } from '../wizards/WizardComponents';
-import { IdeasModal } from '../IdeasModal';
-import { Portal } from '../Portal';
+import { RecurringIcon, NotesIcon, WishlistIcon, AppIcon } from '../wizards/WizardComponents';
 import { Tooltip } from '../ui/Tooltip';
 import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
@@ -96,6 +94,12 @@ function getNavItems(isDemo: boolean): {
         icon: <RecurringIcon size={20} />,
         settingsHash: '#recurring',
       },
+      {
+        path: `${prefix}/wishlist`,
+        label: 'Wishlist',
+        icon: <WishlistIcon size={20} />,
+        settingsHash: '#wishlist',
+      },
     ],
     otherItems: [{ path: `${prefix}/settings`, label: 'Settings', icon: <Settings size={20} /> }],
   };
@@ -162,7 +166,6 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const isDesktop = isDesktopMode();
   const isMacOSElectron = useMacOSElectron();
   const isMobile = useMediaQuery('(max-width: 767px)');
-  const [ideasModalOpen, setIdeasModalOpen] = useState(false);
   const [showLockButton, setShowLockButton] = useState(!isDesktop);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
   const comingSoonFeatures = getComingSoonFeatures();
@@ -232,15 +235,16 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
               <div className="sidebar-nav-header" id="toolkit-heading">
                 TOOLKIT
               </div>
-              <button
-                type="button"
+              <a
+                href="https://www.reddit.com/user/Ok-Quantity7501/comments/1qhb5zu/eclosion_app_support/?sort=qa#comment-tree"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="sidebar-suggest-btn"
-                onClick={() => setIdeasModalOpen(true)}
-                aria-label="Browse and suggest ideas"
+                aria-label="Suggest an idea"
               >
                 <Lightbulb size={12} aria-hidden="true" />
                 <span>Suggest</span>
-              </button>
+              </a>
             </div>
             {/* All nav items - scrollable on mobile */}
             <div className="sidebar-toolkit-wrapper">
@@ -338,10 +342,6 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
         </div>
       )}
 
-      {/* Ideas Modal - rendered via Portal to escape sidebar stacking context */}
-      <Portal>
-        <IdeasModal isOpen={ideasModalOpen} onClose={() => setIdeasModalOpen(false)} />
-      </Portal>
     </nav>
   );
 }

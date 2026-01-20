@@ -4,15 +4,48 @@
  * Handles BrowserWindow creation, state persistence, and lifecycle.
  */
 
-import { BrowserWindow, shell, app, session, screen } from 'electron';
+import { BrowserWindow, shell, app, session, screen, nativeTheme } from 'electron';
 import path from 'node:path';
+import contextMenu from 'electron-context-menu';
 import { getStore } from './store';
+
+/**
+ * Check if developer context menu should be enabled.
+ * Returns true if: in dev mode, beta build, or developer mode setting is enabled.
+ */
+function shouldEnableDevContextMenu(): boolean {
+  if (!app.isPackaged) return true;
+  if (
+    app.getVersion().toLowerCase().includes('beta') ||
+    app.getName().toLowerCase().includes('beta') ||
+    process.env.RELEASE_CHANNEL === 'beta'
+  ) {
+    return true;
+  }
+  return getStore().get('settings.developerMode', false);
+}
 
 // Window creation timing for debugging installer launch delays
 let windowCreateStart = 0;
 function logWindowTiming(event: string): void {
   const elapsed = windowCreateStart > 0 ? Date.now() - windowCreateStart : 0;
   console.log(`[WINDOW +${elapsed}ms] ${event}`);
+}
+
+/**
+ * Background colors matching the frontend theme (see frontend/src/index.css).
+ * Used for the native window background before web content loads.
+ */
+const THEME_COLORS = {
+  light: '#f5f5f4', // --monarch-bg-page (light mode)
+  dark: '#1a1918', // --monarch-bg-page (dark mode)
+} as const;
+
+/**
+ * Get the appropriate background color based on system dark mode preference.
+ */
+function getThemeBackgroundColor(): string {
+  return nativeTheme.shouldUseDarkColors ? THEME_COLORS.dark : THEME_COLORS.light;
 }
 
 /**
@@ -72,9 +105,18 @@ let currentWindowMode: 'compact' | 'full' = 'compact';
 
 /**
  * Setup Content Security Policy headers for renderer security.
+ * In dev mode, CSP is relaxed to allow Vite HMR and dev server connections.
  */
 function setupCSP(): void {
+  const isDev = !app.isPackaged;
+
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    // Skip strict CSP in dev mode to allow Vite HMR
+    if (isDev) {
+      callback({ responseHeaders: details.responseHeaders });
+      return;
+    }
+
     callback({
       responseHeaders: {
         ...details.responseHeaders,
@@ -175,17 +217,10 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
      * - Varies by desktop environment, native is more reliable
      */
     ...getTitleBarConfig(),
-    backgroundColor: '#1a1a2e',
+    backgroundColor: getThemeBackgroundColor(),
     // show: true is the default - window appears immediately for native focus behavior
   });
   logWindowTiming('BrowserWindow created');
-
-  // Load the frontend
-  const frontendPath = path.join(
-    process.resourcesPath || app.getAppPath(),
-    'frontend',
-    'index.html'
-  );
 
   // Handle external links - open in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -197,6 +232,25 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   // Must be registered BEFORE loadFile to catch the initial title update
   mainWindow.webContents.on('page-title-updated', (event) => {
     event.preventDefault();
+  });
+
+  // Enable right-click context menu with developer tools when:
+  // - In dev mode, beta build, or developer mode setting is enabled
+  // - OR DevTools is currently open
+  contextMenu({
+    window: mainWindow,
+    showSaveImageAs: true,
+    showCopyImageAddress: true,
+    showInspectElement: true,
+    showSelectAll: false,
+    showSearchWithGoogle: false,
+    shouldShowMenu: (_event, params) => {
+      // Always show if there's text selected or in an editable field
+      if (params.selectionText || params.isEditable) return true;
+      // Otherwise, only show dev tools menu when dev mode is enabled or DevTools is open
+      const devToolsOpen = mainWindow?.webContents.isDevToolsOpened() ?? false;
+      return devToolsOpen || shouldEnableDevContextMenu();
+    },
   });
 
   // Register ready-to-show handler for logging and potential future "start minimized" feature.
@@ -231,11 +285,31 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
    * - Both mechanisms are kept for resilience; if IPC fails during startup, the
    *   query parameter could be used as a fallback (though currently not implemented).
    */
-  logWindowTiming('Calling loadFile');
-  await mainWindow.loadFile(frontendPath, {
-    query: { _backendPort: String(backendPort) },
-  });
-  logWindowTiming('loadFile completed');
+
+  // Load the frontend - from Vite dev server in dev mode, bundled files in production
+  const isDev = !app.isPackaged;
+
+  if (isDev) {
+    // Dev mode: load from Vite dev server for hot reload
+    // Port is set by dev.sh via DEV_VITE_PORT environment variable
+    const vitePort = process.env.DEV_VITE_PORT || '5174';
+    const devUrl = `http://localhost:${vitePort}?_backendPort=${backendPort}`;
+    logWindowTiming(`Loading from Vite dev server on port ${vitePort}`);
+    await mainWindow.loadURL(devUrl);
+    logWindowTiming('loadURL completed');
+  } else {
+    // Production: load from bundled files
+    const frontendPath = path.join(
+      process.resourcesPath || app.getAppPath(),
+      'frontend',
+      'index.html'
+    );
+    logWindowTiming('Calling loadFile');
+    await mainWindow.loadFile(frontendPath, {
+      query: { _backendPort: String(backendPort) },
+    });
+    logWindowTiming('loadFile completed');
+  }
 
   // Handle close - always hide to tray instead of quitting
   // The app runs in both the dock/taskbar AND the system tray/menu bar

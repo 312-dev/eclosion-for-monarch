@@ -231,6 +231,8 @@ export function countOccurrencesInMonth(
  * Find the next monthly-interval occurrence on or after a date.
  *
  * Uses O(1) math instead of iteration to handle dates far in the past.
+ * Clamps day to last valid day of target month to avoid rollover bugs
+ * (e.g., Aug 29 + 6 months = Feb 28, not Mar 1).
  */
 function nextMonthlyOccurrence(baseDate: Date, intervalMonths: number, afterDate: Date): Date {
   // If baseDate is already on or after afterDate, return it
@@ -246,11 +248,17 @@ function nextMonthlyOccurrence(baseDate: Date, intervalMonths: number, afterDate
   // Calculate how many intervals we need to skip (round up to ensure >= afterDate)
   const intervalsToSkip = Math.ceil(monthsDiff / intervalMonths);
 
-  // Jump directly to that occurrence
-  const result = new Date(baseDate);
-  result.setMonth(result.getMonth() + intervalsToSkip * intervalMonths);
+  // Calculate target month/year using math (avoids setMonth date rollover bug)
+  const totalMonths = baseDate.getMonth() + intervalsToSkip * intervalMonths;
+  const targetYear = baseDate.getFullYear() + Math.floor(totalMonths / 12);
+  const targetMonth = totalMonths % 12;
 
-  return result;
+  // Clamp day to last valid day of target month (fixes Aug 29 → Feb 28, not Mar 1)
+  const originalDay = baseDate.getDate();
+  const lastDayOfTargetMonth = getLastDayOfMonth(targetYear, targetMonth);
+  const clampedDay = Math.min(originalDay, lastDayOfTargetMonth);
+
+  return new Date(targetYear, targetMonth, clampedDay);
 }
 
 /**
@@ -401,22 +409,6 @@ export function calculateMonthlyTarget(
     const nextOccDate = parseLocalDate(nextOcc);
     const targetDate = parseLocalDate(targetMonth);
 
-    // DEBUG: Log quarterly calculations
-    if (frequency === 'quarterly') {
-      console.log('[DEBUG] calculateMonthlyTarget quarterly:', {
-        effectiveBaseDate,
-        frequency,
-        targetMonth,
-        nextOcc,
-        nextOccDate: nextOccDate.toISOString(),
-        targetDate: targetDate.toISOString(),
-        nextOccMonth: nextOccDate.getMonth(),
-        targetDateMonth: targetDate.getMonth(),
-        amount,
-        rollover,
-      });
-    }
-
     if (
       nextOccDate.getFullYear() === targetDate.getFullYear() &&
       nextOccDate.getMonth() === targetDate.getMonth()
@@ -428,16 +420,6 @@ export function calculateMonthlyTarget(
       // Due in future - spread the shortfall over months INCLUDING due month
       const monthsRemaining = monthsBetween(targetDate, nextOccDate) + 1;
       const shortfall = Math.max(0, amount - rollover);
-
-      // DEBUG: Log the months calculation
-      if (frequency === 'quarterly') {
-        console.log('[DEBUG] quarterly monthsRemaining:', {
-          monthsRemaining,
-          shortfall,
-          rate: shortfall / Math.max(1, monthsRemaining),
-          rounded: roundMonthlyRate(shortfall / Math.max(1, monthsRemaining)),
-        });
-      }
 
       if (shortfall <= 0) {
         return 0;

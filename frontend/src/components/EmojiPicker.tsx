@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
+import { EmojiPicker as FrimoussePicker } from 'frimousse';
 import { useClickOutside } from '../hooks';
-import { RefreshIcon } from './icons';
+import { RefreshIcon, Icons } from './icons';
 import { useIsRateLimited } from '../context/RateLimitContext';
 
 interface EmojiPickerProps {
@@ -9,64 +10,23 @@ interface EmojiPickerProps {
   readonly disabled?: boolean;
 }
 
-// Common emojis for subscription/category use
-const EMOJI_OPTIONS = [
-  // Default
-  '🔄',
-  // Entertainment
-  '🎬', '🎵', '🎮', '📺', '🎧', '🎤',
-  // Technology
-  '💻', '📱', '☁️', '🔐', '🌐', '💾',
-  // Finance
-  '💰', '💳', '🏦', '📈', '💵', '🧾',
-  // Health & Fitness
-  '🏋️', '🧘', '💊', '🏥', '🍎', '❤️',
-  // Home & Utilities
-  '🏠', '💡', '📦', '🚗', '⚡', '🔌',
-  // Education
-  '📚', '🎓', '✏️', '📝', '🧠', '💡',
-  // Food & Delivery
-  '🍕', '🍔', '☕', '🛒', '🥡', '🍽️',
-  // Shopping
-  '🛍️', '👕', '👟', '💄', '🎁', '📿',
-  // Misc
-  '⭐', '🔔', '📅', '🎯', '✅', '🌟',
-];
-
-// Check if a string contains at least one emoji
-function containsEmoji(str: string): boolean {
-  const emojiRegex = /\p{Emoji}/u;
-  return emojiRegex.test(str);
-}
-
-// Extract first emoji from string
-function extractFirstEmoji(str: string): string | null {
-  const emojiRegex = /\p{Extended_Pictographic}/u;
-  const match = emojiRegex.exec(str);
-  return match ? match[0] : null;
-}
-
 export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [customInput, setCustomInput] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const isRateLimited = useIsRateLimited();
 
-  // Combine disabled states
   const isDisabled = disabled || isRateLimited;
 
-  // Close picker when clicking outside
-  useClickOutside([pickerRef], () => {
-    setIsOpen(false);
-    setCustomInput('');
-  }, isOpen);
+  useClickOutside(
+    [pickerRef],
+    () => setIsOpen(false),
+    isOpen
+  );
 
   const handleSelect = async (emoji: string) => {
     if (emoji === currentEmoji) {
       setIsOpen(false);
-      setCustomInput('');
       return;
     }
 
@@ -74,34 +34,8 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
     try {
       await onSelect(emoji);
       setIsOpen(false);
-      setCustomInput('');
     } finally {
       setIsUpdating(false);
-    }
-  };
-
-  const handleCustomSubmit = () => {
-    const emoji = extractFirstEmoji(customInput);
-    if (emoji) {
-      handleSelect(emoji);
-    }
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleCustomSubmit();
-    } else if (e.key === 'Escape') {
-      setIsOpen(false);
-      setCustomInput('');
-    }
-  };
-
-  // Handle keyboard navigation for emoji grid
-  const handleGridKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setIsOpen(false);
-      setCustomInput('');
     }
   };
 
@@ -127,51 +61,98 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
 
       {isOpen && (
         <div
-          className="absolute z-(--z-index-dropdown) top-full left-0 mt-1 p-2 rounded-lg shadow-lg border dropdown-menu min-w-50 bg-monarch-bg-card border-monarch-border"
+          className="absolute z-(--z-index-dropdown) top-full left-0 mt-1 rounded-lg shadow-lg border dropdown-menu"
+          style={{
+            width: '340px',
+            height: '360px',
+            backgroundColor: 'var(--monarch-bg-card)',
+            borderColor: 'var(--monarch-border)',
+          }}
           role="dialog"
           aria-label="Choose an emoji"
-          onKeyDown={handleGridKeyDown}
         >
-          {/* Custom emoji input */}
-          <div className="flex gap-1 mb-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-              placeholder="Type any emoji..."
-              aria-label="Type a custom emoji"
-              className="flex-1 px-2 py-1 text-sm rounded border bg-monarch-bg-page border-monarch-border text-monarch-text-dark"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={handleCustomSubmit}
-              disabled={!containsEmoji(customInput)}
-              className="px-2 py-1 text-xs font-medium rounded disabled:opacity-40 bg-monarch-orange text-white"
-              aria-label="Set custom emoji"
-            >
-              Set
-            </button>
-          </div>
-          {/* Quick select grid */}
-          <div className="grid grid-cols-6 gap-1" role="grid" aria-label="Emoji options">
-            {EMOJI_OPTIONS.map((emoji) => (
-              <button
-                type="button"
-                key={emoji}
-                onClick={() => handleSelect(emoji)}
-                className={`w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-lg ${
-                  emoji === currentEmoji ? 'ring-2 ring-orange-400' : ''
-                }`}
-                aria-label={`Select ${emoji}`}
-                aria-pressed={emoji === currentEmoji}
+          <FrimoussePicker.Root
+            className="flex h-full w-full flex-col"
+            columns={10}
+            onEmojiSelect={({ emoji }) => handleSelect(emoji)}
+          >
+            <div className="p-2 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+              <div className="relative">
+                <Icons.Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: 'var(--monarch-text-muted)' }}
+                />
+                <FrimoussePicker.Search
+                  className="w-full pl-8 pr-3 py-2 text-sm rounded-md border appearance-none"
+                  style={{
+                    backgroundColor: 'var(--monarch-bg-page)',
+                    borderColor: 'var(--monarch-border)',
+                    color: 'var(--monarch-text-dark)',
+                  }}
+                  placeholder="Search emoji..."
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <FrimoussePicker.Viewport className="relative flex-1 outline-hidden">
+              <FrimoussePicker.Loading
+                className="absolute inset-0 flex items-center justify-center text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
               >
-                <span aria-hidden="true">{emoji}</span>
-              </button>
-            ))}
-          </div>
+                Loading…
+              </FrimoussePicker.Loading>
+
+              <FrimoussePicker.Empty
+                className="absolute inset-0 flex items-center justify-center text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
+                No emoji found.
+              </FrimoussePicker.Empty>
+
+              <FrimoussePicker.List
+                className="select-none pb-2"
+                components={{
+                  CategoryHeader: ({ category, ...props }) => (
+                    <div
+                      className="px-3 pt-3 pb-1.5 font-medium text-xs sticky top-0 z-10 bg-(--monarch-bg-card) text-(--monarch-text-muted) shadow-sm"
+                      {...props}
+                    >
+                      {category.label}
+                    </div>
+                  ),
+                  Row: ({ children, ...props }) => (
+                    <div className="scroll-my-1.5 px-2" {...props}>
+                      {children}
+                    </div>
+                  ),
+                  Emoji: ({ emoji, ...props }) => (
+                    <button
+                      className="flex size-8 items-center justify-center rounded-md text-lg transition-colors"
+                      style={{
+                        backgroundColor: emoji.emoji === currentEmoji ? 'var(--monarch-orange-10)' : undefined,
+                        boxShadow: emoji.emoji === currentEmoji ? 'inset 0 0 0 2px var(--monarch-orange)' : undefined,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (emoji.emoji !== currentEmoji) {
+                          e.currentTarget.style.backgroundColor = 'var(--monarch-bg-hover)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (emoji.emoji !== currentEmoji) {
+                          e.currentTarget.style.backgroundColor = '';
+                        }
+                      }}
+                      {...props}
+                    >
+                      {emoji.emoji}
+                    </button>
+                  ),
+                }}
+              />
+            </FrimoussePicker.Viewport>
+          </FrimoussePicker.Root>
         </div>
       )}
     </span>

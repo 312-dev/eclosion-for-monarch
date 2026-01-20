@@ -25,7 +25,9 @@ from .sanitization import (
     sanitize_for_json,
     sanitize_id,
     sanitize_name,
+    sanitize_path,
     sanitize_string,
+    sanitize_url,
 )
 from .scheduler import SyncScheduler
 from .session import SessionManager
@@ -58,6 +60,8 @@ __all__ = [
     "sanitize_for_json",
     "sanitize_id",
     "sanitize_name",
+    "sanitize_path",
     "sanitize_response",
     "sanitize_string",
+    "sanitize_url",
 ]

@@ -39,6 +39,7 @@ import { DownloadPage } from './pages/download';
 import { DashboardTab } from './components/tabs/DashboardTab';
 import { RecurringTab } from './components/tabs/RecurringTab';
 import { NotesTab } from './components/tabs/NotesTab';
+import { WishlistTab } from './components/tabs/WishlistTab';
 import { SettingsTab } from './components/tabs/SettingsTab';
 import { RateLimitError, AuthRequiredError } from './api/client';
 import { ErrorPage } from './components/ui/ErrorPage';
@@ -176,6 +177,7 @@ function ProductionRoutes() {
             <Route path="/dashboard" element={<DashboardTab />} />
             <Route path="/recurring" element={<RecurringTab />} />
             <Route path="/notes" element={<NotesTab />} />
+            <Route path="/wishlist" element={<WishlistTab />} />
             <Route path="/settings" element={<SettingsTab />} />
           </Route>
         </Route>
@@ -203,6 +205,7 @@ function DemoRoutes() {
           <Route path="/demo/dashboard" element={<DashboardTab />} />
           <Route path="/demo/recurring" element={<RecurringTab />} />
           <Route path="/demo/notes" element={<NotesTab />} />
+          <Route path="/demo/wishlist" element={<WishlistTab />} />
           <Route path="/demo/settings" element={<SettingsTab />} />
         </Route>
         {/* Catch-all redirect within demo */}
@@ -226,6 +229,7 @@ function GlobalDemoRoutes() {
           <Route path="/dashboard" element={<DashboardTab />} />
           <Route path="/recurring" element={<RecurringTab />} />
           <Route path="/notes" element={<NotesTab />} />
+          <Route path="/wishlist" element={<WishlistTab />} />
           <Route path="/settings" element={<SettingsTab />} />
         </Route>
         {/* Catch-all redirect */}

@@ -25,14 +25,26 @@ import { WhatsNewModal } from '../WhatsNewModal';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { SecurityAlertBanner } from '../SecurityAlertBanner';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
-import { useDashboardQuery, useSyncMutation } from '../../api/queries';
+import {
+  useDashboardQuery,
+  useSyncMutation,
+  useWishlistQuery,
+  useWishlistConfigQuery,
+  usePendingCountQuery,
+} from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
 import { useDemo } from '../../context/DemoContext';
 import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils';
 import { isDesktopMode } from '../../utils/apiBase';
 import { TourController } from '../wizards/WizardComponents';
-import { useMacOSElectron, useWindowsElectron, useRecurringTour, useNotesTour } from '../../hooks';
+import {
+  useMacOSElectron,
+  useWindowsElectron,
+  useRecurringTour,
+  useNotesTour,
+  useWishlistTour,
+} from '../../hooks';
 
 export function AppShell() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -47,6 +59,11 @@ export function AppShell() {
   const syncMutation = useSyncMutation();
   const isMacOSElectron = useMacOSElectron();
   const isWindowsElectron = useWindowsElectron();
+
+  // Wishlist data for tour (lightweight queries)
+  const { data: wishlistData } = useWishlistQuery();
+  const { data: wishlistConfig } = useWishlistConfigQuery();
+  const { data: pendingCount = 0 } = usePendingCountQuery();
 
   // Get recurring tour steps and state
   const {
@@ -64,6 +81,19 @@ export function AppShell() {
     hasTourSteps: hasNotesTourSteps,
   } = useNotesTour();
 
+  // Get wishlist tour steps and state
+  const {
+    steps: wishlistTourSteps,
+    hasSeenTour: hasSeenWishlistTour,
+    markAsSeen: markWishlistTourSeen,
+    hasTourSteps: hasWishlistTourSteps,
+  } = useWishlistTour({
+    itemCount: wishlistData?.items?.length ?? 0,
+    pendingCount,
+    isBrowserConfigured: !!wishlistConfig?.selectedBrowser,
+    isDesktop,
+  });
+
   // Demo-aware path prefix
   const pathPrefix = isDemo ? '/demo' : '';
 
@@ -71,15 +101,29 @@ export function AppShell() {
   const isRecurringPage =
     location.pathname === '/recurring' || location.pathname === '/demo/recurring';
   const isNotesPage = location.pathname === '/notes' || location.pathname === '/demo/notes';
-  const hasTour = isRecurringPage || isNotesPage;
+  const isWishlistPage =
+    location.pathname === '/wishlist' || location.pathname === '/demo/wishlist';
+  const hasTour = isRecurringPage || isNotesPage || isWishlistPage;
 
   // Check if recurring is configured (setup wizard completed)
   const isRecurringConfigured = data?.config.target_group_id != null;
 
   // Get the correct tour state based on current page
-  const currentTourSteps = isNotesPage ? notesTourSteps : recurringTourSteps;
-  const hasSeenCurrentTour = isNotesPage ? hasSeenNotesTour : hasSeenRecurringTour;
-  const hasCurrentTourSteps = isNotesPage ? hasNotesTourSteps : hasRecurringTourSteps;
+  const currentTourSteps = isWishlistPage
+    ? wishlistTourSteps
+    : isNotesPage
+      ? notesTourSteps
+      : recurringTourSteps;
+  const hasSeenCurrentTour = isWishlistPage
+    ? hasSeenWishlistTour
+    : isNotesPage
+      ? hasSeenNotesTour
+      : hasSeenRecurringTour;
+  const hasCurrentTourSteps = isWishlistPage
+    ? hasWishlistTourSteps
+    : isNotesPage
+      ? hasNotesTourSteps
+      : hasRecurringTourSteps;
 
   // Auto-start tour on first visit to a page with a tour
   useEffect(() => {
@@ -116,6 +160,7 @@ export function AppShell() {
     hasSeenCurrentTour,
     isRecurringPage,
     isNotesPage,
+    isWishlistPage,
     isRecurringConfigured,
     currentTourSteps,
   ]);
@@ -157,7 +202,9 @@ export function AppShell() {
   // Handle tour close - mark as seen
   const handleTourClose = () => {
     setShowTour(false);
-    if (isNotesPage) {
+    if (isWishlistPage) {
+      markWishlistTourSeen();
+    } else if (isNotesPage) {
       markNotesTourSeen();
     } else if (isRecurringPage) {
       markRecurringTourSeen();
@@ -225,7 +272,11 @@ export function AppShell() {
   }
 
   // Key to force TourProvider remount when switching between tour types
-  const tourKey = isNotesPage ? 'notes-tour' : 'recurring-tour';
+  const tourKey = isWishlistPage
+    ? 'wishlist-tour'
+    : isNotesPage
+      ? 'notes-tour'
+      : 'recurring-tour';
 
   return (
     <TourProvider

@@ -10,6 +10,28 @@
 // Common types (shared across domains)
 export type { ItemStatus } from './common';
 
+// Savings goal base types (shared between recurring and wishlist)
+export type { SavingsGoalBase, SavingsGoalComputed } from './savingsGoal';
+
+// Wishlist items
+export type {
+  WishlistItem,
+  CreateWishlistItemRequest,
+  UpdateWishlistItemRequest,
+  WishlistSyncResult,
+  WishlistLayoutUpdate,
+  WishlistData,
+} from './wishlist';
+
+// Wishlist configuration
+export type {
+  WishlistConfig,
+  WishlistWizardState,
+  CategoryMappingChoice,
+  CategoryMappingRequest,
+  WishlistImageUploadResult,
+} from './wishlistConfig';
+
 // Recurring items and rollup
 export type { RecurringItem, RollupItem, RollupData } from './recurring';
 
@@ -93,6 +115,19 @@ export type {
   SecurityEventsQueryOptions,
 } from './security';
 
+// Bookmark sync
+export type {
+  BrowserType,
+  PermissionStatus,
+  Bookmark,
+  DetectedBrowser,
+  BookmarkFolder,
+  BookmarkSyncConfig,
+  BookmarkChange,
+  BookmarkSyncResult,
+  PermissionResult,
+} from './bookmarks';
+
 // Monthly notes
 export type {
   MonthKey,
@@ -114,3 +149,14 @@ export type {
   GetMonthNotesResponse,
   GetRevisionHistoryResponse,
 } from './notes';
+
+// Pending bookmarks (review workflow)
+export type {
+  PendingBookmark,
+  PendingBookmarkStatus,
+  PendingBookmarksResponse,
+  PendingCountResponse,
+  ImportBookmark,
+  ImportBookmarksResponse,
+  PendingBookmarkActionResponse,
+} from './pendingBookmark';

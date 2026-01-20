@@ -279,6 +279,33 @@ const electronAPI = {
   }> => ipcRenderer.invoke('read-log-file', filePath, options),
 
   // =========================================================================
+  // Diagnostics
+  // =========================================================================
+
+  /**
+   * Get shareable diagnostics for email support.
+   * Returns redacted (PII-stripped) diagnostics suitable for email body.
+   */
+  getShareableDiagnostics: (): Promise<string> =>
+    ipcRenderer.invoke('get-shareable-diagnostics'),
+
+  /**
+   * Open email with diagnostics attachment.
+   * On macOS: Opens Mail with attachment via AppleScript.
+   * On other platforms: Saves file and opens it for manual attachment.
+   */
+  openEmailWithDiagnostics: (
+    subject: string,
+    recipient: string
+  ): Promise<{
+    success: boolean;
+    method: 'native' | 'manual';
+    filePath?: string;
+    filename?: string;
+    error?: string;
+  }> => ipcRenderer.invoke('open-email-with-diagnostics', subject, recipient),
+
+  // =========================================================================
   // Backup & Restore
   // =========================================================================
 
@@ -982,6 +1009,233 @@ const electronAPI = {
      * Shows only essential options: About, Edit, Window, basic Help.
      */
     setMinimal: (): Promise<void> => ipcRenderer.invoke('menu:set-minimal'),
+  },
+
+  // =========================================================================
+  // Bookmarks
+  // =========================================================================
+
+  /**
+   * Bookmark sync API for reading browser bookmarks.
+   * Supports Chrome, Edge, Brave, and Safari.
+   */
+  bookmarks: {
+    /**
+     * Detect installed browsers with accessible bookmark files.
+     */
+    detectBrowsers: (): Promise<
+      Array<{
+        type: 'chrome' | 'edge' | 'brave' | 'safari';
+        displayName: string;
+        bookmarkFilePath: string;
+        accessible: boolean;
+        permissionStatus: 'granted' | 'denied' | 'not_required' | 'unknown';
+        error?: string;
+      }>
+    > => ipcRenderer.invoke('bookmarks:detect-browsers'),
+
+    /**
+     * Get the full bookmark tree for a browser.
+     */
+    getBookmarkTree: (
+      browserType: 'chrome' | 'edge' | 'brave' | 'safari'
+    ): Promise<{
+      id: string;
+      name: string;
+      type: 'url' | 'folder';
+      url?: string;
+      dateAdded?: string;
+      parentId?: string;
+      children?: unknown[];
+    } | null> => ipcRenderer.invoke('bookmarks:get-tree', browserType),
+
+    /**
+     * Get flat list of folders for selection UI.
+     */
+    getFolders: (
+      browserType: 'chrome' | 'edge' | 'brave' | 'safari'
+    ): Promise<
+      Array<{
+        id: string;
+        name: string;
+        path: string;
+        bookmarkCount: number;
+        subfolderCount: number;
+      }>
+    > => ipcRenderer.invoke('bookmarks:get-folders', browserType),
+
+    /**
+     * Get hierarchical folder tree for selection UI.
+     */
+    getFolderTree: (
+      browserType: 'chrome' | 'edge' | 'brave' | 'safari'
+    ): Promise<
+      Array<{
+        id: string;
+        name: string;
+        bookmarkCount: number;
+        totalBookmarkCount: number;
+        children: unknown[];
+      }>
+    > => ipcRenderer.invoke('bookmarks:get-folder-tree', browserType),
+
+    /**
+     * Request permission to access bookmarks (mainly for Safari on macOS).
+     */
+    requestPermission: (
+      browserType: 'chrome' | 'edge' | 'brave' | 'safari'
+    ): Promise<{
+      granted: boolean;
+      requiresManualGrant: boolean;
+      instructions?: string;
+    }> => ipcRenderer.invoke('bookmarks:request-permission', browserType),
+
+    /**
+     * Save sync configuration for a browser.
+     */
+    saveConfig: (config: {
+      browserType: 'chrome' | 'edge' | 'brave' | 'safari';
+      selectedFolderIds: string[];
+      enabled: boolean;
+      lastSyncAt?: string;
+    }): Promise<void> => ipcRenderer.invoke('bookmarks:save-config', config),
+
+    /**
+     * Get all sync configurations.
+     */
+    getConfigs: (): Promise<
+      Array<{
+        browserType: 'chrome' | 'edge' | 'brave' | 'safari';
+        selectedFolderIds: string[];
+        enabled: boolean;
+        lastSyncAt?: string;
+      }>
+    > => ipcRenderer.invoke('bookmarks:get-configs'),
+
+    /**
+     * Perform sync for a specific browser, optionally filtering to specific folders.
+     */
+    sync: (
+      browserType: 'chrome' | 'edge' | 'brave' | 'safari',
+      folderIds?: string[]
+    ): Promise<{
+      success: boolean;
+      changes: Array<{
+        changeType: 'added' | 'modified' | 'deleted';
+        bookmark: {
+          id: string;
+          name: string;
+          type: 'url' | 'folder';
+          url?: string;
+          dateAdded?: string;
+          parentId?: string;
+        };
+        previousName?: string;
+        previousUrl?: string;
+      }>;
+      totalBookmarks: number;
+      syncedAt: string;
+      error?: string;
+    }> => ipcRenderer.invoke('bookmarks:sync', browserType, folderIds),
+
+    /**
+     * Perform sync for all enabled browsers.
+     */
+    syncAll: (): Promise<
+      Array<{
+        browserType: 'chrome' | 'edge' | 'brave' | 'safari';
+        success: boolean;
+        changes: unknown[];
+        totalBookmarks: number;
+        syncedAt: string;
+        error?: string;
+      }>
+    > => ipcRenderer.invoke('bookmarks:sync-all'),
+
+    /**
+     * Start watching bookmark files for changes.
+     */
+    startWatcher: (): Promise<void> => ipcRenderer.invoke('bookmarks:start-watcher'),
+
+    /**
+     * Stop watching bookmark files.
+     */
+    stopWatcher: (): Promise<void> => ipcRenderer.invoke('bookmarks:stop-watcher'),
+
+    /**
+     * Listen for bookmark change events from the watcher.
+     */
+    onBookmarkChange: (
+      callback: (change: {
+        browserType: 'chrome' | 'edge' | 'brave' | 'safari';
+        changeType: 'added' | 'modified' | 'deleted';
+        bookmark: {
+          id: string;
+          name: string;
+          type: 'url' | 'folder';
+          url?: string;
+          dateAdded?: string;
+          parentId?: string;
+        };
+        previousName?: string;
+        previousUrl?: string;
+      }) => void
+    ): (() => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        change: {
+          browserType: 'chrome' | 'edge' | 'brave' | 'safari';
+          changeType: 'added' | 'modified' | 'deleted';
+          bookmark: {
+            id: string;
+            name: string;
+            type: 'url' | 'folder';
+            url?: string;
+            dateAdded?: string;
+            parentId?: string;
+          };
+          previousName?: string;
+          previousUrl?: string;
+        }
+      ): void => callback(change);
+      ipcRenderer.on('bookmark-change', handler);
+      return () => ipcRenderer.removeListener('bookmark-change', handler);
+    },
+  },
+
+  // =========================================================================
+  // Wishlist
+  // =========================================================================
+
+  /**
+   * Wishlist feature API for custom image storage.
+   */
+  wishlist: {
+    /**
+     * Save a custom image for a wishlist item.
+     * Accepts base64-encoded image data and stores it locally.
+     * @param itemId - The wishlist item ID
+     * @param base64Data - The image as base64 (with or without data URL prefix)
+     */
+    saveImage: (
+      itemId: string,
+      base64Data: string
+    ): Promise<{ success: boolean; path?: string; error?: string }> =>
+      ipcRenderer.invoke('wishlist:save-image', itemId, base64Data),
+
+    /**
+     * Delete a custom image for a wishlist item.
+     * @param imagePath - The full path to the image file
+     */
+    deleteImage: (imagePath: string): Promise<boolean> =>
+      ipcRenderer.invoke('wishlist:delete-image', imagePath),
+
+    /**
+     * Get the file:// URL for displaying a local image.
+     * @param imagePath - The full path to the image file
+     */
+    getImageUrl: (imagePath: string): Promise<string> =>
+      ipcRenderer.invoke('wishlist:get-image-url', imagePath),
   },
 
   // =========================================================================

@@ -366,9 +366,10 @@ input[type='radio'] {
 }
 
 /**
- * Persistent drag region for macOS Electron.
+ * Persistent drag region for Electron (macOS and Windows).
  * Allows window dragging even when modals cover the header.
  * Sits at the very top edge of the window, above all content.
+ * On Windows, the component applies right: 150px inline to avoid window controls.
  */
 .macos-drag-region {
   position: fixed;
@@ -1377,6 +1378,103 @@ input[type='radio'] {
 
 .collapse-arrow.expanded {
   transform: rotate(90deg);
+}
+
+/* ============================================================================
+   Wishlist Widget Grid - react-grid-layout Customizations
+   ============================================================================ */
+
+/* Grid container - must take full width for proper measurement */
+.wishlist-widget-grid {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 100%;
+  min-height: 200px;
+}
+
+/* Ensure react-grid-layout takes full container width */
+.wishlist-widget-grid .react-grid-layout {
+  width: 100% !important;
+}
+
+/* Individual grid item */
+.wishlist-grid-item {
+  height: 100%;
+}
+
+/* Resize handle - bottom right corner only */
+/* !important needed to override react-grid-layout library hover styles */
+span.react-resizable-handle.react-resizable-handle-se {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  opacity: 0 !important;
+  transition: opacity 0.2s ease;
+  /* Reset default react-resizable styles */
+  background: transparent !important;
+  border: none !important;
+  background-image: none !important;
+}
+
+/* Show resize handle only when hovering over the bottom-right corner */
+span.react-resizable-handle.react-resizable-handle-se:hover {
+  opacity: 1 !important;
+}
+
+/* Apple-style resize indicator - SVG arc with rounded stroke caps */
+/* Override default react-resizable ::after styling and apply our custom arc */
+.wishlist-widget-grid .react-grid-item > .react-resizable-handle::after {
+  content: '' !important;
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M 2 14 A 12 12 0 0 0 14 2' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  background-size: 16px 16px !important;
+  pointer-events: none !important;
+}
+
+/* Grab cursor on image banner hover */
+.wishlist-card-image {
+  cursor: grab;
+}
+
+/* Dragging state */
+.react-grid-item.react-draggable-dragging {
+  cursor: grabbing;
+  opacity: 0.8;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+/* Grabbing cursor on entire grid while dragging (keeps cursor while moving to drop point) */
+.wishlist-widget-grid:has(.react-draggable-dragging) {
+  cursor: grabbing;
+}
+
+/* Grabbing cursor propagates to all children while dragging */
+.wishlist-widget-grid:has(.react-draggable-dragging) * {
+  cursor: grabbing !important;
+}
+
+/* Resizing state */
+.react-grid-item.resizing {
+  opacity: 0.9;
+}
+
+/* Placeholder during drag/resize - !important needed because library CSS loads after index.css */
+.react-grid-item.react-grid-placeholder {
+  background: var(--monarch-info) !important;
+  opacity: 0.2;
+  border-radius: 12px;
+  transition-duration: 100ms;
+  z-index: 2;
 }
 
 /* Row Entrance Animation with Stagger */

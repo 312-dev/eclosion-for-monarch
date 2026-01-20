@@ -17,6 +17,7 @@ import type {
   CategoryGroupMetadata,
   RawCategoryGroup,
 } from '../../types/categoryStore';
+import { decodeHtmlEntities } from '../../utils';
 
 // ============================================================================
 // Normalization
@@ -31,20 +32,21 @@ function normalizeCategories(rawGroups: RawCategoryGroup[]): CategoryStore {
   const groupOrder: string[] = [];
 
   for (const group of rawGroups) {
+    const decodedGroupName = decodeHtmlEntities(group.name);
     groupOrder.push(group.id);
     groups[group.id] = {
       id: group.id,
-      name: group.name,
+      name: decodedGroupName,
       categoryIds: group.categories.map((c) => c.id),
     };
 
     for (const cat of group.categories) {
       categories[cat.id] = {
         id: cat.id,
-        name: cat.name,
+        name: decodeHtmlEntities(cat.name),
         icon: cat.icon ?? '',
         groupId: group.id,
-        groupName: group.name,
+        groupName: decodedGroupName,
       };
     }
   }
@@ -68,9 +70,7 @@ export function useCategoryStore() {
   return useQuery({
     queryKey: getQueryKey(queryKeys.categoryStore, isDemo),
     queryFn: async () => {
-      const raw = isDemo
-        ? await demoApi.getNotesCategories()
-        : await api.getNotesCategories();
+      const raw = isDemo ? await demoApi.getNotesCategories() : await api.getNotesCategories();
       return normalizeCategories(raw);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

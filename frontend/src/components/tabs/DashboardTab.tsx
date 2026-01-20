@@ -7,7 +7,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Github } from 'lucide-react';
 import { ToolTile } from '../ui/ToolTile';
-import { RecurringIcon, NotesIcon } from '../wizards/WizardComponents';
+import { RecurringIcon, NotesIcon, WishlistIcon } from '../wizards/WizardComponents';
 import { Icons } from '../icons';
 import { useDashboardQuery } from '../../api/queries';
 import { usePageTitle } from '../../hooks';
@@ -30,6 +30,13 @@ function getTools(isDemo: boolean) {
       description: 'Track and manage recurring expenses with smart category allocation',
       icon: <RecurringIcon size={28} />,
       path: `${prefix}/recurring`,
+    },
+    {
+      id: 'wishlist',
+      name: 'Wishlist',
+      description: 'Save for goals and track progress toward the things you want',
+      icon: <WishlistIcon size={28} />,
+      path: `${prefix}/wishlist`,
     },
   ];
 }

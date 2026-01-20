@@ -32,9 +32,14 @@ const MARKETING_HOSTNAMES = [
  */
 export function useIsMarketingSite(): boolean {
   return useMemo(() => {
+    // Desktop (Electron) mode is never marketing site
+    if (globalThis.electron !== undefined) {
+      return false;
+    }
+
     const hostname = globalThis.location.hostname;
 
-    // Development is treated as marketing site for testing
+    // Development is treated as marketing site for testing (web only)
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return true;
     }

@@ -24,9 +24,23 @@ interface UpdatesSectionProps {
  * Desktop update action - shows status and Quit & Relaunch button.
  */
 function DesktopUpdateAction() {
-  const { updateAvailable, updateDownloaded, updateInfo, downloadProgress, quitAndInstall } =
-    useUpdate();
+  const {
+    updateAvailable,
+    updateDownloaded,
+    updateInfo,
+    downloadProgress,
+    quitAndInstall,
+    checkForUpdates,
+  } = useUpdate();
   const [isRestarting, setIsRestarting] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+
+  const handleCheckForUpdates = async () => {
+    setIsChecking(true);
+    await checkForUpdates();
+    // Brief delay to show checking state before resetting
+    setTimeout(() => setIsChecking(false), 1500);
+  };
 
   const handleQuitAndRelaunch = () => {
     setIsRestarting(true);
@@ -68,12 +82,23 @@ function DesktopUpdateAction() {
     );
   }
 
-  // No update - show "Up to date"
+  // No update - show "Up to date" with check link
   return (
-    <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--monarch-success)' }}>
-      <CheckCircle size={14} />
-      Up to date
-    </span>
+    <div className="flex flex-col items-end gap-0.5">
+      <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--monarch-success)' }}>
+        <CheckCircle size={14} />
+        Up to date
+      </span>
+      <button
+        type="button"
+        onClick={handleCheckForUpdates}
+        disabled={isChecking}
+        className="text-xs hover:underline transition-colors"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
+        {isChecking ? 'Checking...' : 'Check for updates'}
+      </button>
+    </div>
   );
 }
 

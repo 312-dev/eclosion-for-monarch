@@ -137,3 +137,32 @@ export {
   useGetConfigFromCache,
   useUpdateConfigInCache,
 } from './configStoreQueries';
+
+// Wishlist queries
+export {
+  useWishlistQuery,
+  useWishlistConfigQuery,
+  useWishlistCategoryGroupsQuery,
+  useUpdateWishlistConfigMutation,
+  useIsWishlistConfigured,
+  useCreateWishlistMutation,
+  useUpdateWishlistMutation,
+  useArchiveWishlistMutation,
+  useUnarchiveWishlistMutation,
+  useDeleteWishlistMutation,
+  useAllocateWishlistMutation,
+  useChangeWishlistGroupMutation,
+  useLinkWishlistCategoryMutation,
+  useWishlistSyncMutation,
+  useUpdateWishlistLayoutMutation,
+  useInvalidateWishlist,
+  // Pending bookmarks
+  usePendingBookmarksQuery,
+  usePendingCountQuery,
+  useSkippedBookmarksQuery,
+  useSkipPendingMutation,
+  useConvertPendingMutation,
+  useImportBookmarksMutation,
+  useClearUnconvertedBookmarksMutation,
+  useInvalidatePendingBookmarks,
+} from './wishlistQueries';

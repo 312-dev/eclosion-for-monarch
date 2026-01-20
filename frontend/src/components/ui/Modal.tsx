@@ -14,6 +14,7 @@ import { useEffect, useRef, useCallback, useId } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseButton } from './CloseButton';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 export interface ModalProps {
   /** Whether the modal is open */
@@ -151,16 +152,7 @@ export function Modal({
   }, [isOpen]);
 
   // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  useScrollLock(isOpen);
 
   // Handle backdrop click - must be defined before early return
   const handleBackdropClick = useCallback(

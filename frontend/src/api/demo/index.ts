@@ -102,3 +102,31 @@ export {
   getInheritanceImpact,
   type AllNotesResponse,
 } from './demoNotes';
+
+// Wishlist
+export {
+  getWishlist,
+  createWishlistItem,
+  updateWishlistItem,
+  archiveWishlistItem,
+  unarchiveWishlistItem,
+  deleteWishlistItem,
+  allocateWishlistFunds,
+  changeWishlistGroup,
+  linkWishlistCategory,
+  syncWishlist,
+  fetchOgImage,
+  reorderWishlistItems,
+  updateWishlistLayouts,
+  getWishlistCategoryGroups,
+  getWishlistConfig,
+  updateWishlistConfig,
+  // Pending bookmarks
+  getPendingBookmarks,
+  getPendingCount,
+  getSkippedBookmarks,
+  skipPendingBookmark,
+  convertPendingBookmark,
+  importBookmarks,
+  clearUnconvertedBookmarks,
+} from './demoWishlist';

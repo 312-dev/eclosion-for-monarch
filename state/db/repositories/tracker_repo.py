@@ -11,10 +11,13 @@ from state.db.models import (
     AutoSyncState,
     Category,
     EnabledItem,
+    PendingBookmark,
     RemovedItemNotice,
     Rollup,
     RollupItem,
     TrackerConfig,
+    WishlistConfig,
+    WishlistItem,
 )
 
 
@@ -434,3 +437,337 @@ class TrackerRepository:
                     }
                 )
         return deletable
+
+    # === Wishlist ===
+
+    def get_wishlist_item(self, item_id: str) -> WishlistItem | None:
+        """Get wishlist item by ID."""
+        return self.session.query(WishlistItem).filter(WishlistItem.id == item_id).first()
+
+    def get_all_wishlist_items(self) -> list[WishlistItem]:
+        """Get all wishlist items."""
+        return self.session.query(WishlistItem).order_by(WishlistItem.created_at.desc()).all()
+
+    def get_active_wishlist_items(self) -> list[WishlistItem]:
+        """Get non-archived wishlist items."""
+        return (
+            self.session.query(WishlistItem)
+            .filter(WishlistItem.is_archived.is_(False))
+            .order_by(WishlistItem.created_at.desc())
+            .all()
+        )
+
+    def get_archived_wishlist_items(self) -> list[WishlistItem]:
+        """Get archived wishlist items."""
+        return (
+            self.session.query(WishlistItem)
+            .filter(WishlistItem.is_archived.is_(True))
+            .order_by(WishlistItem.archived_at.desc())
+            .all()
+        )
+
+    def create_wishlist_item(
+        self,
+        item_id: str,
+        name: str,
+        amount: float,
+        target_date: str,
+        category_group_id: str | None = None,
+        category_group_name: str | None = None,
+        **kwargs,
+    ) -> WishlistItem:
+        """Create a new wishlist item."""
+        item = WishlistItem(
+            id=item_id,
+            name=name,
+            amount=amount,
+            target_date=target_date,
+            category_group_id=category_group_id,
+            category_group_name=category_group_name,
+            created_at=datetime.utcnow(),
+            **kwargs,
+        )
+        self.session.add(item)
+        return item
+
+    def update_wishlist_item(
+        self,
+        item_id: str,
+        **kwargs,
+    ) -> WishlistItem | None:
+        """Update wishlist item fields."""
+        item = self.get_wishlist_item(item_id)
+        if not item:
+            return None
+
+        for key, value in kwargs.items():
+            if hasattr(item, key):
+                setattr(item, key, value)
+
+        item.updated_at = datetime.utcnow()
+        return item
+
+    def delete_wishlist_item(self, item_id: str) -> bool:
+        """Delete a wishlist item."""
+        result = self.session.query(WishlistItem).filter(WishlistItem.id == item_id).delete()
+        return result > 0
+
+    def archive_wishlist_item(self, item_id: str) -> WishlistItem | None:
+        """Archive a wishlist item."""
+        item = self.get_wishlist_item(item_id)
+        if item:
+            item.is_archived = True
+            item.archived_at = datetime.utcnow()
+            item.updated_at = datetime.utcnow()
+        return item
+
+    def unarchive_wishlist_item(self, item_id: str) -> WishlistItem | None:
+        """Unarchive a wishlist item."""
+        item = self.get_wishlist_item(item_id)
+        if item:
+            item.is_archived = False
+            item.archived_at = None
+            item.updated_at = datetime.utcnow()
+        return item
+
+    def set_wishlist_category(
+        self,
+        item_id: str,
+        monarch_category_id: str,
+    ) -> WishlistItem | None:
+        """Set the Monarch category ID for a wishlist item."""
+        item = self.get_wishlist_item(item_id)
+        if item:
+            item.monarch_category_id = monarch_category_id
+            item.updated_at = datetime.utcnow()
+        return item
+
+    def update_wishlist_group(
+        self,
+        item_id: str,
+        group_id: str,
+        group_name: str,
+    ) -> WishlistItem | None:
+        """Update the category group for a wishlist item."""
+        item = self.get_wishlist_item(item_id)
+        if item:
+            item.category_group_id = group_id
+            item.category_group_name = group_name
+            item.updated_at = datetime.utcnow()
+        return item
+
+    def get_wishlist_items_by_category_id(self, category_id: str) -> list[WishlistItem]:
+        """Get wishlist items by Monarch category ID."""
+        return (
+            self.session.query(WishlistItem)
+            .filter(WishlistItem.monarch_category_id == category_id)
+            .all()
+        )
+
+    def get_wishlist_items_by_bookmark_id(self, bookmark_id: str) -> list[WishlistItem]:
+        """Get wishlist items by source bookmark ID."""
+        return (
+            self.session.query(WishlistItem)
+            .filter(WishlistItem.source_bookmark_id == bookmark_id)
+            .all()
+        )
+
+    def update_wishlist_layouts(self, layouts: list[dict]) -> int:
+        """
+        Update grid layout positions for multiple wishlist items.
+
+        Args:
+            layouts: List of dicts with id, grid_x, grid_y, col_span, row_span
+
+        Returns:
+            Number of items updated
+        """
+        updated = 0
+        for layout in layouts:
+            item = self.get_wishlist_item(layout["id"])
+            if item:
+                item.grid_x = layout.get("grid_x", 0)
+                item.grid_y = layout.get("grid_y", 0)
+                item.col_span = layout.get("col_span", 1)
+                item.row_span = layout.get("row_span", 1)
+                item.updated_at = datetime.utcnow()
+                updated += 1
+        return updated
+
+    # === Wishlist Config ===
+
+    def get_wishlist_config(self) -> WishlistConfig:
+        """Get or create wishlist configuration."""
+        config = self.session.query(WishlistConfig).first()
+        if not config:
+            config = WishlistConfig(id=1)
+            self.session.add(config)
+            self.session.flush()
+        return config
+
+    def update_wishlist_config(self, **kwargs) -> WishlistConfig:
+        """Update wishlist configuration fields."""
+        config = self.get_wishlist_config()
+        for key, value in kwargs.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+        return config
+
+    def is_wishlist_configured(self) -> bool:
+        """Check if wishlist has been configured."""
+        config = self.session.query(WishlistConfig).first()
+        return config is not None and config.is_configured
+
+    def mark_wishlist_configured(self) -> WishlistConfig:
+        """Mark wishlist as configured."""
+        config = self.get_wishlist_config()
+        config.is_configured = True
+        return config
+
+    def reset_wishlist_config(self) -> dict:
+        """Reset wishlist configuration to defaults."""
+        config = self.get_wishlist_config()
+        config.default_category_group_id = None
+        config.default_category_group_name = None
+        config.selected_browser = None
+        config.selected_folder_ids = None
+        config.auto_archive_on_bookmark_delete = True
+        config.auto_archive_on_goal_met = True
+        config.is_configured = False
+        return {"success": True}
+
+    # === Pending Bookmarks ===
+
+    def get_pending_bookmarks(self) -> list[PendingBookmark]:
+        """Get all pending bookmarks (status='pending')."""
+        return (
+            self.session.query(PendingBookmark)
+            .filter(PendingBookmark.status == "pending")
+            .order_by(PendingBookmark.created_at.desc())
+            .all()
+        )
+
+    def get_pending_bookmarks_count(self) -> int:
+        """Get count of pending bookmarks."""
+        return (
+            self.session.query(PendingBookmark).filter(PendingBookmark.status == "pending").count()
+        )
+
+    def get_pending_bookmark_by_id(self, bookmark_id: str) -> PendingBookmark | None:
+        """Get pending bookmark by ID."""
+        return self.session.query(PendingBookmark).filter(PendingBookmark.id == bookmark_id).first()
+
+    def get_pending_bookmark_by_url(self, url: str) -> PendingBookmark | None:
+        """Get pending bookmark by URL (for deduplication)."""
+        return self.session.query(PendingBookmark).filter(PendingBookmark.url == url).first()
+
+    def create_pending_bookmark(
+        self,
+        url: str,
+        name: str,
+        bookmark_id: str,
+        browser_type: str,
+        logo_url: str | None = None,
+    ) -> PendingBookmark:
+        """Create a new pending bookmark."""
+        pending = PendingBookmark(
+            id=str(uuid.uuid4()),
+            url=url,
+            name=name,
+            bookmark_id=bookmark_id,
+            browser_type=browser_type,
+            logo_url=logo_url,
+            status="pending",
+            created_at=datetime.utcnow(),
+        )
+        self.session.add(pending)
+        return pending
+
+    def skip_pending_bookmark(self, bookmark_id: str) -> PendingBookmark | None:
+        """Mark a pending bookmark as skipped."""
+        pending = self.get_pending_bookmark_by_id(bookmark_id)
+        if pending:
+            pending.status = "skipped"
+            pending.skipped_at = datetime.utcnow()
+        return pending
+
+    def convert_pending_bookmark(
+        self,
+        bookmark_id: str,
+        wishlist_item_id: str | None = None,
+    ) -> PendingBookmark | None:
+        """Mark a pending bookmark as converted to wishlist item."""
+        pending = self.get_pending_bookmark_by_id(bookmark_id)
+        if pending:
+            pending.status = "converted"
+            if wishlist_item_id:
+                pending.wishlist_item_id = wishlist_item_id
+            pending.converted_at = datetime.utcnow()
+        return pending
+
+    def import_bookmarks_batch(self, bookmarks: list[dict]) -> dict:
+        """
+        Import a batch of bookmarks, skipping duplicates.
+
+        Each bookmark dict should have: url, name, bookmark_id, browser_type, logo_url (optional)
+        Returns count of imported and skipped.
+        """
+        imported = 0
+        skipped = 0
+
+        for bm in bookmarks:
+            url = bm.get("url")
+            if not url:
+                continue
+
+            # Check if URL already exists (any status)
+            existing = self.get_pending_bookmark_by_url(url)
+            if existing:
+                skipped += 1
+                continue
+
+            self.create_pending_bookmark(
+                url=url,
+                name=bm.get("name", "Untitled"),
+                bookmark_id=bm.get("bookmark_id", ""),
+                browser_type=bm.get("browser_type", "unknown"),
+                logo_url=bm.get("logo_url"),
+            )
+            imported += 1
+
+        return {"imported": imported, "skipped_existing": skipped}
+
+    def is_url_skipped(self, url: str) -> bool:
+        """Check if a URL has been skipped."""
+        pending = self.get_pending_bookmark_by_url(url)
+        return pending is not None and pending.status == "skipped"
+
+    def get_skipped_bookmarks(self) -> list[PendingBookmark]:
+        """Get all skipped bookmarks."""
+        return (
+            self.session.query(PendingBookmark)
+            .filter(PendingBookmark.status == "skipped")
+            .order_by(PendingBookmark.skipped_at.desc())
+            .all()
+        )
+
+    def delete_pending_bookmark(self, bookmark_id: str) -> bool:
+        """Delete a pending bookmark."""
+        result = (
+            self.session.query(PendingBookmark).filter(PendingBookmark.id == bookmark_id).delete()
+        )
+        return result > 0
+
+    def clear_unconverted_bookmarks(self) -> int:
+        """
+        Delete all pending and skipped bookmarks.
+
+        Preserves converted bookmarks since they're linked to wishlist items.
+        Returns the number of deleted bookmarks.
+        """
+        result = (
+            self.session.query(PendingBookmark)
+            .filter(PendingBookmark.status.in_(["pending", "skipped"]))
+            .delete(synchronize_session="fetch")
+        )
+        return result

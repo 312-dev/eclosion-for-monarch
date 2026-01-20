@@ -333,18 +333,30 @@ class SyncService:
 
     async def get_unmapped_categories(self) -> list[dict[str, Any]]:
         """
-        Get all categories that are not mapped to any recurring item.
+        Get all categories that are not mapped to any recurring or wishlist item.
 
-        Used when linking a disabled recurring item to an existing category.
+        Used when linking a disabled recurring item to an existing category,
+        or when linking a wishlist item to an existing category.
         """
         state = self.state_manager.load()
 
-        # Get all category IDs that are currently mapped
+        # Get all category IDs that are currently mapped to recurring items
         mapped_ids = [cat_state.monarch_category_id for cat_state in state.categories.values()]
 
         # Also exclude rollup category if it exists
         if state.rollup.monarch_category_id:
             mapped_ids.append(state.rollup.monarch_category_id)
+
+        # Also exclude wishlist item categories
+        from state.db import db_session
+        from state.db.repositories import TrackerRepository
+
+        with db_session() as session:
+            repo = TrackerRepository(session)
+            wishlist_items = repo.get_all_wishlist_items()
+            for item in wishlist_items:
+                if item.monarch_category_id:
+                    mapped_ids.append(item.monarch_category_id)
 
         return await self.category_manager.get_unmapped_categories(mapped_ids)
 
@@ -442,6 +454,9 @@ class SyncService:
             state.categories[recurring_id].is_linked = True
             state.categories[recurring_id].emoji = emoji
             self.state_manager.save(state)
+
+        # Enable rollover on the linked category (ensure budget tracking works correctly)
+        await self.category_manager.enable_category_rollover(category_id)
 
         # Note: No need to initialize frozen target - we now calculate stateless on demand
 

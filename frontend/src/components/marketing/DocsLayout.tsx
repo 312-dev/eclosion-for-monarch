@@ -5,13 +5,10 @@
  * Provides header with branding, navigation, theme toggle, and footer.
  */
 
-import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GitHubIcon, MoonIcon, SunIcon } from '../icons';
 import { AppIcon } from '../wizards/SetupWizardIcons';
 import { useTheme } from '../../context/ThemeContext';
-import { IdeasModal } from '../IdeasModal';
-import { Portal } from '../Portal';
 import { MarketingVersionIndicator } from './MarketingVersionIndicator';
 import { useLandingContent } from '../../hooks';
 
@@ -63,7 +60,6 @@ function NavLink({
 export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
   const { isCoderMode } = useLandingContent();
   const { theme, setTheme } = useTheme();
-  const [showIdeasModal, setShowIdeasModal] = useState(false);
 
   const handleToggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -98,13 +94,6 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
             {!minimal && (
               <nav className="hidden md:flex items-center gap-8">
                 <NavLink to="/features">Features</NavLink>
-                <button
-                  type="button"
-                  onClick={() => setShowIdeasModal(true)}
-                  className="text-sm font-medium text-(--monarch-text) hover:text-(--monarch-text-dark) transition-colors"
-                >
-                  Roadmap
-                </button>
                 <a
                   href="/docs"
                   className="text-sm font-medium text-(--monarch-text) hover:text-(--monarch-text-dark) transition-colors"
@@ -127,16 +116,9 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
             {/* Actions */}
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* User Guide, Roadmap & Self-Hosting Links (shown on landing page, hidden on mobile) */}
+              {/* User Guide & Self-Hosting Links (shown on landing page, hidden on mobile) */}
               {minimal && (
                 <div className="hidden sm:flex items-center gap-1 sm:gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowIdeasModal(true)}
-                    className="text-sm font-medium text-(--monarch-text) hover:text-(--monarch-text-dark) transition-colors px-2"
-                  >
-                    Roadmap
-                  </button>
                   <a
                     href="/docs"
                     className="text-sm font-medium text-(--monarch-text) hover:text-(--monarch-text-dark) transition-colors px-2"
@@ -203,30 +185,20 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
 
             {/* Links - stack on mobile, inline on larger screens */}
             <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-2 sm:gap-x-4 sm:gap-y-2 text-sm text-(--monarch-text-muted)">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowIdeasModal(true)}
-                  className="hover:text-(--monarch-text-dark) transition-colors"
-                >
-                  Roadmap
-                </button>
-                {isCoderMode && (
-                  <>
-                    <span className="text-(--monarch-border)">•</span>
-                    <a
-                      href="https://github.com/312-dev/eclosion"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 hover:text-(--monarch-text-dark) transition-colors"
-                    >
-                      <GitHubIcon size={16} />
-                      <span className="hidden xs:inline">GitHub</span>
-                    </a>
-                  </>
-                )}
-              </div>
-              <span className="hidden sm:inline text-(--monarch-border)">•</span>
+              {isCoderMode && (
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <a
+                    href="https://github.com/312-dev/eclosion"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 hover:text-(--monarch-text-dark) transition-colors"
+                  >
+                    <GitHubIcon size={16} />
+                    <span className="hidden xs:inline">GitHub</span>
+                  </a>
+                </div>
+              )}
+              {isCoderMode && <span className="hidden sm:inline text-(--monarch-border)">•</span>}
               <span className="text-center">
                 Built for{' '}
                 <a
@@ -271,11 +243,6 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
           </div>
         </div>
       </footer>
-
-      {/* Ideas/Roadmap Modal */}
-      <Portal>
-        <IdeasModal isOpen={showIdeasModal} onClose={() => setShowIdeasModal(false)} />
-      </Portal>
     </div>
   );
 }

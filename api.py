@@ -79,9 +79,10 @@ app.config["SESSION_COOKIE_SAMESITE"] = None if config.is_desktop_environment() 
 app.config["PERMANENT_SESSION_LIFETIME"] = config.SESSION_COOKIE_LIFETIME
 
 # CORS configuration
-# - Desktop mode: Disable CORS (only Electron app should access API via desktop secret)
+# - Desktop prod mode: Disable CORS (Electron loads bundled files from same origin)
+# - Desktop dev mode: Enable CORS (Vite on :5174 makes requests to Flask on :5002)
 # - Web/server mode: Enable CORS with credentials for session cookies
-if not config.is_desktop_environment():
+if not config.is_desktop_environment() or config.DEBUG_MODE:
     CORS(app, supports_credentials=True)
 
 # Initialize rate limiter

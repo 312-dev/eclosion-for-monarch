@@ -164,6 +164,70 @@ def sanitize_id(value: str | None) -> str | None:
     return value[:100]
 
 
+def sanitize_url(value: str | None) -> str | None:
+    """
+    Sanitize a URL field.
+
+    Only allows http:// and https:// URLs to prevent javascript: and other XSS vectors.
+
+    Args:
+        value: The URL to sanitize
+
+    Returns:
+        Sanitized URL or None if invalid/unsafe
+    """
+    if value is None:
+        return None
+
+    value = str(value).strip()
+
+    if not value:
+        return None
+
+    # Only allow http and https schemes - prevents javascript:, data:, vbscript:, etc.
+    if not (value.startswith("http://") or value.startswith("https://")):
+        return None
+
+    # Reasonable max length for URLs
+    if len(value) > 2048:
+        return None
+
+    return value
+
+
+def sanitize_path(value: str | None) -> str | None:
+    """
+    Sanitize a file path to prevent path traversal and XSS.
+
+    Args:
+        value: The path to sanitize
+
+    Returns:
+        Sanitized path or None if invalid/suspicious
+    """
+    if value is None:
+        return None
+
+    value = str(value).strip()
+
+    if not value:
+        return None
+
+    # Block path traversal attempts
+    if ".." in value or value.startswith("/") or value.startswith("\\"):
+        return None
+
+    # Block special characters that could be used for injection
+    if any(c in value for c in "<>|\"'`$;"):
+        return None
+
+    # Reasonable max length for paths
+    if len(value) > 500:
+        return None
+
+    return value
+
+
 def sanitize_dict_values(data: dict[str, Any], fields: list[str]) -> dict[str, Any]:
     """
     Sanitize specific string fields in a dictionary.

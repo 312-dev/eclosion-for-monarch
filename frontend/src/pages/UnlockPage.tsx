@@ -129,7 +129,7 @@ export function UnlockPage() {
         className="min-h-screen flex flex-col"
         style={{ backgroundColor: 'var(--monarch-bg-page)' }}
       >
-        <ElectronTitleBar />
+        <ElectronTitleBar variant="compact" />
         <div className="flex-1 flex items-center justify-center p-4">
           <FallbackAuthForm
             onCancel={handleFallbackCancel}

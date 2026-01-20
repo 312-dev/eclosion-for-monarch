@@ -10,15 +10,82 @@ Manages authentication and credential lifecycle:
 Extracted from SyncService to improve separation of concerns.
 """
 
+import json
 import logging
 import os
 from typing import Any, Literal
 
+from core import config
 from core.error_detection import format_auth_response, is_rate_limit_error
 from monarch_utils import get_mm, get_mm_with_code
 from state import CredentialsManager, StateManager
 
 logger = logging.getLogger(__name__)
+
+
+def _is_dev_desktop_mode() -> bool:
+    """Check if running in dev mode with desktop environment."""
+    return config.DEBUG_MODE and config.is_desktop_environment()
+
+
+def _save_dev_session(credentials: dict[str, str]) -> None:
+    """
+    Save credentials to dev session file for persistence across Flask restarts.
+
+    Only active in dev mode with desktop environment. This allows developers
+    to edit Python files without losing their authenticated session.
+
+    The file is stored in the state directory alongside other app data.
+    """
+    if not _is_dev_desktop_mode():
+        return
+
+    try:
+        with open(config.DEV_SESSION_FILE, "w") as f:
+            json.dump(credentials, f)
+        logger.debug("[DEV_SESSION] Saved credentials to dev session file")
+    except Exception as e:
+        logger.warning(f"[DEV_SESSION] Failed to save dev session: {e}")
+
+
+def _load_dev_session() -> dict[str, str] | None:
+    """
+    Load credentials from dev session file.
+
+    Returns None if:
+    - Not in dev desktop mode
+    - File doesn't exist
+    - File is invalid/corrupted
+    """
+    if not _is_dev_desktop_mode():
+        return None
+
+    if not config.DEV_SESSION_FILE.exists():
+        return None
+
+    try:
+        with open(config.DEV_SESSION_FILE) as f:
+            credentials = json.load(f)
+        if isinstance(credentials, dict) and "email" in credentials and "password" in credentials:
+            logger.debug("[DEV_SESSION] Loaded credentials from dev session file")
+            return credentials
+    except Exception as e:
+        logger.warning(f"[DEV_SESSION] Failed to load dev session: {e}")
+
+    return None
+
+
+def _clear_dev_session() -> None:
+    """Remove the dev session file."""
+    if not _is_dev_desktop_mode():
+        return
+
+    try:
+        if config.DEV_SESSION_FILE.exists():
+            config.DEV_SESSION_FILE.unlink()
+            logger.debug("[DEV_SESSION] Cleared dev session file")
+    except Exception as e:
+        logger.warning(f"[DEV_SESSION] Failed to clear dev session: {e}")
 
 
 class CredentialsService:
@@ -41,6 +108,15 @@ class CredentialsService:
         # Check in-memory session first
         if CredentialsService._session_credentials:
             return True
+
+        # In dev mode, try to restore from dev session file
+        # This handles Flask restarts that clear in-memory credentials
+        dev_session = _load_dev_session()
+        if dev_session:
+            CredentialsService._session_credentials = dev_session
+            logger.info("[DEV_SESSION] Restored credentials from dev session file")
+            return True
+
         # Also check env vars as fallback
         email, password, _ = self._get_env_credentials()
         return bool(email and password)
@@ -197,6 +273,8 @@ class CredentialsService:
         self.credentials_manager.clear()
         CredentialsService._session_credentials = None
         CredentialsService._pending_credentials = None
+        # Clear dev session file if in dev mode
+        _clear_dev_session()
 
     async def desktop_login(
         self,
@@ -232,11 +310,15 @@ class CredentialsService:
 
             # Store directly in session (no encryption, no disk storage)
             # For code mode, don't store the code (it's one-time use)
-            CredentialsService._session_credentials = {
+            credentials = {
                 "email": email,
                 "password": password,
                 "mfa_secret": mfa_secret if mfa_mode == "secret" else "",
             }
+            CredentialsService._session_credentials = credentials
+
+            # In dev mode, persist to file for Flask restart survival
+            _save_dev_session(credentials)
 
             logger.info("[DESKTOP_LOGIN] Credentials validated and session established")
             return {
@@ -271,6 +353,8 @@ class CredentialsService:
     def lock(self) -> None:
         """Lock the session without clearing stored credentials."""
         CredentialsService._session_credentials = None
+        # Clear dev session file when locking
+        _clear_dev_session()
 
     async def unlock_and_validate(self, passphrase: str) -> dict[str, Any]:
         """
@@ -405,6 +489,8 @@ class CredentialsService:
         self.credentials_manager.clear()
         CredentialsService._session_credentials = None
         CredentialsService._pending_credentials = None
+        # Clear dev session file if in dev mode
+        _clear_dev_session()
 
     async def reauthenticate(self, mfa_code: str) -> dict[str, Any]:
         """

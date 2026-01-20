@@ -5,26 +5,75 @@
  * Shows ideas stacking up at angles, then one gets votes and ships.
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import type { IdeasData, PublicIdea } from '../../../types/ideas';
+import { useMemo } from 'react';
+import type { PublicIdea } from '../../../types/ideas';
 import { useIdeasAnimation } from './useIdeasAnimation';
 import { IdeaBubble } from './IdeaBubble';
 import { IdeaTextInput } from './IdeaTextInput';
 import { getAvailableFeatures } from '../../../data/features';
 
-// Cloudflare Function URL (production) and GitHub raw fallback (local dev)
-const IDEAS_API_URL = '/api/ideas';
-const IDEAS_GITHUB_URL = 'https://raw.githubusercontent.com/312-dev/eclosion/main/data/ideas.json';
-
-// Detect if we're in local development (localhost or 127.0.0.1)
-const isLocalDev =
-  typeof globalThis.window !== 'undefined' &&
-  (globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1');
+// Hardcoded ideas for the marketing animation
+const HARDCODED_IDEAS: PublicIdea[] = [
+  {
+    id: 'idea-1',
+    title: 'Inbox Sync',
+    description: 'Automatically extract transaction details from merchant receipts and invoices in your email.',
+    votes: 12,
+    category: 'Feature',
+    discussionUrl: null,
+    discussionNumber: null,
+    status: 'open',
+    closedReason: null,
+    closedAt: null,
+    source: 'github',
+    author: null,
+  },
+  {
+    id: 'idea-2',
+    title: 'Transaction Linking',
+    description: 'Associate related transactions together for better tracking and reporting.',
+    votes: 8,
+    category: 'Feature',
+    discussionUrl: null,
+    discussionNumber: null,
+    status: 'open',
+    closedReason: null,
+    closedAt: null,
+    source: 'github',
+    author: null,
+  },
+  {
+    id: 'idea-3',
+    title: 'Goal Templates',
+    description: 'Pre-built savings goal templates for common objectives like emergency funds and vacations.',
+    votes: 15,
+    category: 'Feature',
+    discussionUrl: null,
+    discussionNumber: null,
+    status: 'open',
+    closedReason: null,
+    closedAt: null,
+    source: 'github',
+    author: null,
+  },
+  {
+    id: 'idea-4',
+    title: 'Budget Insights',
+    description: 'AI-powered insights to help identify spending patterns and savings opportunities.',
+    votes: 20,
+    category: 'Feature',
+    discussionUrl: null,
+    discussionNumber: null,
+    status: 'open',
+    closedReason: null,
+    closedAt: null,
+    source: 'github',
+    author: null,
+  },
+];
 
 export function IdeasBoard() {
-  const [ideas, setIdeas] = useState<PublicIdea[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const ideas = HARDCODED_IDEAS;
 
   const {
     stackedIdeas,
@@ -40,52 +89,6 @@ export function IdeasBoard() {
     pause,
     resume,
   } = useIdeasAnimation(ideas);
-
-  // Fetch ideas on mount
-  useEffect(() => {
-    const fetchIdeas = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        let data: IdeasData | null = null;
-
-        // In local dev, skip the CF function and go straight to GitHub
-        if (!isLocalDev) {
-          try {
-            const response = await fetch(IDEAS_API_URL);
-            if (response.ok) {
-              const contentType = response.headers.get('content-type');
-              if (contentType?.includes('application/json')) {
-                data = (await response.json()) as IdeasData;
-              }
-            }
-          } catch {
-            // CF function not available, will fall through to GitHub
-          }
-        }
-
-        // Fallback to GitHub raw (always works, CORS-enabled)
-        if (!data) {
-          const response = await fetch(IDEAS_GITHUB_URL);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch ideas: ${response.status}`);
-          }
-          data = (await response.json()) as IdeasData;
-        }
-
-        setIdeas(data.ideas);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load ideas';
-        setError(message);
-        console.error('Failed to fetch ideas:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchIdeas();
-  }, []);
 
   // Handle focus/blur to pause/resume animation
   const handleInputFocus = () => {
@@ -106,35 +109,6 @@ export function IdeasBoard() {
 
   // Determine if we should show fade-out for reset
   const isResetting = animationPhase === 'resetting';
-
-  if (loading) {
-    return (
-      <div className="w-full max-w-sm mx-auto">
-        <div className="rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) p-4 animate-pulse">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-8 w-8 rounded-full bg-(--monarch-bg-page)" />
-            <div className="h-4 w-24 rounded bg-(--monarch-bg-page)" />
-          </div>
-          <div className="h-4 w-full rounded bg-(--monarch-bg-page) mb-2" />
-          <div className="h-4 w-2/3 rounded bg-(--monarch-bg-page)" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error || ideas.length === 0) {
-    // Still show the input even if ideas failed to load
-    return (
-      <div className="w-full max-w-sm mx-auto space-y-4">
-        <div className="rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) p-4 text-center">
-          <p className="text-sm text-(--monarch-text-muted)">
-            {error ? 'Community ideas are loading...' : 'No ideas yet. Be the first!'}
-          </p>
-        </div>
-        <IdeaTextInput reducedMotion={prefersReducedMotion} />
-      </div>
-    );
-  }
 
   return (
     <section className="w-full max-w-sm mx-auto" aria-label="Community ideas board">

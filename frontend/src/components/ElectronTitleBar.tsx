@@ -9,6 +9,10 @@
  *
  * On Windows with `titleBarStyle: 'hidden'` and `titleBarOverlay`, the window controls
  * (minimize/maximize/close) are overlaid on the right. The drag region excludes this area.
+ *
+ * Variants:
+ * - 'minimal': Just the system title bar height (28-32px) - use when content is close to top
+ * - 'compact': Larger drag area (80px) - use on smaller screens like login/error for intuitive dragging
  */
 
 import { useMacOSElectron, useWindowsElectron } from '../hooks';
@@ -16,9 +20,18 @@ import { useMacOSElectron, useWindowsElectron } from '../hooks';
 interface ElectronTitleBarProps {
   /** Height of the drag region (default: 28px on macOS, 32px on Windows to match overlay) */
   height?: number;
+  /**
+   * Variant for different screen types:
+   * - 'minimal': System title bar height only (default)
+   * - 'compact': Larger 80px area for small windows (login, error, startup screens)
+   */
+  variant?: 'minimal' | 'compact';
 }
 
-export function ElectronTitleBar({ height }: Readonly<ElectronTitleBarProps>) {
+// Height for 'compact' variant - provides intuitive dragging on smaller screens
+const COMPACT_HEIGHT = 80;
+
+export function ElectronTitleBar({ height, variant = 'minimal' }: Readonly<ElectronTitleBarProps>) {
   const isMacOSElectron = useMacOSElectron();
   const isWindowsElectron = useWindowsElectron();
 
@@ -27,8 +40,16 @@ export function ElectronTitleBar({ height }: Readonly<ElectronTitleBarProps>) {
     return null;
   }
 
-  // Platform-specific height: macOS traffic lights are ~28px, Windows overlay is 32px
-  const regionHeight = height ?? (isWindowsElectron ? 32 : 28);
+  // Determine height based on variant or explicit height prop
+  let regionHeight: number;
+  if (height !== undefined) {
+    regionHeight = height;
+  } else if (variant === 'compact') {
+    regionHeight = COMPACT_HEIGHT;
+  } else {
+    // Platform-specific height: macOS traffic lights are ~28px, Windows overlay is 32px
+    regionHeight = isWindowsElectron ? 32 : 28;
+  }
 
   return (
     <div

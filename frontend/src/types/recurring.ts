@@ -7,6 +7,7 @@
 import type { ItemStatus } from './common';
 
 export interface RecurringItem {
+  type?: 'recurring'; // Optional for backwards compatibility, defaults to 'recurring'
   id: string;
   merchant_id: string | null;
   logo_url: string | null;
@@ -30,6 +31,7 @@ export interface RecurringItem {
   monthly_contribution: number;
   over_contribution: number;
   progress_percent: number;
+  progress_target?: number; // Target for progress bar (amount for >= 1 month, monthly total for sub-monthly), computed
   status: ItemStatus;
   is_enabled: boolean;
   ideal_monthly_rate: number;

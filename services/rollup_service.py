@@ -112,6 +112,9 @@ class RollupService:
         state.rollup.enabled = True
         self.state_manager.save(state)
 
+        # Enable rollover on the linked category (ensure budget tracking works correctly)
+        await self.category_manager.enable_category_rollover(category_id)
+
         return {
             "success": True,
             "category_id": category_id,

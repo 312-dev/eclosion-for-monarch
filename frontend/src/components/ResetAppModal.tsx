@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { getErrorMessage } from '../utils';
 import { isDesktopMode } from '../utils/apiBase';
 import { Portal } from './Portal';
@@ -23,6 +24,9 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
   const toast = useToast();
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prevent body scroll when modal is open
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (isOpen) {

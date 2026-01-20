@@ -58,7 +58,7 @@ export function RecurringItemProgress({
           </span>
         )}
         <span className="text-monarch-text-light">
-          {formatCurrency(item.amount, { maximumFractionDigits: 0 })}
+          {formatCurrency(item.progress_target ?? item.amount, { maximumFractionDigits: 0 })}
         </span>
       </div>
     </div>

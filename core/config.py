@@ -84,6 +84,10 @@ SESSION_SECRET_FILE = STATE_DIR / ".session_secret"
 SECURITY_DB_FILE = STATE_DIR / "security_events.db"
 MONARCH_SESSION_FILE = STATE_DIR / "mm_session.pickle"
 
+# Dev mode session file - persists credentials across Flask restarts in dev mode
+# Only used when FLASK_DEBUG=1 AND running in desktop mode
+DEV_SESSION_FILE = STATE_DIR / ".dev_session.json"
+
 # Security event retention (days)
 SECURITY_EVENT_RETENTION_DAYS = 90
 

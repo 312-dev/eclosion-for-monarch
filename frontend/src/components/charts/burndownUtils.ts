@@ -127,10 +127,6 @@ export interface BurndownData {
  * all items with frozen_monthly_target > ideal_monthly_rate have had their
  * bills hit and reset to ideal rates.
  *
- * Note: The starting cost is calculated internally using max(frozen, ideal) for
- * each item. This ensures overfunded items (frozen < ideal) don't artificially
- * lower the starting point - being ahead shouldn't make costs look lower.
- *
  * Note: Over-contributing is NOT factored in. This projection assumes the user
  * budgets exactly the frozen target each month.
  */
@@ -223,19 +219,17 @@ export function calculateBurndownData(
   const minEndMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 6, 1);
   const endMonth = new Date(Math.max(stabilizationMonth.getTime(), minEndMonth.getTime()));
 
-  // Calculate effective rates using max(frozen, ideal) for each item.
-  // This ensures overfunded items (frozen < ideal) don't pull down the starting point.
-  // Being ahead on an item shouldn't make the chart show artificially low costs.
-  const getEffectiveRate = (item: RecurringItem) => {
-    const frozen = item.frozen_monthly_target || 0;
-    const ideal = item.ideal_monthly_rate || 0;
-    return Math.max(frozen, ideal);
-  };
-
-  let rollupRunningTotal = rollupItems.reduce((sum, item) => sum + getEffectiveRate(item), 0);
+  // Start with frozen_monthly_target for the current month - this is what you
+  // actually need to budget NOW. When bills hit, rates adjust toward ideal.
+  let rollupRunningTotal = rollupItems.reduce(
+    (sum, item) => sum + (item.frozen_monthly_target || 0),
+    0
+  );
   const points: BurndownPoint[] = [];
-  // Use effective starting cost (max of frozen/ideal per item) instead of passed-in currentMonthlyCost
-  let runningTotal = allTrackedItems.reduce((sum, item) => sum + getEffectiveRate(item), 0);
+  let runningTotal = allTrackedItems.reduce(
+    (sum, item) => sum + (item.frozen_monthly_target || 0),
+    0
+  );
   let iterMonth = new Date(currentMonth);
   const processedItems = new Set<string>();
 
@@ -278,16 +272,18 @@ export function calculateBurndownData(
       isStabilizationPoint: isStabilizationMonth,
     });
 
-    // THEN subtract catch-up amounts for items completing this month
+    // THEN adjust rates for items whose bills hit this month
     // This affects the NEXT month's beginning-of-month state
-    // Use effectiveRate (max of frozen/ideal) to match what we started with
     for (const item of completingThisMonth) {
-      const effectiveRate = getEffectiveRate(item);
-      const catchUpAmount = effectiveRate - item.ideal_monthly_rate;
-      if (catchUpAmount > 0) {
-        runningTotal -= catchUpAmount;
+      const frozen = item.frozen_monthly_target || 0;
+      const ideal = item.ideal_monthly_rate || 0;
+      const adjustment = ideal - frozen;
+      // adjustment > 0: ahead item resets UP to ideal (increase cost)
+      // adjustment < 0: catching-up item resets DOWN to ideal (decrease cost)
+      if (adjustment !== 0) {
+        runningTotal += adjustment;
         if (item.is_in_rollup) {
-          rollupRunningTotal -= catchUpAmount;
+          rollupRunningTotal += adjustment;
         }
       }
       processedItems.add(item.id);

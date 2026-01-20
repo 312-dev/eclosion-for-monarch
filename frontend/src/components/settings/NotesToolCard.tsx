@@ -5,15 +5,20 @@
  * Displays as a separate card under Tool Settings.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, forwardRef } from 'react';
 import { EyeOff } from 'lucide-react';
 import { useHiddenCategories } from '../../hooks';
 import { NotesToolSettings } from './NotesToolSettings';
 import { HiddenCategoriesModal } from './HiddenCategoriesModal';
 import { SettingsRow } from './SettingsRow';
 
-export function NotesToolCard() {
-  const [isExpanded, setIsExpanded] = useState(false);
+interface NotesToolCardProps {
+  defaultExpanded?: boolean;
+}
+
+export const NotesToolCard = forwardRef<HTMLDivElement, NotesToolCardProps>(
+  function NotesToolCard({ defaultExpanded = false }, ref) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showHiddenCategoriesModal, setShowHiddenCategoriesModal] = useState(false);
 
   const toggleExpanded = useCallback(() => setIsExpanded((prev) => !prev), []);
@@ -29,6 +34,7 @@ export function NotesToolCard() {
   return (
     <>
       <div
+        ref={ref}
         className="rounded-xl overflow-hidden"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
@@ -74,4 +80,4 @@ export function NotesToolCard() {
       />
     </>
   );
-}
+});

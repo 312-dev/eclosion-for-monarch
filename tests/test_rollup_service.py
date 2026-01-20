@@ -150,6 +150,10 @@ class MockCategoryManager:
         if category_id in self.categories:
             self.categories[category_id]["icon"] = icon
 
+    async def enable_category_rollover(self, category_id):
+        """Mock enable_category_rollover for testing."""
+        return {"updateCategory": {"category": {"id": category_id, "rolloverEnabled": True}}}
+
 
 class MockRecurringService:
     """Mock recurring service for rollup tests."""

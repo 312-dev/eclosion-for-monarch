@@ -163,3 +163,106 @@ class AutoSyncState(Base):
     consent_timestamp: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (CheckConstraint("id = 1", name="single_row_auto_sync"),)
+
+
+class WishlistItem(Base):
+    """
+    Wishlist savings goal item.
+
+    Tracks a one-time purchase goal linked to a Monarch category.
+    Users save towards a target amount by a specified date.
+    """
+
+    __tablename__ = "wishlist_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)  # Target amount
+    target_date: Mapped[str] = mapped_column(String(20), nullable=False)  # YYYY-MM-DD
+    emoji: Mapped[str] = mapped_column(String(10), default="🎯")
+
+    # Monarch integration
+    monarch_category_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    category_group_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    category_group_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Source tracking (from bookmark sync)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_bookmark_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Custom image (user-uploaded)
+    custom_image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # State tracking
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Grid layout (for widget-style resizable cards)
+    grid_x: Mapped[int] = mapped_column(Integer, default=0)
+    grid_y: Mapped[int] = mapped_column(Integer, default=0)
+    col_span: Mapped[int] = mapped_column(Integer, default=1)
+    row_span: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class WishlistConfig(Base):
+    """
+    Wishlist feature configuration.
+
+    Single row table containing wishlist settings including browser sync
+    preferences and auto-archive behavior.
+    """
+
+    __tablename__ = "wishlist_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+
+    # Default category group for new wishlist items
+    default_category_group_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    default_category_group_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Bookmark sync settings
+    selected_browser: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    selected_folder_ids: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+    selected_folder_names: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+
+    # Auto-archive settings
+    auto_archive_on_bookmark_delete: Mapped[bool] = mapped_column(Boolean, default=True)
+    auto_archive_on_goal_met: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Configuration state
+    is_configured: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    __table_args__ = (CheckConstraint("id = 1", name="single_row_wishlist_config"),)
+
+
+class PendingBookmark(Base):
+    """
+    Pending bookmark for review workflow.
+
+    Bookmarks imported from browser sync land here first.
+    User can either skip (remembered by URL) or convert to wishlist item.
+    URL-based deduplication prevents duplicate entries.
+    """
+
+    __tablename__ = "pending_bookmarks"
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    url: Mapped[str] = mapped_column(String(2048), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(500), nullable=False)
+    bookmark_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    browser_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    logo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+
+    # Status: 'pending' (needs review), 'skipped' (user skipped), 'converted' (became wishlist item)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+
+    # Link to wishlist item if converted
+    wishlist_item_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    skipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    converted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

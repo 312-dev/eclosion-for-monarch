@@ -165,6 +165,11 @@ export class BackendManager extends EventEmitter {
    */
   private desktopSecret: string = '';
 
+  /**
+   * Dev mode flag - when true, connects to external Flask server instead of spawning binary.
+   */
+  private readonly isDev = !app.isPackaged;
+
   constructor() {
     super();
   }
@@ -199,6 +204,9 @@ export class BackendManager extends EventEmitter {
   /**
    * Start the Python backend subprocess.
    * Emits 'startup-status' events during the process for UI feedback.
+   *
+   * In dev mode, connects to an externally running Flask server instead of
+   * spawning the PyInstaller binary. This enables hot reload during development.
    */
   async start(): Promise<void> {
     if (this.process) {
@@ -206,6 +214,42 @@ export class BackendManager extends EventEmitter {
       return;
     }
 
+    // Dev mode: connect to externally running Flask server
+    if (this.isDev) {
+      // Read port from environment variable (set by dev.sh), fallback to 5002
+      this.port = Number.parseInt(process.env.DEV_FLASK_PORT || '5002', 10);
+      this.desktopSecret = ''; // No secret needed for dev
+
+      this.emitStartupStatus({
+        phase: 'initializing',
+        message: 'Connecting to dev server...',
+        progress: 20,
+      });
+
+      debugLog(`Dev mode: connecting to external Flask server on port ${this.port}`);
+
+      this.emitStartupStatus({
+        phase: 'waiting_for_health',
+        message: 'Waiting for Flask dev server...',
+        progress: 50,
+      });
+
+      // Wait for Flask to be available
+      await this.waitForHealth();
+
+      this.startupComplete = true;
+      this.emitStartupStatus({
+        phase: 'ready',
+        message: 'Connected to dev server!',
+        progress: 100,
+      });
+
+      // Start health monitoring
+      this.startHealthCheck();
+      return;
+    }
+
+    // Production mode: spawn PyInstaller binary
     this.emitStartupStatus({
       phase: 'initializing',
       message: 'Finding available port...',
@@ -440,6 +484,7 @@ export class BackendManager extends EventEmitter {
 
   /**
    * Stop the backend process gracefully.
+   * In dev mode, just cleans up intervals since we don't own the Flask process.
    */
   async stop(): Promise<void> {
     this.isShuttingDown = true;
@@ -447,6 +492,12 @@ export class BackendManager extends EventEmitter {
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
       this.healthCheckInterval = null;
+    }
+
+    // In dev mode, we don't own the Flask process - just cleanup
+    if (this.isDev) {
+      console.log('Dev mode: cleanup complete (Flask server managed externally)');
+      return;
     }
 
     if (this.process) {

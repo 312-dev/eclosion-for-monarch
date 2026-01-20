@@ -5,6 +5,8 @@
  * Extracted to reduce the size of SetupWizard.tsx.
  */
 
+import { PiListHeartBold } from 'react-icons/pi';
+
 // App Icon Component (butterfly logo)
 export function AppIcon({ size = 48 }: { size?: number }) {
   return (
@@ -98,6 +100,10 @@ export function NotesIcon({ size = 24 }: Readonly<{ size?: number }>) {
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
     </svg>
   );
+}
+
+export function WishlistIcon({ size = 24 }: Readonly<{ size?: number }>) {
+  return <PiListHeartBold size={size} />;
 }
 
 export function LinkIcon({ size = 16 }: { size?: number }) {

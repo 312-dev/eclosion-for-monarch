@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import { X, Calendar, ArrowRight } from 'lucide-react';
 import { Portal } from '../Portal';
 import { useNoteHistoryQuery } from '../../api/queries';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import { decodeHtmlEntities } from '../../utils';
 import type { MonthKey, NoteVersion } from '../../types/notes';
 
@@ -53,6 +54,9 @@ export function RevisionHistoryModal({
   onNavigateToMonth,
 }: RevisionHistoryModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Prevent body scroll when modal is open
+  useScrollLock(true);
 
   const {
     data: history,

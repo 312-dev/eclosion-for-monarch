@@ -18,6 +18,7 @@ export {
   AppIcon,
   RecurringIcon,
   NotesIcon,
+  WishlistIcon,
   EmptyInboxIcon,
   PackageIcon,
   CheckCircleIcon,

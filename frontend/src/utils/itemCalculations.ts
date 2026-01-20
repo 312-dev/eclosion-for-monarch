@@ -188,29 +188,16 @@ export function computeItemValues(
     targetMonth
   );
 
-  // DEBUG: Log calculation for quarterly items to trace the $58 bug
-  if (raw.frequency === 'quarterly' && raw.name.toLowerCase().includes('hims')) {
-    console.log('[DEBUG] Hims calculation:', {
-      name: raw.name,
-      amount: raw.amount,
-      frequency: raw.frequency,
-      base_date: raw.base_date,
-      next_due_date: raw.next_due_date,
-      effectiveDate: raw.base_date || raw.next_due_date,
-      rollover_amount_raw: raw.rollover_amount,
-      rolloverAmount,
-      targetMonth,
-      frozenMonthlyTarget,
-      current_balance: raw.current_balance,
-      planned_budget: raw.planned_budget,
-    });
-  }
-
   // Calculate ideal monthly rate
   const idealMonthlyRate = calculateIdealMonthlyRate(raw.amount, frequencyMonths);
 
-  // Calculate progress percent (overall progress toward the bill amount)
-  const progressPercent = calculateProgressPercent(raw.current_balance, raw.amount);
+  // Calculate progress target
+  // For sub-monthly items (weekly, bi-weekly), use total monthly obligation
+  // For >= 1 month items (monthly, quarterly, annual), use the full bill amount
+  const progressTarget = frequencyMonths < 1 ? frozenMonthlyTarget + rolloverAmount : raw.amount;
+
+  // Calculate progress percent using the appropriate target
+  const progressPercent = calculateProgressPercent(raw.current_balance, progressTarget);
 
   // Calculate monthly contribution
   const monthlyContribution = calculateMonthlyContribution(
@@ -272,6 +259,7 @@ export function computeItemValues(
     frozen_monthly_target: frozenMonthlyTarget,
     ideal_monthly_rate: idealMonthlyRate,
     progress_percent: progressPercent,
+    progress_target: progressTarget,
     status,
     amount_needed_now: amountNeededNow,
     contributed_this_month: contributedThisMonth,

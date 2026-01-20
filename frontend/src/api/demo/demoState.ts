@@ -4,7 +4,13 @@
  * Core utilities for managing demo state in localStorage.
  */
 
-import { createInitialDemoState, type DemoState } from '../demoData';
+import {
+  createInitialDemoState,
+  createInitialWishlistData,
+  createInitialWishlistConfig,
+  createInitialPendingBookmarks,
+  type DemoState,
+} from '../demoData';
 import { TOUR_STATE_KEY } from '../../hooks/useRecurringTour';
 import { NOTES_TOUR_STATE_KEY } from '../../hooks/useNotesTour';
 
@@ -26,37 +32,50 @@ const FREQUENCY_MIGRATIONS: Record<string, string> = {
   annual: 'yearly',
 };
 
-/**
- * Migrate legacy frequency values in demo state to new Monarch API values.
- */
-function migrateDemoState(state: DemoState): DemoState {
+/** Migrate frequency values in an array of items, returns true if any migrated. */
+function migrateItemFrequencies(items: { frequency?: string }[]): boolean {
   let migrated = false;
-
-  // Migrate items in dashboard
-  if (state.dashboard?.items) {
-    for (const item of state.dashboard.items) {
-      if (item.frequency && FREQUENCY_MIGRATIONS[item.frequency]) {
-        item.frequency = FREQUENCY_MIGRATIONS[item.frequency]!;
-        migrated = true;
-      }
+  for (const item of items) {
+    const newFreq = item.frequency ? FREQUENCY_MIGRATIONS[item.frequency] : undefined;
+    if (newFreq) {
+      item.frequency = newFreq;
+      migrated = true;
     }
   }
+  return migrated;
+}
 
-  // Migrate rollup items
-  if (state.dashboard?.rollup?.items) {
-    for (const item of state.dashboard.rollup.items) {
-      if (item.frequency && FREQUENCY_MIGRATIONS[item.frequency]) {
-        item.frequency = FREQUENCY_MIGRATIONS[item.frequency]!;
-        migrated = true;
-      }
-    }
+/** Add missing state properties for new features. Returns true if any added. */
+function addMissingProperties(state: DemoState): boolean {
+  let added = false;
+  if (!state.wishlist) {
+    state.wishlist = createInitialWishlistData();
+    added = true;
   }
+  if (!state.wishlistConfig) {
+    state.wishlistConfig = createInitialWishlistConfig();
+    added = true;
+  }
+  if (!state.pendingBookmarks) {
+    state.pendingBookmarks = createInitialPendingBookmarks();
+    added = true;
+  }
+  return added;
+}
 
-  if (migrated) {
-    // Save migrated state
+/** Migrate legacy demo state to current format. */
+function migrateDemoState(state: DemoState): DemoState {
+  const propsAdded = addMissingProperties(state);
+  const dashboardMigrated = state.dashboard?.items
+    ? migrateItemFrequencies(state.dashboard.items)
+    : false;
+  const rollupMigrated = state.dashboard?.rollup?.items
+    ? migrateItemFrequencies(state.dashboard.rollup.items)
+    : false;
+
+  if (propsAdded || dashboardMigrated || rollupMigrated) {
     localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
   }
-
   return state;
 }
 

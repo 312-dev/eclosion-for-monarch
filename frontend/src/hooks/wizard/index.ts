@@ -10,3 +10,9 @@ export type { UseItemSelectionResult } from './useItemSelection';
 
 export { useRollupConfig } from './useRollupConfig';
 export type { UseRollupConfigResult } from './useRollupConfig';
+
+export { useBrowserSelection } from './useBrowserSelection';
+export type { UseBrowserSelectionResult } from './useBrowserSelection';
+
+export { useFolderSelection } from './useFolderSelection';
+export type { UseFolderSelectionResult } from './useFolderSelection';

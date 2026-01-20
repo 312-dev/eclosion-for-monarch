@@ -110,3 +110,44 @@ async def test_multiple_test_categories(monarch_client, test_category_prefix):
                 await monarch_client.delete_transaction_category(cat_id)
             except Exception as e:
                 print(f"Warning: Failed to delete category {cat_id}: {e}")
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_enable_category_rollover(monarch_client, unique_test_name):
+    """Test that we can enable rollover on an existing category."""
+    # Get a group to add category to
+    result = await monarch_client.get_transaction_categories()
+    categories = extract_categories(result)
+    group_id = None
+    for cat in categories:
+        if cat.get("group") and cat["group"].get("id"):
+            group_id = cat["group"]["id"]
+            break
+
+    # Create category WITHOUT rollover
+    create_result = await monarch_client.create_transaction_category(
+        transaction_category_name=unique_test_name,
+        group_id=group_id,
+        rollover_enabled=False,
+    )
+    cat_id = extract_category_id(create_result)
+
+    try:
+        # Enable rollover on the category
+        result = await monarch_client.enable_category_rollover(category_id=cat_id)
+
+        # Verify the response contains updated category with rollover enabled
+        assert result is not None, "enable_category_rollover should return a result"
+        assert "updateCategory" in result, "Response should contain updateCategory"
+
+        category = result["updateCategory"]["category"]
+        assert category["id"] == cat_id, "Response should contain the correct category ID"
+
+        # Verify rolloverPeriod is now set
+        rollover_period = category.get("rolloverPeriod")
+        assert rollover_period is not None, "Category should now have a rolloverPeriod"
+        assert rollover_period.get("frequency") == "monthly", "Rollover frequency should be monthly"
+
+    finally:
+        await monarch_client.delete_transaction_category(cat_id)

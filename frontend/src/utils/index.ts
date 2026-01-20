@@ -58,3 +58,5 @@ export {
 } from './notesTransform';
 
 export { sanitizeHtml } from './sanitizeHtml';
+
+export { isSafeUrl, getSafeHref } from './safeUrl';

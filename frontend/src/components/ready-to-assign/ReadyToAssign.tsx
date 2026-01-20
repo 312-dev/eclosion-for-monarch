@@ -50,10 +50,8 @@ export function ReadyToAssign({
     infoDropdown.triggerRef.current?.focus();
   };
 
-  // Calculate current monthly cost (sum of all frozen targets)
-  // IMPORTANT: Use items[] for rollup items too, ensuring consistency with burndown calculation.
-  // Using rollup.total_frozen_monthly here would cause a mismatch because rollup.items[]
-  // and items[] may compute frozen_monthly_target differently (different rollover fallbacks).
+  // Calculate current monthly cost as sum of frozen targets - this is what you
+  // actually need to budget THIS month. Future months use max(frozen, ideal).
   const currentMonthlyCost = useMemo(() => {
     const enabledItems = items.filter((i) => i.is_enabled && !i.is_in_rollup);
     const itemsTotal = enabledItems.reduce((sum, item) => sum + item.frozen_monthly_target, 0);
@@ -73,7 +71,7 @@ export function ReadyToAssign({
 
   // Calculate monthly targets and progress for the widget
   // "saved" = total budgeted this month (planned_budget), "to go" = target - saved
-  // IMPORTANT: totalTargets must use items[] for rollup (same source as currentMonthlyCost)
+  // Uses frozen_monthly_target - what you actually need to budget THIS month
   const monthlyTargets = useMemo(() => {
     const enabledItems = items.filter((i) => i.is_enabled && !i.is_in_rollup);
     const rollupItems = items.filter((i) => i.is_in_rollup);

@@ -163,6 +163,35 @@ class CategoryManager:
 
         raise ValueError(f"Unexpected response from create_transaction_category: {result}")
 
+    async def enable_category_rollover(
+        self,
+        category_id: str,
+    ) -> dict[str, Any]:
+        """
+        Enable rollover on an existing category.
+
+        This ensures categories linked to Recurring or Wishlist items
+        have rollover enabled for proper budget tracking.
+
+        Args:
+            category_id: Monarch category ID to enable rollover on
+
+        Returns:
+            Updated category data from Monarch API
+        """
+        mm = await get_mm()
+
+        result = await retry_with_backoff(
+            lambda: mm.enable_category_rollover(category_id=category_id)
+        )
+
+        # Clear caches after mutation
+        clear_cache("category")
+        clear_cache("budget")
+
+        result_dict: dict[str, Any] = result if isinstance(result, dict) else {}
+        return result_dict
+
     async def update_category_group(
         self,
         category_id: str,

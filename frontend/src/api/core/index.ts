@@ -139,3 +139,30 @@ export {
   type ExecuteMigrationResult,
   type BackupsResponse,
 } from './misc';
+
+// Wishlist
+export {
+  getWishlist,
+  createWishlistItem,
+  updateWishlistItem,
+  archiveWishlistItem,
+  unarchiveWishlistItem,
+  deleteWishlistItem,
+  allocateWishlistFunds,
+  changeWishlistGroup,
+  linkWishlistCategory,
+  syncWishlist,
+  reorderWishlistItems,
+  updateWishlistLayouts,
+  getWishlistCategoryGroups,
+  getWishlistConfig,
+  updateWishlistConfig,
+  // Pending bookmarks
+  getPendingBookmarks,
+  getPendingCount,
+  getSkippedBookmarks,
+  skipPendingBookmark,
+  convertPendingBookmark,
+  importBookmarks,
+  clearUnconvertedBookmarks,
+} from './wishlist';

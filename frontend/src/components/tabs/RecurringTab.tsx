@@ -44,12 +44,13 @@ export function RecurringTab() {
   const isConfigured = data?.config.target_group_id != null;
 
   // Calculate burndown data for the chart (must be before early returns)
-  // Use frontend calculation to ensure chart matches panel (avoids stale backend cache issues)
+  // Uses frozen_monthly_target - what you actually need to budget THIS month
   const currentMonthlyCost = useMemo(() => {
     if (!data) return 0;
     const enabledItems = data.items.filter((i) => i.is_enabled && !i.is_in_rollup);
     const itemsTotal = enabledItems.reduce((sum, item) => sum + item.frozen_monthly_target, 0);
-    const rollupTotal = data.rollup.enabled ? data.rollup.total_frozen_monthly : 0;
+    const rollupItems = data.items.filter((i) => i.is_in_rollup);
+    const rollupTotal = rollupItems.reduce((sum, item) => sum + item.frozen_monthly_target, 0);
     return itemsTotal + rollupTotal;
   }, [data]);
   const { points: burndownPoints } = useMemo(
