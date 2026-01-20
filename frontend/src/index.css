@@ -246,6 +246,30 @@ body {
   background-color: var(--monarch-bg-page);
 }
 
+/* Global thin scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--monarch-border) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--monarch-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--monarch-text-muted);
+}
+
 /* Headings - Figtree */
 h1,
 h2,
@@ -562,27 +586,6 @@ input[type='radio'] {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  /* Thin scrollbar styling (Firefox) */
-  scrollbar-width: thin;
-  scrollbar-color: var(--monarch-border) transparent;
-}
-
-/* Thin scrollbar styling (Webkit/Blink - Chrome, Electron, Safari) */
-.app-content-wrapper::-webkit-scrollbar {
-  width: 8px;
-}
-
-.app-content-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.app-content-wrapper::-webkit-scrollbar-thumb {
-  background: var(--monarch-border);
-  border-radius: 4px;
-}
-
-.app-content-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--monarch-text-muted);
 }
 
 .app-main {
