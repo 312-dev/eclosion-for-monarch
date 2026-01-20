@@ -197,8 +197,8 @@ class WishlistService:
         active_items = []
         archived_items = []
         total_monthly_target = 0
-        total_target = 0
-        total_saved = 0
+        total_target = 0.0
+        total_saved = 0.0
 
         for item in items:
             # Get balance and budget from Monarch if category exists
