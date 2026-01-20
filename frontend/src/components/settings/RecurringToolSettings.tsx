@@ -21,11 +21,12 @@ interface RecurringToolSettingsProps {
   loading: boolean;
   onRefreshDashboard: () => Promise<void>;
   onShowResetModal: () => void;
+  defaultExpanded?: boolean;
 }
 
 export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSettingsProps>(
   function RecurringToolSettings(
-    { dashboardData, loading, onRefreshDashboard, onShowResetModal },
+    { dashboardData, loading, onRefreshDashboard, onShowResetModal, defaultExpanded = false },
     ref
   ) {
     const toast = useToast();
@@ -35,8 +36,8 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
     // Use React Query for category groups (cached)
     const { data: categoryGroups = [], isLoading: loadingGroups } = useCategoryGroupsQuery();
 
-    // Accordion state - collapsed by default
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Accordion state - can be pre-expanded via URL hash
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
     const toggleExpanded = useCallback(() => setIsExpanded((prev) => !prev), []);
 

@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { useScrollLock } from '../../hooks/useScrollLock';
 import type { AutoBackupFileInfo } from '../../types/electron';
 
 interface BackupRestoreModalProps {
@@ -20,6 +21,9 @@ export function BackupRestoreModal({ backup, onClose, onRestore }: BackupRestore
   const [password, setPassword] = useState('');
   const [isRestoring, setIsRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prevent body scroll when modal is open
+  useScrollLock(true);
 
   const handleRestore = async () => {
     setIsRestoring(true);
