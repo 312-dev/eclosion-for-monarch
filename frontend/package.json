@@ -43,6 +43,7 @@
     "@mdx-js/react": "^3.1.1",
     "@mdx-js/rollup": "^3.1.1",
     "@mdxeditor/editor": "^3.52.3",
+    "@radix-ui/react-hover-card": "^1.1.15",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactour/tour": "^3.8.0",
     "@tanstack/react-query": "^5.90.16",

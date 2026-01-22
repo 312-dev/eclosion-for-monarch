@@ -9,10 +9,17 @@
 
 // Core components
 export { Button, type ButtonProps } from './Button';
-export { Card, type CardProps, type CardHeaderProps, type CardBodyProps, type CardFooterProps } from './Card';
+export {
+  Card,
+  type CardProps,
+  type CardHeaderProps,
+  type CardBodyProps,
+  type CardFooterProps,
+} from './Card';
 export { CloseButton, type CloseButtonProps } from './CloseButton';
 export { Modal, type ModalProps } from './Modal';
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip';
+export { HoverCard, type HoverCardProps } from './HoverCard';
 
 // Feedback components
 export { LoadingSpinner, LoadingOverlay, type LoadingSpinnerProps } from './LoadingSpinner';
