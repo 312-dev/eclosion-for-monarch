@@ -8,6 +8,7 @@
 # 3. Electron app
 #
 # Uses the Beta app's state directory for shared data/credentials.
+# All output is logged to dev.log in the project root.
 #
 # Usage: ./scripts/dev.sh
 #
@@ -16,8 +17,17 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DEV_LOG="$PROJECT_ROOT/dev.log"
 
 STATE_DIR="$HOME/Library/Application Support/Eclosion Beta"
+
+# Clear and initialize dev.log
+echo "=== Eclosion Dev Mode Started: $(date) ===" > "$DEV_LOG"
+echo "Project root: $PROJECT_ROOT" >> "$DEV_LOG"
+echo "" >> "$DEV_LOG"
+
+# Redirect all output to both terminal and dev.log
+exec > >(tee -a "$DEV_LOG") 2>&1
 
 # Colors for output
 RED='\033[0;31m'
