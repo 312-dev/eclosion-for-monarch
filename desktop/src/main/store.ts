@@ -101,6 +101,9 @@ export interface StoreSchema {
   'crashRecovery.currentVersion': string;
   'crashRecovery.lastStableVersion': string;
   'crashRecovery.versionAtFirstCrash': string | null;
+
+  // API credentials (encrypted with safeStorage)
+  'api.openverseCredentials': string;
 }
 
 /**

@@ -541,6 +541,9 @@ export interface ElectronAPI {
   // Stash (desktop only)
   stash: StashAPI;
 
+  // Openverse (image search credentials)
+  openverse: OpenverseAPI;
+
   // Loading Screen Signal
   /** Signal to main process that the loading screen is visible and rendered */
   signalLoadingReady: () => void;
@@ -619,6 +622,25 @@ export interface StashAPI {
   deleteImage: (imagePath: string) => Promise<boolean>;
   /** Get the file:// URL for displaying a local image */
   getImageUrl: (imagePath: string) => Promise<string>;
+}
+
+// Openverse Types (image search credentials)
+
+/** Openverse OAuth2 credentials stored in safeStorage */
+export interface OpenverseCredentials {
+  clientId: string;
+  clientSecret: string;
+  registeredAt: string;
+}
+
+/** Openverse API for credential storage */
+export interface OpenverseAPI {
+  /** Get stored Openverse credentials */
+  getCredentials: () => Promise<OpenverseCredentials | null>;
+  /** Store Openverse credentials in safeStorage */
+  storeCredentials: (credentials: OpenverseCredentials) => Promise<boolean>;
+  /** Clear stored Openverse credentials */
+  clearCredentials: () => Promise<void>;
 }
 
 // Bookmark Sync Types (import from bookmarks.ts for implementation, inline here for .d.ts)

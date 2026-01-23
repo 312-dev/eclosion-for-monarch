@@ -1238,6 +1238,36 @@ const electronAPI = {
       ipcRenderer.invoke('stash:get-image-url', imagePath),
   },
 
+  /**
+   * Openverse API for image search credential storage.
+   */
+  openverse: {
+    /**
+     * Get stored Openverse OAuth2 credentials.
+     * Returns null if no credentials are stored.
+     */
+    getCredentials: (): Promise<{
+      clientId: string;
+      clientSecret: string;
+      registeredAt: string;
+    } | null> => ipcRenderer.invoke('openverse:get-credentials'),
+
+    /**
+     * Store Openverse OAuth2 credentials securely.
+     * Uses OS-level encryption (Keychain on macOS, DPAPI on Windows).
+     */
+    storeCredentials: (credentials: {
+      clientId: string;
+      clientSecret: string;
+      registeredAt: string;
+    }): Promise<boolean> => ipcRenderer.invoke('openverse:store-credentials', credentials),
+
+    /**
+     * Clear stored Openverse credentials.
+     */
+    clearCredentials: (): Promise<void> => ipcRenderer.invoke('openverse:clear-credentials'),
+  },
+
   // =========================================================================
   // Developer Mode
   // =========================================================================
