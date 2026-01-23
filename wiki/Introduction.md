@@ -1,6 +1,6 @@
 # Eclosion Documentation
 
-Welcome to the Eclosion documentation. Eclosion is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarchmoney.com).
+Welcome to the Eclosion documentation. Eclosion is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarch.com).
 
 ## Features
 

@@ -19,7 +19,7 @@ Complete guide for deploying Eclosion on your own infrastructure.
 
 ### Network Requirements
 
-- Outbound HTTPS (443) to `api.monarchmoney.com`
+- Outbound HTTPS (443) to `api.monarch.com`
 - Inbound port of your choice (default: 5001)
 
 ## Getting Started

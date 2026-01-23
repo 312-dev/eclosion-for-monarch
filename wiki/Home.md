@@ -2,7 +2,7 @@
 
 Welcome to the Eclosion documentation.
 
-**Eclosion** is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarchmoney.com). It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, monthly category notes, and direct Monarch sync.
+**Eclosion** is a self-hosted toolkit that expands what's possible with [Monarch Money](https://monarch.com). It features a React/TypeScript frontend and Python/Flask backend with recurring expense tracking, monthly category notes, and direct Monarch sync.
 
 ## Features
 
