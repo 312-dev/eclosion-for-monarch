@@ -122,6 +122,123 @@ export async function allocateStashFunds(
 }
 
 /**
+ * Set monthly budget amounts for multiple stash items at once.
+ * Used by the Distribute feature to update all stash budgets in one request.
+ *
+ * Note: This only updates the planned_budget field (monthly allocation plan).
+ * It does NOT transfer funds to balances - that's what allocateStashFunds does.
+ */
+export async function allocateStashFundsBatch(
+  allocations: Array<{ id: string; budget: number }>
+): Promise<{ success: boolean; updated: number; errors?: string[] }> {
+  await simulateDelay();
+
+  let updated = 0;
+  const errors: string[] = [];
+
+  for (const allocation of allocations) {
+    try {
+      updateDemoState((state) => {
+        const itemIndex = state.stash.items.findIndex((item) => item.id === allocation.id);
+        if (itemIndex === -1) {
+          throw new Error(`Stash not found: ${allocation.id}`);
+        }
+
+        const item = state.stash.items[itemIndex]!;
+        // Only update the planned budget, not the balance
+        // Setting a monthly budget plans future allocations but doesn't immediately transfer funds
+        const updatedItem: StashItem = {
+          ...item,
+          planned_budget: allocation.budget,
+          // Recalculate status based on the new budget plan
+          status: calculateBudgetStatus(
+            item.current_balance,
+            allocation.budget,
+            item.amount,
+            item.monthly_target
+          ),
+        };
+
+        const newItems = [...state.stash.items];
+        newItems[itemIndex] = updatedItem;
+
+        return {
+          ...state,
+          stash: {
+            ...state.stash,
+            items: newItems,
+          },
+        };
+      });
+      updated++;
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: updated > 0, updated, errors };
+  }
+
+  return { success: true, updated };
+}
+
+/**
+ * Add funds to a category's rollover starting balance.
+ *
+ * In demo mode, this adds the amount to the stash item's rollover_amount
+ * and current_balance fields. This simulates adding savings to a category
+ * that persists month-to-month.
+ *
+ * @param categoryId - The Monarch category ID to update
+ * @param amount - Amount to add to the rollover starting balance
+ */
+export async function updateCategoryRolloverBalance(
+  categoryId: string,
+  amount: number
+): Promise<{ success: boolean; category?: unknown }> {
+  await simulateDelay();
+
+  updateDemoState((state) => {
+    // Find the stash item with this category_id
+    const itemIndex = state.stash.items.findIndex((item) => item.category_id === categoryId);
+
+    if (itemIndex === -1) {
+      // Category not found in stash items - silently succeed
+      // (might be a goal or non-stash category)
+      return state;
+    }
+
+    const item = state.stash.items[itemIndex]!;
+    const newRollover = (item.rollover_amount ?? 0) + amount;
+    const newBalance = item.current_balance + amount;
+
+    const updatedItem: StashItem = {
+      ...item,
+      rollover_amount: newRollover,
+      current_balance: newBalance,
+      progress_percent: calculateProgressPercent(newBalance, item.amount),
+      shortfall: calculateShortfall(newBalance, item.amount),
+      status: calculateBudgetStatus(newBalance, item.planned_budget, item.amount, item.monthly_target),
+    };
+
+    const newItems = [...state.stash.items];
+    newItems[itemIndex] = updatedItem;
+
+    return {
+      ...state,
+      stash: {
+        ...state.stash,
+        items: newItems,
+        total_saved: newItems.reduce((sum, i) => sum + i.current_balance, 0),
+      },
+    };
+  });
+
+  return { success: true };
+}
+
+/**
  * Change category group for a stash item.
  */
 export async function changeStashGroup(
@@ -302,7 +419,7 @@ export async function syncStash(): Promise<StashSyncResult> {
 }
 
 /**
- * Get data needed for Available to Stash calculation.
+ * Get data needed for Available Funds calculation.
  *
  * Demo mode returns realistic simulated data:
  * - Cash accounts: Checking ($5,200) + Savings ($8,500)
@@ -315,37 +432,52 @@ export async function getAvailableToStashData(): Promise<AvailableToStashData> {
   await simulateDelay();
 
   const state = getDemoState();
+  const selectedIds = state.stashConfig.selectedCashAccountIds;
   const readyToAssign = state.dashboard.ready_to_assign;
 
   // Calculate total stash balances
   const stashBalances = state.stash.items.reduce((sum, item) => sum + item.current_balance, 0);
 
+  // Define all accounts
+  const allAccounts = [
+    // Cash accounts
+    {
+      id: 'demo-checking',
+      name: 'Chase Checking',
+      balance: 5200,
+      accountType: 'checking',
+      isEnabled: true,
+    },
+    {
+      id: 'demo-savings',
+      name: 'Ally Savings',
+      balance: 8500,
+      accountType: 'savings',
+      isEnabled: true,
+    },
+    // Credit card (positive balance = debt owed)
+    {
+      id: 'demo-credit',
+      name: 'Chase Sapphire',
+      balance: 1850,
+      accountType: 'credit_card',
+      isEnabled: true,
+    },
+  ];
+
+  // Apply filtering if specific accounts selected
+  let accounts = allAccounts;
+  if (selectedIds !== null) {
+    accounts = allAccounts.filter((acc) => {
+      // Always include credit cards
+      if (acc.accountType === 'credit_card') return true;
+      // For cash accounts, check if in selection
+      return selectedIds.includes(acc.id);
+    });
+  }
+
   return {
-    accounts: [
-      // Cash accounts
-      {
-        id: 'demo-checking',
-        name: 'Chase Checking',
-        balance: 5200,
-        accountType: 'checking',
-        isEnabled: true,
-      },
-      {
-        id: 'demo-savings',
-        name: 'Ally Savings',
-        balance: 8500,
-        accountType: 'savings',
-        isEnabled: true,
-      },
-      // Credit card (positive balance = debt owed)
-      {
-        id: 'demo-credit',
-        name: 'Chase Sapphire',
-        balance: 1850,
-        accountType: 'credit_card',
-        isEnabled: true,
-      },
-    ],
+    accounts,
     categoryBudgets: [
       // Expense categories (derived from demo dashboard data)
       // remaining = budgeted - spent (unspent portion)

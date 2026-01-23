@@ -164,8 +164,8 @@ export function EditStashModal({ isOpen, onClose, item, onSuccess }: EditStashMo
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Edit ${item.name} Stash`}
-      description="Update your savings goal"
+      title={item.name}
+      description="Adjust your target or update details"
       maxWidth="md"
     >
       <EditStashForm

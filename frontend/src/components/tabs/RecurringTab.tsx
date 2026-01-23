@@ -23,10 +23,13 @@ import {
 import { useToast } from '../../context/ToastContext';
 import { usePageTitle } from '../../hooks';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
+import { ToolPageHeader, ToolSettingsModal } from '../ui';
+import { RecurringIcon } from '../wizards/SetupWizardIcons';
 import type { SyncResult } from '../../types';
 
 export function RecurringTab() {
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const toast = useToast();
 
   // All hooks must be called before any early returns
@@ -128,6 +131,14 @@ export function RecurringTab() {
     <div className="recurring-tab-layout tab-content-enter" data-testid="recurring-content">
       {/* Main content area */}
       <div className="recurring-tab-content">
+        {/* Header */}
+        <ToolPageHeader
+          icon={<RecurringIcon size={24} />}
+          title="Recurring Expenses"
+          description="Track and manage recurring bills and subscriptions"
+          onSettingsClick={() => setShowSettingsModal(true)}
+        />
+
         {/* Horizontal tabs */}
         <div
           className="flex items-center gap-1 mb-4 border-b"
@@ -143,7 +154,7 @@ export function RecurringTab() {
             Recurring Categories
           </button>
           <a
-            href="https://app.monarchmoney.com/recurring/all"
+            href="https://app.monarch.com/recurring/all"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 hover-text-muted-to-dark"
@@ -153,7 +164,7 @@ export function RecurringTab() {
             <ExternalLink size={14} />
           </a>
           <a
-            href="https://app.monarchmoney.com/settings/categories"
+            href="https://app.monarch.com/settings/categories"
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 hover-text-muted-to-dark"
@@ -264,6 +275,13 @@ export function RecurringTab() {
           />
         )}
       </aside>
+
+      {/* Settings Modal */}
+      <ToolSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        tool="recurring"
+      />
     </div>
   );
 }

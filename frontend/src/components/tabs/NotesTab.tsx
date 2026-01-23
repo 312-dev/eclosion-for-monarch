@@ -18,6 +18,8 @@ import { useCategoriesByGroup } from '../../api/queries/categoryStoreQueries';
 import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
 import { NotesEditorProvider } from '../../context/NotesEditorContext';
+import { ToolPageHeader, ToolSettingsModal } from '../ui';
+import { NotesIcon } from '../wizards/SetupWizardIcons';
 import {
   buildCategoryGroupsWithNotes,
   convertEffectiveGeneralNote,
@@ -37,6 +39,7 @@ export function NotesTab() {
   const [currentMonth, setCurrentMonth] = useState<MonthKey>(getCurrentMonthKey());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const toast = useToast();
 
   // Hidden categories
@@ -152,7 +155,15 @@ export function NotesTab() {
   return (
     <NotesEditorProvider>
       <div className="max-w-7xl mx-auto px-4 tab-content-enter">
-        {/* Header with month navigation */}
+        {/* Header */}
+        <ToolPageHeader
+          icon={<NotesIcon size={40} />}
+          title="Monthly Notes"
+          description="Add notes to categories and months"
+          onSettingsClick={() => setShowSettingsModal(true)}
+        />
+
+        {/* Month navigation */}
         <div className="flex items-center justify-between mb-4 lg:mb-6">
           <MonthYearSelector currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
 
@@ -210,6 +221,13 @@ export function NotesTab() {
             onClose={() => setShowExportModal(false)}
           />
         )}
+
+        {/* Settings Modal */}
+        <ToolSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          tool="notes"
+        />
       </div>
     </NotesEditorProvider>
   );

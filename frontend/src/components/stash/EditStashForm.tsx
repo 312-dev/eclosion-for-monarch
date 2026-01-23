@@ -74,6 +74,7 @@ export function EditStashForm({ item, onSuccess, onClose, renderFooter }: EditSt
   const [categoryMissingItemId, setCategoryMissingItemId] = useState<string | null>(null);
   const [goalType, setGoalType] = useState<StashGoalType>(item.goal_type ?? 'one_time');
   const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
 
   const monthlyTarget = useMemo(() => {
     const amountNum = Number.parseFloat(amount) || 0;
@@ -109,7 +110,7 @@ export function EditStashForm({ item, onSuccess, onClose, renderFooter }: EditSt
       name: name.trim(),
       amount: Number.parseFloat(amount),
       target_date: targetDate,
-      emoji: emoji || '🎯',
+      emoji: emoji || '💰',
       source_url: url.trim() || null,
       custom_image_path: customImagePath || null,
       goal_type: goalType,
@@ -179,13 +180,13 @@ export function EditStashForm({ item, onSuccess, onClose, renderFooter }: EditSt
           />
           {/* Aligned with text input (after emoji picker w-12 + gap-2) */}
           <div
-            className={`mt-1 pl-14 transition-all duration-200 ${
-              isNameFocused || url
-                ? 'opacity-100 translate-y-0'
-                : 'opacity-0 -translate-y-1 pointer-events-none'
+            className={`pl-14 transition-all duration-200 overflow-hidden ${
+              isNameFocused || url || isUrlModalOpen
+                ? 'opacity-100 translate-y-0 mt-1 h-auto'
+                : 'opacity-0 -translate-y-1 pointer-events-none h-0'
             }`}
           >
-            <UrlDisplay value={url} onChange={setUrl} />
+            <UrlDisplay value={url} onChange={setUrl} onModalOpenChange={setIsUrlModalOpen} />
           </div>
         </div>
 

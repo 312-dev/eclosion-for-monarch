@@ -304,7 +304,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
             </span>
           )}
           <a
-            href={`https://app.monarchmoney.com/categories/${category.id}?breakdown=category&date=${currentMonth}-01&sankey=category&timeframe=month&view=breakdown`}
+            href={`https://app.monarch.com/categories/${category.id}?breakdown=category&date=${currentMonth}-01&sankey=category&timeframe=month&view=breakdown`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm font-medium hover:underline inline-flex items-center gap-1 group/link"

@@ -55,7 +55,13 @@
   background-size: 10px 2px;
   background-repeat: repeat-x;
   mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
 }
 
 /* Labels row */

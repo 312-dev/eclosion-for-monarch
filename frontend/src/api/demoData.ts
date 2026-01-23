@@ -19,6 +19,7 @@ import type {
   StashItem,
   StashData,
   StashConfig,
+  MonarchGoal,
   PendingBookmark,
 } from '../types';
 import type { NotesCategoryGroup } from '../types/notes';
@@ -57,6 +58,7 @@ export interface DemoState {
   notes: DemoNotesState;
   stash: StashData;
   stashConfig: StashConfig;
+  monarchGoals: MonarchGoal[];
   pendingBookmarks: PendingBookmark[];
 }
 
@@ -1606,6 +1608,7 @@ const DEMO_STASH_ITEMS: StashItem[] = [
     amount: 350,
     current_balance: 350,
     planned_budget: 0,
+    last_month_planned_budget: 50, // Was still saving last month before completing
     rollover_amount: 350,
     credits_this_month: 0,
     category_id: 'cat-stash-headphones',
@@ -1641,6 +1644,7 @@ const DEMO_STASH_ITEMS: StashItem[] = [
     amount: 850,
     current_balance: 425,
     planned_budget: 142,
+    last_month_planned_budget: 142, // Consistent monthly saving
     rollover_amount: 233,
     credits_this_month: 50,
     category_id: 'cat-stash-guitar',
@@ -1674,6 +1678,7 @@ const DEMO_STASH_ITEMS: StashItem[] = [
     amount: 2500,
     current_balance: 800,
     planned_budget: 200,
+    last_month_planned_budget: 175, // Increased budget this month to catch up
     rollover_amount: 600,
     credits_this_month: 0,
     category_id: 'cat-stash-camera',
@@ -1708,6 +1713,7 @@ const DEMO_ARCHIVED_STASH: StashItem[] = [
     amount: 200,
     current_balance: 200,
     planned_budget: 0,
+    last_month_planned_budget: 50, // Was still saving before purchase
     rollover_amount: 200,
     credits_this_month: 0,
     category_id: 'cat-stash-keyboard',
@@ -1760,7 +1766,110 @@ export function createInitialStashConfig(): StashConfig {
     selectedFolderNames: [],
     autoArchiveOnBookmarkDelete: true,
     autoArchiveOnGoalMet: true,
+    includeExpectedIncome: true,
+    selectedCashAccountIds: null, // Default: all accounts included
+    showMonarchGoals: true,
+    bufferAmount: 0, // Reserved buffer for Available to Stash
   };
+}
+
+/**
+ * Create initial demo Monarch goals.
+ * These represent realistic savings goals with various statuses.
+ */
+export function createInitialMonarchGoals(): MonarchGoal[] {
+  const now = new Date();
+
+  // Goal 1: Emergency Fund - at risk (behind schedule)
+  const emergencyCreated = new Date(now);
+  emergencyCreated.setMonth(now.getMonth() - 3); // Created 3 months ago
+  const emergencyTarget = new Date(now);
+  emergencyTarget.setMonth(now.getMonth() + 11); // 11 months from now
+
+  // Goal 2: Vacation - ahead of schedule
+  const vacationCreated = new Date(now);
+  vacationCreated.setMonth(now.getMonth() - 3); // Created 3 months ago
+  const vacationTarget = new Date(now);
+  vacationTarget.setMonth(now.getMonth() + 5); // 5 months from now
+
+  // Goal 3: No target date goal
+  const noTargetCreated = new Date(now);
+  noTargetCreated.setMonth(now.getMonth() - 1); // Created 1 month ago
+
+  return [
+    {
+      type: 'monarch_goal',
+      id: 'goal-emergency',
+      name: 'Emergency Fund',
+      currentBalance: 14024.24,
+      netContribution: 14024.24, // Total saved (same as balance since no spending)
+      targetAmount: 38000,
+      targetDate: emergencyTarget.toISOString().split('T')[0] || null,
+      createdAt: emergencyCreated.toISOString(),
+      progress: 37, // 37% of target
+      estimatedMonthsUntilCompletion: 13,
+      forecastedCompletionDate: new Date(now.setMonth(now.getMonth() + 13)).toISOString().split('T')[0] || null,
+      plannedMonthlyContribution: 1800,
+      status: 'at_risk',
+      monthsAheadBehind: -2, // 2 months behind
+      grid_x: 0,
+      grid_y: 0,
+      col_span: 1,
+      row_span: 1,
+      isArchived: false,
+      isCompleted: false,
+      imageStorageProvider: null,
+      imageStorageProviderId: null,
+    },
+    {
+      type: 'monarch_goal',
+      id: 'goal-vacation',
+      name: 'European Vacation',
+      currentBalance: 4200,
+      netContribution: 4200, // Total saved (same as balance since no spending)
+      targetAmount: 6000,
+      targetDate: vacationTarget.toISOString().split('T')[0] || null,
+      createdAt: vacationCreated.toISOString(),
+      progress: 70, // 70% of target
+      estimatedMonthsUntilCompletion: 2,
+      forecastedCompletionDate: new Date(now.setMonth(now.getMonth() + 2)).toISOString().split('T')[0] || null,
+      plannedMonthlyContribution: 900,
+      status: 'ahead',
+      monthsAheadBehind: 3, // 3 months ahead
+      grid_x: 0,
+      grid_y: 0,
+      col_span: 1,
+      row_span: 1,
+      isArchived: false,
+      isCompleted: false,
+      imageStorageProvider: null,
+      imageStorageProviderId: null,
+    },
+    {
+      type: 'monarch_goal',
+      id: 'goal-us',
+      name: '💛 Us',
+      currentBalance: 546,
+      netContribution: 546, // Total saved (same as balance since no spending)
+      targetAmount: null, // No target amount
+      createdAt: noTargetCreated.toISOString(),
+      targetDate: null, // No target date
+      progress: 0,
+      estimatedMonthsUntilCompletion: null,
+      forecastedCompletionDate: null,
+      plannedMonthlyContribution: 0,
+      status: 'no_target',
+      monthsAheadBehind: null,
+      grid_x: 0,
+      grid_y: 0,
+      col_span: 1,
+      row_span: 1,
+      isArchived: false,
+      isCompleted: false,
+      imageStorageProvider: null,
+      imageStorageProviderId: null,
+    },
+  ];
 }
 
 /**
@@ -1817,6 +1926,7 @@ export function createInitialDemoState(): DemoState {
     notes: createInitialDemoNotes(),
     stash: createInitialStashData(),
     stashConfig: createInitialStashConfig(),
+    monarchGoals: createInitialMonarchGoals(),
     pendingBookmarks: createInitialPendingBookmarks(),
   };
 }

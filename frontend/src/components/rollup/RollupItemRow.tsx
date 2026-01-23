@@ -56,7 +56,7 @@ export const RollupItemRow = memo(function RollupItemRow({
         <div className="flex items-center gap-2">
           <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="sm" />
           <a
-            href={`https://app.monarchmoney.com/merchants/${item.merchant_id}?date=${new Date().toISOString().slice(0, 8)}01`}
+            href={`https://app.monarch.com/merchants/${item.merchant_id}?date=${new Date().toISOString().slice(0, 8)}01`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm truncate no-underline text-monarch-text-dark"

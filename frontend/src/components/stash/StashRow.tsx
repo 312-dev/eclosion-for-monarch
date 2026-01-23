@@ -15,6 +15,7 @@ import { CategoryGroupDropdown } from '../recurring/CategoryGroupDropdown';
 import { RecurringItemStatus } from '../recurring/RecurringItemStatus';
 import { RecurringItemBudget } from '../recurring/RecurringItemBudget';
 import { StashActionsDropdown } from './StashActionsDropdown';
+import { StashTitleDropdown } from './StashTitleDropdown';
 import { Icons } from '../icons';
 import { UI } from '../../constants';
 import { useAsyncAction } from '../../hooks';
@@ -31,6 +32,7 @@ interface StashRowProps {
   readonly onNameChange: (id: string, name: string) => Promise<void>;
   readonly onEdit: (item: StashItem) => void;
   readonly highlightId?: string | null;
+  readonly onViewReport?: (stashId: string) => void;
 }
 
 // Column widths for consistent layout
@@ -52,6 +54,7 @@ export const StashRow = memo(function StashRow({
   onNameChange,
   onEdit,
   highlightId,
+  onViewReport,
 }: StashRowProps) {
   const allocateAction = useAsyncAction();
   const archiveAction = useAsyncAction();
@@ -205,30 +208,71 @@ export const StashRow = memo(function StashRow({
                     onSelect={handleEmojiChange}
                     disabled={false}
                   />
-                  {item.source_url ? (
-                    <a
-                      href={item.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium truncate hover:underline px-1 py-0.5 rounded text-monarch-text-dark"
-                      title={decodeHtmlEntities(item.name)}
+                  {onViewReport ? (
+                    <StashTitleDropdown
+                      stashName={item.name}
+                      categoryId={item.category_id}
+                      onViewReport={() => onViewReport(item.id)}
                     >
-                      {decodeHtmlEntities(item.name)}
-                    </a>
+                      {item.source_url ? (
+                        <a
+                          href={item.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium truncate hover:underline px-1 py-0.5 rounded text-monarch-text-dark"
+                          title={decodeHtmlEntities(item.name)}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {decodeHtmlEntities(item.name)}
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark text-left"
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditingName(true);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.stopPropagation();
+                              setIsEditingName(true);
+                            }
+                          }}
+                          title="Double-click to rename"
+                        >
+                          {decodeHtmlEntities(item.name)}
+                        </button>
+                      )}
+                    </StashTitleDropdown>
                   ) : (
-                    <button
-                      type="button"
-                      className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark text-left"
-                      onDoubleClick={() => setIsEditingName(true)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          setIsEditingName(true);
-                        }
-                      }}
-                      title="Double-click to rename"
-                    >
-                      {decodeHtmlEntities(item.name)}
-                    </button>
+                    <>
+                      {item.source_url ? (
+                        <a
+                          href={item.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium truncate hover:underline px-1 py-0.5 rounded text-monarch-text-dark"
+                          title={decodeHtmlEntities(item.name)}
+                        >
+                          {decodeHtmlEntities(item.name)}
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="font-medium truncate cursor-pointer hover:bg-black/5 px-1 py-0.5 rounded text-monarch-text-dark text-left"
+                          onDoubleClick={() => setIsEditingName(true)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              setIsEditingName(true);
+                            }
+                          }}
+                          title="Double-click to rename"
+                        >
+                          {decodeHtmlEntities(item.name)}
+                        </button>
+                      )}
+                    </>
                   )}
                 </>
               )}

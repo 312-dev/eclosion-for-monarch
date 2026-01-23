@@ -195,6 +195,7 @@ function importStashTool(
         selectedFolderNames: stashData.config.selected_folder_names,
         autoArchiveOnBookmarkDelete: stashData.config.auto_archive_on_bookmark_delete,
         autoArchiveOnGoalMet: stashData.config.auto_archive_on_goal_met,
+        includeExpectedIncome: stashData.config.include_expected_income ?? false,
       },
     };
   });

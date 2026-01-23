@@ -74,6 +74,7 @@ export function NewStashForm({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
 
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -193,13 +194,13 @@ export function NewStashForm({
           />
           {/* Aligned with text input (after emoji picker w-12 + gap-2) */}
           <div
-            className={`mt-1 pl-14 transition-all duration-200 ${
-              isNameFocused || url
-                ? 'opacity-100 translate-y-0'
-                : 'opacity-0 -translate-y-1 pointer-events-none'
+            className={`pl-14 transition-all duration-200 overflow-hidden ${
+              isNameFocused || url || isUrlModalOpen
+                ? 'opacity-100 translate-y-0 mt-1 h-auto'
+                : 'opacity-0 -translate-y-1 pointer-events-none h-0'
             }`}
           >
-            <UrlDisplay value={url} onChange={setUrl} />
+            <UrlDisplay value={url} onChange={setUrl} onModalOpenChange={setIsUrlModalOpen} />
           </div>
         </div>
 

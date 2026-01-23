@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { useStashHistoryQuery } from '../../api/queries';
 import { useReportSettings } from './useReportSettings';
 import { StashProgressChart } from './StashProgressChart';
+import { StashSummaryCards } from './StashSummaryCards';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 import { Icons } from '../icons';
 import type { StashReportTimeRange } from '../../types';
@@ -34,15 +35,61 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * Skeleton placeholder for summary cards (4-card grid).
+ */
+function CardsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="rounded-lg p-6 animate-pulse"
+          style={{
+            backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
+          }}
+        >
+          <div
+            className="h-8 w-32 rounded mb-2"
+            style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+          />
+          <div
+            className="h-4 w-24 rounded"
+            style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Skeleton placeholder for the chart area.
+ */
+function ChartSkeleton() {
+  return (
+    <div
+      className="rounded-lg p-4"
+      style={{
+        backgroundColor: 'var(--monarch-bg-card)',
+        border: '1px solid var(--monarch-border)',
+      }}
+    >
+      <div
+        className="h-[350px] w-full rounded animate-pulse"
+        style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+      />
+    </div>
+  );
+}
+
 export function StashReportsView() {
   const {
     settings,
     setTimeRange,
-    setShowBalanceLines,
-    setShowMonthlyContributions,
-    toggleStashVisibility,
-    showAllStashes,
-    isStashVisible,
+    setActiveTab,
+    clearStashFilter,
   } = useReportSettings();
 
   const { data, isLoading, error } = useStashHistoryQuery(settings.timeRange, { enabled: true });
@@ -50,15 +97,30 @@ export function StashReportsView() {
   // Get list of all stash IDs for visibility filtering
   const allStashIds = useMemo(() => data?.items.map((item) => item.id) ?? [], [data?.items]);
 
-  // Visible stash IDs (all if hiddenStashIds is empty)
+  // Visible stash IDs - filtered by filteredStashId if set, otherwise use hiddenStashIds
   const visibleStashIds = useMemo(() => {
+    // If a specific stash is filtered, show only that one
+    if (settings.filteredStashId) {
+      return [settings.filteredStashId];
+    }
+    // Otherwise, show all except hidden
     if (settings.hiddenStashIds.length === 0) {
       return allStashIds;
     }
     return allStashIds.filter((id) => !settings.hiddenStashIds.includes(id));
-  }, [allStashIds, settings.hiddenStashIds]);
+  }, [allStashIds, settings.hiddenStashIds, settings.filteredStashId]);
 
-  if (isLoading) {
+  // Find the filtered stash item for display
+  const items = data?.items;
+  const filteredStashItem = useMemo(() => {
+    if (!settings.filteredStashId || !items) return null;
+    return items.find((item) => item.id === settings.filteredStashId);
+  }, [settings.filteredStashId, items]);
+
+  // Show full spinner only on initial load (no data yet)
+  const isInitialLoad = isLoading && !data;
+
+  if (isInitialLoad) {
     return (
       <div className="flex items-center justify-center min-h-75">
         <PageLoadingSpinner />
@@ -69,7 +131,7 @@ export function StashReportsView() {
   if (error) {
     return (
       <div
-        className="rounded-xl p-8 text-center"
+        className="rounded-xl p-8 text-center section-enter"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
@@ -91,7 +153,7 @@ export function StashReportsView() {
   if (!data || data.items.length === 0) {
     return (
       <div
-        className="rounded-xl p-8 text-center"
+        className="rounded-xl p-8 text-center section-enter"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
@@ -114,9 +176,41 @@ export function StashReportsView() {
 
   return (
     <div className="space-y-4">
-      {/* Controls bar */}
+      {/* Filter banner - show when a specific stash is filtered */}
+      {filteredStashItem && (
+        <div
+          className="rounded-lg p-3 section-enter flex items-center justify-between gap-3"
+          style={{
+            backgroundColor: 'var(--monarch-bg-hover)',
+            border: '1px solid var(--monarch-border)',
+          }}
+        >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Icons.Filter size={16} style={{ color: 'var(--monarch-text-muted)' }} />
+            <span className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
+              Showing report for:{' '}
+              <span className="font-medium">
+                {filteredStashItem.name}
+              </span>
+            </span>
+          </div>
+          <button
+            onClick={clearStashFilter}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors hover:bg-black/5"
+            style={{
+              color: 'var(--monarch-text-dark)',
+              border: '1px solid var(--monarch-border)',
+            }}
+          >
+            <Icons.X size={14} />
+            Clear filter
+          </button>
+        </div>
+      )}
+
+      {/* Controls bar - always visible */}
       <div
-        className="rounded-lg p-4"
+        className="rounded-lg p-4 section-enter"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
@@ -132,117 +226,98 @@ export function StashReportsView() {
               className="flex rounded-md overflow-hidden"
               style={{ border: '1px solid var(--monarch-border)' }}
             >
-              {TIME_RANGE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setTimeRange(option.value)}
-                  className="px-3 py-1.5 text-sm font-medium transition-colors"
-                  style={{
-                    backgroundColor:
-                      settings.timeRange === option.value
-                        ? 'var(--monarch-primary)'
+              {TIME_RANGE_OPTIONS.map((option) => {
+                const isActive = settings.timeRange === option.value;
+                const hoverClass = isActive ? '' : 'hover:bg-(--monarch-bg-hover)';
+                const isLastOption = option.value === 'all';
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => setTimeRange(option.value)}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${hoverClass}`}
+                    style={{
+                      backgroundColor: isActive
+                        ? 'rgba(0, 0, 0, 0.35)'
                         : 'transparent',
-                    color:
-                      settings.timeRange === option.value ? 'white' : 'var(--monarch-text-dark)',
-                  }}
-                >
-                  {option.label}
-                </button>
-              ))}
+                      color: isActive ? 'white' : 'var(--monarch-text-dark)',
+                      borderRight: isLastOption ? 'none' : '1px solid var(--monarch-border)',
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Divider */}
           <div className="w-px h-6" style={{ backgroundColor: 'var(--monarch-border)' }} />
 
-          {/* Toggle: Balance lines */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.showBalanceLines}
-              onChange={(e) => setShowBalanceLines(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-              Balance lines
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              View:
             </span>
-          </label>
-
-          {/* Toggle: Monthly contributions */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.showMonthlyContributions}
-              onChange={(e) => setShowMonthlyContributions(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-              Monthly change
-            </span>
-          </label>
-
-          {/* Divider */}
-          <div className="w-px h-6" style={{ backgroundColor: 'var(--monarch-border)' }} />
-
-          {/* Show all button */}
-          {settings.hiddenStashIds.length > 0 && (
-            <button
-              onClick={showAllStashes}
-              className="text-sm px-2 py-1 rounded transition-colors hover:bg-(--monarch-bg-page)"
-              style={{ color: 'var(--monarch-primary)' }}
+            <div
+              className="flex rounded-md overflow-hidden"
+              style={{ border: '1px solid var(--monarch-border)' }}
             >
-              Show all ({settings.hiddenStashIds.length} hidden)
-            </button>
-          )}
-        </div>
-
-        {/* Stash filter chips */}
-        {data.items.length > 1 && (
-          <div
-            className="flex flex-wrap gap-2 mt-3 pt-3"
-            style={{ borderTop: '1px solid var(--monarch-border)' }}
-          >
-            <span className="text-sm self-center" style={{ color: 'var(--monarch-text-muted)' }}>
-              Filter:
-            </span>
-            {data.items.map((item) => {
-              const visible = isStashVisible(item.id);
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => toggleStashVisibility(item.id)}
-                  className="px-3 py-1 rounded-full text-sm transition-colors"
-                  style={{
-                    backgroundColor: visible ? 'var(--monarch-primary)' : 'var(--monarch-bg-page)',
-                    color: visible ? 'white' : 'var(--monarch-text-muted)',
-                    border: `1px solid ${visible ? 'var(--monarch-primary)' : 'var(--monarch-border)'}`,
-                  }}
-                >
-                  {item.name}
-                </button>
-              );
-            })}
+              {(['timeline', 'contributions'] as const).map((tab) => {
+                const isActive = settings.activeTab === tab;
+                const label = tab === 'timeline' ? 'Timeline' : 'Contributions';
+                const hoverClass = isActive ? '' : 'hover:bg-(--monarch-bg-hover)';
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${hoverClass}`}
+                    style={{
+                      backgroundColor: isActive
+                        ? 'rgba(0, 0, 0, 0.35)'
+                        : 'transparent',
+                      color: isActive ? 'white' : 'var(--monarch-text-dark)',
+                      borderRight: tab === 'timeline' ? '1px solid var(--monarch-border)' : 'none',
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
+
+        </div>
       </div>
 
-      {/* Chart */}
-      <div
-        className="rounded-lg p-4"
-        style={{
-          backgroundColor: 'var(--monarch-bg-card)',
-          border: '1px solid var(--monarch-border)',
-        }}
-      >
-        <StashProgressChart
-          items={data.items}
-          months={data.months}
-          visibleStashIds={visibleStashIds}
-          showBalanceLines={settings.showBalanceLines}
-          showMonthlyContributions={settings.showMonthlyContributions}
-          formatCurrency={formatCurrency}
-        />
-      </div>
+      {/* Content area - show skeletons while loading, cards and chart when loaded */}
+      {isLoading ? (
+        <>
+          <CardsSkeleton />
+          <ChartSkeleton />
+        </>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <StashSummaryCards data={data} visibleStashIds={visibleStashIds} />
+
+          {/* Chart */}
+          <div
+            className="rounded-lg p-4 section-enter"
+            style={{
+              backgroundColor: 'var(--monarch-bg-card)',
+              border: '1px solid var(--monarch-border)',
+            }}
+          >
+            <StashProgressChart
+              items={data.items}
+              months={data.months}
+              visibleStashIds={visibleStashIds}
+              activeTab={settings.activeTab}
+              formatCurrency={formatCurrency}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -42,7 +42,7 @@ export function ArchivedItemsSection({
         aria-expanded={isExpanded}
       >
         <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-          Past Stashes ({items.length})
+          Past / Archived ({items.length})
         </span>
         {isExpanded ? (
           <ChevronDown size={16} style={{ color: 'var(--monarch-text-muted)' }} />

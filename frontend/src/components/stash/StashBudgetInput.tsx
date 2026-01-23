@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { useIsRateLimited } from '../../context/RateLimitContext';
+import { useAvailableToStashDrawerOptional } from '../../context';
 import { Tooltip } from '../ui/Tooltip';
 
 interface StashBudgetInputProps {
@@ -26,6 +27,9 @@ export function StashBudgetInput({
   const [prevPlannedBudget, setPrevPlannedBudget] = useState(plannedBudget);
   const isRateLimited = useIsRateLimited();
 
+  // Optional drawer context - may not be available in all contexts
+  const drawerContext = useAvailableToStashDrawerOptional();
+
   const isDisabled = isAllocating || isRateLimited;
 
   // Adjust state during render when prop changes (React recommended pattern)
@@ -40,6 +44,7 @@ export function StashBudgetInput({
     const parsedAmount = trimmedInput === '' ? 0 : Number.parseFloat(trimmedInput);
     if (Number.isNaN(parsedAmount)) {
       setBudgetInput(Math.round(plannedBudget).toString());
+      drawerContext?.closeTemporary();
       return;
     }
     // Round to nearest dollar
@@ -48,6 +53,7 @@ export function StashBudgetInput({
     if (Math.abs(newAmount - plannedBudget) > 0.01) {
       await onAllocate(newAmount);
     }
+    drawerContext?.closeTemporary();
   };
 
   const handleBudgetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -55,8 +61,14 @@ export function StashBudgetInput({
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
       setBudgetInput(Math.round(plannedBudget).toString());
+      drawerContext?.closeTemporary();
       (e.target as HTMLInputElement).blur();
     }
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    drawerContext?.temporarilyOpen();
+    e.target.select();
   };
 
   const target = Math.round(monthlyTarget);
@@ -73,7 +85,7 @@ export function StashBudgetInput({
         onChange={(e) => setBudgetInput(e.target.value)}
         onKeyDown={handleBudgetKeyDown}
         onBlur={handleBudgetSubmit}
-        onFocus={(e) => e.target.select()}
+        onFocus={handleFocus}
         disabled={isDisabled}
         aria-label="Budget amount"
         className="w-12 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

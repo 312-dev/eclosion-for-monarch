@@ -218,7 +218,7 @@ export const StashCardGrid = memo(function StashCardGrid({
   onAllocate,
   onReorder,
   allocatingItemId,
-  emptyMessage = 'No stashes yet. Build your first stash to start saving!',
+  emptyMessage = 'No jars, no envelopes, no guesswork. Build your first stash.',
 }: StashCardGridProps) {
   const sensors = useSensors(
     useSensor(StashPointerSensor, {

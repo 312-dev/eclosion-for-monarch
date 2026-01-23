@@ -54,7 +54,7 @@ export function CategoryGroupStep({
             No category groups found. Please create a category group in Monarch Money first.
           </p>
           <a
-            href="https://app.monarchmoney.com/settings/categories"
+            href="https://app.monarch.com/settings/categories"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm hover:underline"
@@ -76,7 +76,7 @@ export function CategoryGroupStep({
               Default Category Group
             </label>
             <a
-              href="https://app.monarchmoney.com/settings/categories"
+              href="https://app.monarch.com/settings/categories"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm hover:underline"

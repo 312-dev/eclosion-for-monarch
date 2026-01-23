@@ -186,7 +186,7 @@ export function RecurringItemHeader({
           {item.is_enabled && item.category_id && !item.category_missing && (
             <Tooltip content="View linked category in Monarch">
               <a
-                href={`https://app.monarchmoney.com/categories/${item.category_id}`}
+                href={`https://app.monarch.com/categories/${item.category_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-70! transition-opacity text-monarch-text-light"

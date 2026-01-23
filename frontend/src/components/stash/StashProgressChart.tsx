@@ -9,7 +9,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   ComposedChart,
-  Line,
+  Area,
   Bar,
   XAxis,
   YAxis,
@@ -18,7 +18,7 @@ import {
   Legend,
 } from 'recharts';
 import { Z_INDEX } from '../../constants';
-import type { StashHistoryItem } from '../../types';
+import type { StashHistoryItem, StashReportTabMode } from '../../types';
 
 // Color palette for stash lines (distinct, colorblind-friendly)
 const LINE_COLORS = [
@@ -36,16 +36,15 @@ interface ChartDataPoint {
   month: string;
   monthLabel: string;
   totalContribution: number;
-  [key: string]: string | number; // Dynamic keys for each stash balance
+  [key: string]: string | number; // Dynamic keys for each stash balance and contribution
 }
 
 interface StashProgressChartProps {
-  items: StashHistoryItem[];
-  months: string[];
-  visibleStashIds: string[];
-  showBalanceLines: boolean;
-  showMonthlyContributions: boolean;
-  formatCurrency: (amount: number) => string;
+  readonly items: readonly StashHistoryItem[];
+  readonly months: readonly string[];
+  readonly visibleStashIds: readonly string[];
+  readonly activeTab: StashReportTabMode;
+  readonly formatCurrency: (amount: number) => string;
 }
 
 /**
@@ -99,6 +98,40 @@ function formatMonthLabel(month: string): string {
 }
 
 /**
+ * Custom legend with column layout for many items.
+ */
+function CustomLegend({
+  payload,
+  items,
+  stashColors,
+}: {
+  readonly payload?: ReadonlyArray<{ dataKey: string; color: string; value: string }>;
+  readonly items: readonly StashHistoryItem[];
+  readonly stashColors: Readonly<Record<string, string>>;
+}) {
+  if (!payload || payload.length === 0) return null;
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 px-4 pb-3">
+      {payload.map((entry) => {
+        const itemId = entry.dataKey.replace(/^(balance_|contribution_)/, '');
+        const item = items.find((i) => i.id === itemId);
+        const color = stashColors[itemId] ?? entry.color;
+
+        return (
+          <div key={entry.dataKey} className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+              {item?.name ?? entry.value}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * Custom tooltip for the chart.
  */
 function CustomTooltip({
@@ -108,22 +141,30 @@ function CustomTooltip({
   items,
   formatCurrency,
   colors,
+  activeTab,
 }: {
-  active?: boolean;
-  payload?: Array<{ dataKey: string; value: number; color: string }>;
-  label?: string;
-  items: StashHistoryItem[];
-  formatCurrency: (amount: number) => string;
-  colors: ReturnType<typeof useChartColors>;
+  readonly active?: boolean;
+  readonly payload?: ReadonlyArray<{ dataKey: string; value: number; color: string; payload?: ChartDataPoint }>;
+  readonly label?: string;
+  readonly items: readonly StashHistoryItem[];
+  readonly formatCurrency: (amount: number) => string;
+  readonly colors: ReturnType<typeof useChartColors>;
+  readonly activeTab: StashReportTabMode;
 }) {
-  if (!active || !payload || !label) return null;
+  if (!active || !payload || payload.length === 0 || !label) return null;
 
-  // Find the month data
-  const monthLabel = formatMonthLabel(label);
+  // Extract the original month value (YYYY-MM) from the chart data payload
+  const month = payload[0]?.payload?.month;
+  if (!month) return null;
 
-  // Group payload into balances and contribution
-  const balances = payload.filter((p) => p.dataKey !== 'totalContribution');
-  const contributionEntry = payload.find((p) => p.dataKey === 'totalContribution');
+  const monthLabel = formatMonthLabel(month);
+
+  // Filter payload based on active tab
+  const prefix = activeTab === 'timeline' ? 'balance_' : 'contribution_';
+  const entries = payload.filter((p) => p.dataKey.startsWith(prefix));
+
+  // Calculate total for stacked display
+  const total = entries.reduce((sum, entry) => sum + entry.value, 0);
 
   return (
     <div
@@ -135,12 +176,13 @@ function CustomTooltip({
     >
       <div className="px-3 py-2">
         <div className="font-medium mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
-          {monthLabel} {label.split('-')[0]}
+          {monthLabel} {month.split('-')[0]}
         </div>
 
-        {/* Stash balances */}
-        {balances.map((entry) => {
-          const item = items.find((i) => `balance_${i.id}` === entry.dataKey);
+        {/* Individual stash values */}
+        {entries.map((entry) => {
+          const itemId = entry.dataKey.replace(prefix, '');
+          const item = items.find((i) => i.id === itemId);
           return (
             <div key={entry.dataKey} className="flex justify-between items-center gap-3 mb-1">
               <div className="flex items-center gap-1.5">
@@ -153,30 +195,33 @@ function CustomTooltip({
                 </span>
               </div>
               <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+                {activeTab === 'contributions' && entry.value >= 0 ? '+' : ''}
                 {formatCurrency(entry.value)}
               </span>
             </div>
           );
         })}
 
-        {/* Total contribution */}
-        {contributionEntry && contributionEntry.value !== 0 && (
+        {/* Total */}
+        {entries.length > 1 && (
           <div
             className="flex justify-between items-center gap-3 pt-1.5 mt-1.5"
             style={{ borderTop: `1px solid ${colors.border}` }}
           >
-            <span style={{ color: 'var(--monarch-text-muted)' }}>Monthly change</span>
+            <span style={{ color: 'var(--monarch-text-muted)' }}>
+              {activeTab === 'timeline' ? 'Total' : 'Net change'}
+            </span>
             <span
               className="font-medium"
               style={{
                 color:
-                  contributionEntry.value >= 0
+                  activeTab === 'contributions' && total >= 0
                     ? 'var(--monarch-success)'
-                    : 'var(--monarch-warning)',
+                    : 'var(--monarch-text-dark)',
               }}
             >
-              {contributionEntry.value >= 0 ? '+' : ''}
-              {formatCurrency(contributionEntry.value)}
+              {activeTab === 'contributions' && total >= 0 ? '+' : ''}
+              {formatCurrency(total)}
             </span>
           </div>
         )}
@@ -189,8 +234,7 @@ export function StashProgressChart({
   items,
   months,
   visibleStashIds,
-  showBalanceLines,
-  showMonthlyContributions,
+  activeTab,
   formatCurrency,
 }: StashProgressChartProps) {
   const colors = useChartColors();
@@ -210,10 +254,11 @@ export function StashProgressChart({
         totalContribution: 0,
       };
 
-      // Add balance for each visible stash
+      // Add balance and contribution for each visible stash
       for (const item of visibleItems) {
         const monthData = item.months.find((m) => m.month === month);
         point[`balance_${item.id}`] = monthData?.balance ?? 0;
+        point[`contribution_${item.id}`] = monthData?.contribution ?? 0;
         point.totalContribution += monthData?.contribution ?? 0;
       }
 
@@ -230,30 +275,43 @@ export function StashProgressChart({
     return colorMap;
   }, [visibleItems]);
 
-  // Calculate Y-axis domain for balances
+  // Calculate Y-axis domain for balances (timeline mode - stacked)
   const maxBalance = useMemo(() => {
     let max = 0;
     for (const point of chartData) {
+      // For stacked areas, we need the sum of all balances at each point
+      let stackedValue = 0;
       for (const item of visibleItems) {
         const value = point[`balance_${item.id}`];
-        if (typeof value === 'number' && value > max) {
-          max = value;
+        if (typeof value === 'number') {
+          stackedValue += value;
         }
+      }
+      if (stackedValue > max) {
+        max = stackedValue;
       }
     }
     return max;
   }, [chartData, visibleItems]);
 
-  // Calculate Y-axis domain for contributions
+  // Calculate Y-axis domain for contributions (contributions mode - stacked)
   const [minContribution, maxContribution] = useMemo(() => {
     let min = 0;
     let max = 0;
     for (const point of chartData) {
-      if (point.totalContribution < min) min = point.totalContribution;
-      if (point.totalContribution > max) max = point.totalContribution;
+      // For stacked bars, we need the sum of all contributions at each point
+      let stackedValue = 0;
+      for (const item of visibleItems) {
+        const value = point[`contribution_${item.id}`];
+        if (typeof value === 'number') {
+          stackedValue += value;
+        }
+      }
+      if (stackedValue < min) min = stackedValue;
+      if (stackedValue > max) max = stackedValue;
     }
     return [min, max];
-  }, [chartData]);
+  }, [chartData, visibleItems]);
 
   if (months.length === 0 || visibleItems.length === 0) {
     return (
@@ -278,79 +336,73 @@ export function StashProgressChart({
             dy={10}
           />
 
-          {/* Left Y-axis for balances */}
+          {/* Single Y-axis (no more dual-axis confusion) */}
           <YAxis
-            yAxisId="balance"
             orientation="left"
-            domain={[0, maxBalance * 1.1]}
+            domain={
+              activeTab === 'timeline'
+                ? [0, maxBalance * 1.1]
+                : [minContribution * 1.2, maxContribution * 1.2]
+            }
             axisLine={false}
             tickLine={false}
             tick={{ fontSize: 11, fill: colors.textMuted }}
-            tickFormatter={(value) => formatCurrency(value)}
+            tickFormatter={(value) =>
+              activeTab === 'contributions' && value >= 0
+                ? `+${formatCurrency(value)}`
+                : formatCurrency(value)
+            }
             width={60}
           />
 
-          {/* Right Y-axis for contributions (only if showing contributions) */}
-          {showMonthlyContributions && (
-            <YAxis
-              yAxisId="contribution"
-              orientation="right"
-              domain={[minContribution * 1.2, maxContribution * 1.2]}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 11, fill: colors.textMuted }}
-              tickFormatter={(value) =>
-                value >= 0 ? `+${formatCurrency(value)}` : formatCurrency(value)
-              }
-              width={70}
-            />
-          )}
-
           <RechartsTooltip
             content={
-              <CustomTooltip items={items} formatCurrency={formatCurrency} colors={colors} />
+              <CustomTooltip
+                items={items}
+                formatCurrency={formatCurrency}
+                colors={colors}
+                activeTab={activeTab}
+              />
             }
             cursor={{ stroke: colors.border, strokeDasharray: '3 3' }}
             wrapperStyle={{ zIndex: Z_INDEX.TOOLTIP }}
           />
 
           <Legend
-            verticalAlign="top"
-            height={36}
-            formatter={(value: string) => {
-              if (value === 'totalContribution') return 'Monthly Change';
-              const itemId = value.replace('balance_', '');
-              const item = items.find((i) => i.id === itemId);
-              return item?.name ?? value;
-            }}
+            verticalAlign="bottom"
+            wrapperStyle={{ paddingTop: '12px' }}
+            content={<CustomLegend items={items} stashColors={stashColors} />}
           />
 
-          {/* Contribution bars */}
-          {showMonthlyContributions && (
-            <Bar
-              yAxisId="contribution"
-              dataKey="totalContribution"
-              fill={colors.barColor}
-              fillOpacity={0.4}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-            />
-          )}
-
-          {/* Balance lines for each visible stash */}
-          {showBalanceLines &&
+          {/* Timeline tab: Stacked areas showing cumulative balance composition */}
+          {activeTab === 'timeline' &&
             visibleItems.map((item) => {
               const color = stashColors[item.id] ?? LINE_COLORS[0]!;
               return (
-                <Line
+                <Area
                   key={item.id}
-                  yAxisId="balance"
                   type="monotone"
                   dataKey={`balance_${item.id}`}
+                  stackId="stash"
+                  fill={color}
                   stroke={color}
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: color }}
-                  activeDot={{ r: 5, fill: color }}
+                  fillOpacity={0.6}
+                />
+              );
+            })}
+
+          {/* Contributions tab: Stacked bars showing contribution breakdown */}
+          {activeTab === 'contributions' &&
+            visibleItems.map((item) => {
+              const color = stashColors[item.id] ?? LINE_COLORS[0]!;
+              return (
+                <Bar
+                  key={item.id}
+                  dataKey={`contribution_${item.id}`}
+                  stackId="contribution"
+                  fill={color}
+                  radius={[2, 2, 0, 0]}
+                  maxBarSize={60}
                 />
               );
             })}

@@ -5,7 +5,7 @@
  * Extracted to reduce the size of SetupWizard.tsx.
  */
 
-import { GiCoins } from 'react-icons/gi';
+import { FaMoneyBills } from 'react-icons/fa6';
 
 // App Icon Component (butterfly logo)
 export function AppIcon({ size = 48 }: { size?: number }) {
@@ -103,7 +103,7 @@ export function NotesIcon({ size = 24 }: Readonly<{ size?: number }>) {
 }
 
 export function StashIcon({ size = 24 }: Readonly<{ size?: number }>) {
-  return <GiCoins size={size} />;
+  return <FaMoneyBills size={size} />;
 }
 
 export function LinkIcon({ size = 16 }: { size?: number }) {

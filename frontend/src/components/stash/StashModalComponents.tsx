@@ -107,16 +107,16 @@ export function CategoryInfoDisplay({
       }}
     >
       <div className="flex items-center gap-2">
-        <Icons.Link size={14} style={{ color: 'var(--monarch-text-muted)' }} />
+        <Icons.ListTree size={14} style={{ color: 'var(--monarch-text-muted)' }} />
         <div className="text-sm">
           <span style={{ color: 'var(--monarch-text)' }}>{categoryName}</span>
           {categoryGroupName && (
-            <span style={{ color: 'var(--monarch-text-muted)' }}> in {categoryGroupName}</span>
+            <span style={{ color: 'var(--monarch-text-muted)' }}> under {categoryGroupName}</span>
           )}
         </div>
       </div>
       <a
-        href={`https://app.monarchmoney.com/categories/${categoryId}`}
+        href={`https://app.monarch.com/categories/${categoryId}`}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-1 text-xs hover:underline"

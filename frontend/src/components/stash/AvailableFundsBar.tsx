@@ -1,10 +1,8 @@
 /**
- * Available Funds Display
+ * Available Funds Bar
  *
- * Shows the calculated "Available Funds" amount - money the user can
- * safely allocate to Stash items without disrupting their budget.
- *
- * See .claude/rules/available-to-stash.md for calculation details.
+ * A standalone container showing Available Funds with the Distribute button.
+ * Includes an optional Reserve Buffer slider integrated below the funds display.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -13,18 +11,19 @@ import { useAvailableToStash } from '../../api/queries';
 import { HoverCard } from '../ui/HoverCard';
 import { formatAvailableAmount } from '../../utils/availableToStash';
 import { BreakdownDetailModal } from './BreakdownDetailModal';
+import { DistributeButton, HypothesizeButton } from './DistributeButton';
 import { UI } from '../../constants';
-import type { BreakdownLineItem } from '../../types';
+import type { BreakdownLineItem, StashItem } from '../../types';
 
-type DisplayMode = 'header' | 'compact';
-
-interface AvailableToStashProps {
-  /** Display mode: 'header' for page header, 'compact' for inline display */
-  readonly mode?: DisplayMode;
+interface AvailableFundsBarProps {
   /** Whether to include expected income in calculation (from settings) */
   readonly includeExpectedIncome?: boolean;
   /** Reserved buffer amount to subtract from available (from settings) */
   readonly bufferAmount?: number;
+  /** Left to Budget amount (ready_to_assign from Monarch) */
+  readonly leftToBudget: number;
+  /** List of stash items for the distribute button */
+  readonly items: StashItem[];
 }
 
 interface BreakdownRowProps {
@@ -37,8 +36,6 @@ interface BreakdownRowProps {
 
 /**
  * A single row in the breakdown tooltip with optional nested tooltip showing items.
- * The tooltip appears to the RIGHT of the amount when hovered.
- * Numbers with details have a dotted underline to indicate hover-ability.
  */
 function BreakdownRow({ label, amount, isPositive = false, items, onExpand }: BreakdownRowProps) {
   const color = isPositive ? 'var(--monarch-green)' : 'var(--monarch-red)';
@@ -116,14 +113,12 @@ function BreakdownRow({ label, amount, isPositive = false, items, onExpand }: Br
   );
 }
 
-/**
- * Display the Available Funds amount with optional breakdown tooltip.
- */
-export function AvailableToStash({
-  mode = 'header',
+export function AvailableFundsBar({
   includeExpectedIncome = false,
   bufferAmount = 0,
-}: Readonly<AvailableToStashProps>) {
+  leftToBudget,
+  items,
+}: Readonly<AvailableFundsBarProps>) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
   const prevValueRef = useRef<number | null>(null);
@@ -156,16 +151,10 @@ export function AvailableToStash({
     }
   }, [data]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 animate-pulse">
-        <div className="h-6 w-32 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
-      </div>
-    );
-  }
-
   const breakdown = data?.breakdown;
   const detailedBreakdown = data?.detailedBreakdown;
+  const isPositive = (data?.available ?? 0) >= 0;
+  const availableAmount = data?.available ?? 0;
 
   const openModal = () => setIsModalOpen(true);
 
@@ -227,73 +216,79 @@ export function AvailableToStash({
       </div>
     ) : null;
 
-  if (mode === 'compact') {
+  if (isLoading) {
     return (
-      <>
-        <HoverCard content={tooltipContent} closeDelay={400}>
-          <div
-            className="flex items-center gap-1.5 px-2 py-1 rounded text-sm cursor-help"
-            style={{ backgroundColor: 'var(--monarch-bg-card)' }}
-          >
-            <span style={{ color: 'var(--monarch-text-muted)' }}>Available:</span>
-            <span className="font-medium" style={{ color: statusColor }}>
-              {formattedAmount}
-            </span>
-          </div>
-        </HoverCard>
-        {data && (
-          <BreakdownDetailModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            data={data}
-            statusColor={statusColor}
-            formattedAmount={formattedAmount}
-          />
-        )}
-      </>
+      <div
+        className="flex items-center justify-between rounded-lg px-6 py-4 mt-4 mb-4"
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
+      >
+        <div className="flex items-center gap-3 animate-pulse">
+          <div className="h-8 w-24 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
+        </div>
+      </div>
     );
   }
 
-  const isPositive = (data?.available ?? 0) >= 0;
+  // Text color based on available amount
+  const amountColor = isPositive
+    ? 'var(--monarch-success)'
+    : 'var(--monarch-error)';
 
-  // Header mode - prominent display for page header
   return (
     <>
-      <div className="flex items-center gap-3">
-        <Icons.Landmark
-          size={28}
-          style={{ color: 'var(--monarch-text-muted)' }}
-          aria-hidden="true"
-        />
-        <div
-          className={`rounded-lg px-4 py-1.5 flex flex-col items-center transition-opacity ${shouldShake ? 'animate-error-shake' : ''}`}
-          style={{
-            backgroundColor: isPositive ? 'var(--monarch-success-bg)' : 'var(--monarch-error-bg)',
-          }}
-        >
-          <span
-            className="text-2xl font-bold leading-tight"
-            style={{ color: isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)' }}
-          >
-            {formattedAmount}
-          </span>
-          <span
-            className="text-xs leading-tight font-medium"
-            style={{
-              color: isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)',
-              opacity: 0.85,
-            }}
-          >
-            Available Funds
-          </span>
+      <div
+        className={`rounded-lg px-6 py-4 mt-4 mb-4 ${shouldShake ? 'animate-error-shake' : ''}`}
+        style={{
+          backgroundColor: 'var(--monarch-bg-card)',
+          border: '1px solid var(--monarch-border)',
+        }}
+      >
+        {/* Available Funds Display - centered */}
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-3">
+            <Icons.Landmark
+              size={20}
+              style={{ color: 'var(--monarch-text-muted)' }}
+              aria-hidden="true"
+            />
+            <span
+              className="text-sm font-medium"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            >
+              Available Funds
+            </span>
+            <span
+              className="text-2xl font-bold tabular-nums"
+              style={{ color: amountColor }}
+            >
+              {formattedAmount}
+            </span>
+            <HoverCard content={tooltipContent} side="bottom" align="start" closeDelay={400}>
+              <Icons.Info
+                size={16}
+                className="cursor-help"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              />
+            </HoverCard>
+          </div>
+
+          {/* Action Buttons - centered below */}
+          <div className="flex items-center gap-2 mt-4">
+            <HypothesizeButton
+              availableAmount={availableAmount}
+              leftToBudget={leftToBudget}
+              items={items}
+            />
+            <DistributeButton
+              availableAmount={availableAmount}
+              leftToBudget={leftToBudget}
+              items={items}
+            />
+          </div>
         </div>
-        <HoverCard content={tooltipContent} side="bottom" align="start" closeDelay={400}>
-          <Icons.Info
-            size={16}
-            className="cursor-help"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          />
-        </HoverCard>
       </div>
 
       {data && (
@@ -307,28 +302,4 @@ export function AvailableToStash({
       )}
     </>
   );
-}
-
-/**
- * Hook to get available funds data for use in parent components.
- * Useful when parent needs to conditionally render based on the value.
- */
-export function useAvailableToStashStatus(options?: {
-  includeExpectedIncome?: boolean;
-  bufferAmount?: number;
-}) {
-  const { includeExpectedIncome = false, bufferAmount = 0 } = options ?? {};
-  const { data, isLoading, formattedAmount, status, statusColor } = useAvailableToStash({
-    includeExpectedIncome,
-    bufferAmount,
-  });
-
-  return {
-    isLoading,
-    isOvercommitted: status === 'negative',
-    available: data?.available ?? 0,
-    formattedAmount,
-    status,
-    statusColor,
-  };
 }

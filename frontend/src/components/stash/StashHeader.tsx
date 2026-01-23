@@ -1,21 +1,22 @@
 /**
  * Stash Header
  *
- * Header section with title and action buttons.
+ * Header section with Available Funds amount and action buttons.
  */
 
 import { GiTwoCoins } from 'react-icons/gi';
-import { StashIcon } from '../wizards/WizardComponents';
 import { Icons } from '../icons';
+import { AvailableToStash } from './AvailableToStash';
 import { getBrowserName } from './utils';
 import type { BrowserType } from '../../types';
 
 interface StashHeaderProps {
-  selectedBrowser: BrowserType | null;
-  isBrowserConfigured: boolean;
-  isSyncingBookmarks: boolean;
-  onSyncBookmarks: () => void;
-  onAddItem: () => void;
+  readonly selectedBrowser: BrowserType | null;
+  readonly isBrowserConfigured: boolean;
+  readonly isSyncingBookmarks: boolean;
+  readonly onSyncBookmarks: () => void;
+  readonly onAddItem: () => void;
+  readonly includeExpectedIncome?: boolean;
 }
 
 export function StashHeader({
@@ -24,20 +25,11 @@ export function StashHeader({
   isSyncingBookmarks,
   onSyncBookmarks,
   onAddItem,
+  includeExpectedIncome = false,
 }: StashHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <StashIcon size={24} />
-        <div>
-          <h1 className="text-xl font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
-            Stashes
-          </h1>
-          <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-            Save for what's ahead
-          </p>
-        </div>
-      </div>
+      <AvailableToStash mode="header" includeExpectedIncome={includeExpectedIncome} />
       <div className="flex items-center gap-2">
         <button
           data-tour="stash-sync-bookmarks"
@@ -64,7 +56,7 @@ export function StashHeader({
           style={{ backgroundColor: 'var(--monarch-orange)' }}
         >
           <GiTwoCoins size={16} />
-          Start a Stash
+          New Stash
         </button>
       </div>
     </div>

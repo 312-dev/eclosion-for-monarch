@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import type { StashReportSettings, StashReportTimeRange } from '../../types';
+import type { StashReportSettings, StashReportTimeRange, StashReportTabMode } from '../../types';
 import { DEFAULT_REPORT_SETTINGS } from '../../types';
 
 const STORAGE_KEY = 'eclosion-stash-report-settings';
@@ -55,6 +55,10 @@ export function useReportSettings() {
     setSettingsState((prev) => ({ ...prev, timeRange }));
   }, []);
 
+  const setActiveTab = useCallback((activeTab: StashReportTabMode) => {
+    setSettingsState((prev) => ({ ...prev, activeTab }));
+  }, []);
+
   const setShowBalanceLines = useCallback((showBalanceLines: boolean) => {
     setSettingsState((prev) => ({ ...prev, showBalanceLines }));
   }, []);
@@ -92,9 +96,18 @@ export function useReportSettings() {
     setSettingsState(DEFAULT_REPORT_SETTINGS);
   }, []);
 
+  const setFilteredStashId = useCallback((filteredStashId: string | null) => {
+    setSettingsState((prev) => ({ ...prev, filteredStashId }));
+  }, []);
+
+  const clearStashFilter = useCallback(() => {
+    setSettingsState((prev) => ({ ...prev, filteredStashId: null }));
+  }, []);
+
   return {
     settings,
     setTimeRange,
+    setActiveTab,
     setShowBalanceLines,
     setShowMonthlyContributions,
     toggleStashVisibility,
@@ -102,5 +115,7 @@ export function useReportSettings() {
     hideAllStashes,
     isStashVisible,
     resetSettings,
+    setFilteredStashId,
+    clearStashFilter,
   };
 }

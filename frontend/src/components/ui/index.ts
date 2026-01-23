@@ -32,6 +32,8 @@ export { CurrencyInput, type CurrencyInputProps } from './CurrencyInput';
 
 // Display components
 export { MerchantIcon, type MerchantIconProps } from './MerchantIcon';
+export { ToolPageHeader } from './ToolPageHeader';
+export { ToolSettingsModal, type ToolType } from './ToolSettingsModal';
 
 // Re-export icons from the centralized icons module for convenience
 export * from '../icons';

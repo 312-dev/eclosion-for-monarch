@@ -124,7 +124,7 @@ export function IgnoredBookmarksSection({
   }
 
   return (
-    <div className="section-enter mt-8">
+    <div className="section-enter mt-4">
       {/* Thin muted text header - no card container */}
       <button
         type="button"

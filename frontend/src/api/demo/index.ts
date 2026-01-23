@@ -114,6 +114,7 @@ export {
   completeStashItem,
   uncompleteStashItem,
   allocateStashFunds,
+  allocateStashFundsBatch,
   changeStashGroup,
   linkStashCategory,
   syncStash,
@@ -123,8 +124,10 @@ export {
   getStashCategoryGroups,
   getStashConfig,
   updateStashConfig,
-  // Available to Stash
+  // Available Funds
   getAvailableToStashData,
+  // Category rollover balance
+  updateCategoryRolloverBalance,
   // Pending bookmarks
   getPendingBookmarks,
   getPendingCount,
@@ -137,3 +140,6 @@ export {
 
 // Stash History (Reports)
 export { getStashHistory } from './demoStashHistory';
+
+// Monarch Goals
+export { getMonarchGoals, updateMonarchGoalLayouts } from './demoMonarchGoals';

@@ -265,7 +265,7 @@ export function ItemSelectionStep({
       <p className="text-xs mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
         Not finding what you are looking for?{' '}
         <a
-          href="https://app.monarchmoney.com/recurring/all"
+          href="https://app.monarch.com/recurring/all"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:underline"

@@ -29,6 +29,7 @@ import {
   Trash2,
   ExternalLink,
   Link,
+  ListTree,
   Info,
   AlertCircle,
   AlertTriangle,
@@ -36,6 +37,7 @@ import {
   Clock,
   ArrowUp,
   ArrowDown,
+  ArrowBigDownDash,
   Menu,
   Search,
   Filter,
@@ -103,10 +105,14 @@ import {
   PiggyBank,
   Coins,
   Wallet,
+  Banknote,
   Square,
   CheckSquare,
   Landmark,
   Maximize2,
+  ThumbsUp,
+  ThumbsDown,
+  FlaskConical,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -139,6 +145,7 @@ export const EditIcon = Pencil;
 export const TrashIcon = Trash2;
 export const ExternalLinkIcon = ExternalLink;
 export const LinkIcon = Link;
+export const ListTreeIcon = ListTree;
 export const InfoIcon = Info;
 
 export const AlertCircleIcon = AlertCircle;
@@ -149,6 +156,7 @@ export const TrendUpIcon = ChevronsUp;
 export const TrendDownIcon = ChevronsDown;
 export const ArrowUpIcon = ArrowUp;
 export const ArrowDownIcon = ArrowDown;
+export const ArrowBigDownDashIcon = ArrowBigDownDash;
 export const MenuIcon = Menu;
 export const SearchIcon = Search;
 export const FilterIcon = Filter;
@@ -217,8 +225,12 @@ export const AwardIcon = Award;
 export const PiggyBankIcon = PiggyBank;
 export const CoinsIcon = Coins;
 export const WalletIcon = Wallet;
+export const BanknoteIcon = Banknote;
 export const SquareIcon = Square;
 export const CheckSquareIcon = CheckSquare;
+export const ThumbsUpIcon = ThumbsUp;
+export const ThumbsDownIcon = ThumbsDown;
+export const FlaskConicalIcon = FlaskConical;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -502,6 +514,7 @@ export const Icons = {
   Trash: TrashIcon,
   ExternalLink: ExternalLinkIcon,
   Link: LinkIcon,
+  ListTree: ListTreeIcon,
 
   // Status
   Info: InfoIcon,
@@ -517,6 +530,7 @@ export const Icons = {
   TrendDown: TrendDownIcon,
   ArrowUp: ArrowUpIcon,
   ArrowDown: ArrowDownIcon,
+  ArrowBigDownDash: ArrowBigDownDashIcon,
 
   // UI
   Menu: MenuIcon,
@@ -616,10 +630,18 @@ export const Icons = {
   Coins: CoinsIcon,
   Landmark,
   Wallet: WalletIcon,
+  Banknote: BanknoteIcon,
 
   // Selection
   Square: SquareIcon,
   CheckSquare: CheckSquareIcon,
+
+  // Feedback
+  ThumbsUp: ThumbsUpIcon,
+  ThumbsDown: ThumbsDownIcon,
+
+  // Science/Analysis
+  FlaskConical: FlaskConicalIcon,
 };
 
 export { Mail as MailIcon, HelpCircle as HelpIcon } from 'lucide-react';

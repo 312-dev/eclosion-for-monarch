@@ -132,7 +132,7 @@ export function GetStartedTermsContent({ acknowledged, onAcknowledgeChange }: Te
             By using Eclosion, you acknowledge and accept these risks.
           </p>
           <a
-            href="https://www.monarchmoney.com/terms"
+            href="https://www.monarch.com/terms"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm mt-2 hover:underline"

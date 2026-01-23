@@ -9,8 +9,8 @@
  * - Edit action
  */
 
-import { memo, useCallback } from 'react';
-import type { MouseEvent } from 'react';
+import { memo } from 'react';
+import { TbMoneybag } from 'react-icons/tb';
 import type { StashItem, ItemStatus } from '../../types';
 import { SavingsProgressBar } from '../shared';
 import { Icons } from '../icons';
@@ -18,7 +18,7 @@ import { formatCurrency, getStatusStyles } from '../../utils';
 import { parseLocalDate } from '../../utils/savingsCalculations';
 import { StashBudgetInput } from './StashBudgetInput';
 import { StashItemImage } from './StashItemImage';
-import { Tooltip } from '../ui';
+import { StashTitleDropdown } from './StashTitleDropdown';
 
 interface StashCardProps {
   readonly item: StashItem;
@@ -33,6 +33,10 @@ interface StashCardProps {
   readonly size?: { cols: number; rows: number };
   /** Whether this is the first card (for tour targeting) */
   readonly isFirstCard?: boolean;
+  /** Callback to view report for this stash */
+  readonly onViewReport?: (stashId: string) => void;
+  /** Whether to show the type badge (Stash vs Goal) - shown when mixed content */
+  readonly showTypeBadge?: boolean;
 }
 
 /** Format archived date in short form (e.g., "Jan 20" or "Jan 20 '25") */
@@ -124,27 +128,24 @@ export const StashCard = memo(function StashCard({
   isAllocating = false,
   dragHandleProps,
   isFirstCard = false,
+  onViewReport,
+  showTypeBadge = true,
 }: StashCardProps) {
   const progressPercent = Math.min(item.progress_percent, 100);
   const displayStatus: ItemStatus = item.status;
 
   // Format target date (parseLocalDate avoids timezone shift bugs with ISO dates)
-  const targetDate = parseLocalDate(item.target_date);
+  // Handle null/undefined target_date defensively
   const currentYear = new Date().getFullYear();
-  const targetYear = targetDate.getFullYear();
-  const dateDisplay =
-    targetYear === currentYear
-      ? targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      : `${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} '${String(targetYear).slice(-2)}`;
-
-  // Calculate days remaining (parseLocalDate already returns local midnight)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = parseLocalDate(item.target_date);
-  const daysRemaining = Math.max(
-    0,
-    Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  );
+  const dateDisplay = item.target_date
+    ? (() => {
+        const targetDate = parseLocalDate(item.target_date);
+        const targetYear = targetDate.getFullYear();
+        return targetYear === currentYear
+          ? targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : `${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} '${String(targetYear).slice(-2)}`;
+      })()
+    : 'No date set';
 
   // Get current month abbreviation for budget label
   const currentMonthAbbr = new Date().toLocaleDateString('en-US', { month: 'short' });
@@ -159,33 +160,13 @@ export const StashCard = memo(function StashCard({
   const budgetedThisMonth = item.planned_budget;
   const creditsThisMonth = item.credits_this_month ?? 0;
 
-  // Handle double-click to open edit modal (unless clicking on a text field)
-  const handleDoubleClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement;
-      // Don't trigger if clicking on input, textarea, or elements with contenteditable
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable ||
-        target.closest('input, textarea, [contenteditable="true"]')
-      ) {
-        return;
-      }
-      onEdit(item);
-    },
-    [onEdit, item]
-  );
-
   return (
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- double-click is supplementary; Edit button provides accessible interaction
     <div
       className="group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         borderColor: 'var(--monarch-border)',
       }}
-      onDoubleClick={handleDoubleClick}
     >
       {/* Image Area - drag handle (fills remaining space after content) */}
       {}
@@ -206,30 +187,38 @@ export const StashCard = memo(function StashCard({
           className={hasImage ? 'w-full h-full object-cover' : 'opacity-50'}
         />
 
-        {/* Price badge - top left with goal-type-specific icon and label */}
-        <div className="absolute top-2 left-2">
-          <Tooltip
-            content={
-              item.goal_type === 'savings_buffer'
-                ? 'A fund to maintain — dip in, refill by goal date'
-                : 'Saving up to spend — mark complete when purchased'
-            }
-            side="bottom"
-          >
+        {/* Stash badge - top left (only shown when showTypeBadge is true) */}
+        {showTypeBadge && (
+          <div className="absolute top-2 left-2">
             <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-base font-bold cursor-help"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', color: 'white' }}
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium"
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                color: 'var(--monarch-text-muted)',
+                backdropFilter: 'blur(4px)',
+              }}
             >
-              {item.goal_type === 'savings_buffer' ? (
-                <Icons.PiggyBank size={16} style={{ color: '#a78bfa' }} />
-              ) : (
-                <Icons.Gift size={16} style={{ color: '#60a5fa' }} />
-              )}
-              {item.goal_type === 'savings_buffer' ? 'Maintain ' : 'Save '}
-              {formatCurrency(item.amount, { maximumFractionDigits: 0 })}
+              <TbMoneybag size={12} />
+              Stash
             </span>
-          </Tooltip>
-        </div>
+          </div>
+        )}
+
+        {/* Edit button - top right, shown on hover */}
+        {!item.is_archived && (
+          <button
+            data-tour={isFirstCard ? 'stash-edit-item' : undefined}
+            onClick={() => onEdit(item)}
+            className="absolute top-2 right-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity icon-btn-hover"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(4px)',
+            }}
+            aria-label="Edit item"
+          >
+            <Icons.Edit size={18} style={{ color: '#fff' }} />
+          </button>
+        )}
 
         {/* Status badge - bottom right */}
         <div className="absolute bottom-2 right-2">
@@ -242,59 +231,85 @@ export const StashCard = memo(function StashCard({
         </div>
       </div>
 
-      {/* Content Area - fixed max height, image fills the rest */}
-      <div className="p-4 shrink-0 flex flex-col" style={{ maxHeight: 140 }}>
+      {/* Content Area - fixed height for consistency */}
+      <div className="p-4 shrink-0 flex flex-col" style={{ height: 140 }}>
         {/* Top row: Title + info on left, budget input on right */}
         <div className="flex items-start justify-between gap-3 mb-3">
           {/* Left side: Title and date */}
           <div className="min-w-0 flex-1">
-            {/* Title with edit icon */}
-            <div className="flex items-center gap-1.5 mb-1">
-              {item.source_url ? (
-                <a
-                  href={item.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base font-bold truncate hover:underline"
-                  style={{ color: 'var(--monarch-text-dark)' }}
-                  title={item.name}
+            {/* Title */}
+            <div className="mb-1">
+              {onViewReport ? (
+                <StashTitleDropdown
+                  stashName={item.name}
+                  categoryId={item.category_id}
+                  onViewReport={() => onViewReport(item.id)}
                 >
-                  {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
-                  {item.name}
-                </a>
+                  {item.source_url ? (
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-base font-medium truncate hover:underline"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                      title={item.name}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {item.name}
+                    </a>
+                  ) : (
+                    <h3
+                      className="text-base font-medium truncate"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                      title={item.name}
+                    >
+                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {item.name}
+                    </h3>
+                  )}
+                </StashTitleDropdown>
               ) : (
-                <h3
-                  className="text-base font-bold truncate"
-                  style={{ color: 'var(--monarch-text-dark)' }}
-                  title={item.name}
-                >
-                  {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
-                  {item.name}
-                </h3>
-              )}
-              {!item.is_archived && (
-                <button
-                  data-tour={isFirstCard ? 'stash-edit-item' : undefined}
-                  onClick={() => onEdit(item)}
-                  className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors"
-                  aria-label="Edit item"
-                >
-                  <Icons.Edit size={12} style={{ color: 'var(--monarch-text-muted)' }} />
-                </button>
+                <>
+                  {item.source_url ? (
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-base font-medium truncate hover:underline"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                      title={item.name}
+                    >
+                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {item.name}
+                    </a>
+                  ) : (
+                    <h3
+                      className="text-base font-medium truncate"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                      title={item.name}
+                    >
+                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {item.name}
+                    </h3>
+                  )}
+                </>
               )}
             </div>
-            {/* Target date */}
+            {/* Goal type, amount, and target date */}
             <div
               className="flex items-center gap-1 text-sm"
               style={{ color: 'var(--monarch-text-muted)' }}
             >
-              <Icons.Calendar size={14} />
-              <span>{dateDisplay}</span>
-              {!item.is_archived && daysRemaining > 0 && (
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  (in {daysRemaining} days)
-                </span>
+              {item.goal_type === 'savings_buffer' ? (
+                <Icons.PiggyBank size={14} style={{ color: '#a78bfa' }} />
+              ) : (
+                <Icons.Gift size={14} style={{ color: '#60a5fa' }} />
               )}
+              <span>
+                {item.goal_type === 'savings_buffer' ? 'Maintain' : 'Save'}{' '}
+                {formatCurrency(item.amount, { maximumFractionDigits: 0 })} by {dateDisplay}
+              </span>
             </div>
           </div>
 
@@ -314,32 +329,36 @@ export const StashCard = memo(function StashCard({
           )}
         </div>
 
-        {/* Progress bar or restore button */}
-        {item.is_archived ? (
-          <button
-            onClick={() => onEdit(item)}
-            className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md btn-press"
-            style={{
-              backgroundColor: 'var(--monarch-bg-hover)',
-              color: 'var(--monarch-text-muted)',
-              border: '1px solid var(--monarch-border)',
-            }}
-          >
-            <Icons.Rotate size={14} />
-            Restore
-          </button>
-        ) : (
-          <SavingsProgressBar
-            totalSaved={item.current_balance}
-            targetAmount={item.amount}
-            progressPercent={progressPercent}
-            displayStatus={displayStatus}
-            isEnabled={true}
-            rolloverAmount={rolloverAmount}
-            budgetedThisMonth={budgetedThisMonth}
-            creditsThisMonth={creditsThisMonth}
-          />
-        )}
+        {/* Progress bar or restore button - pushed to bottom */}
+        <div className="mt-auto">
+          {item.is_archived ? (
+            <button
+              onClick={() => onEdit(item)}
+              className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md btn-press"
+              style={{
+                backgroundColor: 'var(--monarch-bg-hover)',
+                color: 'var(--monarch-text-muted)',
+                border: '1px solid var(--monarch-border)',
+              }}
+            >
+              <Icons.Rotate size={14} />
+              Restore
+            </button>
+          ) : (
+            <SavingsProgressBar
+              totalSaved={item.current_balance}
+              targetAmount={item.amount}
+              progressPercent={progressPercent}
+              displayStatus={displayStatus}
+              isEnabled={true}
+              rolloverAmount={rolloverAmount}
+              budgetedThisMonth={budgetedThisMonth}
+              creditsThisMonth={creditsThisMonth}
+              goalType={item.goal_type}
+              {...(item.available_to_spend !== undefined && { availableToSpend: item.available_to_spend })}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

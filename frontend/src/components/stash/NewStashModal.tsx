@@ -38,8 +38,8 @@ export function NewStashModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Start a Stash"
-      description="Save for something you want to buy"
+      title="New Stash"
+      description="Set your sights on something"
       maxWidth="md"
     >
       <NewStashForm

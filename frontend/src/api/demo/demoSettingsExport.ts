@@ -142,6 +142,7 @@ function buildStashExport(state: DemoState): StashExport {
       selected_folder_names: state.stashConfig.selectedFolderNames ?? [],
       auto_archive_on_bookmark_delete: state.stashConfig.autoArchiveOnBookmarkDelete ?? true,
       auto_archive_on_goal_met: state.stashConfig.autoArchiveOnGoalMet ?? true,
+      include_expected_income: state.stashConfig.includeExpectedIncome ?? false,
     },
     items: allStashItems.map((item) => ({
       id: item.id,

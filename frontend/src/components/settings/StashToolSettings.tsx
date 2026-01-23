@@ -6,18 +6,23 @@
  */
 
 import { useState, useCallback, forwardRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ChevronRight } from 'lucide-react';
 import { SearchableSelect } from '../SearchableSelect';
 import { useToast } from '../../context/ToastContext';
+import { useDemo } from '../../context/DemoContext';
 import { useSavingStates } from '../../hooks';
 import {
   useStashConfigQuery,
   useStashCategoryGroupsQuery,
   useUpdateStashConfigMutation,
 } from '../../api/queries';
+import { queryKeys, getQueryKey } from '../../api/queries/keys';
 import { StashIcon } from '../wizards/SetupWizardIcons';
 import { ToolSettingsHeader } from './ToolSettingsHeader';
 import { SettingsRow } from './SettingsRow';
 import { ToggleSwitch } from './ToggleSwitch';
+import { CashAccountSelectionModal } from './CashAccountSelectionModal';
 
 const BROWSER_LABELS: Record<string, string> = {
   chrome: 'Google Chrome',
@@ -31,19 +36,23 @@ interface StashToolSettingsProps {
   onSetupBookmarkSync?: (() => void) | undefined;
   onChangeBookmarkSource?: (() => void) | undefined;
   onUnlinkBookmarks?: (() => void) | undefined;
+  variant?: 'page' | 'modal';
 }
 
 export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsProps>(
-  function StashToolSettings({ defaultExpanded = false, onSetupBookmarkSync, onChangeBookmarkSource, onUnlinkBookmarks }, ref) {
+  function StashToolSettings({ defaultExpanded = false, onSetupBookmarkSync, onChangeBookmarkSource, onUnlinkBookmarks, variant = 'page' }, ref) {
   const toast = useToast();
+  const queryClient = useQueryClient();
+  const isDemo = useDemo();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [showAccountSelectionModal, setShowAccountSelectionModal] = useState(false);
 
   // Queries
   const { data: config, isLoading: configLoading } = useStashConfigQuery();
   const { data: categoryGroups = [], isLoading: groupsLoading } = useStashCategoryGroupsQuery();
   const updateConfig = useUpdateStashConfigMutation();
 
-  type SettingKey = 'group' | 'autoArchiveBookmark' | 'autoArchiveGoal';
+  type SettingKey = 'group' | 'autoArchiveBookmark' | 'autoArchiveGoal' | 'includeExpectedIncome' | 'showMonarchGoals';
   const { isSaving, withSaving } = useSavingStates<SettingKey>();
 
   const toggleExpanded = useCallback(() => setIsExpanded((prev) => !prev), []);
@@ -98,6 +107,56 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
     });
   };
 
+  const handleIncludeExpectedIncomeChange = async () => {
+    const newValue = !(config?.includeExpectedIncome ?? true);
+    await withSaving('includeExpectedIncome', async () => {
+      try {
+        await updateConfig.mutateAsync({
+          includeExpectedIncome: newValue,
+        });
+        toast.success(newValue ? 'Expected income included in calculation' : 'Expected income excluded from calculation');
+      } catch {
+        toast.error('Failed to update setting');
+      }
+    });
+  };
+
+  const handleShowMonarchGoalsChange = async () => {
+    const newValue = !(config?.showMonarchGoals ?? true);
+    await withSaving('showMonarchGoals', async () => {
+      try {
+        await updateConfig.mutateAsync({
+          showMonarchGoals: newValue,
+        });
+        toast.success(newValue ? 'Monarch goals shown in Stash' : 'Monarch goals hidden from Stash');
+      } catch {
+        toast.error('Failed to update setting');
+      }
+    });
+  };
+
+  const handleAccountSelectionSave = async (accountIds: string[] | null) => {
+    try {
+      await updateConfig.mutateAsync({ selectedCashAccountIds: accountIds });
+      // Invalidate available to stash data to trigger recalculation
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.availableToStash, isDemo) });
+      toast.success('Cash account selection updated');
+    } catch {
+      toast.error('Failed to update account selection');
+    }
+  };
+
+  const getAccountSelectionLabel = () => {
+    const selected = config?.selectedCashAccountIds;
+    if (selected === null || selected === undefined) {
+      return 'All accounts';
+    }
+    if (selected.length === 0) {
+      return 'No accounts';
+    }
+    return `${selected.length} selected`;
+  };
+
   const getCategoryGroupOptions = () => {
     if (categoryGroups.length > 0) {
       return categoryGroups.map((group) => ({
@@ -125,15 +184,18 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
     ? `Synced with ${browserLabel}`
     : 'Track savings goals for purchases';
 
+  const containerClass = variant === 'modal' ? 'overflow-hidden' : 'rounded-xl overflow-hidden';
+  const containerStyle = variant === 'modal' ? {} : {
+    backgroundColor: 'var(--monarch-bg-card)',
+    border: '1px solid var(--monarch-border)',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+  };
+
   return (
     <div
       ref={ref}
-      className="rounded-xl overflow-hidden"
-      style={{
-        backgroundColor: 'var(--monarch-bg-card)',
-        border: '1px solid var(--monarch-border)',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-      }}
+      className={containerClass}
+      style={containerStyle}
     >
       {configLoading ? (
         <div className="p-5">
@@ -147,20 +209,23 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
         </div>
       ) : (
         <>
-          <ToolSettingsHeader
-            icon={<StashIcon size={20} />}
-            title="Stashes"
-            description={description}
-            isActive={hasAnyConfig}
-            isExpanded={isExpanded}
-            onToggle={toggleExpanded}
-          />
+          {/* Only show header in page mode */}
+          {variant === 'page' && (
+            <ToolSettingsHeader
+              icon={<StashIcon size={20} />}
+              title="Stashes"
+              description={description}
+              isActive={hasAnyConfig}
+              isExpanded={isExpanded}
+              onToggle={toggleExpanded}
+            />
+          )}
 
-          {/* Settings - Always show when expanded */}
-          {isExpanded && (
-            <div style={{ borderTop: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}>
+          {/* Settings - Show when modal mode OR expanded in page mode */}
+          {(variant === 'modal' || isExpanded) && (
+            <div style={variant === 'page' ? { borderTop: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' } : {}}>
               {/* Default Category Group - General setting, always shown */}
-              <SettingsRow label="Default Category Group">
+              <SettingsRow label="Default Category Group" variant={variant}>
                 <SearchableSelect
                   value={config?.defaultCategoryGroupId || ''}
                   onChange={handleGroupChange}
@@ -173,11 +238,70 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                 />
               </SettingsRow>
 
+              {/* Include expected income in Available Funds calculation */}
+              <SettingsRow
+                label="Include expected income"
+                description="Add planned income to Available Funds calculation"
+                variant={variant}
+              >
+                <ToggleSwitch
+                  checked={config?.includeExpectedIncome ?? true}
+                  onChange={handleIncludeExpectedIncomeChange}
+                  disabled={isSaving('includeExpectedIncome')}
+                  ariaLabel={
+                    config?.includeExpectedIncome
+                      ? 'Exclude expected income from calculation'
+                      : 'Include expected income in calculation'
+                  }
+                />
+              </SettingsRow>
+
+              {/* Cash Account Selection */}
+              <SettingsRow
+                label="Cash accounts"
+                description="Select which accounts to include in Available Funds (credit cards always included)"
+                variant={variant}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowAccountSelectionModal(true)}
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap hover:bg-(--monarch-bg-page)"
+                  style={{
+                    backgroundColor: 'var(--monarch-bg-hover)',
+                    color: 'var(--monarch-text)',
+                    border: '1px solid var(--monarch-border)',
+                  }}
+                  aria-label="Configure cash accounts"
+                >
+                  {getAccountSelectionLabel()}
+                  <ChevronRight size={16} className="text-monarch-text-muted" />
+                </button>
+              </SettingsRow>
+
+              {/* Show Monarch goals in Stash */}
+              <SettingsRow
+                label="Show Monarch savings goals"
+                description="Display your Monarch Money savings goals alongside Stash items"
+                variant={variant}
+              >
+                <ToggleSwitch
+                  checked={config?.showMonarchGoals ?? true}
+                  onChange={handleShowMonarchGoalsChange}
+                  disabled={isSaving('showMonarchGoals')}
+                  ariaLabel={
+                    config?.showMonarchGoals
+                      ? 'Hide Monarch goals from Stash'
+                      : 'Show Monarch goals in Stash'
+                  }
+                />
+              </SettingsRow>
+
               {/* Auto-archive when goal met - General setting, always shown */}
               <SettingsRow
                 label="Auto-archive completed"
                 description="Archive items at the start of the month after being fully funded"
                 isLast={!isBrowserSyncConfigured && !onSetupBookmarkSync}
+                variant={variant}
               >
                 <ToggleSwitch
                   checked={config?.autoArchiveOnGoalMet ?? true}
@@ -197,6 +321,7 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   label="Bookmark sync"
                   description="Convert browser bookmarks to stashes"
                   isLast
+                  variant={variant}
                 >
                   <button
                     type="button"
@@ -220,6 +345,7 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   <SettingsRow
                     label="Bookmark source"
                     description={`Synced with ${browserLabel}`}
+                    variant={variant}
                   >
                     <div className="flex items-center gap-2">
                       {onChangeBookmarkSource && (
@@ -260,6 +386,7 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                     label="Archive when bookmark deleted"
                     description="Automatically archive items when source bookmark is removed"
                     isLast
+                    variant={variant}
                   >
                     <ToggleSwitch
                       checked={config?.autoArchiveOnBookmarkDelete ?? true}
@@ -278,6 +405,14 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
           )}
         </>
       )}
+
+      {/* Cash Account Selection Modal */}
+      <CashAccountSelectionModal
+        isOpen={showAccountSelectionModal}
+        onClose={() => setShowAccountSelectionModal(false)}
+        selectedAccountIds={config?.selectedCashAccountIds ?? null}
+        onSave={handleAccountSelectionSave}
+      />
     </div>
   );
 });

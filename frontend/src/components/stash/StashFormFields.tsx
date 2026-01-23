@@ -63,7 +63,7 @@ export function NameInputWithEmoji({
             border: '1px solid var(--monarch-border)',
           }}
         >
-          <EmojiPicker currentEmoji={emoji || '🎯'} onSelect={handleEmojiSelect} />
+          <EmojiPicker currentEmoji={emoji || '💰'} onSelect={handleEmojiSelect} />
         </div>
         <input
           id={id}
@@ -139,8 +139,9 @@ export function UrlInput({ id, value, onChange }: UrlInputProps) {
 }
 
 interface UrlDisplayProps {
-  value: string;
-  onChange: (value: string) => void;
+  readonly value: string;
+  readonly onChange: (value: string) => void;
+  readonly onModalOpenChange?: (isOpen: boolean) => void;
 }
 
 /**
@@ -288,10 +289,15 @@ function UrlEditModal({
       ref={dialogRef}
       onClose={handleDialogClose}
       onClick={handleBackdropClick}
-      className="w-full max-w-md p-4 rounded-lg shadow-lg backdrop:bg-black/50"
+      className="w-full max-w-md p-4 rounded-lg shadow-lg backdrop:bg-black/50 backdrop:backdrop-blur-sm"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        margin: 0,
       }}
     >
       {/* Use key to reset content state when modal opens */}
@@ -301,16 +307,29 @@ function UrlEditModal({
   );
 }
 
-export function UrlDisplay({ value, onChange }: UrlDisplayProps) {
+export function UrlDisplay({ value, onChange, onModalOpenChange }: UrlDisplayProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const safeHref = getSafeHref(value);
+
+  const handleModalOpen = useCallback(() => {
+    setIsModalOpen(true);
+    onModalOpenChange?.(true);
+  }, [onModalOpenChange]);
+
+  const handleModalClose = useCallback(() => {
+    setIsModalOpen(false);
+    onModalOpenChange?.(false);
+  }, [onModalOpenChange]);
 
   if (!value) {
     return (
       <>
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onMouseDown={(e) => {
+            e.preventDefault(); // Prevent blur from firing
+            handleModalOpen();
+          }}
           className="text-xs hover:underline"
           style={{ color: 'var(--monarch-orange)' }}
         >
@@ -318,7 +337,7 @@ export function UrlDisplay({ value, onChange }: UrlDisplayProps) {
         </button>
         <UrlEditModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleModalClose}
           value={value}
           onSave={onChange}
         />
@@ -350,7 +369,7 @@ export function UrlDisplay({ value, onChange }: UrlDisplayProps) {
         )}
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleModalOpen}
           className="shrink-0 p-1 rounded hover:bg-(--monarch-bg-page)"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="Edit link"
@@ -360,7 +379,7 @@ export function UrlDisplay({ value, onChange }: UrlDisplayProps) {
       </div>
       <UrlEditModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
         value={value}
         onSave={onChange}
       />
@@ -595,7 +614,7 @@ export function GoalTypeSelector({ value, onChange, hideLabel = false }: GoalTyp
     if (isOpen && triggerRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect();
       const dropdownHeight = 220; // Approximate height of dropdown
-      const dropdownWidth = 280; // Fixed width for dropdown content
+      const dropdownWidth = 420; // Wide enough for full descriptions
       const spaceBelow = window.innerHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
       const openUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;

@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { ExternalLink, Target } from 'lucide-react';
 import { usePageTitle, useBookmarks, useStashSync } from '../../hooks';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 import {
@@ -13,14 +14,18 @@ import {
   StashWidgetGrid,
   PendingReviewSection,
   IgnoredBookmarksSection,
-  StashHeader,
   ArchivedItemsSection,
   BrowserSetupModal,
-  AvailableToStash,
   StashReportsView,
   decodeHtmlEntities,
+  AvailableFundsBar,
+  useReportSettings,
+  StashVsGoalsModal,
+  StashGoalExplainerLink,
 } from '../stash';
 import { Icons } from '../icons';
+import { StashIcon } from '../wizards/SetupWizardIcons';
+import { ToolPageHeader, ToolSettingsModal } from '../ui';
 import { EXPAND_PENDING_SECTION_EVENT } from '../layout/stashTourSteps';
 import {
   useStashQuery,
@@ -32,10 +37,13 @@ import {
   useConvertPendingMutation,
   useAllocateStashMutation,
   useUpdateStashLayoutMutation,
+  useMonarchGoalsQuery,
+  useUpdateMonarchGoalLayoutsMutation,
+  useDashboardQuery,
 } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { handleApiError } from '../../utils';
-import type { StashItem, StashLayoutUpdate, PendingBookmark } from '../../types';
+import type { StashItem, StashLayoutUpdate, PendingBookmark, MonarchGoal, MonarchGoalLayoutUpdate } from '../../types';
 
 interface ModalPrefill {
   name?: string;
@@ -49,10 +57,12 @@ export function StashTab() {
 
   // Tab state
   const [activeView, setActiveView] = useState<'stashes' | 'reports'>('stashes');
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Queries
   const { data: configData, isLoading: configLoading } = useStashConfigQuery();
   const { data: stashData, isLoading, error } = useStashQuery();
+  const { data: monarchGoals = [] } = useMonarchGoalsQuery();
   const { data: pendingBookmarks = [] } = usePendingBookmarksQuery();
   const { data: _pendingCount = 0 } = usePendingCountQuery();
   const { data: skippedBookmarks = [] } = useSkippedBookmarksQuery();
@@ -62,6 +72,7 @@ export function StashTab() {
   const convertPendingMutation = useConvertPendingMutation();
   const allocateMutation = useAllocateStashMutation();
   const layoutMutation = useUpdateStashLayoutMutation();
+  const goalLayoutMutation = useUpdateMonarchGoalLayoutsMutation();
 
   // UI state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -74,11 +85,19 @@ export function StashTab() {
   );
   const [skippingIds, setSkippingIds] = useState<Set<string>>(new Set());
   const [showBrowserSetupWizard, setShowBrowserSetupWizard] = useState(false);
+  const [showExplainerModal, setShowExplainerModal] = useState(false);
   const [allocatingItemId, setAllocatingItemId] = useState<string | null>(null);
   const pendingSectionRef = useRef<HTMLDivElement>(null);
 
   const isBrowserConfigured =
     !!configData?.selectedBrowser && (configData?.selectedFolderIds?.length ?? 0) > 0;
+
+  const includeExpectedIncome = configData?.includeExpectedIncome ?? false;
+  const bufferAmount = configData?.bufferAmount ?? 0;
+
+  // Get Left to Budget (ready_to_assign) from dashboard for distribute button
+  const { data: dashboardData } = useDashboardQuery();
+  const leftToBudget = dashboardData?.ready_to_assign?.ready_to_assign ?? 0;
 
   const { isSyncing, syncBookmarks } = useStashSync({
     selectedBrowser: configData?.selectedBrowser ?? null,
@@ -87,6 +106,9 @@ export function StashTab() {
     onShowSetupWizard: () => setShowBrowserSetupWizard(true),
   });
   const { onBookmarkChange } = useBookmarks();
+
+  // Report settings for filtering
+  const { setFilteredStashId } = useReportSettings();
 
   // Subscribe to new bookmark additions
   useEffect(() => {
@@ -114,11 +136,29 @@ export function StashTab() {
 
   const { activeItems, archivedItems } = useMemo(() => {
     if (!stashData) return { activeItems: [], archivedItems: [] };
+
+    const stashItems = stashData.items.filter((item) => !item.is_archived);
+
+    // Merge Monarch goals if setting is enabled
+    const showGoals = configData?.showMonarchGoals ?? false;
+
+    // Separate active and completed goals
+    const activeGoals = monarchGoals.filter((goal) => !goal.isCompleted);
+    const completedGoals = monarchGoals.filter((goal) => goal.isCompleted);
+
+    const allActiveItems: (StashItem | MonarchGoal)[] = showGoals
+      ? [...stashItems, ...activeGoals]
+      : stashItems;
+
+    const allArchivedItems: (StashItem | MonarchGoal)[] = showGoals
+      ? [...stashData.archived_items, ...completedGoals]
+      : stashData.archived_items;
+
     return {
-      activeItems: stashData.items.filter((item) => !item.is_archived),
-      archivedItems: stashData.archived_items,
+      activeItems: allActiveItems,
+      archivedItems: allArchivedItems,
     };
-  }, [stashData]);
+  }, [stashData, monarchGoals, configData?.showMonarchGoals]);
 
   const handleEdit = useCallback((item: StashItem) => setEditingItem(item), []);
 
@@ -139,6 +179,11 @@ export function StashTab() {
   const handleLayoutChange = useCallback(
     (layouts: StashLayoutUpdate[]) => layoutMutation.mutate(layouts),
     [layoutMutation]
+  );
+
+  const handleGoalLayoutChange = useCallback(
+    (layouts: MonarchGoalLayoutUpdate[]) => goalLayoutMutation.mutate(layouts),
+    [goalLayoutMutation]
   );
 
   const handleSkipPending = useCallback(
@@ -183,6 +228,14 @@ export function StashTab() {
     [convertPendingMutation, toast]
   );
 
+  const handleViewStashReport = useCallback(
+    (stashId: string) => {
+      setFilteredStashId(stashId);
+      setActiveView('reports');
+    },
+    [setFilteredStashId]
+  );
+
   if (configLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -216,54 +269,105 @@ export function StashTab() {
   }
 
   return (
-    <div className="tab-content-enter px-6 pb-6 max-w-7xl mx-auto">
-      <StashHeader
-        selectedBrowser={configData?.selectedBrowser ?? null}
-        isBrowserConfigured={isBrowserConfigured}
-        isSyncingBookmarks={isSyncing}
-        onSyncBookmarks={syncBookmarks}
-        onAddItem={() => setIsAddModalOpen(true)}
+      <div className="tab-content-enter px-6 pb-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <ToolPageHeader
+        icon={<StashIcon size={40} />}
+        title="Stashes"
+        description="Save for today's wants and tomorrow's needs."
+        descriptionExtra={
+          <StashGoalExplainerLink onClick={() => setShowExplainerModal(true)} />
+        }
+        onSettingsClick={() => setShowSettingsModal(true)}
       />
 
       {/* Tab navigation */}
-      <div className="flex gap-1 mb-6 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+      <div
+        className="flex items-center gap-1 border-b pb-2"
+        style={{ borderColor: 'var(--monarch-border)' }}
+      >
         <button
           onClick={() => setActiveView('stashes')}
-          className="px-4 py-2 text-sm font-medium transition-colors"
+          className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-2 flex items-center gap-1.5 transition-colors"
           style={{
-            color:
-              activeView === 'stashes' ? 'var(--monarch-text-dark)' : 'var(--monarch-text-muted)',
-            borderBottom:
-              activeView === 'stashes'
-                ? '2px solid var(--monarch-primary)'
-                : '2px solid transparent',
-            marginBottom: '-1px',
+            color: activeView === 'stashes' ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
+            borderColor: activeView === 'stashes' ? 'var(--monarch-orange)' : 'transparent',
           }}
         >
+          <StashIcon size={16} />
           Stashes
         </button>
         <button
           onClick={() => setActiveView('reports')}
-          className="px-4 py-2 text-sm font-medium transition-colors"
+          className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-2 flex items-center gap-1.5 transition-colors"
           style={{
-            color:
-              activeView === 'reports' ? 'var(--monarch-text-dark)' : 'var(--monarch-text-muted)',
-            borderBottom:
-              activeView === 'reports'
-                ? '2px solid var(--monarch-primary)'
-                : '2px solid transparent',
-            marginBottom: '-1px',
+            color: activeView === 'reports' ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
+            borderColor: activeView === 'reports' ? 'var(--monarch-orange)' : 'transparent',
           }}
         >
+          <Icons.BarChart2 size={16} />
           Reports
         </button>
+        <a
+          href="https://app.monarch.com/goals/savings"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-2 flex items-center gap-1.5 hover-text-muted-to-dark"
+          style={{ borderColor: 'transparent' }}
+        >
+          <Target size={16} />
+          Monarch Goals
+          <ExternalLink size={14} />
+        </a>
       </div>
+
+      {/* Available Funds Bar with Distribute Button */}
+      {activeView === 'stashes' && stashData && (
+        <AvailableFundsBar
+          includeExpectedIncome={includeExpectedIncome}
+          bufferAmount={bufferAmount}
+          leftToBudget={leftToBudget}
+          items={stashData.items}
+        />
+      )}
 
       {activeView === 'stashes' ? (
         <>
-          <div className="mb-6">
-            <AvailableToStash />
+          <div className="mb-6 w-full">
+            <StashWidgetGrid
+              items={activeItems}
+              onEdit={handleEdit}
+              onAllocate={handleAllocate}
+              onLayoutChange={handleLayoutChange}
+              onGoalLayoutChange={handleGoalLayoutChange}
+              allocatingItemId={allocatingItemId}
+              emptyMessage="No jars, no envelopes, no guesswork. Build your first stash."
+              onAdd={() => setIsAddModalOpen(true)}
+              onViewReport={handleViewStashReport}
+              showTypeBadges={configData?.showMonarchGoals ?? false}
+            />
           </div>
+
+          {/* Sync button - centered below grid */}
+          <div className="flex justify-center mb-3">
+            <button
+              data-tour="stash-sync-bookmarks"
+              onClick={syncBookmarks}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-2 py-1 text-sm font-medium transition-colors hover:opacity-80"
+              style={{
+                color: 'var(--monarch-text-dark)',
+              }}
+            >
+              {isBrowserConfigured ? (
+                <Icons.Refresh size={16} className={isSyncing ? 'animate-spin' : ''} />
+              ) : (
+                <Icons.Download size={16} />
+              )}
+              Import Folder from Browser Bookmarks
+            </button>
+          </div>
+
           {pendingBookmarks.length > 0 && (
             <div ref={pendingSectionRef}>
               <PendingReviewSection
@@ -276,18 +380,8 @@ export function StashTab() {
               />
             </div>
           )}
-          <div className="mb-6 w-full">
-            <StashWidgetGrid
-              items={activeItems}
-              onEdit={handleEdit}
-              onAllocate={handleAllocate}
-              onLayoutChange={handleLayoutChange}
-              allocatingItemId={allocatingItemId}
-              emptyMessage="No stashes yet. Start your first stash to begin saving!"
-            />
-          </div>
           <ArchivedItemsSection
-            items={archivedItems}
+            items={archivedItems.filter((item): item is StashItem => item.type === 'stash')}
             onEdit={handleEdit}
             onAllocate={handleAllocate}
             allocatingItemId={allocatingItemId}
@@ -323,6 +417,15 @@ export function StashTab() {
         isOpen={showBrowserSetupWizard}
         onClose={() => setShowBrowserSetupWizard(false)}
         onComplete={() => setShowBrowserSetupWizard(false)}
+      />
+      <ToolSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        tool="stash"
+      />
+      <StashVsGoalsModal
+        isOpen={showExplainerModal}
+        onClose={() => setShowExplainerModal(false)}
       />
     </div>
   );

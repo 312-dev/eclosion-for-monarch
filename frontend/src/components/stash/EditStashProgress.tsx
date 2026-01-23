@@ -60,6 +60,8 @@ export function EditStashProgress({
           rolloverAmount={rolloverAmount}
           budgetedThisMonth={item.planned_budget}
           creditsThisMonth={creditsThisMonth}
+          goalType={goalType}
+          {...(item.available_to_spend !== undefined && { availableToSpend: item.available_to_spend })}
         />
 
         {/* Available balance info for one-time goals with spending */}

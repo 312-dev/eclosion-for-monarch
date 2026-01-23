@@ -202,7 +202,7 @@ export function DocsLayout({ children, minimal = false }: DocsLayoutProps) {
               <span className="text-center">
                 Built for{' '}
                 <a
-                  href="https://monarchmoney.com"
+                  href="https://monarch.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-(--monarch-orange) hover:text-(--monarch-text-dark) transition-colors"

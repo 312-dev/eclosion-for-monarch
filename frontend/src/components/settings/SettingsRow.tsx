@@ -9,12 +9,15 @@ interface SettingsRowProps {
   readonly description?: string;
   readonly children: ReactNode;
   readonly isLast?: boolean;
+  readonly variant?: 'page' | 'modal';
 }
 
-export function SettingsRow({ label, description, children, isLast }: SettingsRowProps) {
+export function SettingsRow({ label, description, children, isLast, variant = 'page' }: SettingsRowProps) {
+  const marginClass = variant === 'modal' ? '' : 'ml-14';
+
   return (
     <div
-      className="px-4 py-3 ml-14"
+      className={`px-4 py-3 ${marginClass}`}
       style={isLast ? undefined : { borderBottom: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}
     >
       <div className="flex items-center justify-between gap-4">

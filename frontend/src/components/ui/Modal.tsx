@@ -15,6 +15,8 @@ import type { ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseButton } from './CloseButton';
 import { useScrollLock } from '../../hooks/useScrollLock';
+import { useModalStack } from '../../hooks/useModalStack';
+import { Z_INDEX } from '../../constants';
 
 export interface ModalProps {
   /** Whether the modal is open */
@@ -77,6 +79,9 @@ export function Modal({
   const modalId = id || `modal-${generatedId}`;
   const titleId = `${modalId}-title`;
   const descriptionId = `${modalId}-description`;
+
+  // Track modal stacking for proper z-index
+  const stackOffset = useModalStack(isOpen);
 
   // Get all focusable elements in the modal
   const getFocusableElements = useCallback(() => {
@@ -167,12 +172,19 @@ export function Modal({
 
   if (!isOpen) return null;
 
+  // Calculate z-index for backdrop and modal content
+  const backdropZIndex = Z_INDEX.MODAL_BACKDROP + stackOffset;
+  const modalZIndex = Z_INDEX.MODAL + stackOffset;
+
   const modalContent = (
     // Backdrop overlay - click to close is handled via onClick
     // Keyboard closing is handled via Escape key in handleKeyDown
     <div
-      className="fixed inset-0 z-(--z-index-modal) flex items-center justify-center p-4 backdrop-blur-sm"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+      className="fixed inset-0 flex items-center justify-center p-4 backdrop-blur-sm"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        zIndex: backdropZIndex,
+      }}
       onClick={handleBackdropClick}
     >
       {/* Dialog */}
@@ -186,6 +198,7 @@ export function Modal({
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 20px 50px -10px rgba(0, 0, 0, 0.4)',
+          zIndex: modalZIndex,
         }}
       >
         {/* Header */}
