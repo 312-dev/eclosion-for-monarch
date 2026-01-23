@@ -115,7 +115,7 @@ export function RevisionHistoryModal({
       >
         <div
           ref={modalRef}
-          className="rounded-xl shadow-lg w-full max-w-md max-h-[80vh] flex flex-col"
+          className="rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col"
           style={{ backgroundColor: 'var(--monarch-bg-card)' }}
           role="dialog"
           aria-modal="true"

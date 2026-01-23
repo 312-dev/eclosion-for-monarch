@@ -35,7 +35,7 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
         position: 'fixed',
         left: triggerRect.left,
         width: dropdownWidth,
-        zIndex: Z_INDEX.DROPDOWN,
+        zIndex: Z_INDEX.TOOLTIP,
         ...(openUpward
           ? { bottom: window.innerHeight - triggerRect.top + 4 }
           : { top: triggerRect.bottom + 4 }),
@@ -162,8 +162,12 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
                     <button
                       className="flex size-8 items-center justify-center rounded-md text-lg transition-colors"
                       style={{
-                        backgroundColor: emoji.emoji === currentEmoji ? 'var(--monarch-orange-10)' : undefined,
-                        boxShadow: emoji.emoji === currentEmoji ? 'inset 0 0 0 2px var(--monarch-orange)' : undefined,
+                        backgroundColor:
+                          emoji.emoji === currentEmoji ? 'var(--monarch-orange-10)' : undefined,
+                        boxShadow:
+                          emoji.emoji === currentEmoji
+                            ? 'inset 0 0 0 2px var(--monarch-orange)'
+                            : undefined,
                       }}
                       onMouseEnter={(e) => {
                         if (emoji.emoji !== currentEmoji) {

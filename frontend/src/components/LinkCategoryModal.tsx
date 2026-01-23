@@ -149,7 +149,7 @@ export function LinkCategoryModal({
         <div className="absolute inset-0 bg-black/50 modal-backdrop" onClick={onClose} />
 
         {/* Modal */}
-        <div className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[80vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
+        <div className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[90vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
           {/* Header */}
           <div className="p-4 border-b border-monarch-border">
             <div className="flex items-center justify-between">

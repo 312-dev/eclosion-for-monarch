@@ -25,6 +25,23 @@ interface RollupZoneProps {
 const ROLLUP_COLLAPSED_KEY = 'rollup-collapsed';
 const DEFAULT_ROLLUP_NAME = 'Rollup Category';
 
+/**
+ * Format a number with commas for display. Returns empty string for 0.
+ */
+function formatWithCommas(value: number): string {
+  if (value === 0) return '';
+  return Math.ceil(value).toLocaleString('en-US');
+}
+
+/**
+ * Parse a formatted string (with commas) back to a number.
+ */
+function parseFormatted(value: string): number {
+  const digitsOnly = value.replaceAll(/\D/g, '');
+  if (digitsOnly === '') return 0;
+  return Number.parseInt(digitsOnly, 10);
+}
+
 export function RollupZone({
   rollup,
   onRemoveItem,
@@ -39,7 +56,7 @@ export function RollupZone({
   });
 
   // Budget state
-  const [budgetValue, setBudgetValue] = useState(Math.ceil(rollup.budgeted).toString());
+  const [budgetValue, setBudgetValue] = useState(formatWithCommas(rollup.budgeted));
   const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
 
   // Name state
@@ -62,7 +79,7 @@ export function RollupZone({
 
   // Sync budget value with prop
   useEffect(() => {
-    setBudgetValue(Math.ceil(rollup.budgeted).toString());
+    setBudgetValue(formatWithCommas(rollup.budgeted));
   }, [rollup.budgeted]);
 
   // Sync name value with prop
@@ -72,13 +89,9 @@ export function RollupZone({
 
   // Budget handlers
   const handleBudgetSubmit = useCallback(async () => {
-    const parsedAmount = Number.parseFloat(budgetValue);
-    if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
-      setBudgetValue(Math.ceil(rollup.budgeted).toString());
-      return;
-    }
+    const parsedAmount = parseFormatted(budgetValue);
     const newAmount = Math.ceil(parsedAmount);
-    setBudgetValue(newAmount.toString());
+    setBudgetValue(formatWithCommas(newAmount));
     if (newAmount !== rollup.budgeted) {
       setIsUpdatingBudget(true);
       try {
@@ -90,7 +103,7 @@ export function RollupZone({
   }, [budgetValue, rollup.budgeted, onBudgetChange]);
 
   const handleBudgetReset = useCallback(() => {
-    setBudgetValue(Math.ceil(rollup.budgeted).toString());
+    setBudgetValue(formatWithCommas(rollup.budgeted));
   }, [rollup.budgeted]);
 
   // Name handlers

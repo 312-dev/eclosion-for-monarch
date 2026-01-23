@@ -135,7 +135,7 @@ export function ExportNotesModal({
       >
         <div
           ref={modalRef}
-          className="rounded-xl shadow-lg w-full max-w-lg max-h-[85vh] flex flex-col"
+          className="rounded-xl shadow-lg w-full max-w-lg max-h-[90vh] flex flex-col"
           style={{ backgroundColor: 'var(--monarch-bg-card)' }}
           role="dialog"
           aria-modal="true"

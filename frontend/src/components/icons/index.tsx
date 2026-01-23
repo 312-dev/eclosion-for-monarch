@@ -106,6 +106,8 @@ import {
   Coins,
   Wallet,
   Banknote,
+  BanknoteArrowUp,
+  TrendingUpDown,
   Square,
   CheckSquare,
   Landmark,
@@ -226,6 +228,8 @@ export const PiggyBankIcon = PiggyBank;
 export const CoinsIcon = Coins;
 export const WalletIcon = Wallet;
 export const BanknoteIcon = Banknote;
+export const BanknoteArrowUpIcon = BanknoteArrowUp;
+export const TrendingUpDownIcon = TrendingUpDown;
 export const SquareIcon = Square;
 export const CheckSquareIcon = CheckSquare;
 export const ThumbsUpIcon = ThumbsUp;
@@ -631,6 +635,8 @@ export const Icons = {
   Landmark,
   Wallet: WalletIcon,
   Banknote: BanknoteIcon,
+  BanknoteArrowUp: BanknoteArrowUpIcon,
+  TrendingUpDown: TrendingUpDownIcon,
 
   // Selection
   Square: SquareIcon,

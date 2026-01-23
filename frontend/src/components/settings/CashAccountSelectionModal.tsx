@@ -116,7 +116,7 @@ export function CashAccountSelectionModal({
         />
 
         {/* Modal */}
-        <div className="relative w-full max-w-md mx-4 rounded-xl shadow-xl max-h-[80vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
+        <div className="relative w-full max-w-md mx-4 rounded-xl shadow-xl max-h-[90vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
           {/* Header */}
           <div className="p-4 border-b border-monarch-border">
             <div className="flex items-center justify-between">
@@ -132,7 +132,12 @@ export function CashAccountSelectionModal({
                 aria-label="Close modal"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -161,9 +166,7 @@ export function CashAccountSelectionModal({
             )}
 
             {isLoading && (
-              <div className="text-center py-8 text-monarch-text-muted">
-                Loading accounts...
-              </div>
+              <div className="text-center py-8 text-monarch-text-muted">Loading accounts...</div>
             )}
 
             {!isLoading && (
@@ -195,14 +198,12 @@ export function CashAccountSelectionModal({
                           }}
                         >
                           <div
-                            className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0"
+                            className="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0"
                             style={{
                               borderColor: isSelected
                                 ? 'var(--monarch-orange)'
                                 : 'var(--monarch-border)',
-                              backgroundColor: isSelected
-                                ? 'var(--monarch-orange)'
-                                : 'transparent',
+                              backgroundColor: isSelected ? 'var(--monarch-orange)' : 'transparent',
                             }}
                           >
                             {isSelected && (

@@ -5,12 +5,29 @@
  * The frozen_monthly_target is fixed for the month and doesn't change when budgeting.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { RecurringItem } from '../../types';
 import { formatCurrency, formatFrequencyShort, getNormalizationDate } from '../../utils';
 import { TrendUpIcon, TrendDownIcon, AnchorIcon } from '../icons';
 import { Tooltip } from '../ui/Tooltip';
 import { useIsRateLimited } from '../../context/RateLimitContext';
+
+/**
+ * Format a number with commas for display. Returns empty string for 0.
+ */
+function formatWithCommas(value: number): string {
+  if (value === 0) return '';
+  return Math.round(value).toLocaleString('en-US');
+}
+
+/**
+ * Parse a formatted string (with commas) back to a number.
+ */
+function parseFormatted(value: string): number {
+  const digitsOnly = value.replaceAll(/\D/g, '');
+  if (digitsOnly === '') return 0;
+  return Number.parseInt(digitsOnly, 10);
+}
 
 interface RecurringItemBudgetProps {
   readonly item: RecurringItem;
@@ -19,7 +36,7 @@ interface RecurringItemBudgetProps {
 }
 
 export function RecurringItemBudget({ item, onAllocate, isAllocating }: RecurringItemBudgetProps) {
-  const [budgetInput, setBudgetInput] = useState(Math.round(item.planned_budget).toString());
+  const [budgetInput, setBudgetInput] = useState(formatWithCommas(item.planned_budget));
   const [prevPlannedBudget, setPrevPlannedBudget] = useState(item.planned_budget);
   const isRateLimited = useIsRateLimited();
 
@@ -29,23 +46,28 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
   // Adjust state during render when prop changes (React recommended pattern)
   if (item.planned_budget !== prevPlannedBudget) {
     setPrevPlannedBudget(item.planned_budget);
-    setBudgetInput(Math.round(item.planned_budget).toString());
+    setBudgetInput(formatWithCommas(item.planned_budget));
   }
 
-  const handleBudgetSubmit = async () => {
-    // Treat empty input as $0
-    const trimmedInput = budgetInput.trim();
-    const parsedAmount = trimmedInput === '' ? 0 : Number.parseFloat(trimmedInput);
-    if (Number.isNaN(parsedAmount)) {
-      setBudgetInput(Math.round(item.planned_budget).toString());
-      return;
+  const handleBudgetChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawInput = e.target.value;
+    const digitsOnly = rawInput.replaceAll(/\D/g, '');
+    if (digitsOnly === '') {
+      setBudgetInput('');
+    } else {
+      const numericValue = Number.parseInt(digitsOnly, 10);
+      setBudgetInput(numericValue.toLocaleString('en-US'));
     }
-    // Round to nearest dollar (towards zero for negatives)
-    const newAmount = Math.round(parsedAmount);
-    setBudgetInput(newAmount.toString());
-    const diff = newAmount - item.planned_budget;
+  }, []);
+
+  const handleBudgetSubmit = async () => {
+    // Parse the formatted input
+    const parsedAmount = parseFormatted(budgetInput);
+    // Update display to normalized format
+    setBudgetInput(formatWithCommas(parsedAmount));
+    const diff = parsedAmount - item.planned_budget;
     if (Math.abs(diff) > 0.01) {
-      await onAllocate(diff, newAmount);
+      await onAllocate(diff, parsedAmount);
     }
   };
 
@@ -53,7 +75,7 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
     } else if (e.key === 'Escape') {
-      setBudgetInput(Math.round(item.planned_budget).toString());
+      setBudgetInput(formatWithCommas(item.planned_budget));
       (e.target as HTMLInputElement).blur();
     }
   };
@@ -73,11 +95,12 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
         <div className="flex items-center whitespace-nowrap rounded bg-monarch-bg-card border border-monarch-border px-2 py-1 opacity-50">
           <span className="font-medium text-monarch-text-muted">$</span>
           <input
-            type="number"
-            value={0}
+            type="text"
+            inputMode="numeric"
+            value="0"
             disabled
             readOnly
-            className="w-16 text-right font-medium text-monarch-text-muted bg-transparent font-inherit cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            className="w-16 text-right font-medium text-monarch-text-muted bg-transparent font-inherit cursor-not-allowed tabular-nums"
           />
           <span className="text-monarch-text-muted ml-1">/ {target}</span>
           {isCatchingUp && (
@@ -175,14 +198,16 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
       <div className="flex items-center whitespace-nowrap rounded bg-monarch-bg-card border border-monarch-border px-2 py-1 focus-within:border-monarch-orange">
         <span className="font-medium text-monarch-text-dark">$</span>
         <input
-          type="number"
+          type="text"
+          inputMode="numeric"
           value={budgetInput}
-          onChange={(e) => setBudgetInput(e.target.value)}
+          onChange={handleBudgetChange}
           onKeyDown={handleBudgetKeyDown}
           onBlur={handleBudgetSubmit}
           onFocus={(e) => e.target.select()}
           disabled={isDisabled}
-          className="w-16 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          placeholder="0"
+          className="w-16 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none tabular-nums"
         />
         <span className="text-monarch-text-muted ml-1">/ {target}</span>
         {isCatchingUp && (

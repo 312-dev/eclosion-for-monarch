@@ -43,6 +43,8 @@ export interface ModalProps {
   showCloseButton?: boolean;
   /** Initial element to focus when modal opens (selector or ref) */
   initialFocus?: RefObject<HTMLElement>;
+  /** Optional actions to render in the header, left of the close button */
+  headerActions?: ReactNode;
 }
 
 const MAX_WIDTH_CLASSES = {
@@ -72,6 +74,7 @@ export function Modal({
   id,
   showCloseButton = true,
   initialFocus,
+  headerActions,
 }: ModalProps) {
   const modalRef = useRef<HTMLDialogElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -86,9 +89,9 @@ export function Modal({
   // Get all focusable elements in the modal
   const getFocusableElements = useCallback(() => {
     if (!modalRef.current) return [];
-    return Array.from(
-      modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS)
-    ).filter((el) => el.offsetParent !== null);
+    return Array.from(modalRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENTS)).filter(
+      (el) => el.offsetParent !== null
+    );
   }, []);
 
   // Handle focus trapping
@@ -159,13 +162,28 @@ export function Modal({
   // Prevent body scroll when modal is open
   useScrollLock(isOpen);
 
-  // Handle backdrop click - must be defined before early return
+  // Track where pointerdown started to prevent closing when dragging from inside modal to backdrop
+  const mouseDownTargetRef = useRef<EventTarget | null>(null);
+
+  const handleBackdropPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    mouseDownTargetRef.current = e.target;
+  }, []);
+
+  // Handle backdrop click - only close if both mousedown and mouseup occurred on the backdrop
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      // Only close if clicking directly on the backdrop, not its children
-      if (closeOnBackdrop && e.target === e.currentTarget) {
+      // Only close if:
+      // 1. closeOnBackdrop is enabled
+      // 2. The click target is the backdrop itself (not children)
+      // 3. The pointerdown also started on the backdrop (prevents drag-release closes)
+      if (
+        closeOnBackdrop &&
+        e.target === e.currentTarget &&
+        mouseDownTargetRef.current === e.currentTarget
+      ) {
         onClose();
       }
+      mouseDownTargetRef.current = null;
     },
     [closeOnBackdrop, onClose]
   );
@@ -185,6 +203,7 @@ export function Modal({
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         zIndex: backdropZIndex,
       }}
+      onPointerDown={handleBackdropPointerDown}
       onClick={handleBackdropClick}
     >
       {/* Dialog */}
@@ -197,7 +216,8 @@ export function Modal({
         className={`relative w-full ${MAX_WIDTH_CLASSES[maxWidth]} max-h-[90vh] flex flex-col rounded-lg p-0 m-0`}
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
-          boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 20px 50px -10px rgba(0, 0, 0, 0.4)',
+          boxShadow:
+            '0 0 0 1px rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 20px 50px -10px rgba(0, 0, 0, 0.4)',
           zIndex: modalZIndex,
         }}
       >
@@ -224,13 +244,12 @@ export function Modal({
               </p>
             )}
           </div>
-          {showCloseButton && (
-            <CloseButton
-              onClick={onClose}
-              size="md"
-              aria-label="Close modal"
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {headerActions}
+            {showCloseButton && (
+              <CloseButton onClick={onClose} size="md" aria-label="Close modal" />
+            )}
+          </div>
         </div>
 
         {/* Body */}
