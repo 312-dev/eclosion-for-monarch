@@ -12,6 +12,7 @@ import type {
   RollupItem,
   RollupData,
   CategoryGroup,
+  CategoryGroupDetailed,
   UnmappedCategory,
   Note,
   GeneralMonthNote,
@@ -47,6 +48,7 @@ export interface DemoNotesState {
 export interface DemoState {
   dashboard: DashboardData;
   categoryGroups: CategoryGroup[];
+  categoryGroupsDetailed: CategoryGroupDetailed[];
   unmappedCategories: UnmappedCategory[];
   settings: {
     auto_sync_new: boolean;
@@ -158,6 +160,108 @@ const DEMO_CATEGORY_GROUPS: CategoryGroup[] = [
   { id: 'group-subscriptions', name: 'Subscriptions' },
   { id: 'group-insurance', name: 'Insurance' },
   { id: 'group-utilities', name: 'Utilities' },
+];
+
+/**
+ * Detailed category groups with rollover/flexible settings.
+ * Includes some flexible groups that can be used for stash items.
+ */
+const DEMO_CATEGORY_GROUPS_DETAILED: CategoryGroupDetailed[] = [
+  {
+    id: 'group-recurring',
+    name: 'Recurring Expenses',
+    type: 'expense',
+    order: 0,
+    budget_variability: 'fixed',
+    group_level_budgeting_enabled: false,
+    rollover_enabled: false,
+    rollover_period: null,
+  },
+  {
+    id: 'group-subscriptions',
+    name: 'Subscriptions',
+    type: 'expense',
+    order: 1,
+    budget_variability: 'fixed',
+    group_level_budgeting_enabled: false,
+    rollover_enabled: false,
+    rollover_period: null,
+  },
+  {
+    id: 'group-insurance',
+    name: 'Insurance',
+    type: 'expense',
+    order: 2,
+    budget_variability: 'fixed',
+    group_level_budgeting_enabled: false,
+    rollover_enabled: false,
+    rollover_period: null,
+  },
+  {
+    id: 'group-utilities',
+    name: 'Utilities',
+    type: 'expense',
+    order: 3,
+    budget_variability: 'fixed',
+    group_level_budgeting_enabled: false,
+    rollover_enabled: false,
+    rollover_period: null,
+  },
+  // Flexible groups with rollover - can be used for stash items
+  {
+    id: 'group-dining',
+    name: '🙏 Dining Out',
+    type: 'expense',
+    order: 4,
+    budget_variability: 'flexible',
+    group_level_budgeting_enabled: true,
+    rollover_enabled: true,
+    rollover_period: {
+      id: 'rollover-dining',
+      start_month: '2025-01-01',
+      end_month: null,
+      starting_balance: 0,
+      type: 'monthly',
+      frequency: 'monthly',
+      target_amount: null,
+    },
+  },
+  {
+    id: 'group-lifestyle',
+    name: '🙏 Lifestyle',
+    type: 'expense',
+    order: 5,
+    budget_variability: 'flexible',
+    group_level_budgeting_enabled: true,
+    rollover_enabled: true,
+    rollover_period: {
+      id: 'rollover-lifestyle',
+      start_month: '2025-01-01',
+      end_month: null,
+      starting_balance: 100,
+      type: 'monthly',
+      frequency: 'monthly',
+      target_amount: null,
+    },
+  },
+  {
+    id: 'group-entertainment',
+    name: '🎉 Entertainment',
+    type: 'expense',
+    order: 6,
+    budget_variability: 'flexible',
+    group_level_budgeting_enabled: true,
+    rollover_enabled: true,
+    rollover_period: {
+      id: 'rollover-entertainment',
+      start_month: '2025-06-01',
+      end_month: null,
+      starting_balance: 50,
+      type: 'monthly',
+      frequency: 'monthly',
+      target_amount: null,
+    },
+  },
 ];
 
 // ============================================================================
@@ -1915,6 +2019,7 @@ export function createInitialDemoState(): DemoState {
   return {
     dashboard: createDashboardData(DEMO_RECURRING_ITEMS),
     categoryGroups: DEMO_CATEGORY_GROUPS,
+    categoryGroupsDetailed: DEMO_CATEGORY_GROUPS_DETAILED,
     unmappedCategories: DEMO_UNMAPPED_CATEGORIES,
     settings: {
       auto_sync_new: true,

@@ -124,6 +124,10 @@ export {
   useRefreshCategoryGroups,
   useRefreshUnmappedCategories,
   useRemoveFromUnmappedCache,
+  // Detailed category groups (with rollover/flexible settings)
+  useCategoryGroupsDetailed,
+  useFlexibleCategoryGroups,
+  useUpdateCategoryGroupSettings,
 } from './categoryGroupStoreQueries';
 
 // Config store (selectors for config data, derived from dashboard)
@@ -184,3 +188,10 @@ export { useStashHistoryQuery, useInvalidateStashHistory } from './stashHistoryQ
 
 // Monarch Goals queries
 export { useMonarchGoalsQuery, useUpdateMonarchGoalLayoutsMutation } from './monarchGoalQueries';
+
+// Openverse (image search) queries
+export {
+  useOpenverseSearch,
+  useOpenverseImage,
+  generateOpenverseAttribution,
+} from './openverseQueries';

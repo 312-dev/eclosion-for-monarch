@@ -40,6 +40,9 @@ export { getDashboard, triggerSync } from './dashboard';
 // Categories
 export {
   getCategoryGroups,
+  getCategoryGroupsDetailed,
+  getFlexibleCategoryGroups,
+  updateCategoryGroupSettings,
   setConfig,
   getUnmappedCategories,
   linkToCategory,
@@ -176,3 +179,10 @@ export {
   // Category rollover balance
   updateCategoryRolloverBalance,
 } from './stash';
+
+// Openverse (external image search API)
+export {
+  searchImages as searchOpenverseImages,
+  getImage as getOpenverseImage,
+  generateAttribution as generateOpenverseAttribution,
+} from './openverse';

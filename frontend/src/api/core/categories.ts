@@ -4,7 +4,13 @@
  * Category groups, linking, and customization.
  */
 
-import type { CategoryGroup, UnmappedCategory, LinkCategoryResult } from '../../types';
+import type {
+  CategoryGroup,
+  CategoryGroupDetailed,
+  UpdateCategoryGroupSettingsRequest,
+  UnmappedCategory,
+  LinkCategoryResult,
+} from '../../types';
 import { fetchApi } from './fetchApi';
 
 export async function getCategoryGroups(): Promise<CategoryGroup[]> {
@@ -64,5 +70,39 @@ export async function updateCategoryName(
 export async function clearCategoryCache(): Promise<{ success: boolean; message?: string }> {
   return fetchApi('/recurring/clear-category-cache', {
     method: 'POST',
+  });
+}
+
+/**
+ * Get all category groups with full metadata including rollover/flexible settings.
+ */
+export async function getCategoryGroupsDetailed(): Promise<CategoryGroupDetailed[]> {
+  const response = await fetchApi<{ groups: CategoryGroupDetailed[] }>(
+    '/recurring/groups/detailed'
+  );
+  return response.groups;
+}
+
+/**
+ * Get category groups that have flexible budgeting with rollover enabled.
+ * Useful for stash category selection.
+ */
+export async function getFlexibleCategoryGroups(): Promise<CategoryGroupDetailed[]> {
+  const response = await fetchApi<{ groups: CategoryGroupDetailed[] }>(
+    '/recurring/groups/flexible'
+  );
+  return response.groups;
+}
+
+/**
+ * Update a category group's settings (name, rollover, flexible budget, etc.)
+ */
+export async function updateCategoryGroupSettings(
+  request: UpdateCategoryGroupSettingsRequest
+): Promise<CategoryGroupDetailed> {
+  const { group_id, ...settings } = request;
+  return fetchApi<CategoryGroupDetailed>(`/recurring/groups/${group_id}/settings`, {
+    method: 'POST',
+    body: JSON.stringify(settings),
   });
 }

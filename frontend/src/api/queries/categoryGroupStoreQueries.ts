@@ -11,7 +11,12 @@ import { useDemo } from '../../context/DemoContext';
 import * as api from '../client';
 import * as demoApi from '../demoClient';
 import { queryKeys, getQueryKey } from './keys';
-import type { CategoryGroup, UnmappedCategory } from '../../types/category';
+import type {
+  CategoryGroup,
+  CategoryGroupDetailed,
+  UpdateCategoryGroupSettingsRequest,
+  UnmappedCategory,
+} from '../../types/category';
 import type { CategoryGroupStore } from '../../types/categoryGroupStore';
 import { decodeHtmlEntities } from '../../utils';
 
@@ -267,6 +272,87 @@ export function useRemoveFromUnmappedCache() {
           };
         }
       );
+    },
+    [queryClient, isDemo]
+  );
+}
+
+// ============================================================================
+// Detailed Category Groups (with rollover/flexible settings)
+// ============================================================================
+
+/**
+ * Get all category groups with full metadata including rollover/flexible settings
+ */
+export function useCategoryGroupsDetailed(): {
+  groups: CategoryGroupDetailed[];
+  isLoading: boolean;
+  error: Error | null;
+} {
+  const isDemo = useDemo();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: getQueryKey(queryKeys.categoryGroupsDetailed, isDemo),
+    queryFn: async () => {
+      return isDemo
+        ? await demoApi.getCategoryGroupsDetailed()
+        : await api.getCategoryGroupsDetailed();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  return { groups: data ?? [], isLoading, error };
+}
+
+/**
+ * Get category groups that have flexible budgeting with rollover enabled.
+ * Useful for stash category selection where users want to link to existing flexible budget groups.
+ */
+export function useFlexibleCategoryGroups(): {
+  groups: CategoryGroupDetailed[];
+  isLoading: boolean;
+  error: Error | null;
+} {
+  const isDemo = useDemo();
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: getQueryKey(queryKeys.flexibleCategoryGroups, isDemo),
+    queryFn: async () => {
+      return isDemo
+        ? await demoApi.getFlexibleCategoryGroups()
+        : await api.getFlexibleCategoryGroups();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  return { groups: data ?? [], isLoading, error };
+}
+
+/**
+ * Update a category group's settings (name, rollover, flexible budget, etc.)
+ */
+export function useUpdateCategoryGroupSettings() {
+  const queryClient = useQueryClient();
+  const isDemo = useDemo();
+
+  return useCallback(
+    async (request: UpdateCategoryGroupSettingsRequest): Promise<CategoryGroupDetailed> => {
+      const result = isDemo
+        ? await demoApi.updateCategoryGroupSettings(request)
+        : await api.updateCategoryGroupSettings(request);
+
+      // Invalidate related queries
+      await queryClient.invalidateQueries({
+        queryKey: getQueryKey(queryKeys.categoryGroupsDetailed, isDemo),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getQueryKey(queryKeys.flexibleCategoryGroups, isDemo),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: getQueryKey(queryKeys.categoryGroups, isDemo),
+      });
+
+      return result;
     },
     [queryClient, isDemo]
   );

@@ -44,13 +44,19 @@ export async function createStashItem(request: CreateStashItemRequest): Promise<
     categoryId = request.existing_category_id;
     categoryGroupId = existingCat.group_id;
     categoryGroupName = existingCat.group_name;
+  } else if (request.flexible_group_id) {
+    // Linking to a flexible category group with group-level rollover
+    const flexGroup = state.categoryGroupsDetailed?.find((g) => g.id === request.flexible_group_id);
+    categoryId = `group-${request.flexible_group_id}`; // Use group ID as pseudo-category
+    categoryGroupId = request.flexible_group_id;
+    categoryGroupName = flexGroup?.name || 'Flexible Group';
   } else if (request.category_group_id) {
     categoryId = `cat-stash-${Date.now()}`;
     categoryGroupId = request.category_group_id;
     const group = state.categoryGroups.find((g) => g.id === request.category_group_id);
     if (group) categoryGroupName = group.name;
   } else {
-    throw new Error('Must provide either category_group_id or existing_category_id');
+    throw new Error('Must provide either category_group_id, existing_category_id, or flexible_group_id');
   }
 
   const maxSortOrder = state.stash.items.reduce(

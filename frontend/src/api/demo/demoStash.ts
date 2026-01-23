@@ -270,7 +270,7 @@ export async function changeStashGroup(
  */
 export async function linkStashCategory(
   id: string,
-  params: { categoryGroupId?: string; existingCategoryId?: string }
+  params: { categoryGroupId?: string; existingCategoryId?: string; flexibleGroupId?: string }
 ): Promise<{
   success: boolean;
   id: string;
@@ -292,10 +292,20 @@ export async function linkStashCategory(
     if (itemIndex === -1) throw new Error(`Stash not found: ${id}`);
 
     const item = state.stash.items[itemIndex]!;
-    categoryId = params.existingCategoryId || `demo-cat-${Date.now()}`;
-    categoryName = params.existingCategoryId ? 'Existing Category' : item.name;
-    categoryGroupId = params.categoryGroupId || 'demo-group';
-    categoryGroupName = params.categoryGroupId ? 'Savings Goals' : 'Demo Group';
+
+    if (params.flexibleGroupId) {
+      // Linking to a flexible category group (group-level rollover)
+      const flexGroup = state.categoryGroupsDetailed?.find((g) => g.id === params.flexibleGroupId);
+      categoryId = `group-${params.flexibleGroupId}`; // Use group ID as pseudo-category
+      categoryName = flexGroup?.name || 'Flexible Group';
+      categoryGroupId = params.flexibleGroupId;
+      categoryGroupName = flexGroup?.name || 'Flexible Group';
+    } else {
+      categoryId = params.existingCategoryId || `demo-cat-${Date.now()}`;
+      categoryName = params.existingCategoryId ? 'Existing Category' : item.name;
+      categoryGroupId = params.categoryGroupId || 'demo-group';
+      categoryGroupName = params.categoryGroupId ? 'Savings Goals' : 'Demo Group';
+    }
 
     const newItems = [...state.stash.items];
     newItems[itemIndex] = {

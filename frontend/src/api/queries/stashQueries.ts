@@ -262,14 +262,21 @@ export function useLinkStashCategoryMutation() {
       id,
       categoryGroupId,
       existingCategoryId,
+      flexibleGroupId,
     }: {
       id: string;
       categoryGroupId?: string;
       existingCategoryId?: string;
+      flexibleGroupId?: string;
     }) => {
-      const params: { categoryGroupId?: string; existingCategoryId?: string } = {};
+      const params: {
+        categoryGroupId?: string;
+        existingCategoryId?: string;
+        flexibleGroupId?: string;
+      } = {};
       if (categoryGroupId) params.categoryGroupId = categoryGroupId;
       if (existingCategoryId) params.existingCategoryId = existingCategoryId;
+      if (flexibleGroupId) params.flexibleGroupId = flexibleGroupId;
       return isDemo ? demoApi.linkStashCategory(id, params) : api.linkStashCategory(id, params);
     },
     onSuccess: () => {

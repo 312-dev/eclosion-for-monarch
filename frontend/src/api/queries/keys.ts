@@ -7,6 +7,8 @@
 export const queryKeys = {
   dashboard: ['dashboard'] as const,
   categoryGroups: ['categoryGroups'] as const,
+  categoryGroupsDetailed: ['categoryGroupsDetailed'] as const,
+  flexibleCategoryGroups: ['flexibleCategoryGroups'] as const,
   unmappedCategories: ['unmappedCategories'] as const,
   deletableCategories: ['deletableCategories'] as const,
   securityStatus: ['securityStatus'] as const,
@@ -37,6 +39,8 @@ export const queryKeys = {
   availableToStash: ['availableToStash'] as const,
   // Stash History (Reports)
   stashHistory: ['stashHistory'] as const,
+  // Openverse (image search)
+  openverseSearch: ['openverseSearch'] as const,
 };
 
 /**

@@ -166,7 +166,7 @@ export async function changeStashGroup(
  */
 export async function linkStashCategory(
   id: string,
-  params: { categoryGroupId?: string; existingCategoryId?: string }
+  params: { categoryGroupId?: string; existingCategoryId?: string; flexibleGroupId?: string }
 ): Promise<{
   success: boolean;
   id: string;
@@ -181,6 +181,7 @@ export async function linkStashCategory(
     body: JSON.stringify({
       category_group_id: params.categoryGroupId,
       existing_category_id: params.existingCategoryId,
+      flexible_group_id: params.flexibleGroupId,
     }),
   });
 }

@@ -13,6 +13,9 @@ export { getDashboard, triggerSync } from './demoDashboard';
 // Categories
 export {
   getCategoryGroups,
+  getCategoryGroupsDetailed,
+  getFlexibleCategoryGroups,
+  updateCategoryGroupSettings,
   setConfig,
   getUnmappedCategories,
   updateCategoryEmoji,
@@ -143,3 +146,10 @@ export { getStashHistory } from './demoStashHistory';
 
 // Monarch Goals
 export { getMonarchGoals, updateMonarchGoalLayouts } from './demoMonarchGoals';
+
+// Openverse (image search)
+export {
+  searchImages as searchOpenverseImages,
+  getImage as getOpenverseImage,
+  generateAttribution as generateOpenverseAttribution,
+} from './demoOpenverse';
