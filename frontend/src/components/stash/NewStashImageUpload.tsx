@@ -1,7 +1,8 @@
 /**
  * NewStashImageUpload Component
  *
- * Image upload section for the New Stash modal with drag-and-drop support.
+ * Image upload section for the New Stash modal with drag-and-drop support
+ * and Openverse image search integration.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -9,6 +10,9 @@ import { Icons } from '../icons';
 import { useToast } from '../../context/ToastContext';
 import { useDemo } from '../../context/DemoContext';
 import * as api from '../../api/core/stash';
+import { ImageSearchModal } from './ImageSearchModal';
+import { ImagePickerMenu } from './ImagePickerMenu';
+import type { ImageSelection } from '../../types';
 
 /**
  * Convert a base64 data URL to a File object without using fetch.
@@ -35,6 +39,10 @@ interface NewStashImageUploadProps {
   readonly onImageSelect: (file: File) => void;
   readonly onImageRemove: () => void;
   readonly onPreviewChange: (preview: string | null) => void;
+  /** Called when an Openverse image is selected (URL-based, no File) */
+  readonly onOpenverseSelect?: ((selection: ImageSelection) => void) | undefined;
+  /** Currently selected Openverse image URL */
+  readonly openverseImageUrl?: string | null | undefined;
 }
 
 export function NewStashImageUpload({
@@ -44,12 +52,17 @@ export function NewStashImageUpload({
   onImageSelect,
   onImageRemove,
   onPreviewChange,
+  onOpenverseSelect,
+  openverseImageUrl,
 }: NewStashImageUploadProps) {
   const toast = useToast();
   const isDemo = useDemo();
   const [isDragging, setIsDragging] = useState(false);
   const [isFetchingOgImage, setIsFetchingOgImage] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const ogFetchIdRef = useRef(0);
   // Track if user explicitly dismissed the auto-fetched image
   const userDismissedImageRef = useRef(false);
@@ -58,6 +71,32 @@ export function NewStashImageUpload({
   useEffect(() => {
     userDismissedImageRef.current = false;
   }, [sourceUrl]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isDropdownOpen]);
+
+  // Close dropdown on Escape
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsDropdownOpen(false);
+      }
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isDropdownOpen]);
 
   // Auto-fetch og:image when component mounts with a URL (desktop only)
   useEffect(() => {
@@ -131,9 +170,41 @@ export function NewStashImageUpload({
       userDismissedImageRef.current = true;
       onImageRemove();
       onPreviewChange(null);
+      // Also clear Openverse selection if any
+      onOpenverseSelect?.({ url: '', thumbnail: '', attribution: '', source: 'local' });
     },
-    [onImageRemove, onPreviewChange]
+    [onImageRemove, onPreviewChange, onOpenverseSelect]
   );
+
+  const handleSearchClick = useCallback(() => {
+    setIsDropdownOpen(false);
+    setIsSearchModalOpen(true);
+  }, []);
+
+  const handleBrowseClick = useCallback(() => {
+    setIsDropdownOpen(false);
+    imageInputRef.current?.click();
+  }, []);
+
+  const handleOpenverseImageSelect = useCallback(
+    (selection: ImageSelection) => {
+      setIsSearchModalOpen(false);
+      ogFetchIdRef.current++;
+      setIsFetchingOgImage(false);
+      // Clear any local file selection
+      onImageRemove();
+      // Set the Openverse image
+      onPreviewChange(selection.thumbnail);
+      onOpenverseSelect?.(selection);
+    },
+    [onImageRemove, onPreviewChange, onOpenverseSelect]
+  );
+
+  const handleAreaClick = useCallback(() => {
+    // If there's already an image, show dropdown to change it
+    // If no image, also show dropdown for options
+    setIsDropdownOpen((prev) => !prev);
+  }, []);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,102 +215,132 @@ export function NewStashImageUpload({
     [handleImageSelect]
   );
 
+  // Determine if we have any image (local file preview or Openverse URL)
+  const hasImage = imagePreview || openverseImageUrl;
+  const displayImageUrl = imagePreview || openverseImageUrl;
+
   return (
-    <button
-      type="button"
-      onClick={() => imageInputRef.current?.click()}
-      onDrop={handleDrop}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDragging(true);
-      }}
-      onDragLeave={(e) => {
-        e.preventDefault();
-        setIsDragging(false);
-      }}
-      className="relative w-full h-32 rounded-lg border-2 border-dashed transition-all cursor-pointer overflow-hidden"
-      style={{
-        borderColor: isDragging ? 'var(--monarch-orange)' : 'var(--monarch-border)',
-        backgroundColor: isDragging ? 'var(--monarch-orange-bg)' : 'var(--monarch-bg-card)',
-      }}
-      aria-label={imagePreview ? 'Change image' : 'Upload image'}
-    >
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleInputChange}
-        className="hidden"
-        tabIndex={-1}
-      />
-
-      {imagePreview && (
-        <>
-          <img
-            src={imagePreview}
-            alt="Item preview"
-            className="absolute inset-0 w-full h-full object-cover"
+    <>
+      <div ref={dropdownRef} className="relative">
+        {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- Drop zone requires div for drag events */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleAreaClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleAreaClick();
+            }
+          }}
+          onDrop={handleDrop}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+          }}
+          className="relative w-full h-32 rounded-lg border-2 border-dashed transition-all cursor-pointer overflow-hidden"
+          style={{
+            borderColor: isDragging ? 'var(--monarch-orange)' : 'var(--monarch-border)',
+            backgroundColor: isDragging ? 'var(--monarch-orange-bg)' : 'var(--monarch-bg-card)',
+          }}
+          aria-label={hasImage ? 'Change image' : 'Upload image'}
+          aria-haspopup="true"
+          aria-expanded={isDropdownOpen}
+        >
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleInputChange}
+            className="hidden"
+            tabIndex={-1}
           />
-          <button
-            type="button"
-            onClick={handleRemove}
-            className="absolute top-2 right-2 p-1 rounded-full transition-colors z-10"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', color: 'white' }}
-            aria-label="Remove image"
-          >
-            <Icons.X size={16} />
-          </button>
-          <div
-            className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
-          >
-            <span className="text-sm font-medium text-white">Click to change</span>
-          </div>
-        </>
-      )}
 
-      {!imagePreview && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          {isFetchingOgImage ? (
+          {hasImage && displayImageUrl && (
             <>
+              <img
+                src={displayImageUrl}
+                alt="Item preview"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <button
                 type="button"
                 onClick={handleRemove}
                 className="absolute top-2 right-2 p-1 rounded-full transition-colors z-10"
                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', color: 'white' }}
-                aria-label="Cancel image fetch"
+                aria-label="Remove image"
               >
                 <Icons.X size={16} />
               </button>
-              <Icons.Refresh
-                size={24}
-                className="animate-spin"
-                style={{ color: 'var(--monarch-teal)' }}
-              />
-              <span className="text-sm" style={{ color: 'var(--monarch-teal)' }}>
-                Fetching image...
-              </span>
-            </>
-          ) : (
-            <>
-              <Icons.Upload
-                size={24}
-                style={{
-                  color: isDragging ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
-                }}
-              />
-              <span
-                className="text-sm"
-                style={{
-                  color: isDragging ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
-                }}
+              <div
+                className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
               >
-                {isDragging ? 'Drop image here' : 'Add cover image (optional)'}
-              </span>
+                <span className="text-sm font-medium text-white">Click to change</span>
+              </div>
             </>
           )}
+
+          {!hasImage && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              {isFetchingOgImage ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    className="absolute top-2 right-2 p-1 rounded-full transition-colors z-10"
+                    style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', color: 'white' }}
+                    aria-label="Cancel image fetch"
+                  >
+                    <Icons.X size={16} />
+                  </button>
+                  <Icons.Refresh
+                    size={24}
+                    className="animate-spin"
+                    style={{ color: 'var(--monarch-teal)' }}
+                  />
+                  <span className="text-sm" style={{ color: 'var(--monarch-teal)' }}>
+                    Fetching image...
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Icons.Plus
+                    size={24}
+                    style={{
+                      color: isDragging ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
+                    }}
+                  />
+                  <span
+                    className="text-sm"
+                    style={{
+                      color: isDragging ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
+                    }}
+                  >
+                    {isDragging ? 'Drop image here' : 'Add cover image (optional)'}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
-      )}
-    </button>
+
+        {/* Dropdown menu */}
+        {isDropdownOpen && (
+          <ImagePickerMenu onSearchClick={handleSearchClick} onBrowseClick={handleBrowseClick} />
+        )}
+      </div>
+
+      {/* Image search modal */}
+      <ImageSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onSelect={handleOpenverseImageSelect}
+      />
+    </>
   );
 }

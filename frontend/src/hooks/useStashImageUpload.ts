@@ -135,6 +135,16 @@ export function useStashImageUpload(): UseStashImageUploadResult {
         return imagePath;
       }
 
+      // If the path is already an external URL (e.g., Openverse image), return it directly
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+
+      // If it's a data URL (base64), return it directly
+      if (imagePath.startsWith('data:')) {
+        return imagePath;
+      }
+
       if (!globalThis.electron?.stash) {
         // Fallback: return the path as-is
         return imagePath;

@@ -35,7 +35,15 @@ async function resolveImageUrl(
   isDemo: boolean
 ): Promise<string | null> {
   if (customImagePath) {
-    // Demo mode: path IS the data URL; Desktop: load via IPC
+    // If it's already an external URL (e.g., Openverse image), return directly
+    if (customImagePath.startsWith('http://') || customImagePath.startsWith('https://')) {
+      return customImagePath;
+    }
+    // If it's a data URL (base64), return directly
+    if (customImagePath.startsWith('data:')) {
+      return customImagePath;
+    }
+    // Demo mode: path IS the data URL; Desktop: load via IPC for local files
     return isDemo ? customImagePath : await loadDesktopImageUrl(customImagePath);
   }
   return logoUrl ?? null;
