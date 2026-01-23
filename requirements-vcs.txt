@@ -3,4 +3,4 @@
 #   pip install --require-hashes -r requirements.txt
 #   pip install --no-deps -r requirements-vcs.txt
 
-git+https://github.com/312-dev/monarchmoney.git@c44ccc000484179d8d4640db0314ee3252b96391  # custom header support + baseDate field + enable_category_rollover + get_savings_goals
+git+https://github.com/312-dev/monarchmoney.git@bc77f4b  # custom header support + baseDate field + enable_category_rollover + get_savings_goals + API methods for Eclosion

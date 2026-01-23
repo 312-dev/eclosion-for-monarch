@@ -474,33 +474,8 @@ async def get_savings_goals(mm, start_month: str, end_month: str) -> list[Any]:
         cached: list[Any] = _savings_goals_cache[cache_key]
         return cached
 
-    query = gql("""
-        query GetSavingsGoals($startDate: Date!, $endDate: Date!) {
-            savingsGoalMonthlyBudgetAmounts(startMonth: $startDate, endMonth: $endDate) {
-                id
-                savingsGoal {
-                    id
-                    name
-                    type
-                    status
-                    archivedAt
-                    completedAt
-                }
-                monthlyAmounts {
-                    month
-                    plannedAmount
-                    actualAmount
-                    remainingAmount
-                }
-            }
-        }
-    """)
-
-    result = await mm.gql_call(
-        operation="GetSavingsGoals",
-        graphql_query=query,
-        variables={"startDate": start_month, "endDate": end_month},
-    )
+    # Use library method
+    result = await mm.get_savings_goal_budgets(start_month, end_month)
 
     goals: list[Any] = result.get("savingsGoalMonthlyBudgetAmounts", [])
     _savings_goals_cache[cache_key] = goals
@@ -625,20 +600,8 @@ async def get_user_profile(mm) -> dict[str, Any]:
         cached: dict[str, Any] = _user_profile_cache[cache_key]
         return cached
 
-    query = gql("""
-        query Common_GetMe {
-            me {
-                id
-                name
-                email
-            }
-        }
-    """)
-
-    result = await mm.gql_call(
-        operation="Common_GetMe",
-        graphql_query=query,
-    )
+    # Use library method
+    result = await mm.get_user_profile()
 
     profile: dict[str, Any] = result.get("me", {})
     _user_profile_cache[cache_key] = profile
@@ -682,27 +645,11 @@ async def get_category_aggregates(
         cached: dict[str, Any] = _aggregates_cache[cache_key]
         return cached
 
-    query = gql("""
-        query GetAggregates($filters: TransactionFilterInput!) {
-            aggregates(filters: $filters) {
-                summary {
-                    sumExpense
-                    sumIncome
-                }
-            }
-        }
-    """)
-
-    result = await mm.gql_call(
-        operation="GetAggregates",
-        graphql_query=query,
-        variables={
-            "filters": {
-                "categories": [category_id],
-                "startDate": start_date,
-                "endDate": end_date,
-            }
-        },
+    # Use library method
+    result = await mm.get_aggregates(
+        start_date=start_date,
+        end_date=end_date,
+        category_ids=[category_id],
     )
 
     # Handle both list and dict responses from the API
@@ -739,32 +686,12 @@ async def get_category_transactions(
     Returns:
         List of transaction dicts with 'amount', 'date', etc.
     """
-    query = """
-    query Web_GetTransactionsList($filters: TransactionFilterInput, $limit: Int) {
-      allTransactions(filters: $filters) {
-        results(limit: $limit) {
-          id
-          amount
-          date
-          pending
-          __typename
-        }
-        __typename
-      }
-    }
-    """
-
-    result = await mm.gql_call(
-        operation="Web_GetTransactionsList",
-        graphql_query=query,
-        variables={
-            "filters": {
-                "categories": [category_id],
-                "startDate": start_date,
-                "endDate": end_date,
-            },
-            "limit": 1000,  # Max transactions to fetch
-        },
+    # Use library method with category_ids filter
+    result = await mm.get_transactions(
+        limit=1000,
+        start_date=start_date,
+        end_date=end_date,
+        category_ids=[category_id],
     )
 
     return result.get("allTransactions", {}).get("results", [])
@@ -841,27 +768,8 @@ async def update_category_rollover_balance(
     mm = await get_mm()
 
     # First, get the current category to check existing rollover settings
-    query = gql("""
-        query GetCategoryRollover($id: UUID!) {
-            category(id: $id) {
-                id
-                name
-                rolloverPeriod {
-                    id
-                    startMonth
-                    startingBalance
-                    type
-                    frequency
-                }
-            }
-        }
-    """)
-
-    current = await mm.gql_call(
-        operation="GetCategoryRollover",
-        graphql_query=query,
-        variables={"id": category_id},
-    )
+    # Use library method
+    current = await mm.get_category_rollover(category_id)
 
     category_data = current.get("category", {})
     rollover_period = category_data.get("rolloverPeriod")
@@ -873,55 +781,27 @@ async def update_category_rollover_balance(
 
     new_balance = current_balance + amount_to_add
 
-    # Build the update input
     # Use current month as start month if enabling rollover for first time
-    current_month = datetime.now().replace(day=1).strftime("%Y-%m-%d")
+    current_month = datetime.now().replace(day=1)
 
-    input_data: dict[str, Any] = {
-        "id": category_id,
-        "rolloverEnabled": True,
-        "rolloverStartingBalance": new_balance,
-        "rolloverType": "monthly",
-        "rolloverFrequency": "monthly",
-    }
-
-    # Only set start month if this is a new rollover setup
     if not rollover_period:
-        input_data["rolloverStartMonth"] = current_month
-
-    # Update the category
-    mutation = gql("""
-        mutation UpdateCategoryRollover($input: UpdateCategoryInput!) {
-            updateCategory(input: $input) {
-                category {
-                    id
-                    name
-                    rolloverPeriod {
-                        id
-                        startMonth
-                        startingBalance
-                        type
-                        frequency
-                    }
-                }
-                errors {
-                    message
-                    fieldErrors {
-                        field
-                        messages
-                    }
-                }
-            }
-        }
-    """)
-
-    result = await retry_with_backoff(
-        lambda: mm.gql_call(
-            operation="UpdateCategoryRollover",
-            graphql_query=mutation,
-            variables={"input": input_data},
+        # Enable rollover for the first time using library method
+        result = await retry_with_backoff(
+            lambda: mm.enable_category_rollover(
+                category_id=category_id,
+                rollover_start_month=current_month,
+                rollover_starting_balance=new_balance,
+                rollover_frequency="monthly",
+            )
         )
-    )
+    else:
+        # Update existing rollover using library method
+        result = await retry_with_backoff(
+            lambda: mm.update_category_rollover(
+                category_id=category_id,
+                starting_balance=new_balance,
+            )
+        )
 
     # Clear caches after mutation
     clear_cache("category")

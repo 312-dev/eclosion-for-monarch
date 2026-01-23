@@ -46,9 +46,10 @@ class CategoryManager:
 
     async def get_category_groups(self, force_refresh: bool = False) -> list[dict[str, str]]:
         """
-        Get all category groups from Monarch.
+        Get all category groups from Monarch (basic info only).
 
         Returns list of {id, name} dicts. Cached for 10 minutes.
+        For full metadata including rollover/flexible settings, use get_category_groups_detailed().
         """
         cache = get_cache("category_groups")
         cache_key = "groups"
@@ -64,6 +65,215 @@ class CategoryManager:
 
         cache[cache_key] = result
         return result
+
+    async def get_category_groups_detailed(
+        self, force_refresh: bool = False
+    ) -> list[dict[str, Any]]:
+        """
+        Get all category groups from Monarch with full metadata.
+
+        Returns list of dicts with:
+        - id: group ID
+        - name: group name
+        - type: "expense", "income", etc.
+        - budget_variability: "fixed" or "flexible"
+        - group_level_budgeting_enabled: whether budgets are set at group level
+        - rollover_enabled: whether rollover is enabled
+        - rollover_period: dict with rollover config if enabled, else None
+          - start_month: rollover start date (YYYY-MM-DD)
+          - starting_balance: initial balance
+          - type: rollover type (e.g., "monthly")
+          - target_amount: target amount if set
+
+        Cached for 10 minutes.
+        """
+        cache = get_cache("category_groups")
+        cache_key = "groups_detailed"
+
+        if not force_refresh and cache_key in cache:
+            cached: list[dict[str, Any]] = cache[cache_key]
+            return cached
+
+        mm = await get_mm()
+        groups = await retry_with_backoff(lambda: mm.get_transaction_category_groups())
+
+        result: list[dict[str, Any]] = []
+        for g in groups.get("categoryGroups", []):
+            rollover_period = g.get("rolloverPeriod")
+            result.append(
+                {
+                    "id": g["id"],
+                    "name": g["name"],
+                    "type": g.get("type"),
+                    "order": g.get("order"),
+                    "budget_variability": g.get("budgetVariability"),
+                    "group_level_budgeting_enabled": g.get("groupLevelBudgetingEnabled", False),
+                    "rollover_enabled": rollover_period is not None,
+                    "rollover_period": (
+                        {
+                            "id": rollover_period.get("id"),
+                            "start_month": rollover_period.get("startMonth"),
+                            "end_month": rollover_period.get("endMonth"),
+                            "starting_balance": rollover_period.get("startingBalance"),
+                            "type": rollover_period.get("type"),
+                            "frequency": rollover_period.get("frequency"),
+                            "target_amount": rollover_period.get("targetAmount"),
+                        }
+                        if rollover_period
+                        else None
+                    ),
+                }
+            )
+
+        cache[cache_key] = result
+        return result
+
+    async def get_flexible_rollover_groups(
+        self, force_refresh: bool = False
+    ) -> list[dict[str, Any]]:
+        """
+        Get category groups that have flexible budgeting with rollover enabled.
+
+        Returns a filtered list of groups where:
+        - group_level_budgeting_enabled is True
+        - rollover is enabled (rolloverPeriod is not None)
+
+        Useful for identifying groups that behave like "envelope" budgeting.
+        """
+        all_groups = await self.get_category_groups_detailed(force_refresh)
+        return [
+            g
+            for g in all_groups
+            if g.get("group_level_budgeting_enabled") and g.get("rollover_enabled")
+        ]
+
+    async def update_category_group_settings(
+        self,
+        group_id: str,
+        name: str | None = None,
+        budget_variability: str | None = None,
+        group_level_budgeting_enabled: bool | None = None,
+        rollover_enabled: bool | None = None,
+        rollover_start_month: str | None = None,
+        rollover_starting_balance: float | None = None,
+        rollover_type: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Update a category group's settings including rollover and flexible budget configuration.
+
+        Args:
+            group_id: The ID of the category group to update
+            name: Optional new name for the group
+            budget_variability: Optional budget type - "fixed" or "flexible"
+            group_level_budgeting_enabled: Optional - whether budgets are set at group level
+            rollover_enabled: Optional - whether to enable/disable rollover
+            rollover_start_month: Optional rollover start month (YYYY-MM-DD format)
+            rollover_starting_balance: Optional starting balance for rollover
+            rollover_type: Optional rollover type (e.g., "monthly")
+
+        Returns:
+            The updated category group data with normalized field names
+        """
+        mm = await get_mm()
+
+        result = await retry_with_backoff(
+            lambda: mm.update_category_group_settings(
+                group_id=group_id,
+                name=name,
+                budget_variability=budget_variability,
+                group_level_budgeting_enabled=group_level_budgeting_enabled,
+                rollover_enabled=rollover_enabled,
+                rollover_start_month=rollover_start_month,
+                rollover_starting_balance=rollover_starting_balance,
+                rollover_type=rollover_type,
+            )
+        )
+
+        # Clear caches after mutation
+        clear_cache("category")
+        clear_cache("category_groups")
+        clear_cache("budget")
+
+        # Normalize the response
+        if isinstance(result, dict):
+            group_data = result.get("updateCategoryGroup", {}).get("categoryGroup", {})
+            if group_data:
+                rollover_period = group_data.get("rolloverPeriod")
+                return {
+                    "id": group_data.get("id"),
+                    "name": group_data.get("name"),
+                    "type": group_data.get("type"),
+                    "budget_variability": group_data.get("budgetVariability"),
+                    "group_level_budgeting_enabled": group_data.get(
+                        "groupLevelBudgetingEnabled", False
+                    ),
+                    "rollover_enabled": rollover_period is not None,
+                    "rollover_period": (
+                        {
+                            "id": rollover_period.get("id"),
+                            "start_month": rollover_period.get("startMonth"),
+                            "end_month": rollover_period.get("endMonth"),
+                            "starting_balance": rollover_period.get("startingBalance"),
+                            "type": rollover_period.get("type"),
+                            "frequency": rollover_period.get("frequency"),
+                            "target_amount": rollover_period.get("targetAmount"),
+                        }
+                        if rollover_period
+                        else None
+                    ),
+                }
+
+        return result if isinstance(result, dict) else {}
+
+    async def enable_category_group_rollover(
+        self,
+        group_id: str,
+        start_month: str | None = None,
+        starting_balance: float = 0.0,
+        rollover_type: str = "monthly",
+    ) -> dict[str, Any]:
+        """
+        Enable rollover on a category group.
+
+        This is a convenience method that calls update_category_group_settings
+        with rollover_enabled=True.
+
+        Args:
+            group_id: The ID of the category group
+            start_month: Rollover start month (YYYY-MM-DD). Defaults to first of current month.
+            starting_balance: Initial balance for rollover (default 0)
+            rollover_type: Rollover frequency type (default "monthly")
+
+        Returns:
+            The updated category group data
+        """
+        if start_month is None:
+            from datetime import datetime
+
+            start_month = datetime.today().replace(day=1).strftime("%Y-%m-%d")
+
+        return await self.update_category_group_settings(
+            group_id=group_id,
+            rollover_enabled=True,
+            rollover_start_month=start_month,
+            rollover_starting_balance=starting_balance,
+            rollover_type=rollover_type,
+        )
+
+    async def disable_category_group_rollover(self, group_id: str) -> dict[str, Any]:
+        """
+        Disable rollover on a category group.
+
+        Args:
+            group_id: The ID of the category group
+
+        Returns:
+            The updated category group data
+        """
+        return await self.update_category_group_settings(
+            group_id=group_id,
+            rollover_enabled=False,
+        )
 
     async def get_all_categories_grouped(self) -> list[dict[str, Any]]:
         """
@@ -207,42 +417,13 @@ class CategoryManager:
         Returns:
             Updated category data
         """
-        from gql import gql
-
         mm = await get_mm()
 
-        mutation = gql(
-            """
-            mutation UpdateCategory($input: UpdateCategoryInput!) {
-                updateCategory(input: $input) {
-                    category {
-                        id
-                        name
-                        group {
-                            id
-                            name
-                        }
-                    }
-                    errors {
-                        message
-                    }
-                }
-            }
-        """
-        )
-
-        variables = {
-            "input": {
-                "id": category_id,
-                "groupId": new_group_id,
-            }
-        }
-
+        # Use library method
         result = await retry_with_backoff(
-            lambda: mm.gql_call(
-                operation="UpdateCategory",
-                graphql_query=mutation,
-                variables=variables,
+            lambda: mm.update_transaction_category(
+                category_id=category_id,
+                group_id=new_group_id,
             )
         )
 
@@ -270,42 +451,14 @@ class CategoryManager:
         Returns:
             Updated category data
         """
-        from gql import gql
-
         mm = await get_mm()
 
-        mutation = gql(
-            """
-            mutation UpdateCategory($input: UpdateCategoryInput!) {
-                updateCategory(input: $input) {
-                    category {
-                        id
-                        name
-                        icon
-                    }
-                    errors {
-                        message
-                    }
-                }
-            }
-        """
-        )
-
-        variables: dict[str, Any] = {
-            "input": {
-                "id": category_id,
-                "name": new_name,
-            }
-        }
-
-        if icon is not None:
-            variables["input"]["icon"] = icon
-
+        # Use library method
         result = await retry_with_backoff(
-            lambda: mm.gql_call(
-                operation="UpdateCategory",
-                graphql_query=mutation,
-                variables=variables,
+            lambda: mm.update_transaction_category(
+                category_id=category_id,
+                name=new_name,
+                icon=icon,
             )
         )
 
@@ -330,39 +483,13 @@ class CategoryManager:
         Returns:
             Updated category data
         """
-        from gql import gql
-
         mm = await get_mm()
 
-        mutation = gql(
-            """
-            mutation UpdateCategory($input: UpdateCategoryInput!) {
-                updateCategory(input: $input) {
-                    category {
-                        id
-                        name
-                        icon
-                    }
-                    errors {
-                        message
-                    }
-                }
-            }
-        """
-        )
-
-        variables = {
-            "input": {
-                "id": category_id,
-                "icon": icon,
-            }
-        }
-
+        # Use library method
         result = await retry_with_backoff(
-            lambda: mm.gql_call(
-                operation="UpdateCategory",
-                graphql_query=mutation,
-                variables=variables,
+            lambda: mm.update_transaction_category(
+                category_id=category_id,
+                icon=icon,
             )
         )
 
