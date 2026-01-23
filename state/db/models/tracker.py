@@ -248,6 +248,14 @@ class WishlistConfig(Base):
     auto_archive_on_bookmark_delete: Mapped[bool] = mapped_column(Boolean, default=True)
     auto_archive_on_goal_met: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    # Available to Stash calculation settings
+    include_expected_income: Mapped[bool] = mapped_column(Boolean, default=True)
+    selected_cash_account_ids: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array
+    buffer_amount: Mapped[int] = mapped_column(Integer, default=0)  # Reserved buffer for Available to Stash
+
+    # Display settings
+    show_monarch_goals: Mapped[bool] = mapped_column(Boolean, default=True)
+
     # Configuration state
     is_configured: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -282,3 +290,22 @@ class PendingBookmark(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     skipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     converted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class MonarchGoalLayout(Base):
+    """
+    Grid layout positions for Monarch savings goals displayed in Stash view.
+
+    Stores user-customized grid positions (x, y, column span, row span) for
+    Monarch goals when the "Show Monarch goals" setting is enabled.
+    """
+
+    __tablename__ = "monarch_goal_layout"
+
+    goal_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    grid_x: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    grid_y: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    col_span: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    row_span: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

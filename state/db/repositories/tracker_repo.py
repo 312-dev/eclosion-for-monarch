@@ -11,6 +11,7 @@ from state.db.models import (
     AutoSyncState,
     Category,
     EnabledItem,
+    MonarchGoalLayout,
     PendingBookmark,
     RemovedItemNotice,
     Rollup,
@@ -476,7 +477,30 @@ class TrackerRepository:
         category_group_name: str | None = None,
         **kwargs,
     ) -> WishlistItem:
-        """Create a new stash item."""
+        """
+        Create a new stash item.
+
+        New items are automatically positioned at the end of the grid
+        (after all existing items) to ensure they appear before the
+        "New Stash" button in the UI.
+        """
+        # Calculate grid position: place at the end of existing items
+        # Find the maximum grid_y + row_span across all active items
+        existing_items = self.session.query(WishlistItem).filter(
+            WishlistItem.is_archived.is_(False)
+        ).all()
+
+        max_grid_y = 0
+        for existing in existing_items:
+            item_bottom = (existing.grid_y or 0) + (existing.row_span or 1)
+            max_grid_y = max(max_grid_y, item_bottom)
+
+        # Set default grid position if not provided in kwargs
+        if 'grid_x' not in kwargs:
+            kwargs['grid_x'] = 0
+        if 'grid_y' not in kwargs:
+            kwargs['grid_y'] = max_grid_y
+
         item = WishlistItem(
             id=item_id,
             name=name,
@@ -592,6 +616,85 @@ class TrackerRepository:
                 item.row_span = layout.get("row_span", 1)
                 item.updated_at = datetime.utcnow()
                 updated += 1
+        return updated
+
+    # === Monarch Goal Layouts ===
+
+    def get_monarch_goal_layout(self, goal_id: str) -> MonarchGoalLayout | None:
+        """
+        Get layout for a specific Monarch goal.
+
+        Args:
+            goal_id: Monarch goal ID
+
+        Returns:
+            MonarchGoalLayout or None if not found
+        """
+        return self.session.query(MonarchGoalLayout).filter_by(goal_id=goal_id).first()
+
+    def get_all_monarch_goal_layouts(self) -> list[MonarchGoalLayout]:
+        """
+        Get all Monarch goal layouts.
+
+        Returns:
+            List of all goal layouts
+        """
+        return self.session.query(MonarchGoalLayout).all()
+
+    def upsert_monarch_goal_layout(
+        self, goal_id: str, grid_x: int, grid_y: int, col_span: int, row_span: int
+    ) -> MonarchGoalLayout:
+        """
+        Create or update layout for a Monarch goal.
+
+        Args:
+            goal_id: Monarch goal ID
+            grid_x: Grid X position
+            grid_y: Grid Y position
+            col_span: Column span
+            row_span: Row span
+
+        Returns:
+            Created or updated MonarchGoalLayout
+        """
+        layout = self.get_monarch_goal_layout(goal_id)
+        if layout:
+            layout.grid_x = grid_x
+            layout.grid_y = grid_y
+            layout.col_span = col_span
+            layout.row_span = row_span
+            layout.updated_at = datetime.utcnow()
+        else:
+            layout = MonarchGoalLayout(
+                goal_id=goal_id,
+                grid_x=grid_x,
+                grid_y=grid_y,
+                col_span=col_span,
+                row_span=row_span,
+            )
+            self.session.add(layout)
+        return layout
+
+    def update_monarch_goal_layouts(self, layouts: list[dict]) -> int:
+        """
+        Update grid layout positions for multiple Monarch goals.
+
+        Args:
+            layouts: List of dicts with goal_id, grid_x, grid_y, col_span, row_span
+
+        Returns:
+            Number of layouts updated
+        """
+        updated = 0
+        for layout_data in layouts:
+            self.upsert_monarch_goal_layout(
+                goal_id=layout_data["goal_id"],
+                grid_x=layout_data.get("grid_x", 0),
+                grid_y=layout_data.get("grid_y", 0),
+                col_span=layout_data.get("col_span", 1),
+                row_span=layout_data.get("row_span", 1),
+            )
+            updated += 1
         return updated
 
     # === Stash Config ===
