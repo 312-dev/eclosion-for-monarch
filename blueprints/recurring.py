@@ -127,6 +127,9 @@ async def get_flexible_category_groups():
     """
     Get category groups that have flexible budgeting with rollover enabled.
 
+    Query params:
+    - refresh: "true" to bypass cache and fetch fresh data from Monarch
+
     Returns only groups where:
     - group_level_budgeting_enabled is True
     - rollover is enabled
@@ -135,7 +138,10 @@ async def get_flexible_category_groups():
     existing flexible budget groups.
     """
     services = get_services()
-    return await services.sync_service.category_manager.get_flexible_rollover_groups()
+    force_refresh = request.args.get("refresh", "false").lower() == "true"
+    return await services.sync_service.category_manager.get_flexible_rollover_groups(
+        force_refresh=force_refresh
+    )
 
 
 @recurring_bp.route("/groups/<group_id>/settings", methods=["POST"])
