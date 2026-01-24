@@ -11,6 +11,7 @@ import {
   useRefreshCategoryGroups,
   useUnmappedCategoriesList,
   useFlexibleCategoryGroups,
+  useRefreshFlexibleCategoryGroups,
 } from '../../api/queries';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import type { UnmappedCategory } from '../../types/category';
@@ -53,10 +54,8 @@ export function StashCategoryModal({
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useUnmappedCategoriesList();
-  const {
-    groups: flexibleGroups,
-    isLoading: flexibleGroupsLoading,
-  } = useFlexibleCategoryGroups();
+  const { groups: flexibleGroups, isLoading: flexibleGroupsLoading } = useFlexibleCategoryGroups();
+  const refreshFlexibleGroups = useRefreshFlexibleCategoryGroups();
 
   useEffect(() => {
     if (isOpen) {
@@ -65,8 +64,10 @@ export function StashCategoryModal({
       setSelectedCategoryId('');
       setSelectedFlexibleGroupId('');
       setSearchQuery('');
+      // Refresh flexible groups from Monarch to pick up any changes made outside Eclosion
+      refreshFlexibleGroups();
     }
-  }, [isOpen, defaultCategoryGroupId]);
+  }, [isOpen, defaultCategoryGroupId, refreshFlexibleGroups]);
 
   const handleRefreshGroups = useCallback(async () => {
     setIsRefreshing(true);
@@ -77,11 +78,13 @@ export function StashCategoryModal({
     }
   }, [refreshGroups]);
 
-  const filteredGroups = useMemo(() => {
-    // Get IDs of flexible groups - we'll exclude their subcategories
-    // since users should select the group itself, not individual categories
-    const flexibleGroupIds = new Set(flexibleGroups.map((g) => g.id));
+  // Get IDs of flexible groups for filtering and disabling
+  const flexibleGroupIds = useMemo(
+    () => new Set(flexibleGroups.map((g) => g.id)),
+    [flexibleGroups]
+  );
 
+  const filteredGroups = useMemo(() => {
     const grouped = unmappedCategories.reduce(
       (acc, cat) => {
         const groupId = cat.group_id || 'uncategorized';
@@ -120,7 +123,7 @@ export function StashCategoryModal({
         ),
       }))
       .filter((group) => group.categories.length > 0);
-  }, [unmappedCategories, searchQuery, flexibleGroups]);
+  }, [unmappedCategories, searchQuery, flexibleGroupIds]);
 
   const selectedCategoryInfo = unmappedCategories.find((c) => c.id === selectedCategoryId);
   const selectedGroupName = categoryGroups?.find((g) => g.id === selectedGroupId)?.name || '';
@@ -222,6 +225,7 @@ export function StashCategoryModal({
             isRefreshing={isRefreshing}
             onRefresh={handleRefreshGroups}
             onSwitchView={() => setViewMode('use_existing')}
+            flexibleGroupIds={flexibleGroupIds}
           />
         ) : (
           <UseExistingCategoryView

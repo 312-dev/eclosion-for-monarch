@@ -31,6 +31,14 @@ export function WizardNavigation({
     return isLastStep ? 'Get Started' : 'Continue';
   };
 
+  // Determine next button cursor based on state
+  let nextCursorClass = '';
+  if (isSaving) {
+    nextCursorClass = 'cursor-wait';
+  } else if (!canProceed) {
+    nextCursorClass = 'cursor-not-allowed';
+  }
+
   return (
     <div className="mt-6 pt-4" style={{ borderTop: '1px solid var(--monarch-border)' }}>
       <div className="flex gap-3">
@@ -38,7 +46,9 @@ export function WizardNavigation({
           <button
             onClick={onBack}
             disabled={isSaving}
-            className="px-4 py-2 rounded-lg transition-colors btn-hover-lift disabled:opacity-50"
+            className={`px-4 py-2 rounded-lg transition-colors btn-hover-lift disabled:opacity-50 ${
+              isSaving ? 'cursor-wait' : ''
+            }`}
             style={{
               border: '1px solid var(--monarch-border)',
               color: 'var(--monarch-text-dark)',
@@ -51,9 +61,10 @@ export function WizardNavigation({
         <button
           onClick={onNext}
           disabled={!canProceed || isSaving}
-          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed btn-hover-lift hover-bg-orange-enabled"
+          className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors btn-hover-lift hover-bg-orange-enabled ${nextCursorClass}`}
           style={{
-            backgroundColor: !canProceed || isSaving ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
+            backgroundColor:
+              !canProceed || isSaving ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
           }}
         >
           {getButtonLabel()}
@@ -65,7 +76,9 @@ export function WizardNavigation({
           <button
             onClick={onSkip}
             disabled={isSaving}
-            className="text-sm px-4 py-1 rounded transition-colors hover:underline disabled:opacity-50"
+            className={`text-sm px-4 py-1 rounded transition-colors hover:underline disabled:opacity-50 ${
+              isSaving ? 'cursor-wait' : ''
+            }`}
             style={{ color: 'var(--monarch-text-muted)' }}
           >
             Skip setup

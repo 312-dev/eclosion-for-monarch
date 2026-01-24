@@ -102,7 +102,8 @@ function EmptyState({ onRefresh, loading }: EmptyStateProps) {
         No Recurring Items Found
       </h2>
       <p style={{ color: 'var(--monarch-text-muted)' }}>
-        You don't have any recurring transactions in Monarch Money yet, or they're all already being tracked.
+        You don't have any recurring transactions in Monarch Money yet, or they're all already being
+        tracked.
       </p>
       <button
         onClick={onRefresh}
@@ -120,15 +121,18 @@ function EmptyState({ onRefresh, loading }: EmptyStateProps) {
 }
 
 function groupItemsByFrequency(items: RecurringItem[]): Record<string, RecurringItem[]> {
-  const groups = items.reduce((acc, item) => {
-    const freq = item.frequency || 'monthly';
-    acc[freq] ??= [];
-    acc[freq].push(item);
-    return acc;
-  }, {} as Record<string, RecurringItem[]>);
+  const groups = items.reduce(
+    (acc, item) => {
+      const freq = item.frequency || 'monthly';
+      acc[freq] ??= [];
+      acc[freq].push(item);
+      return acc;
+    },
+    {} as Record<string, RecurringItem[]>
+  );
 
   // Sort each group by amount descending
-  Object.keys(groups).forEach(freq => {
+  Object.keys(groups).forEach((freq) => {
     const group = groups[freq];
     if (group) {
       group.sort((a, b) => b.amount - a.amount);
@@ -174,7 +178,7 @@ export function ItemSelectionStep({
 
   const totalMonthly = items.reduce((sum, i) => sum + i.monthly_contribution, 0);
   const selectedMonthly = items
-    .filter(i => selectedIds.has(i.id))
+    .filter((i) => selectedIds.has(i.id))
     .reduce((sum, i) => sum + i.monthly_contribution, 0);
 
   return (
@@ -189,7 +193,10 @@ export function ItemSelectionStep({
       {/* Summary bar */}
       <div
         className="flex items-center justify-between p-3 rounded-lg mb-4"
-        style={{ backgroundColor: 'rgba(255, 105, 45, 0.08)', border: '1px solid var(--monarch-border)' }}
+        style={{
+          backgroundColor: 'rgba(255, 105, 45, 0.08)',
+          border: '1px solid var(--monarch-border)',
+        }}
       >
         <div>
           <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -277,8 +284,8 @@ export function ItemSelectionStep({
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="hover:underline"
-          style={{ color: 'var(--monarch-orange)', background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+          className="hover:underline bg-transparent border-none p-0 font-inherit cursor-pointer"
+          style={{ color: 'var(--monarch-orange)' }}
         >
           refresh
         </button>{' '}
@@ -286,10 +293,7 @@ export function ItemSelectionStep({
       </p>
 
       {/* Grouped items */}
-      <div
-        className="max-h-64 overflow-y-auto pr-1"
-        style={{ scrollbarWidth: 'thin' }}
-      >
+      <div className="max-h-64 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
         {sortedFrequencies.map((frequency: string) => (
           <FrequencyGroup
             key={frequency}

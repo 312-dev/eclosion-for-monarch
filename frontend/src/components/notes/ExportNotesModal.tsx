@@ -10,6 +10,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Download } from 'lucide-react';
 import { Portal } from '../Portal';
+import { CancelButton, WarningButton } from '../ui/ModalButtons';
 import { useAllNotesQuery, useMonthCheckboxStatesQuery } from '../../api/queries';
 import { useExportSelection } from '../../hooks/useExportSelection';
 import { getMonthRange, buildExportHtml } from '../../utils/notesExport';
@@ -250,31 +251,16 @@ export function ExportNotesModal({
             className="flex items-center justify-end gap-3 px-4 py-3 border-t shrink-0"
             style={{ borderColor: 'var(--monarch-border)' }}
           >
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-(--monarch-bg-hover) transition-colors"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
+            <CancelButton onClick={onClose}>Cancel</CancelButton>
+            <WarningButton
               onClick={handleExport}
-              disabled={!hasSelection || !allNotesData || isLoadingCheckboxes}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                hasSelection && allNotesData && !isLoadingCheckboxes
-                  ? 'hover:opacity-90'
-                  : 'opacity-50 cursor-not-allowed'
-              }`}
-              style={{
-                backgroundColor: 'var(--monarch-orange)',
-                color: 'white',
-              }}
+              disabled={!hasSelection || !allNotesData}
+              isLoading={isLoadingCheckboxes}
+              loadingText="Export"
+              icon={<Download size={14} />}
             >
-              <Download size={14} />
               Export
-            </button>
+            </WarningButton>
           </div>
         </div>
       </div>

@@ -94,47 +94,52 @@ export function ActionsDropdown({
   }, [isOpen, close]);
 
   // Handle keyboard navigation within menu
-  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const items = menuItemsRef.current.filter((item): item is HTMLButtonElement => item !== null);
-    const currentIndex = focusIndexRef.current;
+  const handleMenuKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const items = menuItemsRef.current.filter((item): item is HTMLButtonElement => item !== null);
+      const currentIndex = focusIndexRef.current;
 
-    switch (e.key) {
-      case 'Escape':
-        e.preventDefault();
-        close();
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        focusIndexRef.current = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-        items[focusIndexRef.current]?.focus();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        focusIndexRef.current = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-        items[focusIndexRef.current]?.focus();
-        break;
-      case 'Home':
-        e.preventDefault();
-        focusIndexRef.current = 0;
-        items[0]?.focus();
-        break;
-      case 'End':
-        e.preventDefault();
-        focusIndexRef.current = items.length - 1;
-        items.at(-1)?.focus();
-        break;
-      case 'Tab':
-        close();
-        break;
-    }
-  }, [close]);
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault();
+          close();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          focusIndexRef.current = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+          items[focusIndexRef.current]?.focus();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          focusIndexRef.current = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+          items[focusIndexRef.current]?.focus();
+          break;
+        case 'Home':
+          e.preventDefault();
+          focusIndexRef.current = 0;
+          items[0]?.focus();
+          break;
+        case 'End':
+          e.preventDefault();
+          focusIndexRef.current = items.length - 1;
+          items.at(-1)?.focus();
+          break;
+        case 'Tab':
+          close();
+          break;
+      }
+    },
+    [close]
+  );
 
   // Focus first menu item when dropdown opens
   useEffect(() => {
     if (isOpen) {
       focusIndexRef.current = 0;
       setTimeout(() => {
-        const firstItem = menuItemsRef.current.find((item): item is HTMLButtonElement => item !== null);
+        const firstItem = menuItemsRef.current.find(
+          (item): item is HTMLButtonElement => item !== null
+        );
         firstItem?.focus();
       }, 0);
     } else {
@@ -153,7 +158,9 @@ export function ActionsDropdown({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
-        className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-black/10 disabled:opacity-50"
+        className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-black/10 disabled:opacity-50 ${
+          isLoading ? 'cursor-wait' : 'cursor-pointer'
+        }`}
       >
         {isLoading ? (
           <SpinnerIcon size={16} color="var(--monarch-orange)" aria-hidden="true" />
@@ -172,21 +179,25 @@ export function ActionsDropdown({
           className="absolute right-0 top-full mt-1 z-popover py-1 rounded-lg shadow-lg text-sm min-w-45 dropdown-menu bg-monarch-bg-card border border-monarch-border"
         >
           {/* Change category group - first item when available */}
-          {!showCategoryGroup && item.is_enabled && !item.category_missing && onChangeGroup && item.category_group_name && (
-            <>
-              <div className="px-3 py-2 flex items-center gap-2 text-monarch-text-dark">
-                <FolderIcon size={14} />
-                <CategoryGroupDropdown
-                  currentGroupName={item.category_group_name}
-                  onChangeGroup={async (groupId, groupName) => {
-                    close();
-                    await onChangeGroup(groupId, groupName);
-                  }}
-                />
-              </div>
-              <div className="border-t my-1 border-monarch-border" />
-            </>
-          )}
+          {!showCategoryGroup &&
+            item.is_enabled &&
+            !item.category_missing &&
+            onChangeGroup &&
+            item.category_group_name && (
+              <>
+                <div className="px-3 py-2 flex items-center gap-2 text-monarch-text-dark">
+                  <FolderIcon size={14} />
+                  <CategoryGroupDropdown
+                    currentGroupName={item.category_group_name}
+                    onChangeGroup={async (groupId, groupName) => {
+                      close();
+                      await onChangeGroup(groupId, groupName);
+                    }}
+                  />
+                </div>
+                <div className="border-t my-1 border-monarch-border" />
+              </>
+            )}
 
           {/* Enable/Disable */}
           <button

@@ -5,8 +5,9 @@
  * Includes an optional checkbox to also delete the category from Monarch.
  */
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Modal } from '../ui/Modal';
+import { ModalFooter } from '../ui/ModalButtons';
 import { Icons } from '../icons';
 import type { StashItem } from '../../types';
 
@@ -26,7 +27,6 @@ export function DeleteStashConfirmModal({
   isDeleting,
 }: DeleteStashConfirmModalProps) {
   const [deleteCategory, setDeleteCategory] = useState(false);
-  const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleClose = () => {
     setDeleteCategory(false);
@@ -40,46 +40,18 @@ export function DeleteStashConfirmModal({
   if (!item) return null;
 
   const footer = (
-    <div className="flex items-center justify-end gap-3 w-full">
-      <button
-        ref={cancelButtonRef}
-        type="button"
-        onClick={handleClose}
-        disabled={isDeleting}
-        className="px-4 py-2 text-sm font-medium rounded-md btn-press"
-        style={{
-          color: 'var(--monarch-text)',
-          backgroundColor: 'transparent',
-          border: '1px solid var(--monarch-border)',
-        }}
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        onClick={handleConfirm}
-        disabled={isDeleting}
-        className="px-4 py-2 text-sm font-medium rounded-md btn-press"
-        style={{
-          backgroundColor: isDeleting ? 'var(--monarch-border)' : 'var(--monarch-error)',
-          color: 'white',
-          cursor: isDeleting ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {isDeleting ? 'Deleting...' : 'Delete'}
-      </button>
-    </div>
+    <ModalFooter
+      onCancel={handleClose}
+      onSubmit={handleConfirm}
+      submitLabel="Delete"
+      submitLoadingLabel="Deleting..."
+      isSubmitting={isDeleting}
+      variant="destructive"
+    />
   );
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Delete Stash"
-      footer={footer}
-      maxWidth="sm"
-      initialFocus={cancelButtonRef as React.RefObject<HTMLElement>}
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} title="Delete Stash" footer={footer} maxWidth="sm">
       <div className="space-y-4">
         {/* Warning message */}
         <div
@@ -123,8 +95,8 @@ export function DeleteStashConfirmModal({
                 Also delete category from Monarch
               </span>
               <p className="text-xs mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
-                This will remove the &quot;{item.category_name || item.name}&quot; category from your
-                Monarch account. Any transactions in this category will become uncategorized.
+                This will remove the &quot;{item.category_name || item.name}&quot; category from
+                your Monarch account. Any transactions in this category will become uncategorized.
               </p>
             </div>
           </label>

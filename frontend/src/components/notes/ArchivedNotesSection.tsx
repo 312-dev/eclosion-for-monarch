@@ -118,7 +118,9 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
                       type="button"
                       onClick={() => handleDelete(note.id)}
                       disabled={deleteMutation.isPending}
-                      className="px-2 py-1 text-xs font-medium rounded disabled:opacity-50"
+                      className={`px-2 py-1 text-xs font-medium rounded disabled:opacity-50 ${
+                        deleteMutation.isPending ? 'cursor-wait' : ''
+                      }`}
                       style={{ backgroundColor: 'var(--monarch-warning)', color: 'white' }}
                     >
                       {deleteMutation.isPending ? '...' : 'Delete'}
@@ -126,7 +128,7 @@ export function ArchivedNotesSection({ notes }: ArchivedNotesSectionProps) {
                     <button
                       type="button"
                       onClick={() => setDeletingId(null)}
-                      className="px-2 py-1 text-xs rounded hover:bg-(--monarch-bg-hover)"
+                      className="px-2 py-1 text-xs rounded hover:bg-(--monarch-bg-hover) cursor-pointer"
                       style={{ color: 'var(--monarch-text-muted)' }}
                     >
                       Cancel

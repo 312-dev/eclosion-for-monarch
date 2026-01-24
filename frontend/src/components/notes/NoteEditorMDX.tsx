@@ -268,7 +268,9 @@ export function NoteEditorMDX({
               type="button"
               onClick={onCancel}
               disabled={isSaving}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:bg-(--monarch-bg-hover) disabled:opacity-50"
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:bg-(--monarch-bg-hover) disabled:opacity-50 ${
+                isSaving ? 'cursor-wait' : ''
+              }`}
               style={{ color: 'var(--monarch-text-muted)' }}
               aria-label="Cancel editing"
               title="Cancel (Escape)"
@@ -283,7 +285,9 @@ export function NoteEditorMDX({
                 type="button"
                 onClick={onSave}
                 disabled={isSaveDisabled}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:opacity-90 disabled:opacity-50"
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors hover:opacity-90 disabled:opacity-50 ${
+                  isSaving ? 'cursor-wait' : ''
+                }`}
                 style={{
                   backgroundColor: 'var(--monarch-tint)',
                   color: 'white',

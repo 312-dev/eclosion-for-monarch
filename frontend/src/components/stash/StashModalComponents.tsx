@@ -6,7 +6,42 @@
 
 import { useMemo } from 'react';
 import { Icons } from '../icons';
+import { ModalFooter } from '../ui/ModalButtons';
 import { formatMonthsRemaining, calculateMonthsRemaining } from '../../utils/savingsCalculations';
+
+interface ModalFooterButtonsProps {
+  readonly onCancel: () => void;
+  readonly onSubmit: () => void;
+  readonly isDisabled: boolean;
+  readonly isSubmitting: boolean;
+  readonly submitLabel?: string;
+  readonly submittingLabel?: string;
+}
+
+/**
+ * Backwards-compatible wrapper for ModalFooter.
+ * Maps the old API (submittingLabel) to the new API (submitLoadingLabel).
+ * @deprecated Use ModalFooter from '../ui/ModalButtons' directly.
+ */
+export function ModalFooterButtons({
+  onCancel,
+  onSubmit,
+  isDisabled,
+  isSubmitting,
+  submitLabel = 'Create',
+  submittingLabel = 'Creating...',
+}: ModalFooterButtonsProps) {
+  return (
+    <ModalFooter
+      onCancel={onCancel}
+      onSubmit={onSubmit}
+      isDisabled={isDisabled}
+      isSubmitting={isSubmitting}
+      submitLabel={submitLabel}
+      submitLoadingLabel={submittingLabel}
+    />
+  );
+}
 
 interface MonthlyTargetPreviewProps {
   monthlyTarget: number;
@@ -39,54 +74,6 @@ export function MonthlyTargetPreview({ monthlyTarget, targetDate }: MonthlyTarge
   );
 }
 
-interface ModalFooterButtonsProps {
-  onCancel: () => void;
-  onSubmit: () => void;
-  isDisabled: boolean;
-  isSubmitting: boolean;
-  submitLabel?: string;
-  submittingLabel?: string;
-}
-
-export function ModalFooterButtons({
-  onCancel,
-  onSubmit,
-  isDisabled,
-  isSubmitting,
-  submitLabel = 'Create',
-  submittingLabel = 'Creating...',
-}: ModalFooterButtonsProps) {
-  return (
-    <>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="px-4 py-2 text-sm font-medium rounded-md btn-press hover:bg-(--monarch-bg-page)"
-        style={{
-          color: 'var(--monarch-text)',
-          backgroundColor: 'transparent',
-          border: '1px solid var(--monarch-border)',
-        }}
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={isDisabled}
-        className="px-4 py-2 text-sm font-medium rounded-md btn-press"
-        style={{
-          backgroundColor: isDisabled ? 'var(--monarch-border)' : 'var(--monarch-teal)',
-          color: isDisabled ? 'var(--monarch-text-muted)' : 'white',
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {isSubmitting ? submittingLabel : submitLabel}
-      </button>
-    </>
-  );
-}
-
 interface CategoryInfoDisplayProps {
   categoryName: string;
   categoryId: string;
@@ -112,10 +99,7 @@ export function CategoryInfoDisplay({
           <span style={{ color: 'var(--monarch-text)' }}>"{categoryName}"</span>
           <span style={{ color: 'var(--monarch-text-muted)' }}> category</span>
           {categoryGroupName && (
-            <span style={{ color: 'var(--monarch-text-muted)' }}>
-              {' '}
-              under "{categoryGroupName}"
-            </span>
+            <span style={{ color: 'var(--monarch-text-muted)' }}> under "{categoryGroupName}"</span>
           )}
         </div>
       </div>

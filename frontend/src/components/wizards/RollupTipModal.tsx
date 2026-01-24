@@ -5,6 +5,7 @@
  */
 
 import { Portal } from '../Portal';
+import { SingleButtonFooter } from '../ui/ModalButtons';
 
 interface RollupTipModalProps {
   readonly isOpen: boolean;
@@ -34,17 +35,12 @@ export function RollupTipModal({ isOpen, onClose }: RollupTipModalProps) {
             Here's a tip!
           </div>
           <p className="text-sm mb-4" style={{ color: 'var(--monarch-text-muted)' }}>
-            Smaller recurring items can be left unchecked here and combined into a shared rollup category in the next step.
+            Smaller recurring items can be left unchecked here and combined into a shared rollup
+            category in the next step.
           </p>
-          <button
-            onClick={onClose}
-            className="w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors hover-bg-orange-to-orange-hover"
-            style={{
-              color: 'white',
-            }}
-          >
+          <SingleButtonFooter onClick={onClose} variant="warning">
             Got it
-          </button>
+          </SingleButtonFooter>
         </div>
       </div>
     </Portal>

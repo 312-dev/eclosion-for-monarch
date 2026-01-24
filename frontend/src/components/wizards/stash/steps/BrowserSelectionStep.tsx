@@ -104,7 +104,9 @@ export function BrowserSelectionStep({
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="p-1.5 rounded-lg transition-colors hover:bg-black/5"
+          className={`p-1.5 rounded-lg transition-colors hover:bg-black/5 ${
+            isLoading ? 'cursor-wait' : 'cursor-pointer'
+          }`}
           aria-label="Refresh browsers"
         >
           <Icons.Refresh
@@ -156,10 +158,7 @@ export function BrowserSelectionStep({
                 >
                   {/* Warning badge for permission required */}
                   {needsPermissionWarning && !isSelected && (
-                    <div
-                      className="absolute top-2 right-2"
-                      title="Requires permission"
-                    >
+                    <div className="absolute top-2 right-2" title="Requires permission">
                       <Icons.AlertCircle size={16} style={{ color: 'var(--monarch-warning)' }} />
                     </div>
                   )}
@@ -172,10 +171,7 @@ export function BrowserSelectionStep({
                   )}
 
                   <BrowserIcon type={type} />
-                  <div
-                    className="font-medium mt-2"
-                    style={{ color: 'var(--monarch-text-dark)' }}
-                  >
+                  <div className="font-medium mt-2" style={{ color: 'var(--monarch-text-dark)' }}>
                     {getBrowserName(type)}
                   </div>
 
