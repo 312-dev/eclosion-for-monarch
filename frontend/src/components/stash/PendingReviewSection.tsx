@@ -5,7 +5,7 @@
  * Each bookmark can be skipped or converted to a stash item.
  */
 
-import { ChevronDown, Clock } from 'lucide-react';
+import { Bookmark, ChevronDown } from 'lucide-react';
 import type { PendingBookmark } from '../../types';
 import { PendingReviewRow } from './PendingReviewRow';
 
@@ -42,19 +42,16 @@ export function PendingReviewSection({
         type="button"
         onClick={onToggle}
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-(--monarch-bg-hover) transition-colors cursor-pointer"
-        style={{ background: 'none', border: 'none' }}
+        style={{ backgroundColor: 'var(--monarch-bg-page)', border: 'none' }}
         aria-expanded={isExpanded}
         aria-label={`${isExpanded ? 'Collapse' : 'Expand'} pending review section`}
       >
-        <div
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: 'var(--monarch-orange-light)' }}
-        >
-          <Clock size={18} style={{ color: 'var(--monarch-orange)' }} />
+        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--monarch-orange-light)' }}>
+          <Bookmark size={18} style={{ color: 'var(--monarch-orange)' }} />
         </div>
         <div className="flex-1 flex items-center gap-2">
           <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-            Pending Review
+            Bookmarks Pending Review
           </span>
           <span
             className="px-2 py-0.5 text-xs font-semibold rounded-full"

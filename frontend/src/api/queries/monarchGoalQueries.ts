@@ -90,12 +90,22 @@ export function useUpdateMonarchGoalLayoutsMutation() {
   const isDemo = useDemo();
 
   return useMutation({
-    mutationFn: (layouts: MonarchGoalLayoutUpdate[]) =>
-      isDemo ? demoApi.updateMonarchGoalLayouts(layouts) : api.updateMonarchGoalLayouts(layouts),
+    mutationFn: async (layouts: MonarchGoalLayoutUpdate[]) => {
+      console.log('[useUpdateMonarchGoalLayoutsMutation] Calling API with layouts:', layouts);
+      const result = isDemo
+        ? await demoApi.updateMonarchGoalLayouts(layouts)
+        : await api.updateMonarchGoalLayouts(layouts);
+      console.log('[useUpdateMonarchGoalLayoutsMutation] API response:', result);
+      return result;
+    },
     onSuccess: () => {
+      console.log('[useUpdateMonarchGoalLayoutsMutation] Success, invalidating monarchGoals query');
       queryClient.invalidateQueries({
         queryKey: getQueryKey(queryKeys.monarchGoals, isDemo),
       });
+    },
+    onError: (error) => {
+      console.error('[useUpdateMonarchGoalLayoutsMutation] Error:', error);
     },
   });
 }

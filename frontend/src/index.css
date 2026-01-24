@@ -527,7 +527,7 @@ input[type='radio'] {
   background-color: var(--monarch-error-bg);
 }
 
-/* App Layout - Fixed header/footer with scrolling content */
+/* App Layout - Fixed header with scrolling content and footer */
 .app-layout {
   /* Base header height: 52px min-height + 10px padding + 1px border + 2px buffer.
      The buffer prevents notification banners from being clipped by box-shadow.
@@ -538,7 +538,6 @@ input[type='radio'] {
   --footer-height: 45px; /* Match .app-footer height */
   height: 100vh;
   padding-top: var(--header-height);
-  padding-bottom: var(--footer-height);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -550,7 +549,6 @@ input[type='radio'] {
 }
 
 .app-layout:has(.app-header .rate-limit-banner) .sidebar-nav {
-  top: calc(var(--header-height) + var(--rate-limit-banner-height));
   max-height: calc(
     100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
   );
@@ -562,7 +560,6 @@ input[type='radio'] {
 }
 
 .app-layout:has(.app-header .offline-banner) .sidebar-nav {
-  top: calc(var(--header-height) + var(--rate-limit-banner-height));
   max-height: calc(
     100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
   );
@@ -574,7 +571,6 @@ input[type='radio'] {
 }
 
 .app-layout:has(.app-header .rate-limit-banner):has(.app-header .offline-banner) .sidebar-nav {
-  top: calc(var(--header-height) + var(--rate-limit-banner-height) * 2);
   max-height: calc(
     100vh - var(--header-height) - var(--rate-limit-banner-height) * 2 - var(--footer-height)
   );
@@ -586,7 +582,6 @@ input[type='radio'] {
 }
 
 .app-layout:has(.app-header .update-banner) .sidebar-nav {
-  top: calc(var(--header-height) + var(--rate-limit-banner-height));
   max-height: calc(
     100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
   );
@@ -598,7 +593,6 @@ input[type='radio'] {
 }
 
 .app-layout:has(.app-header .desktop-update-banner) .sidebar-nav {
-  top: calc(var(--header-height) + var(--rate-limit-banner-height));
   max-height: calc(
     100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
   );
@@ -610,10 +604,17 @@ input[type='radio'] {
 }
 
 .app-layout:has(.app-header .month-transition-banner) .sidebar-nav {
-  top: calc(var(--header-height) + var(--rate-limit-banner-height));
   max-height: calc(
     100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
   );
+}
+
+.app-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* Allow flex children to shrink below content size */
+  /* Prevent scrollbar from extending behind fixed footer */
+  scrollbar-gutter: stable;
 }
 
 .app-body {
@@ -621,8 +622,6 @@ input[type='radio'] {
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  flex: 1;
-  min-height: 0; /* Allow flex children to shrink below content size */
 }
 
 .app-content-wrapper {
@@ -630,7 +629,6 @@ input[type='radio'] {
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
 }
 
 .app-main {
@@ -651,7 +649,7 @@ input[type='radio'] {
   max-height: calc(100vh - var(--header-height) - var(--footer-height));
   overflow-y: auto;
   position: sticky;
-  top: var(--header-height);
+  top: 0; /* Sticky within scroll area which already accounts for header */
   align-self: flex-start;
 }
 
@@ -1002,11 +1000,9 @@ input[type='radio'] {
   padding: 0.75rem 1rem;
   border-top: 1px solid var(--monarch-border);
   background-color: var(--monarch-bg-card);
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: var(--z-index-sticky);
+  flex-shrink: 0; /* Don't shrink footer */
+  position: relative;
+  z-index: 20; /* Above vignette gradient (z-10) */
 }
 
 .app-footer-link {
@@ -2179,6 +2175,7 @@ progress::-moz-progress-bar {
 
 /* Icon button hover - scale effect */
 .icon-btn-hover {
+  cursor: pointer;
   transition:
     transform var(--animation-fast) var(--ease-out-smooth),
     color var(--animation-fast) var(--ease-out-smooth),

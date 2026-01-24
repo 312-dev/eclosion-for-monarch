@@ -23,13 +23,7 @@ export function PendingReviewBanner({ count, onExpand }: PendingReviewBannerProp
       <button
         type="button"
         onClick={onExpand}
-        className="text-sm font-medium hover:opacity-80 transition-opacity"
-        style={{
-          color: 'white',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-        }}
+        className="text-sm font-medium hover:opacity-80 transition-opacity text-white bg-transparent border-none cursor-pointer"
       >
         {count} new stash {count === 1 ? 'link' : 'links'}{' '}
         <span className="underline">pending your review</span>

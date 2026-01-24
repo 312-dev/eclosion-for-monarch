@@ -13,6 +13,7 @@
 import React, { useState, useRef } from 'react';
 import type { StashItem } from '../../types';
 import { Icons } from '../icons';
+import { Tooltip } from '../ui';
 import { UnitSelector } from './UnitSelector';
 
 type InputMode = 'amount' | 'percent';
@@ -342,15 +343,17 @@ export function DistributeItemRow({
         </div>
         {/* Suggestion hint when user enters excessive amount */}
         {showSuggestion && (
-          <button
-            type="button"
-            onClick={() => onApplySuggestion(item.id, suggestedAmount)}
-            className="flex items-center gap-1 mt-1 text-xs text-monarch-warning hover:text-amber-400 transition-colors cursor-pointer"
-            aria-label={`Apply suggested amount of ${formatCurrency(suggestedAmount)}`}
-          >
-            <Icons.Lightbulb size={12} />
-            <span>{formatCurrency(suggestedAmount)}</span>
-          </button>
+          <Tooltip content="You only need to contribute this amount to reach your goal in time">
+            <button
+              type="button"
+              onClick={() => onApplySuggestion(item.id, suggestedAmount)}
+              className="flex items-center gap-1 mt-1 text-xs text-monarch-warning hover:text-amber-400 transition-colors cursor-pointer"
+              aria-label={`Apply suggested amount of ${formatCurrency(suggestedAmount)}`}
+            >
+              <Icons.Lightbulb size={12} />
+              <span>{formatCurrency(suggestedAmount)}</span>
+            </button>
+          </Tooltip>
         )}
       </div>
     </div>

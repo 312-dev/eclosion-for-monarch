@@ -111,6 +111,12 @@ export interface StashItem {
    * Used for balance breakdown tooltip to distinguish from rollover.
    */
   credits_this_month?: number;
+
+  /**
+   * Whether this item is linked to a flexible category group with group-level rollover.
+   * Used by Distribute wizard to determine whether to update category or group rollover.
+   */
+  is_flexible_group?: boolean;
 }
 
 /**
