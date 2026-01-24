@@ -2,25 +2,55 @@
 
 # Pre-push: Heavier checks before sharing code
 # These take longer but ensure code quality before pushing
+# Mirrors frontend/backend parity for strictness
 
 echo "Running pre-push checks..."
+
+# ============================================================================
+# Python Backend Checks
+# ============================================================================
+echo ""
+echo "=== Python Backend ==="
+
+# Type checking with mypy
+echo "Running mypy type checking..."
+mypy . --config-file=pyproject.toml
+if [ $? -ne 0 ]; then
+  echo "Python type check failed. Please fix type errors before pushing."
+  exit 1
+fi
+
+# Run Python tests (excluding integration tests which need real API)
+echo "Running Python unit tests..."
+pytest tests/unit -v --tb=short -q
+if [ $? -ne 0 ]; then
+  echo "Python tests failed. Please fix failing tests before pushing."
+  exit 1
+fi
+
+# ============================================================================
+# Frontend Checks
+# ============================================================================
+echo ""
+echo "=== Frontend ==="
 
 cd frontend
 
 # Type checking (catches type errors across the codebase)
-echo "Type checking..."
+echo "Running TypeScript type checking..."
 npm run type-check
 if [ $? -ne 0 ]; then
-  echo "Type check failed. Please fix type errors before pushing."
+  echo "TypeScript type check failed. Please fix type errors before pushing."
   exit 1
 fi
 
 # Run tests
-echo "Running tests..."
+echo "Running frontend tests..."
 npm run test -- --run
 if [ $? -ne 0 ]; then
-  echo "Tests failed. Please fix failing tests before pushing."
+  echo "Frontend tests failed. Please fix failing tests before pushing."
   exit 1
 fi
 
-echo "Pre-push checks passed!"
+echo ""
+echo "All pre-push checks passed!"

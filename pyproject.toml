@@ -73,31 +73,61 @@ exclude = [
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # Pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-    "SIM", # flake8-simplify
-    "RUF", # Ruff-specific rules
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "C90",  # mccabe complexity
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "RUF",  # Ruff-specific rules
+    "PLR",  # Pylint refactoring rules (function length, complexity)
+    "PLC",  # Pylint convention
+    "PLE",  # Pylint errors
+    "PLW",  # Pylint warnings
+    "ARG",  # flake8-unused-arguments
+    "PERF", # Perflint (performance anti-patterns)
+    "FURB", # refurb (modern Python idioms)
+    # "PTH",  # flake8-use-pathlib - TODO: Enable after migrating to pathlib
 ]
 
 ignore = [
-    "E501",   # line too long (handled by formatter)
-    "B008",   # function call in default argument (common in Flask)
-    "B904",   # raise-without-from (too noisy initially)
-    "SIM108", # ternary operator (readability preference)
+    "E501",    # line too long (handled by formatter)
+    "B008",    # function call in default argument (common in Flask)
+    "B904",    # raise-without-from (too noisy initially)
+    "SIM108",  # ternary operator (readability preference)
+    "PLR2004", # magic-value-comparison (too noisy for business logic)
+    "PLR0913", # too-many-arguments (Flask routes often need many params)
+    "ARG001",  # unused-function-argument (Flask routes use unused params)
+    "ARG002",  # unused-method-argument (common in base classes)
+    "PLC0415", # import-outside-toplevel (Flask blueprints use lazy imports)
+    "PLW0603", # global-statement (singleton pattern is intentional)
 ]
 
 fixable = ["ALL"]
 unfixable = []
 
+# Complexity thresholds (matching frontend's approach)
+[tool.ruff.lint.mccabe]
+max-complexity = 15  # Same as frontend SonarJS cognitive-complexity
+
+[tool.ruff.lint.pylint]
+max-args = 8              # Allow up to 8 args (Flask routes can be complex)
+max-branches = 15         # Max branches per function
+max-returns = 8           # Max return statements
+max-statements = 60       # Max statements per function (~300 lines equivalent)
+max-locals = 20           # Max local variables
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/**/*.py" = ["B011", "S101"]
+"tests/**/*.py" = ["B011", "S101", "PLR2004", "ARG", "PLR0915", "PLR0912"]
 "sync_cli.py" = ["E402"]  # Imports after sys.path modification
+# Legacy files that need refactoring - tracked for cleanup
+"services/stash_service.py" = ["PLR0915", "PLR0912", "C901"]  # TODO: Refactor into smaller modules
+"services/sync_service.py" = ["PLR0915", "PLR0912", "C901"]   # TODO: Refactor into smaller modules
+"lib/monarchmoney_backup.py" = ["ALL"]  # Legacy backup file, not actively maintained
 
 [tool.ruff.lint.isort]
 known-first-party = ["core", "services", "state", "monarch_utils"]
@@ -116,21 +146,40 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 # ============================================================================
-# Mypy Configuration
+# Mypy Configuration (aiming for TypeScript-level strictness)
 # ============================================================================
 [tool.mypy]
 python_version = "3.11"
+
+# Enabled strict checks (matching TypeScript strict mode philosophy)
 warn_return_any = true
 warn_unused_ignores = true
 warn_redundant_casts = true
+warn_unreachable = true
+warn_no_return = true
 check_untyped_defs = true
-disallow_untyped_defs = false  # Start permissive, tighten later
+strict_equality = true
+extra_checks = true  # Replaces deprecated strict_concatenate
+no_implicit_optional = true
+no_implicit_reexport = true
+
+# Gradual strictness - enable these as codebase improves
+disallow_untyped_defs = false        # TODO: Enable after adding type hints
+disallow_incomplete_defs = false     # TODO: Enable with disallow_untyped_defs
+disallow_untyped_decorators = false  # TODO: Enable after typing decorators
+
+# Error handling
+show_error_codes = true
+show_column_numbers = true
+pretty = true
 ignore_missing_imports = true
+
 exclude = [
     "^desktop/",
     "^docusaurus/",
     "^scripts/",
     "^frontend/",
+    "^lib/",  # Legacy backup files
 ]
 
 [[tool.mypy.overrides]]

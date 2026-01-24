@@ -40,18 +40,18 @@ repos:
         types_or: [python, pyi]
         exclude: ^frontend/
 
-  # Type checking and frontend checks
+  # Local hooks for additional checks
+  # Note: mypy moved to pre-push for speed (type checking is slow)
   - repo: local
     hooks:
-      - id: mypy
-        name: mypy
-        entry: mypy
+      # Python file length check (like ESLint max-lines for frontend)
+      - id: python-file-length
+        name: python-file-length
+        entry: python scripts/check-file-length.py
         language: system
         types: [python]
-        exclude: ^(frontend/|tests/)
-        args: [--config-file=pyproject.toml]
+        exclude: ^(frontend/|tests/|lib/|scripts/)
         pass_filenames: true
-        require_serial: true
 
       # Frontend linting - only changed files for speed
       - id: frontend-lint
