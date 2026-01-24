@@ -38,7 +38,10 @@ export function AppearanceSettings() {
 
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1" style={{ color: 'var(--monarch-text-muted)' }}>
+      <h2
+        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
         Appearance
       </h2>
       <div
@@ -46,11 +49,14 @@ export function AppearanceSettings() {
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         {/* Theme Setting */}
-        <div className="p-4" style={{ borderBottom: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}>
+        <div
+          className="p-4"
+          style={{ borderBottom: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}
+        >
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="font-medium text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
@@ -71,19 +77,15 @@ export function AppearanceSettings() {
                   key={option.value}
                   type="button"
                   onClick={() => setTheme(option.value)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all border-none cursor-pointer"
                   style={{
-                    backgroundColor: theme === option.value
-                      ? 'var(--monarch-bg-card)'
-                      : 'transparent',
-                    color: theme === option.value
-                      ? 'var(--monarch-orange)'
-                      : 'var(--monarch-text-muted)',
-                    boxShadow: theme === option.value
-                      ? '0 1px 2px rgba(0, 0, 0, 0.05)'
-                      : 'none',
-                    border: 'none',
-                    cursor: 'pointer',
+                    backgroundColor:
+                      theme === option.value ? 'var(--monarch-bg-card)' : 'transparent',
+                    color:
+                      theme === option.value
+                        ? 'var(--monarch-orange)'
+                        : 'var(--monarch-text-muted)',
+                    boxShadow: theme === option.value ? '0 1px 2px rgba(0, 0, 0, 0.05)' : 'none',
                   }}
                 >
                   {option.icon}

@@ -7,6 +7,7 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown, ChevronRight, EyeOff, Eye } from 'lucide-react';
 import { Portal } from '../Portal';
+import { SingleButtonFooter } from '../ui/ModalButtons';
 import { useCategoriesByGroup } from '../../api/queries/categoryStoreQueries';
 import { decodeHtmlEntities } from '../../utils';
 import type { NotesCategoryGroup } from '../../types/notes';
@@ -289,12 +290,9 @@ export function HiddenCategoriesModal({
 
           {/* Footer */}
           <div className="p-4 border-t border-monarch-border">
-            <button
-              onClick={onClose}
-              className="w-full px-4 py-2 text-sm text-white rounded-lg transition-colors btn-hover-lift bg-monarch-orange"
-            >
+            <SingleButtonFooter onClick={onClose} variant="warning">
               Done
-            </button>
+            </SingleButtonFooter>
           </div>
         </div>
       </div>

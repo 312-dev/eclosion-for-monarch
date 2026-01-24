@@ -3,8 +3,9 @@
  */
 
 import type { CancelSubscriptionResult } from '../../api/client';
-import { SpinnerIcon, TrashIcon } from '../icons';
+import { TrashIcon } from '../icons';
 import { useIsRateLimited } from '../../context/RateLimitContext';
+import { CancelButton, DestructiveButton } from '../ui/ModalButtons';
 
 interface UninstallModalFooterProps {
   readonly cancelling: boolean;
@@ -26,56 +27,28 @@ export function UninstallModalFooter({
   if (cancelResult) {
     return (
       <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--monarch-border)' }}>
-        <button
-          onClick={onClose}
-          className="flex-1 px-4 py-2 text-sm rounded-lg transition-colors btn-hover-lift"
-          style={{
-            border: '1px solid var(--monarch-border)',
-            color: 'var(--monarch-text-dark)',
-            backgroundColor: 'var(--monarch-bg-card)',
-          }}
-        >
+        <CancelButton onClick={onClose} fullWidth>
           Close
-        </button>
+        </CancelButton>
       </div>
     );
   }
 
   return (
     <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--monarch-border)' }}>
-      <button
-        onClick={onClose}
-        disabled={cancelling}
-        className="flex-1 px-4 py-2 text-sm rounded-lg transition-colors btn-hover-lift disabled:opacity-50"
-        style={{
-          border: '1px solid var(--monarch-border)',
-          color: 'var(--monarch-text-dark)',
-          backgroundColor: 'var(--monarch-bg-card)',
-        }}
-      >
+      <CancelButton onClick={onClose} disabled={cancelling} fullWidth>
         Cancel
-      </button>
-      <button
+      </CancelButton>
+      <DestructiveButton
         onClick={onUninstall}
-        disabled={!confirmed || cancelling || isRateLimited}
-        className="flex-1 px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{
-          backgroundColor: 'var(--monarch-error)',
-          opacity: (!confirmed || isRateLimited) && !cancelling ? 0.5 : 1,
-        }}
+        disabled={!confirmed || isRateLimited}
+        isLoading={cancelling}
+        loadingText="Deleting..."
+        icon={cancelling ? undefined : <TrashIcon size={16} />}
+        fullWidth
       >
-        {cancelling ? (
-          <>
-            <SpinnerIcon size={16} />
-            Deleting...
-          </>
-        ) : (
-          <>
-            <TrashIcon size={16} />
-            Delete All
-          </>
-        )}
-      </button>
+        Delete All
+      </DestructiveButton>
     </div>
   );
 }

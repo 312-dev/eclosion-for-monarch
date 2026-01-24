@@ -35,8 +35,7 @@ export function DangerZoneSection({
         {/* Reset App */}
         <button
           type="button"
-          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover"
-          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover bg-transparent border-none cursor-pointer"
           onClick={onShowResetModal}
         >
           <div
@@ -68,8 +67,7 @@ export function DangerZoneSection({
         {/* Uninstall */}
         <button
           type="button"
-          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-error-bg"
-          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-error-bg bg-transparent border-none cursor-pointer"
           onClick={onShowUninstallModal}
         >
           <div

@@ -8,6 +8,7 @@
 import { useState, useMemo } from 'react';
 import { Wallet, CreditCard } from 'lucide-react';
 import { Portal } from '../Portal';
+import { CancelButton, PrimaryButton } from '../ui/ModalButtons';
 import { useAvailableToStashDataQuery } from '../../api/queries';
 import { isCashAccount, isCreditCardAccount } from '../../types/availableToStash';
 import { decodeHtmlEntities } from '../../utils';
@@ -265,24 +266,17 @@ export function CashAccountSelectionModal({
 
           {/* Footer */}
           <div className="p-4 border-t border-monarch-border flex gap-2">
-            <button
-              onClick={onClose}
-              disabled={isSaving}
-              className="flex-1 px-4 py-2 text-sm rounded-lg transition-colors"
-              style={{
-                backgroundColor: 'var(--monarch-bg-hover)',
-                color: 'var(--monarch-text)',
-              }}
-            >
+            <CancelButton onClick={onClose} disabled={isSaving} fullWidth>
               Cancel
-            </button>
-            <button
+            </CancelButton>
+            <PrimaryButton
               onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 px-4 py-2 text-sm text-white rounded-lg transition-colors btn-hover-lift bg-monarch-orange"
+              isLoading={isSaving}
+              loadingText="Saving..."
+              fullWidth
             >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
+              Save
+            </PrimaryButton>
           </div>
         </div>
       </div>

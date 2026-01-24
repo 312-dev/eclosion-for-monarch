@@ -15,7 +15,7 @@ export function ToggleSwitch({ checked, onChange, disabled, ariaLabel }: ToggleS
       type="button"
       onClick={onChange}
       disabled={disabled}
-      className={`relative inline-flex h-5 w-9 items-center rounded-full toggle-switch ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`relative inline-flex h-5 w-9 items-center rounded-full toggle-switch ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       style={{
         backgroundColor: checked ? 'var(--monarch-orange)' : 'var(--monarch-border)',
       }}

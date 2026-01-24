@@ -58,8 +58,7 @@ export function AccountSection() {
       >
         <button
           type="button"
-          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover"
-          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover bg-transparent border-none cursor-pointer"
           onClick={lock}
         >
           <div

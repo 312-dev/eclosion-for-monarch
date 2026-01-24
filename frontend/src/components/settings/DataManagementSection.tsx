@@ -36,7 +36,10 @@ export function DataManagementSection({ onShowImportModal }: DataManagementSecti
 
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
+      <h2
+        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
         <Database size={12} />
         Data Management
       </h2>
@@ -45,15 +48,15 @@ export function DataManagementSection({ onShowImportModal }: DataManagementSecti
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         {/* Export Settings */}
         <button
           type="button"
           onClick={handleExport}
-          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', borderBottom: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}
+          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover bg-transparent border-none cursor-pointer"
+          style={{ borderBottom: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }}
         >
           <div
             className="p-2.5 rounded-lg shrink-0"
@@ -76,8 +79,7 @@ export function DataManagementSection({ onShowImportModal }: DataManagementSecti
         <button
           type="button"
           onClick={onShowImportModal}
-          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover"
-          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          className="w-full p-4 flex items-center gap-4 text-left hover-bg-transparent-to-hover bg-transparent border-none cursor-pointer"
         >
           <div
             className="p-2.5 rounded-lg shrink-0"
