@@ -702,10 +702,15 @@ class SettingsExportService:
         bookmarks = repo.get_pending_bookmarks()
         bookmarks_export = [self._bookmark_to_export(bm) for bm in bookmarks]
 
+        # Get hypotheses
+        hypotheses = repo.get_all_hypotheses()
+        hypotheses_export = [self._hypothesis_to_export(h) for h in hypotheses]
+
         return {
             "config": config_export,
             "items": items_export,
             "pending_bookmarks": bookmarks_export,
+            "hypotheses": hypotheses_export,
         }
 
     def _stash_item_to_export(self, item: Any) -> dict[str, Any]:
@@ -743,6 +748,20 @@ class SettingsExportService:
             "status": bm.status,
             "stash_item_id": bm.stash_item_id,
             "created_at": bm.created_at.isoformat() if bm.created_at else None,
+        }
+
+    def _hypothesis_to_export(self, h: Any) -> dict[str, Any]:
+        """Convert a StashHypothesis to export format."""
+        return {
+            "id": h.id,
+            "name": h.name,
+            "savings_allocations": json.loads(h.savings_allocations),
+            "savings_total": h.savings_total,
+            "monthly_allocations": json.loads(h.monthly_allocations),
+            "monthly_total": h.monthly_total,
+            "events": json.loads(h.events),
+            "created_at": h.created_at.isoformat() if h.created_at else None,
+            "updated_at": h.updated_at.isoformat() if h.updated_at else None,
         }
 
     def _import_stash(
@@ -829,6 +848,23 @@ class SettingsExportService:
                 except Exception:
                     # Likely duplicate URL, skip silently
                     pass
+
+        # Import hypotheses
+        hypotheses = stash_data.get("hypotheses", [])
+        imported["hypotheses"] = 0
+        for hyp in hypotheses:
+            try:
+                repo.create_hypothesis(
+                    name=hyp["name"],
+                    savings_allocations=json.dumps(hyp.get("savings_allocations", {})),
+                    savings_total=hyp.get("savings_total", 0),
+                    monthly_allocations=json.dumps(hyp.get("monthly_allocations", {})),
+                    monthly_total=hyp.get("monthly_total", 0),
+                    events=json.dumps(hyp.get("events", {})),
+                )
+                imported["hypotheses"] += 1
+            except Exception as e:
+                warnings.append(f"Failed to import hypothesis '{hyp.get('name')}': {e}")
 
         # Commit
         repo.session.commit()

@@ -186,12 +186,29 @@ export interface StashExportBookmark {
 }
 
 /**
+ * Stash hypothesis in export format.
+ * Contains saved what-if scenarios for the Distribute Wizard.
+ */
+export interface StashExportHypothesis {
+  id: string;
+  name: string;
+  savings_allocations: Record<string, number>;
+  savings_total: number;
+  monthly_allocations: Record<string, number>;
+  monthly_total: number;
+  events: Record<string, unknown[]>;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
  * Complete stash tool export data.
  */
 export interface StashExport {
   config: StashExportConfig;
   items: StashExportItem[];
   pending_bookmarks: StashExportBookmark[];
+  hypotheses?: StashExportHypothesis[];
 }
 
 // ============================================================================
@@ -268,6 +285,7 @@ export interface ImportPreview {
       items_count: number;
       archived_items_count: number;
       pending_bookmarks_count: number;
+      hypotheses_count: number;
     };
   };
 }

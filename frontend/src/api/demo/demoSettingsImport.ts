@@ -15,6 +15,7 @@ import type {
   ArchivedNote,
   BrowserType,
   ImportPreview,
+  StashEventsMap,
 } from '../../types';
 import { updateDemoState, simulateDelay } from './demoState';
 import { buildCategoryRef, buildStashItem } from './demoSettingsHelpers';
@@ -177,9 +178,22 @@ function importStashTool(
       .map((item, index) => buildStashItem(item, index, state.stash.items.length, false));
     const newArchivedItems = stashData.items
       .filter((i) => i.is_archived)
-      .map((item, index) =>
-        buildStashItem(item, index, state.stash.archived_items.length, true)
-      );
+      .map((item, index) => buildStashItem(item, index, state.stash.archived_items.length, true));
+
+    // Import hypotheses
+    const existingHypotheses = state.stashHypotheses ?? [];
+    const newHypotheses = (stashData.hypotheses ?? []).map((h) => ({
+      id: `imported-${h.id}`,
+      name: h.name,
+      savingsAllocations: h.savings_allocations,
+      savingsTotal: h.savings_total,
+      monthlyAllocations: h.monthly_allocations,
+      monthlyTotal: h.monthly_total,
+      events: h.events as StashEventsMap,
+      createdAt: h.created_at ?? new Date().toISOString(),
+      updatedAt: h.updated_at ?? new Date().toISOString(),
+    }));
+
     return {
       ...state,
       stash: {
@@ -197,6 +211,7 @@ function importStashTool(
         autoArchiveOnGoalMet: stashData.config.auto_archive_on_goal_met,
         includeExpectedIncome: stashData.config.include_expected_income ?? false,
       },
+      stashHypotheses: [...existingHypotheses, ...newHypotheses],
     };
   });
   imported['stash'] = true;
@@ -246,6 +261,7 @@ export async function previewImport(data: EclosionExport): Promise<ImportPreview
       items_count: activeItems.length,
       archived_items_count: archivedItems.length,
       pending_bookmarks_count: data.tools.stash.pending_bookmarks.length,
+      hypotheses_count: data.tools.stash.hypotheses?.length ?? 0,
     };
   }
 

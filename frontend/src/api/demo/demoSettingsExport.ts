@@ -174,5 +174,16 @@ function buildStashExport(state: DemoState): StashExport {
       stash_item_id: null,
       created_at: bm.created_at,
     })),
+    hypotheses: (state.stashHypotheses ?? []).map((h) => ({
+      id: h.id,
+      name: h.name,
+      savings_allocations: h.savingsAllocations,
+      savings_total: h.savingsTotal,
+      monthly_allocations: h.monthlyAllocations,
+      monthly_total: h.monthlyTotal,
+      events: h.events,
+      created_at: h.createdAt,
+      updated_at: h.updatedAt,
+    })),
   };
 }
