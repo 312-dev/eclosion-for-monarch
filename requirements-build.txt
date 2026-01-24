@@ -14,8 +14,9 @@ pip==24.3.1 \
     --hash=sha256:3790624780082365f47549d032f3770eeb2b1e8bd1f7b2e02dace1afa361b4ed
 
 # setuptools - required by pyinstaller (platform-independent wheel)
-setuptools==80.9.0 \
-    --hash=sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922
+setuptools==80.10.1 \
+    --hash=sha256:bf2e513eb8144c3298a3bd28ab1a5edb739131ec5c22e045ff93cd7f5319703a \
+    --hash=sha256:fc30c51cbcb8199a219c12cc9c281b5925a4978d212f84229c909636d9f6984e
 
 # altgraph - dependency graph library (platform-independent wheel)
 altgraph==0.17.5 \
@@ -38,9 +39,17 @@ pefile==2023.2.7 \
     --hash=sha256:da185cd2af68c08a6cd4481f7325ed600a88f6a813bad9dea07ab3ef73d8d8d6
 
 # pyinstaller - application bundler (platform-specific wheels)
-pyinstaller==6.11.1 \
-    --hash=sha256:44e36172de326af6d4e7663b12f71dbd34e2e3e02233e181e457394423daaf03 \
-    --hash=sha256:32c742a24fe65d0702958fadf4040f76de85859c26bec0008766e5dbabc5b68f \
-    --hash=sha256:7ac83c0dc0e04357dab98c487e74ad2adb30e7eb186b58157a8faf46f1fa796f \
-    --hash=sha256:6d12c45a29add78039066a53fb05967afaa09a672426072b13816fe7676abfc4
+pyinstaller==6.18.0 \
+    --hash=sha256:07785459b3bf8a48889eac0b4d0667ade84aef8930ce030bc7cbb32f41283b33 \
+    --hash=sha256:31b5d109f8405be0b7cddcede43e7b074792bc9a5bbd54ec000a3e779183c2af \
+    --hash=sha256:3638fc81eb948e5e5eab1d4ad8f216e3fec6d4a350648304f0adb227b746ee5e \
+    --hash=sha256:4328c9837f1aef4fe1a127d4ff1b09a12ce53c827ce87c94117628b0e1fd098b \
+    --hash=sha256:496205e4fa92ec944f9696eb597962a83aef4d4c3479abfab83d730e1edf016b \
+    --hash=sha256:779817a0cf69604cddcdb5be1fd4959dc2ce048d6355c73e5da97884df2f3387 \
+    --hash=sha256:8fbe59da34269e637f97fd3c43024f764586fc319141d245ff1a2e9af1036aa3 \
+    --hash=sha256:976fabd90ecfbda47571c87055ad73413ec615ff7dea35e12a4304174de78de9 \
+    --hash=sha256:cb7aa5a71bfa7c0af17a4a4e21855663c89e4bd7c40f1d337c8370636d8847c3 \
+    --hash=sha256:cdc507542783511cad4856fce582fdc37e9f29665ca596889c663c83ec8c6ec9 \
+    --hash=sha256:dba4b70e3c9ba09aab51152c72a08e58a751851548f77ad35944d32a300c8381 \
+    --hash=sha256:f998675b7ccb2dabbb1dc2d6f18af61d55428ad6d38e6c4d700417411b697d37
 # Hashes above are for: macosx_10_13_universal2, manylinux2014_x86_64, win_amd64, manylinux2014_aarch64
