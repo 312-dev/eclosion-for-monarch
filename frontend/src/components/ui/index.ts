@@ -18,6 +18,16 @@ export {
 } from './Card';
 export { CloseButton, type CloseButtonProps } from './CloseButton';
 export { Modal, type ModalProps } from './Modal';
+export {
+  ModalButton,
+  CancelButton,
+  PrimaryButton,
+  WarningButton,
+  DestructiveButton,
+  ModalFooter,
+  SingleButtonFooter,
+  type ModalButtonVariant,
+} from './ModalButtons';
 export { Tooltip, TooltipProvider, type TooltipProps } from './Tooltip';
 export { HoverCard, type HoverCardProps } from './HoverCard';
 
