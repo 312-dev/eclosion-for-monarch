@@ -580,8 +580,9 @@ async def update_group_rollover_balance():
     except (ValueError, TypeError):
         raise ValidationError("'amount' must be an integer")
 
+    service = get_stash_service()
     try:
-        result = await services.sync_service.category_manager.update_group_rollover_balance(
+        result = await service.category_manager.update_group_rollover_balance(
             group_id, amount_int
         )
     except ValueError as e:
@@ -904,3 +905,74 @@ async def clear_unconverted_bookmarks():
     service = get_stash_service()
     result = await service.clear_unconverted_bookmarks()
     return result
+
+
+# ---- HYPOTHESIS ENDPOINTS ----
+
+
+@stash_bp.route("/hypotheses", methods=["GET"])
+@api_handler(handle_mfa=False)
+async def get_hypotheses():
+    """
+    Get all saved hypotheses.
+
+    Returns list of hypotheses with their allocations and events.
+    Used by the Distribute Wizard's hypothesize mode.
+    """
+    service = get_stash_service()
+    result = service.get_hypotheses()
+    return jsonify(sanitize_response(result))
+
+
+@stash_bp.route("/hypotheses", methods=["POST"])
+@api_handler(handle_mfa=False)
+async def save_hypothesis():
+    """
+    Save a hypothesis.
+
+    If a hypothesis with the same name exists (case-insensitive), it will be updated.
+    Otherwise creates a new one if under the max limit (10).
+
+    Request body:
+    - name: Hypothesis name (required)
+    - savings_allocations: Record<stashId, amount>
+    - savings_total: Total savings allocated
+    - monthly_allocations: Record<stashId, amount>
+    - monthly_total: Total monthly allocated
+    - events: StashEventsMap
+    """
+    service = get_stash_service()
+    data = request.get_json()
+
+    name = sanitize_name(data.get("name", ""))
+    if not name:
+        raise ValidationError("Hypothesis name is required")
+
+    if len(name) > 100:
+        raise ValidationError("Hypothesis name must be 100 characters or less")
+
+    result = service.save_hypothesis(
+        name=name,
+        savings_allocations=data.get("savings_allocations", {}),
+        savings_total=data.get("savings_total", 0),
+        monthly_allocations=data.get("monthly_allocations", {}),
+        monthly_total=data.get("monthly_total", 0),
+        events=data.get("events", {}),
+    )
+    return jsonify(sanitize_response(result))
+
+
+@stash_bp.route("/hypotheses/<hypothesis_id>", methods=["DELETE"])
+@api_handler(handle_mfa=False)
+async def delete_hypothesis(hypothesis_id: str):
+    """
+    Delete a hypothesis by ID.
+    """
+    service = get_stash_service()
+    sanitized_id = sanitize_id(hypothesis_id)
+
+    if not sanitized_id:
+        raise ValidationError("Invalid hypothesis ID")
+
+    result = service.delete_hypothesis(sanitized_id)
+    return jsonify(sanitize_response(result))

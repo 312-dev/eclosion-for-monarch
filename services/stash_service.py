@@ -13,7 +13,7 @@ Goal types:
 
 import logging
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -118,10 +118,9 @@ def calculate_stash_monthly_target(
     # Use current month if not provided
     if current_month is None:
         current_month = datetime.now().strftime("%Y-%m-01")
-    else:
-        # Ensure it's a full date string
-        if len(current_month) == 7:
-            current_month = f"{current_month}-01"
+    # Ensure it's a full date string
+    elif len(current_month) == 7:
+        current_month = f"{current_month}-01"
 
     months_remaining = months_between(current_month, target_date)
 
@@ -372,23 +371,22 @@ class StashService:
                 elif goal_type == "savings_buffer":
                     # Savings buffer: progress = remaining (spending reduces progress)
                     current_balance = remaining_balance
+                # One-time purchase: progress = total ever budgeted (immune to spending)
+                # Special case: if no budgeting ever happened (just income/credits),
+                # use total credits as progress (immune to spending)
+                elif rollover_balance == 0 and planned_budget == 0 and credits_this_month > 0:
+                    current_balance = credits_this_month
+                    available_to_spend = remaining_balance
                 else:
-                    # One-time purchase: progress = total ever budgeted (immune to spending)
-                    # Special case: if no budgeting ever happened (just income/credits),
-                    # use total credits as progress (immune to spending)
-                    if rollover_balance == 0 and planned_budget == 0 and credits_this_month > 0:
-                        current_balance = credits_this_month
-                        available_to_spend = remaining_balance
-                    else:
-                        # Use aggregate query to calculate total budgeted
-                        tracking_start = get_tracking_start_date(item)
-                        current_balance = await calculate_total_budgeted(
-                            category_id=item["monarch_category_id"],
-                            start_date=tracking_start,
-                            remaining=remaining_balance,
-                        )
-                        # Available to spend is the actual remaining balance
-                        available_to_spend = remaining_balance
+                    # Use aggregate query to calculate total budgeted
+                    tracking_start = get_tracking_start_date(item)
+                    current_balance = await calculate_total_budgeted(
+                        category_id=item["monarch_category_id"],
+                        start_date=tracking_start,
+                        remaining=remaining_balance,
+                    )
+                    # Available to spend is the actual remaining balance
+                    available_to_spend = remaining_balance
 
                 # Log balance retrieval for all items
                 logger.info(
@@ -794,7 +792,7 @@ class StashService:
             category_id = item.monarch_category_id
 
             # Set completed_at and archive the item
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             repo.update_stash_item(
                 item_id,
                 completed_at=now,
@@ -907,7 +905,7 @@ class StashService:
                 await self.category_manager.set_category_budget(category_id, budget)
                 updated_count += 1
             except Exception as e:
-                errors.append(f"Item {item_id}: {str(e)}")
+                errors.append(f"Item {item_id}: {e!s}")
 
         # Clear caches
         clear_cache("budget")
@@ -1834,6 +1832,7 @@ class StashService:
             - months: List of month strings in the response (e.g., ["2025-01", "2025-02", ...])
         """
         from calendar import monthrange
+
         from dateutil.relativedelta import relativedelta
 
         items_data = self._get_active_stash_items_for_history()
@@ -1864,3 +1863,111 @@ class StashService:
             "items": list(result_items),
             "months": sorted_months,
         }
+
+    # === Stash Hypotheses ===
+
+    MAX_HYPOTHESES = 10
+
+    def get_hypotheses(self) -> dict[str, Any]:
+        """Get all saved hypotheses."""
+        import json
+
+        with db_session() as session:
+            repo = TrackerRepository(session)
+            hypotheses = repo.get_all_hypotheses()
+
+            return {
+                "success": True,
+                "hypotheses": [
+                    {
+                        "id": h.id,
+                        "name": h.name,
+                        "savings_allocations": json.loads(h.savings_allocations),
+                        "savings_total": h.savings_total,
+                        "monthly_allocations": json.loads(h.monthly_allocations),
+                        "monthly_total": h.monthly_total,
+                        "events": json.loads(h.events),
+                        "created_at": h.created_at.isoformat() if h.created_at else None,
+                        "updated_at": h.updated_at.isoformat() if h.updated_at else None,
+                    }
+                    for h in hypotheses
+                ],
+            }
+
+    def save_hypothesis(
+        self,
+        name: str,
+        savings_allocations: dict[str, float],
+        savings_total: float,
+        monthly_allocations: dict[str, float],
+        monthly_total: float,
+        events: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        Save a hypothesis.
+
+        If a hypothesis with the same name exists, it will be updated (override).
+        Otherwise creates a new one if under the max limit.
+        """
+        import json
+
+        with db_session() as session:
+            repo = TrackerRepository(session)
+
+            # Check if name already exists
+            existing = repo.get_hypothesis_by_name(name)
+
+            if existing:
+                # Update existing hypothesis
+                repo.update_hypothesis(
+                    existing.id,
+                    name=name,  # Keep name (may differ in case)
+                    savings_allocations=json.dumps(savings_allocations),
+                    savings_total=savings_total,
+                    monthly_allocations=json.dumps(monthly_allocations),
+                    monthly_total=monthly_total,
+                    events=json.dumps(events),
+                )
+                return {
+                    "success": True,
+                    "id": existing.id,
+                    "created": False,
+                    "message": f"Updated hypothesis '{name}'",
+                }
+
+            # Check max limit
+            count = repo.count_hypotheses()
+            if count >= self.MAX_HYPOTHESES:
+                return {
+                    "success": False,
+                    "error": f"Maximum of {self.MAX_HYPOTHESES} hypotheses reached. Delete one to save a new one.",
+                }
+
+            # Create new hypothesis
+            hypothesis_id = str(uuid.uuid4())
+            repo.create_hypothesis(
+                hypothesis_id=hypothesis_id,
+                name=name,
+                savings_allocations=json.dumps(savings_allocations),
+                savings_total=savings_total,
+                monthly_allocations=json.dumps(monthly_allocations),
+                monthly_total=monthly_total,
+                events=json.dumps(events),
+            )
+
+            return {
+                "success": True,
+                "id": hypothesis_id,
+                "created": True,
+                "message": f"Saved hypothesis '{name}'",
+            }
+
+    def delete_hypothesis(self, hypothesis_id: str) -> dict[str, Any]:
+        """Delete a hypothesis by ID."""
+        with db_session() as session:
+            repo = TrackerRepository(session)
+            deleted = repo.delete_hypothesis(hypothesis_id)
+
+            if deleted:
+                return {"success": True, "message": "Hypothesis deleted"}
+            return {"success": False, "error": "Hypothesis not found"}

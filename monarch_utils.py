@@ -9,7 +9,6 @@ from typing import Any
 
 from cachetools import TTLCache
 from dotenv import load_dotenv
-from gql import gql
 from monarchmoney import MonarchMoney
 
 from core import config

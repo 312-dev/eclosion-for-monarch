@@ -809,12 +809,11 @@ class SyncService:
                     icon=emoji,
                 )
                 created = True
-            else:
-                # Check if merchant/category name changed - auto-rename if so
-                if cat_state.name != item.category_name:
-                    await self.category_manager.rename_category(
-                        category_id, item.category_name, icon=emoji
-                    )
+            # Check if merchant/category name changed - auto-rename if so
+            elif cat_state.name != item.category_name:
+                await self.category_manager.rename_category(
+                    category_id, item.category_name, icon=emoji
+                )
 
             # Get current balance
             current_balance = all_balances.get(category_id, 0.0)
