@@ -15,6 +15,7 @@ import type {
   StashLayoutUpdate,
   CreateStashItemRequest,
   UpdateStashItemRequest,
+  SaveHypothesisRequest,
 } from '../../types';
 import {
   calculateMonthsRemaining,
@@ -360,6 +361,57 @@ export function useUpdateGroupRolloverMutation() {
       queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.stash, isDemo) });
       // Invalidate available-to-stash since stash balances changed
       queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.availableToStash, isDemo) });
+    },
+  });
+}
+
+// ---- Hypothesis Queries and Mutations ----
+
+/** Fetch all saved hypotheses */
+export function useHypothesesQuery() {
+  const isDemo = useDemo();
+  return useQuery({
+    queryKey: getQueryKey(queryKeys.stashHypotheses, isDemo),
+    queryFn: async () => {
+      const response = isDemo ? await demoApi.getHypotheses() : await api.getHypotheses();
+      // Transform snake_case API response to camelCase frontend types
+      return response.hypotheses.map((h) => ({
+        id: h.id,
+        name: h.name,
+        savingsAllocations: h.savings_allocations,
+        savingsTotal: h.savings_total,
+        monthlyAllocations: h.monthly_allocations,
+        monthlyTotal: h.monthly_total,
+        events: h.events,
+        createdAt: h.created_at ?? new Date().toISOString(),
+        updatedAt: h.updated_at ?? new Date().toISOString(),
+      }));
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/** Save or update a hypothesis */
+export function useSaveHypothesisMutation() {
+  const isDemo = useDemo();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: SaveHypothesisRequest) =>
+      isDemo ? demoApi.saveHypothesis(request) : api.saveHypothesis(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.stashHypotheses, isDemo) });
+    },
+  });
+}
+
+/** Delete a hypothesis */
+export function useDeleteHypothesisMutation() {
+  const isDemo = useDemo();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => (isDemo ? demoApi.deleteHypothesis(id) : api.deleteHypothesis(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getQueryKey(queryKeys.stashHypotheses, isDemo) });
     },
   });
 }

@@ -22,6 +22,11 @@ export type {
   StashSyncResult,
   StashLayoutUpdate,
   StashData,
+  StashHypothesis,
+  SaveHypothesisRequest,
+  SaveHypothesisResponse,
+  GetHypothesesResponse,
+  DeleteHypothesisResponse,
 } from './stash';
 
 // Stash configuration

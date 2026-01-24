@@ -180,6 +180,10 @@ export {
   updateCategoryRolloverBalance,
   // Group rollover balance (for flexible groups)
   updateGroupRolloverBalance,
+  // Hypotheses
+  getHypotheses,
+  saveHypothesis,
+  deleteHypothesis,
 } from './stash';
 
 // Openverse (external image search API)

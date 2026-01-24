@@ -11,6 +11,7 @@
  */
 
 import type { ItemStatus } from './common';
+import type { StashEventsMap } from './stashEvent';
 
 /**
  * Goal type for stash items.
@@ -201,4 +202,81 @@ export interface StashData {
   total_target: number; // Sum of all item amounts
   total_saved: number; // Sum of all current_balance
   total_monthly_target: number; // Sum of all monthly_target
+}
+
+// ---- Hypothesis Types ----
+
+/**
+ * A saved hypothesis for the Distribute wizard's hypothesize mode.
+ * Stores both savings and monthly allocations along with hypothetical events.
+ */
+export interface StashHypothesis {
+  id: string;
+  name: string;
+  /** Screen 1: Savings allocations (stashId -> amount) */
+  savingsAllocations: Record<string, number>;
+  savingsTotal: number;
+  /** Screen 2: Monthly allocations (stashId -> amount) */
+  monthlyAllocations: Record<string, number>;
+  monthlyTotal: number;
+  /** Hypothetical events for projection */
+  events: StashEventsMap;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Request to save a hypothesis.
+ */
+export interface SaveHypothesisRequest {
+  name: string;
+  savingsAllocations: Record<string, number>;
+  savingsTotal: number;
+  monthlyAllocations: Record<string, number>;
+  monthlyTotal: number;
+  events: StashEventsMap;
+}
+
+/**
+ * Response from save hypothesis endpoint.
+ */
+export interface SaveHypothesisResponse {
+  success: boolean;
+  id?: string;
+  created?: boolean;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Raw hypothesis from API (snake_case).
+ * Used internally - transformed to StashHypothesis in queries.
+ */
+export interface StashHypothesisRaw {
+  id: string;
+  name: string;
+  savings_allocations: Record<string, number>;
+  savings_total: number;
+  monthly_allocations: Record<string, number>;
+  monthly_total: number;
+  events: StashEventsMap;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Response from get hypotheses endpoint.
+ */
+export interface GetHypothesesResponse {
+  success: boolean;
+  hypotheses: StashHypothesisRaw[];
+}
+
+/**
+ * Response from delete hypothesis endpoint.
+ */
+export interface DeleteHypothesisResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
 }

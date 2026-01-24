@@ -18,6 +18,10 @@ import type {
   ImportBookmarksResponse,
   PendingBookmarkActionResponse,
   StashHistoryResponse,
+  SaveHypothesisRequest,
+  SaveHypothesisResponse,
+  GetHypothesesResponse,
+  DeleteHypothesisResponse,
 } from '../../types';
 
 /**
@@ -393,5 +397,45 @@ export async function updateGroupRolloverBalance(
   return fetchApi('/stash/update-group-rollover-balance', {
     method: 'POST',
     body: JSON.stringify({ group_id: groupId, amount }),
+  });
+}
+
+// === Hypotheses ===
+
+/**
+ * Get all saved hypotheses.
+ * Used by the Distribute wizard's hypothesize mode.
+ */
+export async function getHypotheses(): Promise<GetHypothesesResponse> {
+  return fetchApi<GetHypothesesResponse>('/stash/hypotheses');
+}
+
+/**
+ * Save a hypothesis.
+ * If a hypothesis with the same name exists (case-insensitive), it will be updated.
+ * Otherwise creates a new one if under the max limit (10).
+ */
+export async function saveHypothesis(
+  request: SaveHypothesisRequest
+): Promise<SaveHypothesisResponse> {
+  return fetchApi<SaveHypothesisResponse>('/stash/hypotheses', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: request.name,
+      savings_allocations: request.savingsAllocations,
+      savings_total: request.savingsTotal,
+      monthly_allocations: request.monthlyAllocations,
+      monthly_total: request.monthlyTotal,
+      events: request.events,
+    }),
+  });
+}
+
+/**
+ * Delete a hypothesis by ID.
+ */
+export async function deleteHypothesis(id: string): Promise<DeleteHypothesisResponse> {
+  return fetchApi<DeleteHypothesisResponse>(`/stash/hypotheses/${id}`, {
+    method: 'DELETE',
   });
 }

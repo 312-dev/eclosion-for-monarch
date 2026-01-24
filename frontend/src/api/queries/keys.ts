@@ -39,6 +39,8 @@ export const queryKeys = {
   availableToStash: ['availableToStash'] as const,
   // Stash History (Reports)
   stashHistory: ['stashHistory'] as const,
+  // Stash Hypotheses
+  stashHypotheses: ['stashHypotheses'] as const,
   // Openverse (image search)
   openverseSearch: ['openverseSearch'] as const,
 };

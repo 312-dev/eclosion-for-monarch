@@ -177,6 +177,10 @@ export {
   useImportBookmarksMutation,
   useClearUnconvertedBookmarksMutation,
   useInvalidatePendingBookmarks,
+  // Hypotheses
+  useHypothesesQuery,
+  useSaveHypothesisMutation,
+  useDeleteHypothesisMutation,
 } from './stashQueries';
 
 // Available to Stash queries
