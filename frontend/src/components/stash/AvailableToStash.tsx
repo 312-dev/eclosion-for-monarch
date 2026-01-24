@@ -11,10 +11,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Icons } from '../icons';
 import { useAvailableToStash } from '../../api/queries';
 import { HoverCard } from '../ui/HoverCard';
-import { formatAvailableAmount } from '../../utils/availableToStash';
 import { BreakdownDetailModal } from './BreakdownDetailModal';
+import { BreakdownRow, BREAKDOWN_LABELS } from './BreakdownComponents';
 import { UI } from '../../constants';
-import type { BreakdownLineItem } from '../../types';
 
 type DisplayMode = 'header' | 'compact';
 
@@ -25,95 +24,6 @@ interface AvailableToStashProps {
   readonly includeExpectedIncome?: boolean;
   /** Reserved buffer amount to subtract from available (from settings) */
   readonly bufferAmount?: number;
-}
-
-interface BreakdownRowProps {
-  readonly label: string;
-  readonly amount: number;
-  readonly isPositive?: boolean;
-  readonly items?: BreakdownLineItem[];
-  readonly onExpand?: () => void;
-}
-
-/**
- * A single row in the breakdown tooltip with optional nested tooltip showing items.
- * The tooltip appears to the RIGHT of the amount when hovered.
- * Numbers with details have a dotted underline to indicate hover-ability.
- */
-function BreakdownRow({ label, amount, isPositive = false, items, onExpand }: BreakdownRowProps) {
-  const color = isPositive ? 'var(--monarch-green)' : 'var(--monarch-red)';
-  const sign = isPositive ? '+' : '-';
-
-  const hasItems = items && items.length > 0;
-
-  const nestedTooltipContent = hasItems ? (
-    <div className="text-xs max-w-64">
-      <div
-        className="flex items-center justify-between font-medium pb-1 mb-1 border-b"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
-        <span>{label}</span>
-        {onExpand && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onExpand();
-            }}
-            className="p-0.5 rounded hover:bg-(--monarch-bg-hover)"
-            style={{ color: 'var(--monarch-text-muted)' }}
-            aria-label={`Expand ${label} details`}
-          >
-            <Icons.Maximize2 size={10} />
-          </button>
-        )}
-      </div>
-      <div
-        className="max-h-40 overflow-y-auto space-y-0.5 pr-1"
-        style={{ scrollbarGutter: 'stable' }}
-      >
-        {items.map((item) => (
-          <div key={item.id} className="flex justify-between gap-4">
-            <span className="truncate" style={{ color: 'var(--monarch-text-muted)' }}>
-              {item.name}
-            </span>
-            <span className="tabular-nums shrink-0" style={{ color }}>
-              {sign}
-              {formatAvailableAmount(item.amount)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  ) : null;
-
-  const amountDisplay = (
-    <span
-      className={hasItems ? 'cursor-help' : ''}
-      style={{
-        color,
-        borderBottom: hasItems
-          ? `1px dashed color-mix(in srgb, ${color} 40%, transparent)`
-          : 'none',
-        paddingBottom: hasItems ? '2px' : undefined,
-      }}
-    >
-      {sign}
-      {formatAvailableAmount(amount)}
-    </span>
-  );
-
-  return (
-    <div className="flex justify-between">
-      <span style={{ color: 'var(--monarch-text-muted)' }}>{label}</span>
-      {hasItems ? (
-        <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
-          {amountDisplay}
-        </HoverCard>
-      ) : (
-        amountDisplay
-      )}
-    </div>
-  );
 }
 
 /**
@@ -180,41 +90,45 @@ export function AvailableToStash({
         </div>
         <div className="space-y-1">
           <BreakdownRow
-            label="Cash on hand"
+            label={BREAKDOWN_LABELS.cashOnHand}
             amount={breakdown.cashOnHand}
             isPositive
             items={detailedBreakdown.cashAccounts}
             onExpand={openModal}
           />
           <BreakdownRow
-            label="Remaining goal funds"
+            label={BREAKDOWN_LABELS.goalBalances}
             amount={breakdown.goalBalances}
             items={detailedBreakdown.goals}
             onExpand={openModal}
           />
           {includeExpectedIncome && breakdown.expectedIncome > 0 && (
-            <BreakdownRow label="Expected income" amount={breakdown.expectedIncome} isPositive />
+            <BreakdownRow
+              label={BREAKDOWN_LABELS.expectedIncome}
+              amount={breakdown.expectedIncome}
+              isPositive
+            />
           )}
           <BreakdownRow
-            label="Credit card debt"
+            label={BREAKDOWN_LABELS.creditCardDebt}
             amount={breakdown.creditCardDebt}
             items={detailedBreakdown.creditCards}
             onExpand={openModal}
           />
           <BreakdownRow
-            label="Unspent budgets"
+            label={BREAKDOWN_LABELS.unspentBudgets}
             amount={breakdown.unspentBudgets}
             items={detailedBreakdown.unspentCategories}
             onExpand={openModal}
           />
           <BreakdownRow
-            label="Stash balances"
+            label={BREAKDOWN_LABELS.stashBalances}
             amount={breakdown.stashBalances}
             items={detailedBreakdown.stashItems}
             onExpand={openModal}
           />
           {breakdown.bufferAmount > 0 && (
-            <BreakdownRow label="Reserved buffer" amount={breakdown.bufferAmount} />
+            <BreakdownRow label={BREAKDOWN_LABELS.reservedBuffer} amount={breakdown.bufferAmount} />
           )}
         </div>
         <div

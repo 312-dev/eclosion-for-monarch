@@ -13,6 +13,11 @@ import { Tooltip } from '../ui/Tooltip';
 import { Icons } from '../icons';
 import { useStashConfigQuery, useUpdateStashConfigMutation } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
+import {
+  BreakdownSection,
+  BREAKDOWN_LABELS,
+  BREAKDOWN_EMPTY_MESSAGES,
+} from './BreakdownComponents';
 import type { AvailableToStashResult } from '../../types';
 import { formatAvailableAmount } from '../../utils/availableToStash';
 
@@ -22,74 +27,6 @@ interface BreakdownDetailModalProps {
   readonly data: AvailableToStashResult;
   readonly statusColor: string;
   readonly formattedAmount: string;
-}
-
-interface BreakdownSectionProps {
-  readonly title: string;
-  readonly items: { id: string; name: string; amount: number }[];
-  readonly total: number;
-  readonly isPositive?: boolean;
-  readonly emptyMessage?: string;
-}
-
-function BreakdownSection({
-  title,
-  items,
-  total,
-  isPositive = false,
-  emptyMessage = 'None',
-}: BreakdownSectionProps) {
-  const color = isPositive ? 'var(--monarch-green)' : 'var(--monarch-red)';
-  const sign = isPositive ? '+' : '-';
-
-  return (
-    <div
-      className="rounded-lg p-4"
-      style={{
-        backgroundColor: 'var(--monarch-bg-page)',
-        border: '1px solid var(--monarch-border)',
-      }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-          {title}
-        </h3>
-        <span className="text-sm font-medium" style={{ color }}>
-          {sign}
-          {formatAvailableAmount(total)}
-        </span>
-      </div>
-
-      {items.length === 0 ? (
-        <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-          {emptyMessage}
-        </p>
-      ) : (
-        <div
-          className="max-h-48 overflow-y-auto space-y-1 pr-2"
-          style={{ scrollbarGutter: 'stable' }}
-        >
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-(--monarch-bg-hover)"
-            >
-              <span
-                className="text-sm truncate flex-1 mr-4"
-                style={{ color: 'var(--monarch-text-muted)' }}
-              >
-                {item.name}
-              </span>
-              <span className="text-sm tabular-nums" style={{ color }}>
-                {sign}
-                {formatAvailableAmount(item.amount)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function BreakdownDetailModal({
@@ -210,18 +147,18 @@ export function BreakdownDetailModal({
 
         {/* Positive contributions */}
         <BreakdownSection
-          title="Cash on Hand"
+          title={BREAKDOWN_LABELS.cashOnHand}
           items={detailedBreakdown.cashAccounts}
           total={breakdown.cashOnHand}
           isPositive
-          emptyMessage="No cash accounts"
+          emptyMessage={BREAKDOWN_EMPTY_MESSAGES.cashOnHand}
         />
 
         <BreakdownSection
-          title="Monarch Goals"
+          title={BREAKDOWN_LABELS.goalBalances}
           items={detailedBreakdown.goals}
           total={breakdown.goalBalances}
-          emptyMessage="No active goals"
+          emptyMessage={BREAKDOWN_EMPTY_MESSAGES.goalBalances}
         />
 
         {includesExpectedIncome && breakdown.expectedIncome > 0 && (
@@ -234,7 +171,7 @@ export function BreakdownDetailModal({
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-                Expected Income
+                {BREAKDOWN_LABELS.expectedIncome}
               </h3>
               <span className="text-sm font-medium" style={{ color: 'var(--monarch-green)' }}>
                 +{formatAvailableAmount(breakdown.expectedIncome)}
@@ -248,24 +185,24 @@ export function BreakdownDetailModal({
 
         {/* Negative contributions (committed funds) */}
         <BreakdownSection
-          title="Credit Card Debt"
+          title={BREAKDOWN_LABELS.creditCardDebt}
           items={detailedBreakdown.creditCards}
           total={breakdown.creditCardDebt}
-          emptyMessage="No credit card balances"
+          emptyMessage={BREAKDOWN_EMPTY_MESSAGES.creditCardDebt}
         />
 
         <BreakdownSection
-          title="Unspent Budgets"
+          title={BREAKDOWN_LABELS.unspentBudgets}
           items={detailedBreakdown.unspentCategories}
           total={breakdown.unspentBudgets}
-          emptyMessage="All budgets fully spent"
+          emptyMessage={BREAKDOWN_EMPTY_MESSAGES.unspentBudgets}
         />
 
         <BreakdownSection
-          title="Stash Balances"
+          title={BREAKDOWN_LABELS.stashBalances}
           items={detailedBreakdown.stashItems}
           total={breakdown.stashBalances}
-          emptyMessage="No stash balances"
+          emptyMessage={BREAKDOWN_EMPTY_MESSAGES.stashBalances}
         />
 
         {/* Buffer Input */}
@@ -279,7 +216,7 @@ export function BreakdownDetailModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-                Reserved Buffer
+                {BREAKDOWN_LABELS.reservedBuffer}
               </h3>
             </div>
             <div className="flex items-center gap-2">

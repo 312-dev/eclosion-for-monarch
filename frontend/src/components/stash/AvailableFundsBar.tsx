@@ -6,16 +6,21 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Icons } from '../icons';
-import { useAvailableToStash, useStashConfigQuery, useUpdateStashConfigMutation } from '../../api/queries';
+import {
+  useAvailableToStash,
+  useStashConfigQuery,
+  useUpdateStashConfigMutation,
+} from '../../api/queries';
 import { HoverCard } from '../ui/HoverCard';
-import { formatAvailableAmount } from '../../utils/availableToStash';
 import { BreakdownDetailModal } from './BreakdownDetailModal';
+import { BreakdownRow, ExpectedIncomeRow, BREAKDOWN_LABELS } from './BreakdownComponents';
 import { BufferInputRow } from './BufferInputRow';
 import { DistributeButton, HypothesizeButton } from './DistributeButton';
 import { useToast } from '../../context/ToastContext';
 import { UI } from '../../constants';
-import type { BreakdownLineItem, StashItem } from '../../types';
+import type { StashItem } from '../../types';
 
 /** Format currency with no decimals */
 function formatCurrency(amount: number): string {
@@ -34,93 +39,6 @@ interface AvailableFundsBarProps {
   readonly items: StashItem[];
 }
 
-interface BreakdownRowProps {
-  readonly label: string;
-  readonly amount: number;
-  readonly isPositive?: boolean;
-  readonly items?: BreakdownLineItem[];
-  readonly onExpand?: () => void;
-}
-
-/**
- * A single row in the breakdown tooltip with optional nested tooltip showing items.
- */
-function BreakdownRow({ label, amount, isPositive = false, items, onExpand }: BreakdownRowProps) {
-  const color = isPositive ? 'var(--monarch-green)' : 'var(--monarch-red)';
-  const sign = isPositive ? '+' : '-';
-
-  const hasItems = items && items.length > 0;
-
-  const nestedTooltipContent = hasItems ? (
-    <div className="text-xs max-w-64">
-      <div
-        className="flex items-center justify-between font-medium pb-1 mb-1 border-b"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
-        <span>{label}</span>
-        {onExpand && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onExpand();
-            }}
-            className="p-0.5 rounded hover:bg-(--monarch-bg-hover)"
-            style={{ color: 'var(--monarch-text-muted)' }}
-            aria-label={`Expand ${label} details`}
-          >
-            <Icons.Maximize2 size={10} />
-          </button>
-        )}
-      </div>
-      <div
-        className="max-h-40 overflow-y-auto space-y-0.5 pr-1"
-        style={{ scrollbarGutter: 'stable' }}
-      >
-        {items.map((item) => (
-          <div key={item.id} className="flex justify-between gap-4">
-            <span className="truncate" style={{ color: 'var(--monarch-text-muted)' }}>
-              {item.name}
-            </span>
-            <span className="tabular-nums shrink-0" style={{ color }}>
-              {sign}
-              {formatAvailableAmount(item.amount)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  ) : null;
-
-  const amountDisplay = (
-    <span
-      className={hasItems ? 'cursor-help' : ''}
-      style={{
-        color,
-        borderBottom: hasItems
-          ? `1px dashed color-mix(in srgb, ${color} 40%, transparent)`
-          : 'none',
-        paddingBottom: hasItems ? '2px' : undefined,
-      }}
-    >
-      {sign}
-      {formatAvailableAmount(amount)}
-    </span>
-  );
-
-  return (
-    <div className="flex justify-between">
-      <span style={{ color: 'var(--monarch-text-muted)' }}>{label}</span>
-      {hasItems ? (
-        <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
-          {amountDisplay}
-        </HoverCard>
-      ) : (
-        amountDisplay
-      )}
-    </div>
-  );
-}
-
 export function AvailableFundsBar({
   includeExpectedIncome = false,
   bufferAmount = 0,
@@ -137,10 +55,13 @@ export function AvailableFundsBar({
   const updateConfig = useUpdateStashConfigMutation();
   const savedBuffer = config?.bufferAmount ?? 0;
 
-  const { data, isLoading } = useAvailableToStash({
+  const { data, rawData, isLoading } = useAvailableToStash({
     includeExpectedIncome,
     bufferAmount,
   });
+
+  // Calculate raw expected income regardless of toggle setting
+  const rawExpectedIncome = rawData ? Math.max(0, rawData.plannedIncome - rawData.actualIncome) : 0;
 
   const breakdown = data?.breakdown;
   const detailedBreakdown = data?.detailedBreakdown;
@@ -199,6 +120,15 @@ export function AvailableFundsBar({
     [updateConfig, toast]
   );
 
+  // Toggle expected income setting
+  const handleToggleExpectedIncome = useCallback(async () => {
+    try {
+      await updateConfig.mutateAsync({ includeExpectedIncome: !includeExpectedIncome });
+    } catch {
+      toast.error('Failed to update setting');
+    }
+  }, [updateConfig, includeExpectedIncome, toast]);
+
   const openModal = () => setIsModalOpen(true);
 
   const tooltipContent =
@@ -211,36 +141,38 @@ export function AvailableFundsBar({
           Calculation Breakdown
         </div>
         <div className="space-y-1">
+          <ExpectedIncomeRow
+            amount={rawExpectedIncome}
+            isEnabled={includeExpectedIncome}
+            onToggle={handleToggleExpectedIncome}
+          />
           <BreakdownRow
-            label="Cash on hand"
+            label={BREAKDOWN_LABELS.cashOnHand}
             amount={breakdown.cashOnHand}
             isPositive
             items={detailedBreakdown.cashAccounts}
             onExpand={openModal}
           />
           <BreakdownRow
-            label="Remaining goal funds"
+            label={BREAKDOWN_LABELS.goalBalances}
             amount={breakdown.goalBalances}
             items={detailedBreakdown.goals}
             onExpand={openModal}
           />
-          {includeExpectedIncome && breakdown.expectedIncome > 0 && (
-            <BreakdownRow label="Expected income" amount={breakdown.expectedIncome} isPositive />
-          )}
           <BreakdownRow
-            label="Credit card debt"
+            label={BREAKDOWN_LABELS.creditCardDebt}
             amount={breakdown.creditCardDebt}
             items={detailedBreakdown.creditCards}
             onExpand={openModal}
           />
           <BreakdownRow
-            label="Unspent budgets"
+            label={BREAKDOWN_LABELS.unspentBudgets}
             amount={breakdown.unspentBudgets}
             items={detailedBreakdown.unspentCategories}
             onExpand={openModal}
           />
           <BreakdownRow
-            label="Stash balances"
+            label={BREAKDOWN_LABELS.stashBalances}
             amount={breakdown.stashBalances}
             items={detailedBreakdown.stashItems}
             onExpand={openModal}
@@ -261,88 +193,130 @@ export function AvailableFundsBar({
       </div>
     ) : null;
 
+  // Shared box shadow style for the floating card - pronounced with wide spread
+  const cardShadow =
+    '0 -12px 48px rgba(0, 0, 0, 0.25), 0 -4px 16px rgba(0, 0, 0, 0.15), 0 0 80px rgba(0, 0, 0, 0.1)';
+
+  // Sidebar width for centering calculation
+  const sidebarWidth = 220;
+
   if (isLoading) {
-    return (
-      <div
-        className="flex items-center justify-between rounded-lg px-6 py-4 mt-4 mb-4"
-        style={{
-          backgroundColor: 'var(--monarch-bg-card)',
-          border: '1px solid var(--monarch-border)',
-        }}
-      >
-        <div className="flex items-center gap-3 animate-pulse">
-          <div className="h-8 w-24 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
+    return createPortal(
+      <>
+        {/* Vignette gradient - full width, behind footer (z-10) */}
+        <div
+          className="fixed bottom-0 left-0 right-0 h-64 z-10 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(to top, var(--monarch-bg-page) 0%, var(--monarch-bg-page) 40%, transparent 100%)',
+          }}
+        />
+        {/* Fixed floating card - centered in content area (right of sidebar) */}
+        <div
+          className="fixed bottom-18 right-0 z-40 flex justify-center pointer-events-none"
+          style={{ left: sidebarWidth }}
+        >
+          <div
+            className="pointer-events-auto flex items-center justify-center rounded-xl px-6 py-4 max-w-75 w-full mx-4 animate-pulse"
+            style={{
+              backgroundColor: 'var(--monarch-bg-card)',
+              border: '1px solid var(--monarch-border)',
+              boxShadow: cardShadow,
+            }}
+          >
+            <div
+              className="h-8 w-24 rounded"
+              style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+            />
+          </div>
         </div>
-      </div>
+      </>,
+      document.body
     );
   }
 
-  return (
+  const floatingBar = createPortal(
     <>
+      {/* Vignette gradient - full width, behind footer (z-10) */}
       <div
-        className={`rounded-xl mt-4 mb-4 overflow-hidden ${shouldShake ? 'animate-error-shake' : ''}`}
+        className="fixed bottom-0 left-0 right-0 h-64 z-10 pointer-events-none"
         style={{
-          backgroundColor: 'var(--monarch-bg-card)',
-          border: '1px solid var(--monarch-border)',
+          background:
+            'linear-gradient(to top, var(--monarch-bg-page) 0%, var(--monarch-bg-page) 40%, transparent 100%)',
         }}
+      />
+      {/* Fixed floating card - centered in content area (right of sidebar) */}
+      <div
+        className="fixed bottom-18 right-0 z-40 flex justify-center pointer-events-none"
+        style={{ left: sidebarWidth }}
       >
-        {/* Header section */}
         <div
-          className="flex items-center justify-center gap-2 px-4 py-2"
-          style={{ borderBottom: '1px solid var(--monarch-border)' }}
+          className={`pointer-events-auto rounded-xl overflow-hidden max-w-75 w-full mx-4 ${shouldShake ? 'animate-error-shake' : ''}`}
+          style={{
+            backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
+            boxShadow: cardShadow,
+          }}
         >
-          <Icons.Landmark
-            size={16}
-            style={{ color: 'var(--monarch-text-muted)' }}
-            aria-hidden="true"
-          />
-          <span
-            className="text-sm font-medium"
-            style={{ color: 'var(--monarch-text-muted)' }}
+          {/* Header section */}
+          <div
+            className="flex items-center justify-center gap-2 px-4 py-2"
+            style={{ borderBottom: '1px solid var(--monarch-border)' }}
           >
-            Available Funds
-          </span>
-        </div>
-
-        {/* Amount section */}
-        <div
-          className="flex items-center justify-center gap-2 px-4 py-3"
-          style={{ borderBottom: '1px solid var(--monarch-border)' }}
-        >
-          <span
-            className="text-3xl font-bold tabular-nums"
-            style={{ color: displayedStatusColor }}
-          >
-            {displayedFormattedAmount}
-          </span>
-          <HoverCard content={tooltipContent} side="bottom" align="center" closeDelay={400}>
-            <Icons.Info
+            <Icons.Landmark
               size={16}
-              className="cursor-help"
               style={{ color: 'var(--monarch-text-muted)' }}
+              aria-hidden="true"
             />
-          </HoverCard>
-        </div>
+            <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
+              Available Funds
+            </span>
+          </div>
 
-        {/* Button group section */}
-        <div className="flex">
-          <HypothesizeButton
-            availableAmount={displayedAvailable}
-            leftToBudget={leftToBudget}
-            items={items}
-            compact
-            groupPosition="left"
-          />
-          <DistributeButton
-            availableAmount={displayedAvailable}
-            leftToBudget={leftToBudget}
-            items={items}
-            compact
-            groupPosition="right"
-          />
+          {/* Amount section */}
+          <div
+            className="flex items-center justify-center px-4 py-3"
+            style={{ borderBottom: '1px solid var(--monarch-border)' }}
+          >
+            <HoverCard content={tooltipContent} side="top" align="center" closeDelay={400}>
+              <div className="flex items-center gap-2 cursor-help">
+                <span
+                  className="text-3xl font-bold tabular-nums"
+                  style={{ color: displayedStatusColor }}
+                >
+                  {displayedFormattedAmount}
+                </span>
+                <Icons.Info size={16} style={{ color: 'var(--monarch-text-muted)' }} />
+              </div>
+            </HoverCard>
+          </div>
+
+          {/* Button group section */}
+          <div className="flex">
+            <HypothesizeButton
+              availableAmount={displayedAvailable}
+              leftToBudget={leftToBudget}
+              items={items}
+              compact
+              groupPosition="left"
+            />
+            <DistributeButton
+              availableAmount={displayedAvailable}
+              leftToBudget={leftToBudget}
+              items={items}
+              compact
+              groupPosition="right"
+            />
+          </div>
         </div>
       </div>
+    </>,
+    document.body
+  );
 
+  return (
+    <>
+      {floatingBar}
       {data && (
         <BreakdownDetailModal
           isOpen={isModalOpen}
