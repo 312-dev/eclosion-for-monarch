@@ -41,7 +41,7 @@ interface DistributeItemRowProps {
   readonly onInputModeChange?: (mode: InputMode) => void;
   /** Whether to show target info (target amount and date) */
   readonly showTargetInfo?: boolean;
-  /** Whether to show live projection ("with contributions" calculation) - only on monthly step */
+  /** Whether to show live projection ("per trajectory" calculation) - only on monthly step */
   readonly showLiveProjection?: boolean;
   /** Format a date string for display */
   readonly formatDate?: (dateString: string) => string;
@@ -59,23 +59,6 @@ interface DistributeItemRowProps {
   readonly onUpdateEvent?: ((eventId: string, updates: Partial<StashEvent>) => void) | undefined;
   /** Callback to remove an event */
   readonly onRemoveEvent?: ((eventId: string) => void) | undefined;
-}
-
-/**
- * Calculate projected completion date based on current rate.
- */
-function calculateProjectedDate(
-  currentBalance: number,
-  targetAmount: number,
-  monthlyContribution: number
-): Date | null {
-  if (!targetAmount || monthlyContribution <= 0) return null;
-  const remaining = targetAmount - currentBalance;
-  if (remaining <= 0) return new Date(); // Already funded
-  const monthsNeeded = Math.ceil(remaining / monthlyContribution);
-  const projected = new Date();
-  projected.setMonth(projected.getMonth() + monthsNeeded);
-  return projected;
 }
 
 /**
@@ -232,22 +215,14 @@ export function DistributeItemRow({
     // Skip projection if no monthly rate AND no contributing events
     if (amount <= 0 && !has1xEvents && !hasMoEvents) return { projectedDate: null, projectionAttempted: false };
 
-    // Use event-aware calculation if events exist, otherwise fall back to simple calculation
-    if (itemEvents.length > 0) {
-      const result = calculateProjectedDateWithEvents(
-        newStartingBalance,
-        item.amount,
-        amount,
-        itemEvents
-      );
-      return { projectedDate: result.projectedDate, projectionAttempted: true };
-    }
-
-    // Simple calculation without events
-    return {
-      projectedDate: calculateProjectedDate(newStartingBalance, item.amount, amount),
-      projectionAttempted: true,
-    };
+    // Always use event-aware calculation for consistency with "needed" hint
+    const result = calculateProjectedDateWithEvents(
+      newStartingBalance,
+      item.amount,
+      amount,
+      itemEvents
+    );
+    return { projectedDate: result.projectedDate, projectionAttempted: true };
     // itemEvents is a readonly prop that won't be mutated externally
     // eslint-disable-next-line react-hooks/preserve-manual-memoization
   }, [showLiveProjection, amount, newStartingBalance, item.amount, itemEvents]);
@@ -403,7 +378,7 @@ export function DistributeItemRow({
                       ) : (
                         <Icons.ClockArrowUp size={12} />
                       )}
-                      <span>{formatDateShortYear(projectedDate)} with contributions</span>
+                      <span>{formatDateShortYear(projectedDate)} per trajectory</span>
                     </div>
                   );
                 }
@@ -462,6 +437,36 @@ export function DistributeItemRow({
               </button>
             </Tooltip>
           )}
+          {/* "Needed" hint when current rate is insufficient to reach goal on time */}
+          {(() => {
+            // Only show on monthly screen with a target date
+            if (!showLiveProjection || !item.target_date || !onApplySuggestion) return null;
+            // Already funded - no hint needed
+            if (newStartingBalance >= item.amount) return null;
+            // Calculate the monthly rate required to reach goal by target date
+            const requiredMonthlyRate = calculateMinimumRateWithEvents(
+              newStartingBalance,
+              item.amount,
+              item.target_date,
+              itemEvents
+            );
+            // Only show if current amount is less than required
+            if (amount >= requiredMonthlyRate) return null;
+            return (
+              <Tooltip content="Click to set the monthly amount needed to reach your goal on time">
+                <button
+                  type="button"
+                  onClick={() => onApplySuggestion(item.id, requiredMonthlyRate)}
+                  className="flex items-center gap-1 mt-1 text-xs transition-colors cursor-pointer"
+                  style={{ color: 'var(--monarch-warning)' }}
+                  aria-label={`Apply required amount of ${formatCurrency(requiredMonthlyRate)} per month`}
+                >
+                  <Icons.Sparkles size={12} />
+                  <span>{formatCurrency(requiredMonthlyRate)}/mo needed</span>
+                </button>
+              </Tooltip>
+            );
+          })()}
 
           {/* Events section - only on monthly screen, right-aligned under input */}
           {showLiveProjection && (

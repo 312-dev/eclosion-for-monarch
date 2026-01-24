@@ -37,25 +37,37 @@ function formatCurrency(amount: number): string {
 
 /**
  * Skeleton placeholder for summary cards (4-card grid).
+ * Matches StashSummaryCards layout: label at top, large value at bottom.
  */
 function CardsSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className="rounded-lg p-6 animate-pulse"
+          className="rounded-lg p-6 flex flex-col animate-pulse"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
             border: '1px solid var(--monarch-border)',
           }}
         >
+          {/* Label row with optional percentage placeholder */}
+          <div className="flex items-center justify-between mb-8">
+            <div
+              className="h-3.5 w-20 rounded"
+              style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+            />
+            {/* Show percentage placeholder on some cards */}
+            {i % 2 === 1 && (
+              <div
+                className="h-3.5 w-12 rounded"
+                style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+              />
+            )}
+          </div>
+          {/* Large value at bottom */}
           <div
-            className="h-8 w-32 rounded mb-2"
-            style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-          />
-          <div
-            className="h-4 w-24 rounded"
+            className="h-9 w-28 rounded"
             style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
           />
         </div>

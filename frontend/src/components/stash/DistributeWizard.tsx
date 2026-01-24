@@ -22,6 +22,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { DistributeScreen } from './DistributeScreen';
 import { DistributeReviewScreen } from './DistributeReviewScreen';
+import { SaveHypothesisOverlay } from './SaveHypothesisOverlay';
+import { LoadHypothesisOverlay } from './LoadHypothesisOverlay';
 import { StepIndicator } from '../wizards/StepIndicator';
 import { Icons } from '../icons';
 import { Tooltip } from '../ui';
@@ -32,11 +34,18 @@ import {
   useUpdateCategoryRolloverMutation,
   useUpdateGroupRolloverMutation,
   useDashboardQuery,
+  useHypothesesQuery,
+  useSaveHypothesisMutation,
+  useDeleteHypothesisMutation,
 } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { useIsRateLimited } from '../../context/RateLimitContext';
-import type { StashItem, StashEventsMap, StashEvent } from '../../types';
-import { getCurrentMonthKey } from '../../utils/eventProjection';
+import type { StashItem, StashEventsMap, StashEvent, StashHypothesis } from '../../types';
+import {
+  getCurrentMonthKey,
+  calculateProjectedDateWithEvents,
+  formatMonthKeyShort,
+} from '../../utils/eventProjection';
 
 type WizardStep = 'savings' | 'monthly' | 'review';
 
@@ -92,10 +101,22 @@ export function DistributeWizard({
   const [copiedMarkdown, setCopiedMarkdown] = useState('');
   const previewTextRef = useRef<HTMLPreElement>(null);
 
+  // Hypothesis save/load state
+  const [showSaveOverlay, setShowSaveOverlay] = useState(false);
+  const [showLoadOverlay, setShowLoadOverlay] = useState(false);
+  const [lastSavedName, setLastSavedName] = useState('');
+  const [deletingHypothesisId, setDeletingHypothesisId] = useState<string | null>(null);
+
+  // Hypothesis queries and mutations
+  const { data: hypotheses = [], isLoading: isLoadingHypotheses } = useHypothesesQuery();
+  const saveHypothesisMutation = useSaveHypothesisMutation();
+  const deleteHypothesisMutation = useDeleteHypothesisMutation();
+
   // Calculate the two pools
   const existingSavings = Math.max(0, availableAmount - leftToBudget);
   const monthlyIncome = leftToBudget > 0 ? leftToBudget : 100; // Default $100 if no leftToBudget
-  const hasSavingsStep = existingSavings > 0;
+  // In hypothesize mode, always show both screens; in distribute mode, only if there are existing savings
+  const hasSavingsStep = activeMode === 'hypothesize' || existingSavings > 0;
 
   // Step state
   const [step, setStep] = useState<WizardStep>('savings');
@@ -325,7 +346,8 @@ export function DistributeWizard({
       }
 
       onClose();
-    } catch {
+    } catch (error) {
+      console.error('Failed to distribute funds:', error);
       toast.error('Failed to distribute funds. Please try again.');
     }
   }, [
@@ -500,6 +522,21 @@ export function DistributeWizard({
     return tableLines;
   }, []);
 
+  // Helper to format date with shorthand year
+  const formatDateShortYear = useCallback((date: Date): string => {
+    const currentYear = new Date().getFullYear();
+    const targetYear = date.getFullYear();
+    const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (targetYear === currentYear) return monthDay;
+    return `${monthDay}, '${targetYear.toString().slice(-2)}`;
+  }, []);
+
+  // Helper to format target date string
+  const formatTargetDate = useCallback((dateString: string): string => {
+    const date = new Date(dateString + 'T00:00:00');
+    return formatDateShortYear(date);
+  }, [formatDateShortYear]);
+
   // Generate markdown for CURRENT screen only
   const generateCurrentScreenMarkdown = useCallback(() => {
     const lines: string[] = [];
@@ -514,10 +551,24 @@ export function DistributeWizard({
         lines.push(`**Allocated:** ${formatCurrency(totalSavings)}`);
         lines.push('');
 
-        const headers = ['Stash', 'Allocation'];
+        const headers = ['Stash', 'Balance', 'Target', 'Allocation', 'New Balance'];
         const rows = items
           .filter(item => (savingsAllocations[item.id] ?? 0) > 0)
-          .map(item => [item.name, formatCurrency(savingsAllocations[item.id] ?? 0)]);
+          .map(item => {
+            const allocation = savingsAllocations[item.id] ?? 0;
+            const newBalance = item.current_balance + allocation;
+            const datePart = item.target_date ? ` by ${formatTargetDate(item.target_date)}` : '';
+            const targetStr = item.amount
+              ? `${formatCurrency(item.amount)}${datePart}`
+              : 'No target';
+            return [
+              item.name,
+              formatCurrency(item.current_balance),
+              targetStr,
+              `+${formatCurrency(allocation)}`,
+              formatCurrency(newBalance),
+            ];
+          });
 
         if (rows.length > 0) {
           lines.push(...formatTable(headers, rows));
@@ -535,13 +586,63 @@ export function DistributeWizard({
         lines.push(`**Allocated:** ${formatCurrency(totalMonthly)}/mo`);
         lines.push('');
 
-        const headers = ['Stash', 'Contribution'];
+        // Calculate starting balances (current + savings rollover)
+        const headers = ['Stash', 'Starting', 'Target', 'Contribution', 'Projected'];
         const rows = items
           .filter(item => (monthlyAllocations[item.id] ?? 0) > 0)
-          .map(item => [item.name, `${formatCurrency(monthlyAllocations[item.id] ?? 0)}/mo`]);
+          .map(item => {
+            const monthlyAmount = monthlyAllocations[item.id] ?? 0;
+            const rolloverAmount = savingsAllocations[item.id] ?? 0;
+            const startingBalance = item.current_balance + rolloverAmount;
+            const datePart = item.target_date ? ` by ${formatTargetDate(item.target_date)}` : '';
+            const targetStr = item.amount
+              ? `${formatCurrency(item.amount)}${datePart}`
+              : 'No target';
+
+            // Calculate projected date
+            const itemEvents = stashEvents[item.id] ?? [];
+            const { projectedDate } = calculateProjectedDateWithEvents(
+              startingBalance,
+              item.amount,
+              monthlyAmount,
+              itemEvents
+            );
+            const projectedStr = projectedDate
+              ? formatDateShortYear(projectedDate)
+              : startingBalance >= item.amount
+                ? 'Funded'
+                : 'N/A';
+
+            return [
+              item.name,
+              formatCurrency(startingBalance),
+              targetStr,
+              `${formatCurrency(monthlyAmount)}/mo`,
+              projectedStr,
+            ];
+          });
 
         if (rows.length > 0) {
           lines.push(...formatTable(headers, rows));
+        }
+
+        // Add events section if any exist
+        const itemsWithEvents = items.filter(item =>
+          (monthlyAllocations[item.id] ?? 0) > 0 && (stashEvents[item.id]?.length ?? 0) > 0
+        );
+        if (itemsWithEvents.length > 0) {
+          lines.push('');
+          lines.push('### Planned Events');
+          lines.push('');
+          for (const item of itemsWithEvents) {
+            const events = stashEvents[item.id] ?? [];
+            lines.push(`**${item.name}:**`);
+            for (const event of events) {
+              const typeStr = event.type === '1x' ? '1x deposit' : 'rate change to';
+              const monthStr = formatMonthKeyShort(event.month);
+              lines.push(`- ${formatCurrency(event.amount)} ${typeStr} in ${monthStr}`);
+            }
+          }
         }
       } else {
         lines.push('*No allocations configured yet.*');
@@ -549,7 +650,7 @@ export function DistributeWizard({
     }
 
     return lines.join('\n');
-  }, [step, savingsAllocations, monthlyAllocations, items, effectiveSavingsAmount, effectiveMonthlyAmount, formatCurrency, formatTable]);
+  }, [step, savingsAllocations, monthlyAllocations, items, effectiveSavingsAmount, effectiveMonthlyAmount, stashEvents, formatCurrency, formatTable, formatTargetDate, formatDateShortYear]);
 
   // Generate FULL markdown summary (for review screen)
   const generateFullSummary = useCallback(() => {
@@ -565,10 +666,24 @@ export function DistributeWizard({
       lines.push(`**Allocated:** ${formatCurrency(totalSavings)}`);
       lines.push('');
 
-      const headers = ['Stash', 'Allocation'];
+      const headers = ['Stash', 'Balance', 'Target', 'Allocation', 'New Balance'];
       const rows = items
         .filter(item => (savingsAllocations[item.id] ?? 0) > 0)
-        .map(item => [item.name, formatCurrency(savingsAllocations[item.id] ?? 0)]);
+        .map(item => {
+          const allocation = savingsAllocations[item.id] ?? 0;
+          const newBalance = item.current_balance + allocation;
+          const datePart = item.target_date ? ` by ${formatTargetDate(item.target_date)}` : '';
+          const targetStr = item.amount
+            ? `${formatCurrency(item.amount)}${datePart}`
+            : 'No target';
+          return [
+            item.name,
+            formatCurrency(item.current_balance),
+            targetStr,
+            `+${formatCurrency(allocation)}`,
+            formatCurrency(newBalance),
+          ];
+        });
 
       if (rows.length > 0) {
         lines.push(...formatTable(headers, rows));
@@ -586,13 +701,62 @@ export function DistributeWizard({
       lines.push(`**Allocated:** ${formatCurrency(totalMonthly)}/mo`);
       lines.push('');
 
-      const headers = ['Stash', 'Contribution'];
+      const headers = ['Stash', 'Starting', 'Target', 'Contribution', 'Projected'];
       const rows = items
         .filter(item => (monthlyAllocations[item.id] ?? 0) > 0)
-        .map(item => [item.name, `${formatCurrency(monthlyAllocations[item.id] ?? 0)}/mo`]);
+        .map(item => {
+          const monthlyAmount = monthlyAllocations[item.id] ?? 0;
+          const rolloverAmount = savingsAllocations[item.id] ?? 0;
+          const startingBalance = item.current_balance + rolloverAmount;
+          const datePart = item.target_date ? ` by ${formatTargetDate(item.target_date)}` : '';
+          const targetStr = item.amount
+            ? `${formatCurrency(item.amount)}${datePart}`
+            : 'No target';
+
+          // Calculate projected date
+          const itemEvents = stashEvents[item.id] ?? [];
+          const { projectedDate } = calculateProjectedDateWithEvents(
+            startingBalance,
+            item.amount,
+            monthlyAmount,
+            itemEvents
+          );
+          const projectedStr = projectedDate
+            ? formatDateShortYear(projectedDate)
+            : startingBalance >= item.amount
+              ? 'Funded'
+              : 'N/A';
+
+          return [
+            item.name,
+            formatCurrency(startingBalance),
+            targetStr,
+            `${formatCurrency(monthlyAmount)}/mo`,
+            projectedStr,
+          ];
+        });
 
       if (rows.length > 0) {
         lines.push(...formatTable(headers, rows));
+      }
+
+      // Add events section if any exist
+      const itemsWithEvents = items.filter(item =>
+        (monthlyAllocations[item.id] ?? 0) > 0 && (stashEvents[item.id]?.length ?? 0) > 0
+      );
+      if (itemsWithEvents.length > 0) {
+        lines.push('');
+        lines.push('### Planned Events');
+        lines.push('');
+        for (const item of itemsWithEvents) {
+          const events = stashEvents[item.id] ?? [];
+          lines.push(`**${item.name}:**`);
+          for (const event of events) {
+            const typeStr = event.type === '1x' ? '1x deposit' : 'rate change to';
+            const monthStr = formatMonthKeyShort(event.month);
+            lines.push(`- ${formatCurrency(event.amount)} ${typeStr} in ${monthStr}`);
+          }
+        }
       }
       lines.push('');
     }
@@ -603,7 +767,7 @@ export function DistributeWizard({
     }
 
     return lines.join('\n');
-  }, [savingsAllocations, monthlyAllocations, items, effectiveSavingsAmount, effectiveMonthlyAmount, formatCurrency, formatTable]);
+  }, [savingsAllocations, monthlyAllocations, items, effectiveSavingsAmount, effectiveMonthlyAmount, stashEvents, formatCurrency, formatTable, formatTargetDate, formatDateShortYear]);
 
   // Copy current screen to clipboard - shows preview modal
   const handleCopyCurrentScreen = useCallback(async () => {
@@ -649,6 +813,49 @@ export function DistributeWizard({
     }
   }, [generateFullSummary, toast]);
 
+  // Hypothesis handlers
+  const handleSaveHypothesis = useCallback(async (name: string) => {
+    try {
+      await saveHypothesisMutation.mutateAsync({
+        name,
+        savingsAllocations,
+        savingsTotal: Object.values(savingsAllocations).reduce((sum, v) => sum + v, 0),
+        monthlyAllocations,
+        monthlyTotal: Object.values(monthlyAllocations).reduce((sum, v) => sum + v, 0),
+        events: stashEvents,
+      });
+      setLastSavedName(name);
+      setShowSaveOverlay(false);
+      toast.success(`Hypothesis "${name}" saved`);
+    } catch {
+      toast.error('Failed to save hypothesis');
+    }
+  }, [saveHypothesisMutation, savingsAllocations, monthlyAllocations, stashEvents, toast]);
+
+  const handleLoadHypothesis = useCallback((hypothesis: StashHypothesis) => {
+    setSavingsAllocations(hypothesis.savingsAllocations);
+    setMonthlyAllocations(hypothesis.monthlyAllocations);
+    setStashEvents(hypothesis.events);
+    setCustomSavingsAmount(hypothesis.savingsTotal > 0 ? hypothesis.savingsTotal : 100);
+    setCustomMonthlyAmount(hypothesis.monthlyTotal > 0 ? hypothesis.monthlyTotal : 100);
+    setLastSavedName(hypothesis.name);
+    // Navigate to savings step to review loaded data
+    setStep('savings');
+    toast.success(`Loaded "${hypothesis.name}"`);
+  }, [toast]);
+
+  const handleDeleteHypothesis = useCallback(async (id: string) => {
+    setDeletingHypothesisId(id);
+    try {
+      await deleteHypothesisMutation.mutateAsync(id);
+      toast.success('Hypothesis deleted');
+    } catch {
+      toast.error('Failed to delete hypothesis');
+    } finally {
+      setDeletingHypothesisId(null);
+    }
+  }, [deleteHypothesisMutation, toast]);
+
   // Tooltip message for "Keep going" button
   const keepGoingTooltip = remaining > 0
     ? `Allocate ${formatCurrency(remaining)} more to continue`
@@ -665,21 +872,47 @@ export function DistributeWizard({
     Object.values(monthlyAllocations).some(v => v > 0);
   const canCopy = step === 'review' ? hasAnyAllocations : hasCurrentScreenAllocations;
 
-  // Header actions for hypothesize mode (copy button in header)
+  // Header actions for hypothesize mode (load, save, copy buttons)
   const headerActions = activeMode === 'hypothesize' ? (
-    <button
-      onClick={step === 'review' ? handleCopyFullSummary : handleCopyCurrentScreen}
-      disabled={!canCopy}
-      className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-        canCopy
-          ? 'text-monarch-text-muted hover:text-monarch-text-dark hover:bg-monarch-bg-hover'
-          : 'text-monarch-text-muted/50 cursor-not-allowed'
-      }`}
-      aria-label="Copy to clipboard"
-    >
-      <Icons.Upload size={16} />
-      Copy
-    </button>
+    <div className="flex items-center gap-1">
+      {/* Load button */}
+      <Tooltip content="Load saved hypothesis">
+        <button
+          onClick={() => setShowLoadOverlay(true)}
+          className="p-2 text-monarch-text-muted hover:text-monarch-text-dark hover:bg-monarch-bg-hover rounded-md transition-colors"
+          aria-label="Load hypothesis"
+        >
+          <Icons.Download size={16} />
+        </button>
+      </Tooltip>
+
+      {/* Save button */}
+      <Tooltip content="Save hypothesis">
+        <button
+          onClick={() => setShowSaveOverlay(true)}
+          className="p-2 text-monarch-text-muted hover:text-monarch-text-dark hover:bg-monarch-bg-hover rounded-md transition-colors"
+          aria-label="Save hypothesis"
+        >
+          <Icons.Save size={16} />
+        </button>
+      </Tooltip>
+
+      {/* Copy button (icon only) */}
+      <Tooltip content="Copy to clipboard">
+        <button
+          onClick={step === 'review' ? handleCopyFullSummary : handleCopyCurrentScreen}
+          disabled={!canCopy}
+          className={`p-2 rounded-md transition-colors ${
+            canCopy
+              ? 'text-monarch-text-muted hover:text-monarch-text-dark hover:bg-monarch-bg-hover'
+              : 'text-monarch-text-muted/50 cursor-not-allowed'
+          }`}
+          aria-label="Copy to clipboard"
+        >
+          <Icons.Copy size={16} />
+        </button>
+      </Tooltip>
+    </div>
   ) : null;
 
   return (
@@ -919,6 +1152,28 @@ export function DistributeWizard({
           </div>
         </div>
       )}
+
+      {/* Save hypothesis overlay */}
+      <SaveHypothesisOverlay
+        isOpen={showSaveOverlay}
+        onClose={() => setShowSaveOverlay(false)}
+        onSave={handleSaveHypothesis}
+        existingNames={hypotheses.map((h) => h.name)}
+        defaultName={lastSavedName}
+        isSaving={saveHypothesisMutation.isPending}
+        isAtLimit={hypotheses.length >= 10}
+      />
+
+      {/* Load hypothesis overlay */}
+      <LoadHypothesisOverlay
+        isOpen={showLoadOverlay}
+        onClose={() => setShowLoadOverlay(false)}
+        hypotheses={hypotheses}
+        onLoad={handleLoadHypothesis}
+        onDelete={handleDeleteHypothesis}
+        isLoading={isLoadingHypotheses}
+        deletingId={deletingHypothesisId}
+      />
 
       {/* Copy preview modal */}
       {showCopyPreview && (

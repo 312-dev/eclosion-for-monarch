@@ -67,9 +67,32 @@ export function AvailableToStash({
   }, [data]);
 
   if (isLoading) {
+    if (mode === 'compact') {
+      return (
+        <div
+          className="flex items-center gap-1.5 px-2 py-1 rounded text-sm animate-pulse"
+          style={{ backgroundColor: 'var(--monarch-bg-card)' }}
+        >
+          <div className="h-3.5 w-16 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
+          <div className="h-3.5 w-14 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
+        </div>
+      );
+    }
+    // Header mode skeleton
     return (
-      <div className="flex items-center gap-2 animate-pulse">
-        <div className="h-6 w-32 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
+      <div className="flex items-center gap-3 animate-pulse">
+        {/* Icon placeholder */}
+        <div className="w-7 h-7 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
+        {/* Badge placeholder */}
+        <div
+          className="rounded-lg px-4 py-1.5 flex flex-col items-center gap-0.5"
+          style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+        >
+          <div className="h-7 w-20 rounded" style={{ backgroundColor: 'var(--monarch-bg-page)' }} />
+          <div className="h-3 w-24 rounded" style={{ backgroundColor: 'var(--monarch-bg-page)' }} />
+        </div>
+        {/* Info icon placeholder */}
+        <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--monarch-bg-hover)' }} />
       </div>
     );
   }

@@ -200,41 +200,6 @@ export function AvailableFundsBar({
   // Sidebar width for centering calculation
   const sidebarWidth = 220;
 
-  if (isLoading) {
-    return createPortal(
-      <>
-        {/* Vignette gradient - full width, behind footer (z-10) */}
-        <div
-          className="fixed bottom-0 left-0 right-0 h-64 z-10 pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(to top, var(--monarch-bg-page) 0%, var(--monarch-bg-page) 40%, transparent 100%)',
-          }}
-        />
-        {/* Fixed floating card - centered in content area (right of sidebar) */}
-        <div
-          className="fixed bottom-18 right-0 z-40 flex justify-center pointer-events-none"
-          style={{ left: sidebarWidth }}
-        >
-          <div
-            className="pointer-events-auto flex items-center justify-center rounded-xl px-6 py-4 max-w-75 w-full mx-4 animate-pulse"
-            style={{
-              backgroundColor: 'var(--monarch-bg-card)',
-              border: '1px solid var(--monarch-border)',
-              boxShadow: cardShadow,
-            }}
-          >
-            <div
-              className="h-8 w-24 rounded"
-              style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-            />
-          </div>
-        </div>
-      </>,
-      document.body
-    );
-  }
-
   const floatingBar = createPortal(
     <>
       {/* Vignette gradient - full width, behind footer (z-10) */}
@@ -278,35 +243,61 @@ export function AvailableFundsBar({
             className="flex items-center justify-center px-4 py-3"
             style={{ borderBottom: '1px solid var(--monarch-border)' }}
           >
-            <HoverCard content={tooltipContent} side="top" align="center" closeDelay={400}>
-              <div className="flex items-center gap-2 cursor-help">
-                <span
-                  className="text-3xl font-bold tabular-nums"
-                  style={{ color: displayedStatusColor }}
-                >
-                  {displayedFormattedAmount}
-                </span>
-                <Icons.Info size={16} style={{ color: 'var(--monarch-text-muted)' }} />
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-9 w-28 rounded animate-pulse"
+                  style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+                />
+                <div
+                  className="w-4 h-4 rounded animate-pulse"
+                  style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+                />
               </div>
-            </HoverCard>
+            ) : (
+              <HoverCard content={tooltipContent} side="top" align="center" closeDelay={400}>
+                <div className="flex items-center gap-2 cursor-help">
+                  <span
+                    className="text-3xl font-bold tabular-nums"
+                    style={{ color: displayedStatusColor }}
+                  >
+                    {displayedFormattedAmount}
+                  </span>
+                  <Icons.Info size={16} style={{ color: 'var(--monarch-text-muted)' }} />
+                </div>
+              </HoverCard>
+            )}
           </div>
 
           {/* Button group section */}
           <div className="flex">
             <HypothesizeButton
-              availableAmount={displayedAvailable}
+              availableAmount={isLoading ? 0 : displayedAvailable}
               leftToBudget={leftToBudget}
               items={items}
               compact
               groupPosition="left"
             />
-            <DistributeButton
-              availableAmount={displayedAvailable}
-              leftToBudget={leftToBudget}
-              items={items}
-              compact
-              groupPosition="right"
-            />
+            {isLoading ? (
+              <div
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium animate-pulse"
+                style={{
+                  backgroundColor: 'var(--monarch-bg-hover)',
+                  color: 'var(--monarch-text-muted)',
+                }}
+              >
+                <Icons.Split size={14} style={{ opacity: 0.5 }} />
+                <span style={{ opacity: 0.5 }}>Distribute</span>
+              </div>
+            ) : (
+              <DistributeButton
+                availableAmount={displayedAvailable}
+                leftToBudget={leftToBudget}
+                items={items}
+                compact
+                groupPosition="right"
+              />
+            )}
           </div>
         </div>
       </div>
