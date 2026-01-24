@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { useIsRateLimited } from '../context/RateLimitContext';
 import { handleApiError, decodeHtmlEntities } from '../utils';
 import { Portal } from './Portal';
+import { CancelButton, WarningButton } from './ui/ModalButtons';
 
 export interface PendingLink {
   categoryId: string;
@@ -346,19 +347,18 @@ export function LinkCategoryModal({
 
           {/* Footer */}
           <div className="p-4 border-t border-monarch-border flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm rounded-lg transition-colors btn-hover-lift border border-monarch-border text-monarch-text-dark bg-monarch-bg-card"
-            >
+            <CancelButton onClick={onClose} fullWidth>
               Cancel
-            </button>
-            <button
+            </CancelButton>
+            <WarningButton
               onClick={handleLink}
-              disabled={!selectedCategory || saving || isRateLimited}
-              className={`flex-1 px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-hover-lift ${!selectedCategory || saving || isRateLimited ? 'bg-monarch-orange-disabled' : 'bg-monarch-orange'}`}
+              disabled={!selectedCategory || isRateLimited}
+              isLoading={saving}
+              loadingText="Linking..."
+              fullWidth
             >
-              {saving ? 'Linking...' : 'Link Category'}
-            </button>
+              Link Category
+            </WarningButton>
           </div>
         </div>
       </div>

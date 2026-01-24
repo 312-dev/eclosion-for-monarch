@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { getErrorMessage } from '../utils';
 import { Portal } from './Portal';
+import { CancelButton, WarningButton } from './ui/ModalButtons';
 
 interface AutoSyncSecurityModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onEnable: (intervalMinutes: number, passphrase: string) => Promise<void>;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onEnable: (intervalMinutes: number, passphrase: string) => Promise<void>;
 }
 
 const INTERVAL_OPTIONS = [
@@ -259,52 +260,18 @@ export function AutoSyncSecurityModal({ isOpen, onClose, onEnable }: AutoSyncSec
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
-              <button
-                onClick={handleClose}
-                disabled={loading}
-                className="flex-1 px-4 py-2 rounded-lg transition-colors"
-                style={{
-                  backgroundColor: 'var(--monarch-bg-elevated)',
-                  color: 'var(--monarch-text-dark)',
-                  border: '1px solid var(--monarch-border)',
-                }}
-              >
+              <CancelButton onClick={handleClose} disabled={loading} fullWidth>
                 Cancel
-              </button>
-              <button
+              </CancelButton>
+              <WarningButton
                 onClick={handleEnable}
-                disabled={!consentChecked || !passphrase || loading}
-                className="flex-1 px-4 py-2 rounded-lg transition-colors text-white flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: loading
-                    ? 'var(--monarch-orange-disabled)'
-                    : 'var(--monarch-orange)',
-                  opacity: (!consentChecked || !passphrase) && !loading ? 0.5 : 1,
-                }}
+                disabled={!consentChecked || !passphrase}
+                isLoading={loading}
+                loadingText="Enabling..."
+                fullWidth
               >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Enabling...
-                  </>
-                ) : (
-                  'Enable Auto-Sync'
-                )}
-              </button>
+                Enable Auto-Sync
+              </WarningButton>
             </div>
           </div>
         </div>

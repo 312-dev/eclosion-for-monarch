@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { CancelButton, WarningButton } from './ui/ModalButtons';
 
 interface MfaCodeCaveatsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAccept: () => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onAccept: () => void;
 }
 
 /**
@@ -60,12 +61,17 @@ export function MfaCodeCaveatsModal({ isOpen, onClose, onAccept }: MfaCodeCaveat
 
           <ul className="list-disc list-inside space-y-2">
             <li>
-              <strong style={{ color: 'var(--monarch-text-dark)' }}>Manual re-authentication required</strong>
+              <strong style={{ color: 'var(--monarch-text-dark)' }}>
+                Manual re-authentication required
+              </strong>
               <br />
-              When your Monarch session expires, you&apos;ll need to enter a new code from your authenticator app.
+              When your Monarch session expires, you&apos;ll need to enter a new code from your
+              authenticator app.
             </li>
             <li>
-              <strong style={{ color: 'var(--monarch-text-dark)' }}>Background syncs will pause</strong>
+              <strong style={{ color: 'var(--monarch-text-dark)' }}>
+                Background syncs will pause
+              </strong>
               <br />
               Automatic syncing will stop until you re-authenticate. Your data may become stale.
             </li>
@@ -78,11 +84,14 @@ export function MfaCodeCaveatsModal({ isOpen, onClose, onAccept }: MfaCodeCaveat
 
           <div
             className="mt-4 p-3 rounded-lg"
-            style={{ backgroundColor: 'var(--monarch-bg-page)', border: '1px solid var(--monarch-border)' }}
+            style={{
+              backgroundColor: 'var(--monarch-bg-page)',
+              border: '1px solid var(--monarch-border)',
+            }}
           >
             <p className="text-xs">
-              <strong>Tip:</strong> If you can find your MFA secret key later, you can update your credentials
-              in Settings to enable automatic re-authentication.
+              <strong>Tip:</strong> If you can find your MFA secret key later, you can update your
+              credentials in Settings to enable automatic re-authentication.
             </p>
           </div>
         </div>
@@ -100,29 +109,12 @@ export function MfaCodeCaveatsModal({ isOpen, onClose, onAccept }: MfaCodeCaveat
         </label>
 
         <div className="flex gap-3 mt-6">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'var(--monarch-bg-elevated)',
-              color: 'var(--monarch-text-dark)',
-              border: '1px solid var(--monarch-border)',
-            }}
-          >
+          <CancelButton onClick={onClose} fullWidth>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleAccept}
-            disabled={!understood}
-            className="flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: understood ? 'var(--monarch-orange)' : 'var(--monarch-orange-disabled)',
-            }}
-          >
+          </CancelButton>
+          <WarningButton onClick={handleAccept} disabled={!understood} fullWidth>
             Continue with Code
-          </button>
+          </WarningButton>
         </div>
       </div>
     </div>

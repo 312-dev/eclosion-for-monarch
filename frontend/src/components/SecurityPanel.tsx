@@ -94,10 +94,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
                 {card.label}
               </span>
             </div>
-            <div
-              className="text-xl font-semibold"
-              style={{ color: 'var(--monarch-text-dark)' }}
-            >
+            <div className="text-xl font-semibold" style={{ color: 'var(--monarch-text-dark)' }}>
               {summaryLoading ? '...' : card.value}
             </div>
           </div>
@@ -130,7 +127,9 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
             type="button"
             onClick={handleExport}
             disabled={exportMutation.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:opacity-80 transition-opacity"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm hover:opacity-80 transition-opacity ${
+              exportMutation.isPending ? 'cursor-wait' : 'cursor-pointer'
+            }`}
             style={{
               color: 'var(--monarch-text-dark)',
               backgroundColor: 'var(--monarch-bg-page)',
@@ -141,7 +140,6 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
             <Download size={14} aria-hidden="true" />
             Export
           </button>
-
         </div>
       </div>
 
@@ -184,10 +182,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       )}
 
       {/* Retention Notice */}
-      <p
-        className="text-xs mt-3 text-center"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
+      <p className="text-xs mt-3 text-center" style={{ color: 'var(--monarch-text-muted)' }}>
         Logs auto-delete after 90 days
       </p>
     </div>

@@ -91,7 +91,9 @@ export function SyncButton({
         type="button"
         onClick={onSync}
         disabled={isDisabled}
-        className="flex items-center gap-1.5 text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:opacity-70"
+        className={`flex items-center gap-1.5 text-xs disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:opacity-70 ${
+          isLoading ? 'cursor-wait' : ''
+        }`}
         style={{ color: syncBlocked ? 'var(--monarch-warning)' : 'var(--monarch-text-muted)' }}
         aria-label={
           isLoading ? 'Syncing data with Monarch' : `Sync now. Last synced: ${syncStatus}`
@@ -171,7 +173,9 @@ export function SyncButton({
               type="button"
               onClick={onSync}
               disabled={isDisabled}
-              className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover"
+              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover ${
+                isLoading ? 'cursor-wait' : ''
+              }`}
               style={{ backgroundColor: 'var(--monarch-orange-disabled)' }}
               aria-label="Sync disabled - rate limited"
             >
@@ -185,7 +189,9 @@ export function SyncButton({
           type="button"
           onClick={onSync}
           disabled={isDisabled}
-          className="inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover"
+          className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors btn-hover-lift hover-bg-orange-to-orange-hover ${
+            isLoading ? 'cursor-wait' : ''
+          }`}
           style={{
             backgroundColor: isLoading ? 'var(--monarch-orange-disabled)' : 'var(--monarch-orange)',
           }}

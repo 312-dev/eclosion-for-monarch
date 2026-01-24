@@ -5,6 +5,7 @@ import { useScrollLock } from '../hooks/useScrollLock';
 import { getErrorMessage } from '../utils';
 import { isDesktopMode } from '../utils/apiBase';
 import { Portal } from './Portal';
+import { CancelButton, WarningButton } from './ui/ModalButtons';
 
 interface ResetAppModalProps {
   isOpen: boolean;
@@ -210,30 +211,17 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
 
             {/* Actions */}
             <div className="flex gap-3 pt-2">
-              <button
-                onClick={onClose}
-                disabled={resetting}
-                className="flex-1 px-4 py-2 rounded-lg transition-colors"
-                style={{
-                  backgroundColor: 'var(--monarch-bg-elevated)',
-                  color: 'var(--monarch-text-dark)',
-                  border: '1px solid var(--monarch-border)',
-                }}
-              >
+              <CancelButton onClick={onClose} disabled={resetting} fullWidth>
                 Cancel
-              </button>
-              <button
+              </CancelButton>
+              <WarningButton
                 onClick={handleReset}
-                disabled={resetting}
-                className="flex-1 px-4 py-2 rounded-lg transition-colors text-white"
-                style={{
-                  backgroundColor: resetting
-                    ? 'var(--monarch-orange-disabled)'
-                    : 'var(--monarch-orange)',
-                }}
+                isLoading={resetting}
+                loadingText="Resetting..."
+                fullWidth
               >
-                {resetting ? 'Resetting...' : 'Reset and Re-login'}
-              </button>
+                Reset and Re-login
+              </WarningButton>
             </div>
           </div>
         </div>

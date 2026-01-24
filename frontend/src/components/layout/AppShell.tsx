@@ -186,20 +186,22 @@ export function AppShell() {
         <SecurityInfo isOpen={showSecurityInfo} onClose={() => setShowSecurityInfo(false)} />
         <WhatsNewModal />
 
-        <div className="app-body">
-          <SidebarNavigation onLock={handleLock} />
-          <div className="app-content-wrapper">
-            {!isDesktop && <SecurityAlertBanner />}
-            {data.notices && data.notices.length > 0 && (
-              <section className="px-4 pt-6" aria-label="Notifications">
-                {data.notices.map((notice) => (
-                  <NoticeBanner key={notice.id} notice={notice} onDismiss={() => refetch()} />
-                ))}
-              </section>
-            )}
-            <main id="main-content" className="app-main" role="main" aria-label="Main content">
-              <Outlet />
-            </main>
+        <div className="app-scroll-area">
+          <div className="app-body">
+            <SidebarNavigation onLock={handleLock} />
+            <div className="app-content-wrapper">
+              {!isDesktop && <SecurityAlertBanner />}
+              {data.notices && data.notices.length > 0 && (
+                <section className="px-4 pt-6" aria-label="Notifications">
+                  {data.notices.map((notice) => (
+                    <NoticeBanner key={notice.id} notice={notice} onDismiss={() => refetch()} />
+                  ))}
+                </section>
+              )}
+              <main id="main-content" className="app-main" role="main" aria-label="Main content">
+                <Outlet />
+              </main>
+            </div>
           </div>
         </div>
 

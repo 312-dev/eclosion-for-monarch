@@ -180,32 +180,38 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   // Stage: Terms
   if (stage === 'terms') {
     return (
-      <TermsModal
-        isOpen={true}
-        onClose={() => {}}
-        onAccept={() => {
-          setTermsAccepted();
-          if (isBetaEnvironment() && !hasAcknowledgedBetaWarning()) {
-            setStage('betaWarning');
-          } else {
-            setStage('credentials');
-          }
-        }}
-      />
+      <>
+        <ElectronTitleBar variant="compact" />
+        <TermsModal
+          isOpen={true}
+          onClose={() => {}}
+          onAccept={() => {
+            setTermsAccepted();
+            if (isBetaEnvironment() && !hasAcknowledgedBetaWarning()) {
+              setStage('betaWarning');
+            } else {
+              setStage('credentials');
+            }
+          }}
+        />
+      </>
     );
   }
 
   // Stage: Beta Warning
   if (stage === 'betaWarning') {
     return (
-      <BetaWarningModal
-        isOpen={true}
-        onClose={() => {}}
-        onAccept={() => {
-          setBetaWarningAcknowledged();
-          setStage('credentials');
-        }}
-      />
+      <>
+        <ElectronTitleBar variant="compact" />
+        <BetaWarningModal
+          isOpen={true}
+          onClose={() => {}}
+          onAccept={() => {
+            setBetaWarningAcknowledged();
+            setStage('credentials');
+          }}
+        />
+      </>
     );
   }
 

@@ -12,6 +12,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Modal } from './ui/Modal';
+import { WarningButton } from './ui/ModalButtons';
 import { ChangelogDisplay } from './ChangelogDisplay';
 import {
   useChangelogStatusQuery,
@@ -103,13 +104,7 @@ export function WhatsNewModal() {
           <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
             Click the version badge anytime to view the changelog
           </span>
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
-            style={{ backgroundColor: 'var(--monarch-orange)', color: 'white' }}
-          >
-            Got it, thanks!
-          </button>
+          <WarningButton onClick={handleClose}>Got it, thanks!</WarningButton>
         </div>
       }
     >
