@@ -164,8 +164,8 @@ def get_tracking_start_date(item: StashItemDict) -> str:
     Returns the custom tracking_start_date if set,
     otherwise defaults to 1st of the month when item was created.
     """
-    if item.get("tracking_start_date"):
-        tracking_date = item["tracking_start_date"]
+    tracking_date = item.get("tracking_start_date")
+    if tracking_date is not None:
         if isinstance(tracking_date, str):
             return tracking_date
         return tracking_date.isoformat()
@@ -211,11 +211,11 @@ async def calculate_total_budgeted(
         )
 
         # sumExpense is negative in Monarch API, so we use abs()
-        sum_expense = abs(aggregates.get("sumExpense", 0.0))
-        sum_income = aggregates.get("sumIncome", 0.0)
+        sum_expense = abs(float(aggregates.get("sumExpense", 0.0)))
+        sum_income = float(aggregates.get("sumIncome", 0.0))
         net_spending = sum_expense - sum_income
 
-        total_budgeted = remaining + net_spending
+        total_budgeted: float = remaining + net_spending
         logger.info(
             f"[Stash] calculate_total_budgeted for {category_id}: "
             f"sumExpense={sum_expense}, sumIncome={sum_income}, "
@@ -434,8 +434,8 @@ class StashService:
 
             # Format tracking_start_date for response
             tracking_start_date_str = None
-            if item.get("tracking_start_date"):
-                tsd = item["tracking_start_date"]
+            tsd = item.get("tracking_start_date")
+            if tsd is not None:
                 tracking_start_date_str = tsd.isoformat() if hasattr(tsd, "isoformat") else str(tsd)
 
             # Log grid positions being returned from API

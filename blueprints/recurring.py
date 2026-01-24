@@ -163,8 +163,8 @@ async def update_category_group_settings(group_id: str):
     services = get_services()
     data = request.get_json()
 
-    group_id = sanitize_id(group_id)
-    if not group_id:
+    sanitized_group_id = sanitize_id(group_id)
+    if not sanitized_group_id:
         raise ValidationError("Invalid group_id")
 
     # Extract and sanitize optional fields
@@ -181,7 +181,7 @@ async def update_category_group_settings(group_id: str):
         raise ValidationError("budget_variability must be 'fixed' or 'flexible'")
 
     result = await services.sync_service.category_manager.update_category_group_settings(
-        group_id=group_id,
+        group_id=sanitized_group_id,
         name=name,
         budget_variability=budget_variability,
         group_level_budgeting_enabled=group_level_budgeting_enabled,

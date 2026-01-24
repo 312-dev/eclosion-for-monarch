@@ -855,6 +855,7 @@ class SettingsExportService:
         for hyp in hypotheses:
             try:
                 repo.create_hypothesis(
+                    hypothesis_id=hyp.get("id") or str(uuid.uuid4()),
                     name=hyp["name"],
                     savings_allocations=json.dumps(hyp.get("savings_allocations", {})),
                     savings_total=hyp.get("savings_total", 0),

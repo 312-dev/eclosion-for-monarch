@@ -699,7 +699,8 @@ async def get_category_transactions(
         category_ids=[category_id],
     )
 
-    return result.get("allTransactions", {}).get("results", [])
+    transactions: list[dict[str, Any]] = result.get("allTransactions", {}).get("results", [])
+    return transactions
 
 
 # Helper to build category id<->name maps and monthly lookup
