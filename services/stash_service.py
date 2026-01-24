@@ -1095,7 +1095,7 @@ class StashService:
         Returns:
             Success status and count of updated items
         """
-        logger.info(f"[Stash] update_layouts called with {len(layouts)} layouts: {layouts}")
+        logger.info("[Stash] update_layouts called with %d layouts", len(layouts))
         with db_session() as session:
             repo = TrackerRepository(session)
             updated = repo.update_stash_layouts(layouts)
@@ -1273,9 +1273,7 @@ class StashService:
         Returns:
             Success status and count of updated layouts
         """
-        logger.info(
-            f"[Stash] update_monarch_goal_layouts called with {len(layouts)} layouts: {layouts}"
-        )
+        logger.info("[Stash] update_monarch_goal_layouts called with %d layouts", len(layouts))
         with db_session() as session:
             repo = TrackerRepository(session)
             updated = repo.update_monarch_goal_layouts(layouts)

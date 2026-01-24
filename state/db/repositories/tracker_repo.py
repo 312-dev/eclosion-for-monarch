@@ -619,32 +619,19 @@ class TrackerRepository:
         for layout in layouts:
             item = self.get_stash_item(layout["id"])
             if item:
-                old_values = {
-                    "grid_x": item.grid_x,
-                    "grid_y": item.grid_y,
-                    "col_span": item.col_span,
-                    "row_span": item.row_span,
-                    "sort_order": item.sort_order,
-                }
                 item.grid_x = layout.get("grid_x", 0)
                 item.grid_y = layout.get("grid_y", 0)
                 item.col_span = layout.get("col_span", 1)
                 item.row_span = layout.get("row_span", 1)
                 item.sort_order = layout.get("sort_order", 0)
                 item.updated_at = datetime.utcnow()
-                new_values = {
-                    "grid_x": item.grid_x,
-                    "grid_y": item.grid_y,
-                    "col_span": item.col_span,
-                    "row_span": item.row_span,
-                    "sort_order": item.sort_order,
-                }
-                logger.info(
-                    f"[TrackerRepo] update_stash_layouts: item {item.id} ({item.name}) old={old_values} new={new_values}"
+                logger.debug(
+                    "[TrackerRepo] update_stash_layouts: item %s updated",
+                    item.id,
                 )
                 updated += 1
             else:
-                logger.warning(f"[TrackerRepo] update_stash_layouts: item {layout['id']} not found")
+                logger.warning("[TrackerRepo] update_stash_layouts: item not found")
         return updated
 
     # === Monarch Goal Layouts ===
@@ -725,16 +712,9 @@ class TrackerRepository:
         Returns:
             Number of layouts updated
         """
-        import logging
-
-        logger = logging.getLogger(__name__)
         updated = 0
         for layout_data in layouts:
             goal_id = layout_data["goal_id"]
-            old_layout = self.get_monarch_goal_layout(goal_id)
-            old_pos = f"({old_layout.grid_x}, {old_layout.grid_y})" if old_layout else "None"
-            new_pos = f"({layout_data.get('grid_x', 0)}, {layout_data.get('grid_y', 0)})"
-            logger.info(f"[TrackerRepo] Updating goal layout {goal_id}: {old_pos} -> {new_pos}")
             self.upsert_monarch_goal_layout(
                 goal_id=goal_id,
                 grid_x=layout_data.get("grid_x", 0),
