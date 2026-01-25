@@ -51,7 +51,11 @@ export function Tooltip({
           align={align}
           sideOffset={5}
           collisionPadding={10}
-          className="z-tooltip max-w-xs rounded-md bg-monarch-tooltip-bg px-3 py-2 text-sm leading-relaxed text-monarch-tooltip-text shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
+          className="z-tooltip max-w-xs rounded-md px-3 py-2 text-sm leading-relaxed shadow-tooltip animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
+          style={{
+            backgroundColor: 'var(--monarch-tooltip-bg)',
+            color: 'var(--monarch-tooltip-text)',
+          }}
         >
           {content}
           <RadixTooltip.Arrow style={{ fill: 'var(--monarch-tooltip-bg)' }} />

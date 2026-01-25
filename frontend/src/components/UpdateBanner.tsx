@@ -68,16 +68,18 @@ export function UpdateBanner() {
         title={`What's New in v${serverVersion}`}
         maxWidth="lg"
         footer={
-          <button
-            onClick={() => setShowChangelog(false)}
-            className="px-4 py-2 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'var(--monarch-bg-input)',
-              color: 'var(--monarch-text)',
-            }}
-          >
-            Close
-          </button>
+          <div className="flex justify-end w-full">
+            <button
+              onClick={() => setShowChangelog(false)}
+              className="px-4 py-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: 'var(--monarch-bg-input)',
+                color: 'var(--monarch-text)',
+              }}
+            >
+              Close
+            </button>
+          </div>
         }
       >
         <ChangelogDisplay version={serverVersion ?? undefined} showUpdateInstructions />

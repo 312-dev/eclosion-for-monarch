@@ -1,3 +1,5 @@
+calls/
+
 # OS artifacts
 .DS_Store
 *.swp

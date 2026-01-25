@@ -281,7 +281,7 @@ export function ModalFooter({
   const SubmitButton = SUBMIT_BUTTON_MAP[variant];
 
   return (
-    <>
+    <div className="flex items-center justify-end gap-2 w-full">
       <CancelButton onClick={onCancel} fullWidth={fullWidth} disabled={isSubmitting}>
         {cancelLabel}
       </CancelButton>
@@ -295,7 +295,7 @@ export function ModalFooter({
       >
         {submitLabel}
       </SubmitButton>
-    </>
+    </div>
   );
 }
 

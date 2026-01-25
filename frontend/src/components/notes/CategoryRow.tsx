@@ -297,7 +297,7 @@ export function CategoryRow({ category, groupId, groupName, currentMonth }: Cate
         style={{ borderColor: 'var(--monarch-border)' }}
       >
         {/* Category icon/name */}
-        <div className="flex items-center gap-2 min-w-35 shrink-0">
+        <div className="flex items-center gap-2 w-48 shrink-0">
           {category.icon && (
             <span className="text-base" aria-hidden="true">
               {decodeHtmlEntities(category.icon)}

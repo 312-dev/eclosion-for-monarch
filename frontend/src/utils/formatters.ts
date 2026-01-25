@@ -21,12 +21,19 @@ export function formatCurrency(
 ): string {
   const maxDigits = options?.maximumFractionDigits ?? 2;
   const minDigits = options?.minimumFractionDigits ?? Math.min(2, maxDigits);
+
+  // Round to the requested precision and normalize -0 to 0
+  // This ensures consistent display and avoids "-$0" artifacts
+  const roundingFactor = Math.pow(10, maxDigits);
+  const roundedAmount = Math.round(amount * roundingFactor) / roundingFactor;
+  const normalizedAmount = roundedAmount === 0 || Object.is(roundedAmount, -0) ? 0 : roundedAmount;
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: minDigits,
     maximumFractionDigits: maxDigits,
-  }).format(amount);
+  }).format(normalizedAmount);
 }
 
 /**

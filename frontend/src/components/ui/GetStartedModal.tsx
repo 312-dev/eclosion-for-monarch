@@ -129,7 +129,7 @@ export function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {
       maxWidth="lg"
       closeOnBackdrop={true}
       footer={
-        <div className="flex gap-3">
+        <div className="flex items-center justify-end gap-3 w-full">
           <button
             type="button"
             onClick={handleBack}

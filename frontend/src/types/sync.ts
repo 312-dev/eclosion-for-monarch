@@ -38,6 +38,7 @@ export interface AutoSyncStatus {
   last_sync_success: boolean | null;
   last_sync_error: string | null;
   consent_acknowledged: boolean;
+  is_foreground: boolean;
 }
 
 export interface EnableAutoSyncResult {

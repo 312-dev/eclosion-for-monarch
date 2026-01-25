@@ -144,7 +144,10 @@ export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProp
           }}
         >
           {/* Header */}
-          <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+          <div
+            className="p-4 border-b rounded-t-xl"
+            style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Upload size={20} style={{ color: 'var(--monarch-orange)' }} />
@@ -212,7 +215,10 @@ export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProp
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--monarch-border)' }}>
+          <div
+            className="p-4 border-t rounded-b-xl flex gap-3"
+            style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <CancelButton onClick={handleClose} disabled={importing} fullWidth>
               Cancel
             </CancelButton>

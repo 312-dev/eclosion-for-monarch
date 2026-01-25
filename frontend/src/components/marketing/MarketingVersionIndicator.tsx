@@ -47,17 +47,19 @@ export function MarketingVersionIndicator() {
         description={`Current version: v${version}`}
         maxWidth="lg"
         footer={
-          <button
-            type="button"
-            onClick={() => setShowChangelog(false)}
-            className="px-4 py-2 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'var(--monarch-bg-input)',
-              color: 'var(--monarch-text)',
-            }}
-          >
-            Close
-          </button>
+          <div className="flex justify-end w-full">
+            <button
+              type="button"
+              onClick={() => setShowChangelog(false)}
+              className="px-4 py-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: 'var(--monarch-bg-input)',
+                color: 'var(--monarch-text)',
+              }}
+            >
+              Close
+            </button>
+          </div>
         }
       >
         <ChangelogDisplay version={undefined} showUpdateInstructions={false} />

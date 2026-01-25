@@ -77,7 +77,10 @@ export function ResetAppModal({ isOpen, onClose, onReset }: ResetAppModalProps) 
           }}
         >
           {/* Header */}
-          <div className="p-4 border-b" style={{ borderColor: 'var(--monarch-border)' }}>
+          <div
+            className="p-4 border-b rounded-t-xl"
+            style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <svg

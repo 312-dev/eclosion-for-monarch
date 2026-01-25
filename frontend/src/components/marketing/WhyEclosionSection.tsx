@@ -108,15 +108,15 @@ export function WhyEclosionSection() {
           {/* Community - Tall card with GitHub link */}
           <BentoCard
             className="md:col-span-2 md:row-span-2 flex flex-col justify-between"
-            color="#a78bfa"
-            hoverColor="rgba(167, 139, 250, 0.3)"
+            color="var(--monarch-accent)"
+            hoverColor="var(--monarch-accent-bg)"
           >
             <div>
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ backgroundColor: 'rgba(167, 139, 250, 0.15)' }}
+                style={{ backgroundColor: 'var(--monarch-accent-bg)' }}
               >
-                <HeartHandshakeIcon size={24} style={{ color: '#a78bfa' }} />
+                <HeartHandshakeIcon size={24} style={{ color: 'var(--monarch-accent)' }} />
               </div>
               <h3 className="text-lg font-bold text-(--monarch-text-dark) mb-2">
                 Community-Powered
@@ -131,7 +131,7 @@ export function WhyEclosionSection() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80 mt-4"
-                style={{ color: '#a78bfa' }}
+                style={{ color: 'var(--monarch-accent)' }}
               >
                 <GitHubIcon size={18} />
                 View on GitHub

@@ -14,10 +14,12 @@ interface ToolPageHeaderProps {
   readonly title: string;
   readonly description: string;
   readonly descriptionExtra?: ReactNode;
+  /** Additional action buttons to render before the settings button */
+  readonly actions?: ReactNode;
   readonly onSettingsClick?: () => void;
 }
 
-export function ToolPageHeader({ icon, title, description, descriptionExtra, onSettingsClick }: ToolPageHeaderProps) {
+export function ToolPageHeader({ icon, title, description, descriptionExtra, actions, onSettingsClick }: ToolPageHeaderProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3">
@@ -42,6 +44,8 @@ export function ToolPageHeader({ icon, title, description, descriptionExtra, onS
             {descriptionExtra}
           </p>
         </div>
+
+        {actions}
 
         {onSettingsClick && (
           <button

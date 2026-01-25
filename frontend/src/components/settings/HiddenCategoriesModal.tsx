@@ -75,9 +75,15 @@ export function HiddenCategoriesModal({
         <div className="absolute inset-0 bg-black/50 modal-backdrop" onClick={onClose} />
 
         {/* Modal */}
-        <div className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[90vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
+        <div
+          className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl flex flex-col modal-content bg-monarch-bg-card border border-monarch-border"
+          style={{ maxHeight: 'var(--modal-max-height)' }}
+        >
           {/* Header */}
-          <div className="p-4 border-b border-monarch-border">
+          <div
+            className="p-4 border-b border-monarch-border rounded-t-xl"
+            style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <EyeOff size={20} style={{ color: 'var(--monarch-orange)' }} />
@@ -289,7 +295,10 @@ export function HiddenCategoriesModal({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-monarch-border">
+          <div
+            className="p-4 border-t border-monarch-border rounded-b-xl"
+            style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <SingleButtonFooter onClick={onClose} variant="warning">
               Done
             </SingleButtonFooter>

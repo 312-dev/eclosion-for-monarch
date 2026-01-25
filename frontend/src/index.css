@@ -77,6 +77,9 @@
   --z-toast: 60;
   --z-tooltip: 70;
 
+  /* Modal dimensions */
+  --modal-max-height: min(85vh, 700px);
+
   /* Font family - Plus Jakarta Sans as default */
   --font-sans:
     'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
@@ -133,9 +136,12 @@
   --monarch-bg-input: #ffffff;
   --monarch-bg-elevated: #ffffff;
 
-  /* Tooltip colors - dark background with light text */
-  --monarch-tooltip-bg: #111110;
-  --monarch-tooltip-text: #ffffff;
+  /* Tooltip colors - warm dark background for light mode (stone-800/stone-50) */
+  --monarch-tooltip-bg: #292524;
+  --monarch-tooltip-text: #fafaf9;
+  --monarch-tooltip-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --monarch-tooltip-input-bg: #1f1e1d;
+  --monarch-tooltip-border: #3d3b39;
 
   /* Border colors */
   --monarch-border: #e8e6e3;
@@ -150,6 +156,14 @@
   --monarch-warning-bg: #fef3c7;
   --monarch-info: #3b82f6;
   --monarch-info-bg: #eff6ff;
+
+  /* Status color aliases (for semantic clarity in different contexts) */
+  --monarch-green: var(--monarch-success);
+  --monarch-red: var(--monarch-error);
+
+  /* Accent color (purple - used for beta badges, special features) */
+  --monarch-accent: #8b5cf6;
+  --monarch-accent-bg: rgba(139, 92, 246, 0.15);
 
   /* Font */
   --monarch-font:
@@ -201,9 +215,12 @@
   --monarch-bg-input: #1f1e1d;
   --monarch-bg-elevated: #333231;
 
-  /* Tooltip colors - near-black for maximum contrast */
-  --monarch-tooltip-bg: #0a0a09;
-  --monarch-tooltip-text: #f5f5f4;
+  /* Tooltip colors - darker than page bg (#1a1918) with good text contrast */
+  --monarch-tooltip-bg: #171615;
+  --monarch-tooltip-text: #e0dedb;
+  --monarch-tooltip-shadow: 0 4px 10px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --monarch-tooltip-input-bg: #0f0e0d;
+  --monarch-tooltip-border: #2a2928;
 
   /* Border colors - subtle for dark mode */
   --monarch-border: #3d3b39;
@@ -222,6 +239,14 @@
   --monarch-info: #60a5fa;
   --monarch-info-bg: rgba(96, 165, 250, 0.15);
   --monarch-info-bg-solid: #1a2a3d;
+
+  /* Status color aliases (for semantic clarity in different contexts) */
+  --monarch-green: var(--monarch-success);
+  --monarch-red: var(--monarch-error);
+
+  /* Accent color (purple - used for beta badges, special features) */
+  --monarch-accent: #a78bfa;
+  --monarch-accent-bg: rgba(167, 139, 250, 0.15);
 
   /* App icon - warm tone matching dark palette */
   --app-icon-bg: #2d2b29;
@@ -251,6 +276,11 @@ body {
   background-color: var(--monarch-bg-page);
 }
 
+/* Tooltip shadow utility - adapts to light/dark mode */
+.shadow-tooltip {
+  box-shadow: var(--monarch-tooltip-shadow);
+}
+
 /* Thin scrollbar styling - scoped to app only, not marketing pages */
 .app-layout,
 .app-layout * {
@@ -276,6 +306,93 @@ body {
   background: var(--monarch-text-muted);
 }
 
+/* Scrollbar styling for modals (portaled outside .app-layout) */
+dialog,
+dialog *,
+.modal-content,
+.modal-content * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--monarch-border) transparent;
+}
+
+dialog ::-webkit-scrollbar,
+.modal-content ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+dialog ::-webkit-scrollbar-track,
+.modal-content ::-webkit-scrollbar-track {
+  background: var(--monarch-bg-page);
+  border-radius: 4px;
+}
+
+dialog ::-webkit-scrollbar-thumb,
+.modal-content ::-webkit-scrollbar-thumb {
+  background: var(--monarch-border);
+  border-radius: 4px;
+}
+
+dialog ::-webkit-scrollbar-thumb:hover,
+.modal-content ::-webkit-scrollbar-thumb:hover {
+  background: var(--monarch-text-muted);
+}
+
+/* Modal body scrollbar - always visible on macOS */
+.modal-body-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--monarch-border) var(--monarch-border-light, rgba(128, 128, 128, 0.2)) !important;
+  scrollbar-gutter: stable !important;
+}
+
+.modal-body-scroll::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  -webkit-appearance: none !important;
+  display: block !important;
+}
+
+.modal-body-scroll::-webkit-scrollbar-track {
+  background: rgba(128, 128, 128, 0.15) !important;
+  border-radius: 5px !important;
+}
+
+.modal-body-scroll::-webkit-scrollbar-thumb {
+  background: var(--monarch-border) !important;
+  border-radius: 5px !important;
+  border: 2px solid transparent !important;
+  background-clip: content-box !important;
+}
+
+.modal-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--monarch-text-muted) !important;
+  background-clip: content-box !important;
+}
+
+/* Utility class for custom scrollbars anywhere */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--monarch-border) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--monarch-border);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--monarch-text-muted);
+}
+
 /* Headings - Figtree */
 h1,
 h2,
@@ -286,16 +403,15 @@ h6 {
   font-family: 'Figtree', var(--monarch-font);
 }
 
-/* Focus ring using Monarch orange */
-*:focus-visible {
-  outline: 2px solid var(--monarch-orange);
-  outline-offset: 2px;
-}
-
-/* Improved focus indicator for buttons */
+/* Focus ring for interactive elements only (not containers/divs) */
 button:focus-visible,
 a:focus-visible,
-[role='button']:focus-visible {
+[role='button']:focus-visible,
+[role='link']:focus-visible,
+[role='menuitem']:focus-visible,
+[role='tab']:focus-visible,
+[role='option']:focus-visible,
+[tabindex]:focus-visible:not([tabindex='-1']) {
   outline: 2px solid var(--monarch-orange);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(255, 105, 45, 0.2);
@@ -308,6 +424,18 @@ textarea:focus {
   outline: none;
   border-color: var(--monarch-orange) !important;
   box-shadow: 0 0 0 3px rgba(255, 105, 45, 0.15) !important;
+}
+
+/* Override for white focus ring */
+input.focus-white:focus {
+  border-color: white !important;
+  box-shadow: 0 0 0 3px white !important;
+}
+
+/* Suppress focus styles (for inputs where parent handles focus) */
+input.focus-none:focus {
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Checkbox and radio focus styles */
@@ -1696,7 +1824,7 @@ progress::-moz-progress-bar {
   white-space: nowrap;
   z-index: var(--z-index-tooltip);
   animation: tooltipFadeIn 0.3s ease-out forwards;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--monarch-tooltip-shadow);
 }
 
 /* Tooltip arrow */
@@ -3537,6 +3665,14 @@ progress::-moz-progress-bar {
 [data-radix-popper-content-wrapper] [data-state='checked'],
 [data-radix-popper-content-wrapper] button:hover {
   background: var(--monarch-bg-hover, #2a2a2a) !important;
+}
+
+/* Override for Tooltips and HoverCards - use tooltip-specific styling */
+[data-radix-popper-content-wrapper] > [data-side][data-align] {
+  background: var(--monarch-tooltip-bg) !important;
+  color: var(--monarch-tooltip-text) !important;
+  border: none !important;
+  box-shadow: var(--monarch-tooltip-shadow) !important;
 }
 
 /* Editor content area - uses CSS custom property for dynamic min-height */

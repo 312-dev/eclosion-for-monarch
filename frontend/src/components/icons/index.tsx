@@ -123,6 +123,8 @@ import {
   FlaskConicalOff,
   Wrench,
   Sparkles,
+  BadgeDollarSign,
+  HandCoins,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -251,6 +253,8 @@ export const FlaskConicalIcon = FlaskConical;
 export const FlaskConicalOffIcon = FlaskConicalOff;
 export const WrenchIcon = Wrench;
 export const SparklesIcon = Sparkles;
+export const BadgeDollarSignIcon = BadgeDollarSign;
+export const HandCoinsIcon = HandCoins;
 
 // =============================================================================
 // Custom Icons (not available in Lucide)
@@ -270,10 +274,10 @@ export function SpinnerIcon({
 export function CheckFilledIcon({ size = 24, color: _color = 'currentColor', ...rest }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
-      <circle cx="12" cy="12" r="10" fill="#10B981" />
+      <circle cx="12" cy="12" r="10" style={{ fill: 'var(--monarch-success)' }} />
       <path
         d="M8 12l2.5 2.5L16 9"
-        stroke="white"
+        style={{ stroke: 'var(--monarch-bg-card, white)' }}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -292,14 +296,18 @@ export function WarningFilledIcon({
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
       <path
         d="M12 2L2 20h20L12 2z"
-        fill="#F59E0B"
-        stroke="#F59E0B"
+        style={{ fill: 'var(--monarch-warning)', stroke: 'var(--monarch-warning)' }}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path d="M12 9v4" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="12" cy="16" r="1" fill="white" />
+      <path
+        d="M12 9v4"
+        style={{ stroke: 'var(--monarch-bg-card, white)' }}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="16" r="1" style={{ fill: 'var(--monarch-bg-card, white)' }} />
     </svg>
   );
 }
@@ -312,9 +320,14 @@ export function AlertCircleFilledIcon({
 }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>
-      <circle cx="12" cy="12" r="10" fill="#EF4444" />
-      <path d="M12 8v4" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="12" cy="16" r="1" fill="white" />
+      <circle cx="12" cy="12" r="10" style={{ fill: 'var(--monarch-error)' }} />
+      <path
+        d="M12 8v4"
+        style={{ stroke: 'var(--monarch-bg-card, white)' }}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="16" r="1" style={{ fill: 'var(--monarch-bg-card, white)' }} />
     </svg>
   );
 }
@@ -676,6 +689,10 @@ export const Icons = {
 
   // Effects
   Sparkles: SparklesIcon,
+
+  // Money/Debt
+  BadgeDollarSign: BadgeDollarSignIcon,
+  HandCoins: HandCoinsIcon,
 };
 
 export { Mail as MailIcon, HelpCircle as HelpIcon } from 'lucide-react';

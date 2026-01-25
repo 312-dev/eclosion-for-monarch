@@ -26,7 +26,10 @@ export function UninstallModalFooter({
 
   if (cancelResult) {
     return (
-      <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--monarch-border)' }}>
+      <div
+        className="p-4 border-t rounded-b-xl flex gap-3"
+        style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
+      >
         <CancelButton onClick={onClose} fullWidth>
           Close
         </CancelButton>
@@ -35,7 +38,10 @@ export function UninstallModalFooter({
   }
 
   return (
-    <div className="p-4 border-t flex gap-3" style={{ borderColor: 'var(--monarch-border)' }}>
+    <div
+      className="p-4 border-t rounded-b-xl flex gap-3"
+      style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
+    >
       <CancelButton onClick={onClose} disabled={cancelling} fullWidth>
         Cancel
       </CancelButton>

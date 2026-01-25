@@ -123,8 +123,8 @@ export function RevisionHistoryModal({
         >
           {/* Header */}
           <div
-            className="flex items-center justify-between px-4 py-3 border-b shrink-0"
-            style={{ borderColor: 'var(--monarch-border)' }}
+            className="flex items-center justify-between px-4 py-3 border-b shrink-0 rounded-t-xl"
+            style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
           >
             <div>
               <h2

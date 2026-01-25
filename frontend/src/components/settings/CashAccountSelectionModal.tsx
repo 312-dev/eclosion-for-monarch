@@ -117,9 +117,15 @@ export function CashAccountSelectionModal({
         />
 
         {/* Modal */}
-        <div className="relative w-full max-w-md mx-4 rounded-xl shadow-xl max-h-[90vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
+        <div
+          className="relative w-full max-w-md mx-4 rounded-xl shadow-xl flex flex-col modal-content bg-monarch-bg-card border border-monarch-border"
+          style={{ maxHeight: 'var(--modal-max-height)' }}
+        >
           {/* Header */}
-          <div className="p-4 border-b border-monarch-border">
+          <div
+            className="p-4 border-b border-monarch-border rounded-t-xl"
+            style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wallet size={20} style={{ color: 'var(--monarch-orange)' }} />
@@ -265,7 +271,10 @@ export function CashAccountSelectionModal({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-monarch-border flex gap-2">
+          <div
+            className="p-4 border-t border-monarch-border rounded-b-xl flex gap-2"
+            style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <CancelButton onClick={onClose} disabled={isSaving} fullWidth>
               Cancel
             </CancelButton>

@@ -152,7 +152,10 @@ export function LinkCategoryModal({
         {/* Modal */}
         <div className="relative w-full max-w-lg mx-4 rounded-xl shadow-xl max-h-[90vh] flex flex-col modal-content bg-monarch-bg-card border border-monarch-border">
           {/* Header */}
-          <div className="p-4 border-b border-monarch-border">
+          <div
+            className="p-4 border-b border-monarch-border rounded-t-xl"
+            style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-monarch-text-dark">
                 Link to Existing Category
@@ -346,7 +349,10 @@ export function LinkCategoryModal({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-monarch-border flex gap-3">
+          <div
+            className="p-4 border-t border-monarch-border rounded-b-xl flex gap-3"
+            style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+          >
             <CancelButton onClick={onClose} fullWidth>
               Cancel
             </CancelButton>

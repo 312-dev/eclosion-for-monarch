@@ -23,10 +23,10 @@ import { SecurityAlertBanner } from '../SecurityAlertBanner';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 import {
   useDashboardQuery,
-  useSyncMutation,
   useStashQuery,
   useStashConfigQuery,
   usePendingCountQuery,
+  useAutoSyncStatusQuery,
 } from '../../api/queries';
 import { useAuth } from '../../context/AuthContext';
 import { useDemo } from '../../context/DemoContext';
@@ -34,7 +34,15 @@ import { useToast } from '../../context/ToastContext';
 import { getErrorMessage, isRateLimitError } from '../../utils';
 import { isDesktopMode } from '../../utils/apiBase';
 import { TourController } from '../wizards/WizardComponents';
-import { useMacOSElectron, useWindowsElectron, useAppTour } from '../../hooks';
+import {
+  useMacOSElectron,
+  useWindowsElectron,
+  useAppTour,
+  useAutoSyncVisibility,
+  usePageSync,
+  useCurrentPage,
+  useBackgroundPoller,
+} from '../../hooks';
 
 export function AppShell() {
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
@@ -44,14 +52,24 @@ export function AppShell() {
   const isDesktop = isDesktopMode();
   const toast = useToast();
   const { data, isLoading, isFetching, error, refetch } = useDashboardQuery();
-  const syncMutation = useSyncMutation();
   const isMacOSElectron = useMacOSElectron();
+
+  // Page-aware sync - only syncs data relevant to current page
+  const currentPage = useCurrentPage();
+  const { sync: pageSync, isSyncing: isPageSyncing } = usePageSync(currentPage);
+
+  // Background polling - keeps data fresh while app is visible
+  useBackgroundPoller();
   const isWindowsElectron = useWindowsElectron();
 
   // Stash data for tour (lightweight queries)
   const { data: stashData } = useStashQuery();
   const { data: stashConfig } = useStashConfigQuery();
   const { data: pendingCount = 0 } = usePendingCountQuery();
+
+  // Auto-sync visibility management (5 min foreground, 60 min background)
+  const { data: autoSyncStatus } = useAutoSyncStatusQuery();
+  useAutoSyncVisibility(autoSyncStatus?.enabled ?? false);
 
   // Use the app tour hook for all tour-related logic
   const { showTour, setShowTour, currentTourSteps, tourKey, hasTour, handleTourClose, pathPrefix } =
@@ -91,7 +109,7 @@ export function AppShell() {
 
   const handleSync = async () => {
     try {
-      await syncMutation.mutateAsync();
+      await pageSync();
     } catch (err) {
       toast.error(isRateLimitError(err) ? err.message : getErrorMessage(err));
     }
@@ -176,7 +194,7 @@ export function AppShell() {
           pathPrefix={pathPrefix}
           readyToAssign={data.ready_to_assign}
           lastSync={data.last_sync}
-          isSyncing={syncMutation.isPending}
+          isSyncing={isPageSyncing}
           isFetching={isFetching}
           hasTour={hasTour}
           onSync={handleSync}

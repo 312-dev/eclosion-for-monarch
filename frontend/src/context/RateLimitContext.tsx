@@ -400,8 +400,16 @@ export function useRateLimit(): RateLimitContextValue {
 /**
  * Convenience hook to check if rate limited.
  * Returns false if not in a RateLimitProvider (e.g., demo mode outside provider).
+ *
+ * TEMPORARY: Ignores internal cooldowns (eclosion_sync_cooldown) but still respects
+ * Monarch API rate limits and auth endpoint limits.
  */
 export function useIsRateLimited(): boolean {
   const context = useContext(RateLimitContext);
-  return context?.isRateLimited ?? false;
+  if (!context?.isRateLimited) return false;
+
+  // TEMPORARY: Ignore our internal sync cooldown, but respect Monarch/auth rate limits
+  if (context.source === 'eclosion_sync_cooldown') return false;
+
+  return true;
 }

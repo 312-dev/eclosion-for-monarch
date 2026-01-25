@@ -120,24 +120,25 @@ export function MonthYearSelector({
       data-tour="month-navigator"
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className="p-2.5 rounded-xl"
-            style={{ backgroundColor: 'var(--monarch-orange-light)' }}
-          >
-            <Calendar size={20} style={{ color: 'var(--monarch-orange)' }} />
-          </div>
-          <button
-            type="button"
-            onClick={handlePrevMonth}
-            className="p-2 rounded-lg hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={20} style={{ color: 'var(--monarch-text-muted)' }} />
-          </button>
-        </div>
+        {/* Left: Previous month button */}
+        <button
+          type="button"
+          onClick={handlePrevMonth}
+          className="p-2 rounded-lg hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={20} style={{ color: 'var(--monarch-text-muted)' }} />
+        </button>
+
+        {/* Center: Calendar icon + Month/Year title */}
         <div className="flex flex-col items-center">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <div
+              className="p-2 rounded-xl"
+              style={{ backgroundColor: 'var(--monarch-orange-light)' }}
+            >
+              <Calendar size={18} style={{ color: 'var(--monarch-orange)' }} />
+            </div>
             <div ref={monthRef} className="relative">
               <button
                 type="button"
@@ -307,18 +308,15 @@ export function MonthYearSelector({
           })()}
         </div>
 
-        {/* Right: Nav arrow and spacer to balance calendar icon */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleNextMonth}
-            className="p-2 rounded-lg hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
-            aria-label="Next month"
-          >
-            <ChevronRight size={20} style={{ color: 'var(--monarch-text-muted)' }} />
-          </button>
-          <div className="w-11.25" aria-hidden="true" />
-        </div>
+        {/* Right: Next month button */}
+        <button
+          type="button"
+          onClick={handleNextMonth}
+          className="p-2 rounded-lg hover:bg-(--monarch-bg-hover) transition-colors icon-btn-hover"
+          aria-label="Next month"
+        >
+          <ChevronRight size={20} style={{ color: 'var(--monarch-text-muted)' }} />
+        </button>
       </div>
     </div>
   );

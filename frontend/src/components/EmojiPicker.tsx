@@ -9,9 +9,11 @@ interface EmojiPickerProps {
   readonly currentEmoji: string;
   readonly onSelect: (emoji: string) => Promise<void>;
   readonly disabled?: boolean;
+  /** Show a dropdown chevron next to the emoji */
+  readonly showChevron?: boolean;
 }
 
-export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerProps) {
+export function EmojiPicker({ currentEmoji, onSelect, disabled, showChevron }: EmojiPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
@@ -158,32 +160,22 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
                       {children}
                     </div>
                   ),
-                  Emoji: ({ emoji, ...props }) => (
-                    <button
-                      className="flex size-8 items-center justify-center rounded-md text-lg transition-colors"
-                      style={{
-                        backgroundColor:
-                          emoji.emoji === currentEmoji ? 'var(--monarch-orange-10)' : undefined,
-                        boxShadow:
-                          emoji.emoji === currentEmoji
-                            ? 'inset 0 0 0 2px var(--monarch-orange)'
-                            : undefined,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (emoji.emoji !== currentEmoji) {
-                          e.currentTarget.style.backgroundColor = 'var(--monarch-bg-hover)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (emoji.emoji !== currentEmoji) {
-                          e.currentTarget.style.backgroundColor = '';
-                        }
-                      }}
-                      {...props}
-                    >
-                      {emoji.emoji}
-                    </button>
-                  ),
+                  Emoji: ({ emoji, ...props }) => {
+                    const isSelected = emoji.emoji === currentEmoji;
+                    return (
+                      <button
+                        className={`flex size-8 items-center justify-center rounded-md text-lg transition-colors ${
+                          isSelected
+                            ? 'ring-2 ring-inset bg-(--monarch-orange-10)'
+                            : 'hover:bg-(--monarch-bg-hover)'
+                        }`}
+                        style={isSelected ? { '--tw-ring-color': 'var(--monarch-orange)' } as React.CSSProperties : undefined}
+                        {...props}
+                      >
+                        {emoji.emoji}
+                      </button>
+                    );
+                  },
                 }}
               />
             </FrimoussePicker.Viewport>
@@ -200,7 +192,7 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
         type="button"
         onClick={() => !isDisabled && !isUpdating && setIsOpen(!isOpen)}
         disabled={isDisabled || isUpdating}
-        className="inline-flex items-center justify-center rounded hover:bg-black/5 transition-colors disabled:opacity-50 px-0.5 -ml-0.5"
+        className="inline-flex items-center justify-center rounded hover:bg-black/5 transition-colors disabled:opacity-50 px-0.5 -ml-0.5 gap-1.5"
         style={{ fontSize: 'inherit', lineHeight: 'inherit' }}
         aria-label={`Current icon: ${currentEmoji}. Click to change`}
         aria-expanded={isOpen}
@@ -211,6 +203,14 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled }: EmojiPickerPro
           <RefreshIcon size={14} className="animate-spin" aria-hidden="true" />
         ) : (
           <span aria-hidden="true">{currentEmoji}</span>
+        )}
+        {showChevron && (
+          <Icons.ChevronDown
+            size={14}
+            className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            style={{ color: 'var(--monarch-text-muted)' }}
+            aria-hidden="true"
+          />
         )}
       </button>
       {pickerDropdown}

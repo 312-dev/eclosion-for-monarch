@@ -29,7 +29,7 @@ interface SavingsProgressBarProps {
   /** Optional label for saved text (default: "saved") */
   readonly savedLabel?: string;
   /** Goal type - used to show additional context in tooltip */
-  readonly goalType?: 'one_time' | 'savings_buffer';
+  readonly goalType?: 'one_time' | 'debt' | 'savings_buffer';
   /** Available to spend (for one_time goals, helps detect if spending occurred) */
   readonly availableToSpend?: number;
 }
@@ -47,24 +47,45 @@ export function SavingsProgressBar({
   goalType,
   availableToSpend,
 }: SavingsProgressBarProps) {
+  // For savings_buffer goals:
+  // - "saved" = total contributions (rollover + budgeted + credits)
+  // - "available" = remaining after spending (totalSaved is the remaining balance)
+  // - spending = contributions - available
+  //
+  // For one_time goals:
+  // - "saved" = totalSaved (total ever budgeted, immune to spending)
+  // - "available" = availableToSpend (current balance after spending)
+  // - spending = saved - available
+
+  const isSavingsBuffer = goalType === 'savings_buffer';
+
+  // Calculate total contributions (what was "saved" / put in)
+  const totalContributions = rolloverAmount + budgetedThisMonth + creditsThisMonth;
+
+  // For savings_buffer: totalSaved from props is actually the remaining balance
+  // For one_time: totalSaved from props is total contributions
+  const displayedAvailable = isSavingsBuffer ? totalSaved : availableToSpend;
+
+  // Calculate spending
+  let spentThisMonth = 0;
+  if (isSavingsBuffer) {
+    spentThisMonth = Math.max(0, totalContributions - totalSaved);
+  } else if (availableToSpend !== undefined) {
+    spentThisMonth = Math.max(0, totalSaved - availableToSpend);
+  }
+
+  // Detect if there's spending to show the "available" display
+  const hasSpendingToShow = spentThisMonth > 0 && displayedAvailable !== undefined;
+
   // Show tooltip breakdown when there's data to show
-  const priorBalance = Math.max(0, totalSaved - budgetedThisMonth);
-  const hasBreakdown = priorBalance > 0 || creditsThisMonth > 0 || budgetedThisMonth > 0;
-
-  // For one_time goals, detect if spending has occurred (balance < progress)
-  const hasSpending =
-    goalType === 'one_time' &&
-    availableToSpend !== undefined &&
-    availableToSpend !== totalSaved;
-
-  // Calculate spending amount (progress - actual balance)
-  const spendingAmount = hasSpending && availableToSpend !== undefined
-    ? totalSaved - availableToSpend
-    : 0;
+  const hasBreakdown = rolloverAmount > 0 || creditsThisMonth > 0 || budgetedThisMonth > 0;
 
   if (!isEnabled) {
     return null;
   }
+
+  // The saved amount to display and use for "to go" calculation
+  const savedForDisplay = isSavingsBuffer ? totalContributions : totalSaved;
 
   return (
     <div>
@@ -80,7 +101,7 @@ export function SavingsProgressBar({
       <div className="text-xs mt-0.5 flex justify-between">
         <div>
           {/* Show "available" first when there's spending */}
-          {hasSpending && availableToSpend !== undefined && (
+          {hasSpendingToShow && displayedAvailable !== undefined && (
             <>
               <Tooltip
                 content={
@@ -93,16 +114,16 @@ export function SavingsProgressBar({
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between">
-                        <span style={{ color: 'var(--monarch-text-muted)' }}>Total saved</span>
+                        <span style={{ color: 'var(--monarch-text-muted)' }}>Contributions</span>
                         <span style={{ color: 'var(--monarch-green)' }}>
-                          +{formatCurrency(totalSaved, { maximumFractionDigits: 0 })}
+                          +{formatCurrency(savedForDisplay, { maximumFractionDigits: 0 })}
                         </span>
                       </div>
-                      {spendingAmount > 0 && (
+                      {spentThisMonth > 0 && (
                         <div className="flex justify-between">
                           <span style={{ color: 'var(--monarch-text-muted)' }}>Spent</span>
                           <span style={{ color: 'var(--monarch-red)' }}>
-                            -{formatCurrency(spendingAmount, { maximumFractionDigits: 0 })}
+                            -{formatCurrency(spentThisMonth, { maximumFractionDigits: 0 })}
                           </span>
                         </div>
                       )}
@@ -113,7 +134,7 @@ export function SavingsProgressBar({
                     >
                       <span>Available</span>
                       <span style={{ color: 'var(--monarch-text-dark)' }}>
-                        {formatCurrency(availableToSpend, { maximumFractionDigits: 0 })}
+                        {formatCurrency(displayedAvailable, { maximumFractionDigits: 0 })}
                       </span>
                     </div>
                   </div>
@@ -123,7 +144,7 @@ export function SavingsProgressBar({
                   className="text-monarch-text-dark cursor-help"
                   style={{ borderBottom: '1px dotted var(--monarch-text-muted)' }}
                 >
-                  {formatCurrency(availableToSpend, { maximumFractionDigits: 0 })} available
+                  {formatCurrency(displayedAvailable, { maximumFractionDigits: 0 })} available
                 </span>
               </Tooltip>
               <span className="text-monarch-text-dark">, </span>
@@ -142,23 +163,13 @@ export function SavingsProgressBar({
                     Balance Breakdown
                   </div>
                   <div className="space-y-1">
-                    {rolloverAmount > 0 ? (
+                    {rolloverAmount > 0 && (
                       <div className="flex justify-between">
                         <span style={{ color: 'var(--monarch-text-muted)' }}>Rolled over</span>
                         <span style={{ color: 'var(--monarch-green)' }}>
                           +{formatCurrency(rolloverAmount, { maximumFractionDigits: 0 })}
                         </span>
                       </div>
-                    ) : (
-                      priorBalance > 0 &&
-                      creditsThisMonth === 0 && (
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--monarch-text-muted)' }}>Prior balance</span>
-                          <span style={{ color: 'var(--monarch-green)' }}>
-                            +{formatCurrency(priorBalance, { maximumFractionDigits: 0 })}
-                          </span>
-                        </div>
-                      )
                     )}
                     {creditsThisMonth > 0 && (
                       <div className="flex justify-between">
@@ -168,12 +179,14 @@ export function SavingsProgressBar({
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between">
-                      <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted this month</span>
-                      <span style={{ color: 'var(--monarch-green)' }}>
-                        +{formatCurrency(budgetedThisMonth, { maximumFractionDigits: 0 })}
-                      </span>
-                    </div>
+                    {budgetedThisMonth > 0 && (
+                      <div className="flex justify-between">
+                        <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted this month</span>
+                        <span style={{ color: 'var(--monarch-green)' }}>
+                          +{formatCurrency(budgetedThisMonth, { maximumFractionDigits: 0 })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div
                     className="flex justify-between font-medium pt-2 border-t"
@@ -181,7 +194,7 @@ export function SavingsProgressBar({
                   >
                     <span>Total Saved</span>
                     <span style={{ color: 'var(--monarch-text-dark)' }}>
-                      {formatCurrency(totalSaved, { maximumFractionDigits: 0 })}
+                      {formatCurrency(savedForDisplay, { maximumFractionDigits: 0 })}
                     </span>
                   </div>
                 </div>
@@ -191,18 +204,18 @@ export function SavingsProgressBar({
                 className="text-monarch-text-dark cursor-help"
                 style={{ borderBottom: '1px dotted var(--monarch-text-muted)' }}
               >
-                {formatCurrency(totalSaved, { maximumFractionDigits: 0 })} {savedLabel}
+                {formatCurrency(savedForDisplay, { maximumFractionDigits: 0 })} {savedLabel}
               </span>
             </Tooltip>
           ) : (
             <span className="text-monarch-text-dark">
-              {formatCurrency(totalSaved, { maximumFractionDigits: 0 })} {savedLabel}
+              {formatCurrency(savedForDisplay, { maximumFractionDigits: 0 })} {savedLabel}
             </span>
           )}
         </div>
         <span className="text-monarch-text-light">
-          {formatCurrency(Math.max(0, targetAmount - totalSaved), { maximumFractionDigits: 0 })} to
-          go
+          {formatCurrency(Math.max(0, targetAmount - savedForDisplay), { maximumFractionDigits: 0 })}{' '}
+          to go
         </span>
       </div>
     </div>

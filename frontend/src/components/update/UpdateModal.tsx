@@ -134,13 +134,15 @@ export function UpdateModal({ isOpen, onClose, targetVersion }: UpdateModalProps
       description={`How to update your ${getDeploymentLabel()} deployment`}
       maxWidth="lg"
       footer={
-        <button
-          onClick={onClose}
-          className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
-          style={{ backgroundColor: 'var(--monarch-orange)', color: 'white' }}
-        >
-          Done
-        </button>
+        <div className="flex justify-end w-full">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-90"
+            style={{ backgroundColor: 'var(--monarch-orange)', color: 'white' }}
+          >
+            Done
+          </button>
+        </div>
       }
     >
       {loading ? (

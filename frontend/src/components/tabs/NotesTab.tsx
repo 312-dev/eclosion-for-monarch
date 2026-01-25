@@ -15,7 +15,7 @@ import { ContentLoadingSpinner } from '../ui/LoadingSpinner';
 import { EXPAND_FIRST_GROUP_EVENT } from '../layout/notesTourSteps';
 import { useAllNotesQuery, useMonthNotesQuery } from '../../api/queries';
 import { useCategoriesByGroup } from '../../api/queries/categoryStoreQueries';
-import { usePageTitle, useHiddenCategories, useNotesTour } from '../../hooks';
+import { usePageTitle, useHiddenCategories, useNotesTour, useLocalStorage } from '../../hooks';
 import { useToast } from '../../context/ToastContext';
 import { NotesEditorProvider } from '../../context/NotesEditorContext';
 import { ToolPageHeader, ToolSettingsModal } from '../ui';
@@ -25,7 +25,16 @@ import {
   convertEffectiveGeneralNote,
   hasAnyNotes,
 } from '../../utils';
+import { STORAGE_KEYS } from '../../constants';
 import type { MonthKey, EffectiveGeneralNote, CategoryGroupWithNotes } from '../../types/notes';
+
+/**
+ * Notes UI state persisted to localStorage
+ */
+interface NotesUIState {
+  expandedGroups: string[];
+  scrollTop: number;
+}
 
 /**
  * Get current month key
@@ -35,12 +44,37 @@ function getCurrentMonthKey(): MonthKey {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+const DEFAULT_UI_STATE: NotesUIState = {
+  expandedGroups: [],
+  scrollTop: 0,
+};
+
 export function NotesTab() {
   const [currentMonth, setCurrentMonth] = useState<MonthKey>(getCurrentMonthKey());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const toast = useToast();
+
+  // Persist UI state (expanded groups and scroll position) to localStorage
+  const [uiState, setUIState] = useLocalStorage<NotesUIState>(
+    STORAGE_KEYS.NOTES_UI_STATE,
+    DEFAULT_UI_STATE
+  );
+
+  // Convert stored array to Set for efficient lookups
+  const expandedGroups = useMemo(() => new Set(uiState.expandedGroups), [uiState.expandedGroups]);
+
+  // Update expanded groups in localStorage
+  const setExpandedGroups = useCallback(
+    (updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+      setUIState((prev) => {
+        const prevSet = new Set(prev.expandedGroups);
+        const newSet = typeof updater === 'function' ? updater(prevSet) : updater;
+        return { ...prev, expandedGroups: Array.from(newSet) };
+      });
+    },
+    [setUIState]
+  );
 
   // Hidden categories
   const { hiddenGroups, hiddenCategories } = useHiddenCategories();
@@ -97,10 +131,9 @@ export function NotesTab() {
     const firstGroup = groups[0];
     if (!hasAutoExpanded.current && !hasSeenTour && firstGroup) {
       hasAutoExpanded.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- One-time init from async data
       setExpandedGroups(new Set([firstGroup.id]));
     }
-  }, [hasSeenTour, groups]);
+  }, [hasSeenTour, groups, setExpandedGroups]);
 
   // Listen for tour event to expand first group (in case user collapsed it during tour)
   useEffect(() => {
@@ -115,28 +148,64 @@ export function NotesTab() {
     return () => {
       globalThis.removeEventListener(EXPAND_FIRST_GROUP_EVENT, handleExpandFirstGroup);
     };
-  }, [groups]);
+  }, [groups, setExpandedGroups]);
+
+  // Restore scroll position on mount (after loading completes)
+  const hasRestoredScroll = useRef(false);
+  useEffect(() => {
+    if (!isLoading && !hasRestoredScroll.current && uiState.scrollTop > 0) {
+      hasRestoredScroll.current = true;
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        globalThis.scrollTo(0, uiState.scrollTop);
+      });
+    }
+  }, [isLoading, uiState.scrollTop]);
+
+  // Save scroll position on scroll (debounced)
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setUIState((prev) => ({
+          ...prev,
+          scrollTop: globalThis.scrollY,
+        }));
+      }, 150); // Debounce to avoid excessive writes
+    };
+
+    globalThis.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      globalThis.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [setUIState]);
 
   // Group expansion handlers
-  const handleToggleGroup = useCallback((groupId: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  }, []);
+  const handleToggleGroup = useCallback(
+    (groupId: string) => {
+      setExpandedGroups((prev) => {
+        const next = new Set(prev);
+        if (next.has(groupId)) {
+          next.delete(groupId);
+        } else {
+          next.add(groupId);
+        }
+        return next;
+      });
+    },
+    [setExpandedGroups]
+  );
 
   const handleExpandAll = useCallback(() => {
     setExpandedGroups(new Set(groups.map((g) => g.id)));
-  }, [groups]);
+  }, [groups, setExpandedGroups]);
 
   const handleCollapseAll = useCallback(() => {
     setExpandedGroups(new Set());
-  }, []);
+  }, [setExpandedGroups]);
 
   // Open export modal
   const handleOpenExportModal = useCallback(() => {
@@ -160,28 +229,28 @@ export function NotesTab() {
           icon={<NotesIcon size={40} />}
           title="Monthly Notes"
           description="Add notes to categories and months"
+          actions={
+            <button
+              type="button"
+              onClick={handleOpenExportModal}
+              disabled={!hasNotes}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                hasNotes ? 'hover:bg-(--monarch-bg-hover)' : 'opacity-50 cursor-not-allowed'
+              }`}
+              style={{ color: 'var(--monarch-text-muted)' }}
+              title={hasNotes ? 'Export notes' : 'No notes to export'}
+              data-tour="export-notes"
+            >
+              <Download size={14} />
+              Export
+            </button>
+          }
           onSettingsClick={() => setShowSettingsModal(true)}
         />
 
         {/* Month navigation */}
-        <div className="flex items-center justify-between mb-4 lg:mb-6">
+        <div className="mb-4 lg:mb-6">
           <MonthYearSelector currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
-
-          {/* Export button */}
-          <button
-            type="button"
-            onClick={handleOpenExportModal}
-            disabled={!hasNotes}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-              hasNotes ? 'hover:bg-(--monarch-bg-hover)' : 'opacity-50 cursor-not-allowed'
-            }`}
-            style={{ color: 'var(--monarch-text-muted)' }}
-            title={hasNotes ? 'Export notes' : 'No notes to export'}
-            data-tour="export-notes"
-          >
-            <Download size={14} />
-            Export
-          </button>
         </div>
 
         {/* General month notes - mobile only (stacked below navigator) */}

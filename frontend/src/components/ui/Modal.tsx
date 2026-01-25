@@ -8,15 +8,48 @@
  * - Escape to close
  * - Click outside to close
  * - ARIA attributes for screen readers
+ * - Footer portal for children to render sticky footer content
  */
 
-import { useEffect, useRef, useCallback, useId } from 'react';
+import { useEffect, useRef, useCallback, useId, createContext, useContext, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { CloseButton } from './CloseButton';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useModalStack } from '../../hooks/useModalStack';
 import { Z_INDEX } from '../../constants';
+
+/**
+ * Context for modal footer portal.
+ * Children can use useModalFooter() to render content into the modal's sticky footer area.
+ */
+const ModalFooterContext = createContext<HTMLDivElement | null>(null);
+
+/**
+ * Hook for children to render content into the modal's sticky footer.
+ * Returns a function that creates a portal to the footer area.
+ *
+ * @example
+ * function MyForm() {
+ *   const renderInFooter = useModalFooter();
+ *   return (
+ *     <>
+ *       <div>Form content...</div>
+ *       {renderInFooter(<button>Save</button>)}
+ *     </>
+ *   );
+ * }
+ */
+export function useModalFooter() {
+  const footerContainer = useContext(ModalFooterContext);
+  return useCallback(
+    (content: ReactNode) => {
+      if (!footerContainer) return null;
+      return createPortal(content, footerContainer);
+    },
+    [footerContainer]
+  );
+}
 
 export interface ModalProps {
   /** Whether the modal is open */
@@ -42,7 +75,7 @@ export interface ModalProps {
   /** Whether to show the close button */
   showCloseButton?: boolean;
   /** Initial element to focus when modal opens (selector or ref) */
-  initialFocus?: RefObject<HTMLElement>;
+  initialFocus?: RefObject<HTMLElement | null>;
   /** Optional actions to render in the header, left of the close button */
   headerActions?: ReactNode;
 }
@@ -77,6 +110,8 @@ export function Modal({
   headerActions,
 }: ModalProps) {
   const modalRef = useRef<HTMLDialogElement>(null);
+  // Use state for footer container so children re-render when it's available
+  const [footerContainer, setFooterContainer] = useState<HTMLDivElement | null>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const generatedId = useId();
   const modalId = id || `modal-${generatedId}`;
@@ -213,18 +248,22 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
-        className={`relative w-full ${MAX_WIDTH_CLASSES[maxWidth]} max-h-[90vh] flex flex-col rounded-lg p-0 m-0`}
+        className={`relative w-full ${MAX_WIDTH_CLASSES[maxWidth]} flex flex-col rounded-lg p-0 m-0`}
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           boxShadow:
             '0 0 0 1px rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 20px 50px -10px rgba(0, 0, 0, 0.4)',
+          maxHeight: 'var(--modal-max-height)',
           zIndex: modalZIndex,
         }}
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: 'var(--monarch-border)' }}
+          className="flex items-center justify-between p-4 border-b rounded-t-lg"
+          style={{
+            borderColor: 'var(--monarch-border)',
+            backgroundColor: 'var(--monarch-bg-page)',
+          }}
         >
           <div>
             <h2
@@ -252,18 +291,33 @@ export function Modal({
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-4 flex-1 min-h-0 overflow-y-auto">{children}</div>
-
-        {/* Footer */}
-        {footer && (
+        {/* Body - wrapped in context provider for footer portal */}
+        <ModalFooterContext.Provider value={footerContainer}>
           <div
-            className="flex items-center justify-end gap-2 p-4 border-t"
-            style={{ borderColor: 'var(--monarch-border)' }}
+            className="modal-body-scroll p-4 flex-1 min-h-0 overflow-y-scroll"
+            style={{
+              boxShadow:
+                'inset 0 8px 8px -8px rgba(0,0,0,0.15), inset 0 -8px 8px -8px rgba(0,0,0,0.15)',
+            }}
           >
-            {footer}
+            {children}
           </div>
-        )}
+        </ModalFooterContext.Provider>
+
+        {/* Footer - sticky at bottom, never scrolls with content */}
+        {/* Renders both explicit footer prop and portal content from children */}
+        <div
+          ref={setFooterContainer}
+          className="shrink-0 empty:hidden rounded-b-lg"
+          style={{
+            borderColor: 'var(--monarch-border)',
+            backgroundColor: 'var(--monarch-bg-page)',
+          }}
+        >
+          {/* Portal content from children renders here via useModalFooter() */}
+          {/* Explicit footer prop also renders here */}
+          {footer && <div className="p-4 border-t" style={{ borderColor: 'var(--monarch-border)' }}>{footer}</div>}
+        </div>
       </dialog>
     </div>
   );

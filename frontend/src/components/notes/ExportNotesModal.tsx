@@ -144,8 +144,8 @@ export function ExportNotesModal({
         >
           {/* Header */}
           <div
-            className="flex items-center justify-between px-4 py-3 border-b shrink-0"
-            style={{ borderColor: 'var(--monarch-border)' }}
+            className="flex items-center justify-between px-4 py-3 border-b shrink-0 rounded-t-xl"
+            style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
           >
             <div className="flex items-center gap-2">
               <Download size={18} style={{ color: 'var(--monarch-orange)' }} />
@@ -248,8 +248,8 @@ export function ExportNotesModal({
 
           {/* Footer */}
           <div
-            className="flex items-center justify-end gap-3 px-4 py-3 border-t shrink-0"
-            style={{ borderColor: 'var(--monarch-border)' }}
+            className="flex items-center justify-end gap-3 px-4 py-3 border-t shrink-0 rounded-b-xl"
+            style={{ borderColor: 'var(--monarch-border)', backgroundColor: 'var(--monarch-bg-page)' }}
           >
             <CancelButton onClick={onClose}>Cancel</CancelButton>
             <WarningButton
