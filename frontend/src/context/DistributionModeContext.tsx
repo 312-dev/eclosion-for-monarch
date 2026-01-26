@@ -151,11 +151,16 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
     };
   });
 
-  const enterDistributeMode = useCallback((_items: StashItem[]) => {
+  const enterDistributeMode = useCallback((items: StashItem[]) => {
     const defaultTimeline = createDefaultTimelineState();
+    // Initialize stashed allocations with each item's current balance
+    const initialAllocations: Record<string, number> = {};
+    for (const item of items) {
+      initialAllocations[item.id] = item.current_balance;
+    }
     setState({
       mode: 'distribute',
-      stashedAllocations: {},
+      stashedAllocations: initialAllocations,
       monthlyAllocations: {},
       hasChanges: false,
       customAvailableFunds: null,
@@ -171,11 +176,16 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
     });
   }, []);
 
-  const enterHypothesizeMode = useCallback((_items: StashItem[]) => {
+  const enterHypothesizeMode = useCallback((items: StashItem[]) => {
     const defaultTimeline = createDefaultTimelineState();
+    // Initialize stashed allocations with each item's current balance
+    const initialAllocations: Record<string, number> = {};
+    for (const item of items) {
+      initialAllocations[item.id] = item.current_balance;
+    }
     setState({
       mode: 'hypothesize',
-      stashedAllocations: {},
+      stashedAllocations: initialAllocations,
       monthlyAllocations: {},
       hasChanges: false,
       customAvailableFunds: null,
