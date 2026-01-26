@@ -285,8 +285,7 @@ class SecurityService:
 
             # Session timeouts
             timeouts = conn.execute(
-                "SELECT COUNT(*) FROM security_events "
-                "WHERE event_type = 'SESSION_TIMEOUT'"
+                "SELECT COUNT(*) FROM security_events WHERE event_type = 'SESSION_TIMEOUT'"
             ).fetchone()[0]
 
             # Unique IPs

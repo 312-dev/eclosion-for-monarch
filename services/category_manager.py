@@ -721,7 +721,6 @@ class CategoryManager:
             if cat_id:
                 for month in entry.get("monthlyAmounts", []):
                     if month.get("month") == start:
-
                         planned[cat_id] = int(month.get("plannedCashFlowAmount", 0))
                         break
 

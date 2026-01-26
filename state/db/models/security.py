@@ -24,9 +24,7 @@ class SecurityEvent(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_type: Mapped[str] = mapped_column(String(50), nullable=False)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(UTC)
-    )
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)  # IPv6 max length
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -52,9 +50,7 @@ class GeolocationCache(Base):
     ip_address: Mapped[str] = mapped_column(String(45), primary_key=True)
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    cached_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(UTC)
-    )
+    cached_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class SecurityPreference(Base):

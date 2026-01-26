@@ -342,8 +342,8 @@ async def update_item(item_id: str):
         goal_type = data["goal_type"]
         if goal_type not in ("one_time", "debt", "savings_buffer"):
             raise ValidationError(
-            "Invalid 'goal_type'. Must be 'one_time', 'debt', or 'savings_buffer'"
-        )
+                "Invalid 'goal_type'. Must be 'one_time', 'debt', or 'savings_buffer'"
+            )
         updates["goal_type"] = goal_type
     if "tracking_start_date" in data:
         updates["tracking_start_date"] = data["tracking_start_date"]

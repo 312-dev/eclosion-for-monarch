@@ -433,9 +433,7 @@ class StashService:
 
                         # Sum up positive amounts (credits/income)
                         credits_this_month = sum(
-                            txn.get("amount", 0)
-                            for txn in transactions
-                            if txn.get("amount", 0) > 0
+                            txn.get("amount", 0) for txn in transactions if txn.get("amount", 0) > 0
                         )
 
                         logger.info(
@@ -1143,8 +1141,7 @@ class StashService:
             return {
                 "success": False,
                 "error": (
-                    "Must provide category_group_id, existing_category_id, "
-                    "or flexible_group_id"
+                    "Must provide category_group_id, existing_category_id, or flexible_group_id"
                 ),
             }
         if options_provided > 1 and existing_category_id and effective_group_id:

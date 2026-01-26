@@ -424,8 +424,7 @@ class CredentialsService:
                 "validation_success": False,
                 "needs_credential_update": True,
                 "error": (
-                    "Your Monarch credentials are no longer valid. "
-                    "Please enter new credentials."
+                    "Your Monarch credentials are no longer valid. Please enter new credentials."
                 ),
             }
 
