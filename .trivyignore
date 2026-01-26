@@ -5,3 +5,11 @@
 # This vulnerability only affects Windows systems and our Docker container runs on Linux.
 # Waiting for Chainguard to update their Python base image to 3.14.2-r3.
 CVE-2024-3220
+
+# CVE-2026-0861: glibc memalign integer overflow (heap corruption)
+# Waiting for Chainguard to update base image to glibc 2.42-r6
+CVE-2026-0861
+
+# CVE-2026-0915: glibc information disclosure via network query
+# Waiting for Chainguard to update base image to glibc 2.42-r6
+CVE-2026-0915
