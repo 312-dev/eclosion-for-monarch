@@ -27,6 +27,7 @@ import {
   Minus,
   CircleMinus,
   Pencil,
+  PencilOff,
   Trash2,
   ExternalLink,
   Link,
@@ -85,6 +86,7 @@ import {
   Copy,
   Folder,
   FolderCheck,
+  FolderOpen,
   Bookmark,
   Circle,
   Frown,
@@ -155,6 +157,7 @@ export const PlusIcon = Plus;
 export const MinusIcon = Minus;
 export const CircleMinusIcon = CircleMinus;
 export const EditIcon = Pencil;
+export const EditOffIcon = PencilOff;
 export const TrashIcon = Trash2;
 export const ExternalLinkIcon = ExternalLink;
 export const LinkIcon = Link;
@@ -217,6 +220,7 @@ export const SaveIcon = Save;
 export const CopyIcon = Copy;
 export const FolderIcon = Folder;
 export const FolderCheckIcon = FolderCheck;
+export const FolderOpenIcon = FolderOpen;
 export const BookmarkIcon = Bookmark;
 export const CircleIcon = Circle;
 export const SadFaceIcon = Frown;
@@ -545,6 +549,7 @@ export const Icons = {
   Minus: MinusIcon,
   CircleMinus: CircleMinusIcon,
   Edit: EditIcon,
+  EditOff: EditOffIcon,
   Trash: TrashIcon,
   ExternalLink: ExternalLinkIcon,
   Link: LinkIcon,
@@ -625,6 +630,7 @@ export const Icons = {
   Copy: CopyIcon,
   Folder: FolderIcon,
   FolderCheck: FolderCheckIcon,
+  FolderOpen: FolderOpenIcon,
   Bookmark: BookmarkIcon,
   Circle: CircleIcon,
   SadFace: SadFaceIcon,

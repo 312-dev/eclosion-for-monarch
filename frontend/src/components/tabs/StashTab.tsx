@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Stash Tab
  *
@@ -5,6 +6,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useBlocker } from 'react-router-dom';
 import { ExternalLink, Target } from 'lucide-react';
 import { usePageTitle, useBookmarks, useStashSync } from '../../hooks';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
@@ -22,7 +24,12 @@ import {
   useReportSettings,
   StashVsGoalsModal,
   StashGoalExplainerLink,
+  ScenarioSidebarPanel,
+  ExitHypothesizeConfirmModal,
+  ExitDistributeConfirmModal,
+  TimelinePanel,
 } from '../stash';
+import { useDistributionMode } from '../../context/DistributionModeContext';
 import { Icons } from '../icons';
 import { StashIcon } from '../wizards/SetupWizardIcons';
 import { ToolPageHeader, ToolSettingsModal } from '../ui';
@@ -43,7 +50,13 @@ import {
 } from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { handleApiError } from '../../utils';
-import type { StashItem, StashLayoutUpdate, PendingBookmark, MonarchGoal, MonarchGoalLayoutUpdate } from '../../types';
+import type {
+  StashItem,
+  StashLayoutUpdate,
+  PendingBookmark,
+  MonarchGoal,
+  MonarchGoalLayoutUpdate,
+} from '../../types';
 
 interface ModalPrefill {
   name?: string;
@@ -55,9 +68,103 @@ export function StashTab() {
   usePageTitle('Stashes');
   const toast = useToast();
 
-  // Tab state
+  // Distribution mode state for navigation blocking
+  const { mode, hasChanges, exitMode } = useDistributionMode();
+
+  // Block navigation when in hypothesize mode with unsaved changes
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      mode === 'hypothesize' && hasChanges && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // Show exit confirmation modal when navigation is blocked
+  const [showNavExitModal, setShowNavExitModal] = useState(false);
+
+  // State for sub-tab switch exit confirmation
+  const [pendingViewChange, setPendingViewChange] = useState<'stashes' | 'reports' | null>(null);
+  const [showSubTabExitModal, setShowSubTabExitModal] = useState<
+    'hypothesize' | 'distribute' | null
+  >(null);
+
+  // Tab state (declared early for use in callbacks)
   const [activeView, setActiveView] = useState<'stashes' | 'reports'>('stashes');
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Trigger modal when blocker becomes blocked
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      setShowNavExitModal(true);
+    }
+  }, [blocker.state]);
+
+  // Handle navigation exit confirmation
+  const handleNavExitConfirm = useCallback(() => {
+    setShowNavExitModal(false);
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    }
+  }, [blocker]);
+
+  // Handle navigation exit cancel
+  const handleNavExitCancel = useCallback(() => {
+    setShowNavExitModal(false);
+    if (blocker.state === 'blocked') {
+      blocker.reset();
+    }
+  }, [blocker]);
+
+  // Handle sub-tab switching with mode exit confirmation
+  const handleViewChange = useCallback(
+    (newView: 'stashes' | 'reports') => {
+      // If switching to the same view, do nothing
+      if (newView === activeView) return;
+
+      // If in a mode, check if we need confirmation
+      if (mode === null) {
+        // Not in any mode, just switch
+        setActiveView(newView);
+      } else {
+        if (hasChanges) {
+          // Show appropriate exit confirmation modal
+          setPendingViewChange(newView);
+          setShowSubTabExitModal(mode);
+        } else {
+          // No changes, just exit mode and switch
+          exitMode();
+          setActiveView(newView);
+        }
+      }
+    },
+    [activeView, mode, hasChanges, exitMode]
+  );
+
+  // Handle sub-tab exit confirmation
+  const handleSubTabExitConfirm = useCallback(() => {
+    setShowSubTabExitModal(null);
+    if (pendingViewChange) {
+      setActiveView(pendingViewChange);
+      setPendingViewChange(null);
+    }
+  }, [pendingViewChange]);
+
+  // Handle sub-tab exit cancel
+  const handleSubTabExitCancel = useCallback(() => {
+    setShowSubTabExitModal(null);
+    setPendingViewChange(null);
+  }, []);
+
+  // Also warn on browser close/refresh
+  useEffect(() => {
+    if (mode !== 'hypothesize' || !hasChanges) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [mode, hasChanges]);
 
   // Queries
   const { data: configData, isLoading: configLoading } = useStashConfigQuery();
@@ -113,6 +220,15 @@ export function StashTab() {
 
   // Report settings for filtering
   const { setFilteredStashId } = useReportSettings();
+
+  // Currency formatter for timeline
+  const formatCurrency = useCallback((amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }, []);
 
   // Subscribe to new bookmark additions
   useEffect(() => {
@@ -290,9 +406,7 @@ export function StashTab() {
         icon={<StashIcon size={40} />}
         title="Stashes"
         description="Save for today's wants and tomorrow's needs."
-        descriptionExtra={
-          <StashGoalExplainerLink onClick={() => setShowExplainerModal(true)} />
-        }
+        descriptionExtra={<StashGoalExplainerLink onClick={() => setShowExplainerModal(true)} />}
         onSettingsClick={() => setShowSettingsModal(true)}
       />
 
@@ -302,7 +416,7 @@ export function StashTab() {
         style={{ borderColor: 'var(--monarch-border)' }}
       >
         <button
-          onClick={() => setActiveView('stashes')}
+          onClick={() => handleViewChange('stashes')}
           className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-2 flex items-center gap-1.5 transition-colors"
           style={{
             color: activeView === 'stashes' ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
@@ -313,7 +427,7 @@ export function StashTab() {
           Stashes
         </button>
         <button
-          onClick={() => setActiveView('reports')}
+          onClick={() => handleViewChange('reports')}
           className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-2 flex items-center gap-1.5 transition-colors"
           style={{
             color: activeView === 'reports' ? 'var(--monarch-orange)' : 'var(--monarch-text-muted)',
@@ -338,10 +452,7 @@ export function StashTab() {
         {/* Show Archived toggle - floated right */}
         {activeView === 'stashes' && archivedItems.length > 0 && (
           <div className="ml-auto flex items-center gap-2 select-none">
-            <span
-              className="text-sm"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
+            <span className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
               Show Archived
             </span>
             <button
@@ -351,9 +462,7 @@ export function StashTab() {
               onClick={() => setShowArchived(!showArchived)}
               className="toggle-switch relative w-10 h-5 rounded-full transition-colors cursor-pointer"
               style={{
-                backgroundColor: showArchived
-                  ? 'var(--monarch-orange)'
-                  : 'var(--monarch-border)',
+                backgroundColor: showArchived ? 'var(--monarch-orange)' : 'var(--monarch-border)',
               }}
             >
               <span
@@ -392,10 +501,15 @@ export function StashTab() {
                   : undefined
               }
             />
+
+            {/* Timeline Panel - positioned below cards */}
+            <div className="mt-6">
+              <TimelinePanel items={stashData?.items ?? []} formatCurrency={formatCurrency} />
+            </div>
           </div>
 
-          {/* Import button - only shown when not configured */}
-          {!isBrowserConfigured && (
+          {/* Import button - only shown when not configured and not in hypothesis/distribution mode */}
+          {!isBrowserConfigured && mode === null && (
             <div className="flex justify-center mb-3">
               <button
                 data-tour="stash-sync-bookmarks"
@@ -412,7 +526,8 @@ export function StashTab() {
             </div>
           )}
 
-          {pendingBookmarks.length > 0 && (
+          {/* Hide bookmark sections when in hypothesis/distribution mode */}
+          {mode === null && pendingBookmarks.length > 0 && (
             <div ref={pendingSectionRef}>
               <PendingReviewSection
                 isExpanded={isPendingExpanded}
@@ -424,8 +539,8 @@ export function StashTab() {
               />
             </div>
           )}
-          {/* Show collapsed section only when toggle is off */}
-          {!showArchived && (
+          {/* Show collapsed section only when toggle is off and not in hypothesis/distribution mode */}
+          {!showArchived && mode === null && (
             <ArchivedItemsSection
               items={archivedItems.filter((item): item is StashItem => item.type === 'stash')}
               onEdit={handleEdit}
@@ -433,12 +548,14 @@ export function StashTab() {
               allocatingItemId={allocatingItemId}
             />
           )}
-          <IgnoredBookmarksSection
-            items={skippedBookmarks}
-            onCreateTarget={handleCreateTarget}
-            isExpanded={isIgnoredExpanded}
-            onToggle={() => setIsIgnoredExpanded(!isIgnoredExpanded)}
-          />
+          {mode === null && (
+            <IgnoredBookmarksSection
+              items={skippedBookmarks}
+              onCreateTarget={handleCreateTarget}
+              isExpanded={isIgnoredExpanded}
+              onToggle={() => setIsIgnoredExpanded(!isIgnoredExpanded)}
+            />
+          )}
         </>
       ) : (
         <div className="mt-6">
@@ -472,9 +589,28 @@ export function StashTab() {
         onClose={() => setShowSettingsModal(false)}
         tool="stash"
       />
-      <StashVsGoalsModal
-        isOpen={showExplainerModal}
-        onClose={() => setShowExplainerModal(false)}
+      <StashVsGoalsModal isOpen={showExplainerModal} onClose={() => setShowExplainerModal(false)} />
+
+      {/* Scenario Sidebar Panel - for hypothesize mode */}
+      <ScenarioSidebarPanel />
+
+      {/* Navigation exit confirmation modal - shown when trying to leave page in hypothesize mode */}
+      <ExitHypothesizeConfirmModal
+        isOpen={showNavExitModal}
+        onClose={handleNavExitCancel}
+        onConfirmExit={handleNavExitConfirm}
+      />
+
+      {/* Sub-tab switch exit confirmation modals */}
+      <ExitHypothesizeConfirmModal
+        isOpen={showSubTabExitModal === 'hypothesize'}
+        onClose={handleSubTabExitCancel}
+        onConfirmExit={handleSubTabExitConfirm}
+      />
+      <ExitDistributeConfirmModal
+        isOpen={showSubTabExitModal === 'distribute'}
+        onClose={handleSubTabExitCancel}
+        onConfirmExit={handleSubTabExitConfirm}
       />
     </div>
   );

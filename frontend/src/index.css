@@ -737,6 +737,17 @@ input[type='radio'] {
   );
 }
 
+/* When distribution mode banner is visible inside header */
+.app-layout:has(.app-header .distribution-mode-banner) {
+  padding-top: calc(var(--header-height) + var(--rate-limit-banner-height));
+}
+
+.app-layout:has(.app-header .distribution-mode-banner) .sidebar-nav {
+  max-height: calc(
+    100vh - var(--header-height) - var(--rate-limit-banner-height) - var(--footer-height)
+  );
+}
+
 .app-scroll-area {
   flex: 1;
   overflow-y: auto;
@@ -1331,7 +1342,7 @@ input[type='radio'] {
 .stats-sidebar {
   width: 280px;
   flex-shrink: 0;
-  padding: 1rem 1rem 1.5rem 1.5rem;
+  padding: 0 1rem 1.5rem 1.5rem;
   position: sticky;
   top: var(--header-height);
   height: fit-content;
@@ -1441,6 +1452,17 @@ input[type='radio'] {
   }
 }
 
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes expandHeight {
   from {
     opacity: 0;
@@ -1510,6 +1532,10 @@ input[type='radio'] {
 
 .animate-slide-up {
   animation: slideUp 0.15s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.25s ease-out forwards;
 }
 
 .animate-expand {
@@ -2481,6 +2507,29 @@ progress::-moz-progress-bar {
 
 .animate-success {
   animation: successPulse 0.6s ease-out;
+}
+
+/* Icon pulse - subtle scale animation for attention */
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.85;
+  }
+}
+
+.animate-icon-pulse {
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-icon-pulse {
+    animation: none;
+  }
 }
 
 /* Loading pulse - subtle */

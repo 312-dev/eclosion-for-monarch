@@ -40,13 +40,19 @@ export function useAnimatedValue(
   const [displayValue, setDisplayValue] = useState(targetValue);
   const animationRef = useRef<number | null>(null);
   const previousTargetRef = useRef(targetValue);
+  // Track start value in a ref to avoid dependency issues
+  const startValueRef = useRef(targetValue);
 
   useEffect(() => {
     const previousTarget = previousTargetRef.current;
     previousTargetRef.current = targetValue;
 
-    // Skip animation if value hasn't changed
-    if (previousTarget === targetValue) {
+    // Skip if value hasn't changed or is NaN/invalid
+    if (previousTarget === targetValue || !Number.isFinite(targetValue)) {
+      // If target is now valid but display is stale, snap to it
+      if (Number.isFinite(targetValue) && !Number.isFinite(displayValue)) {
+        setDisplayValue(targetValue);
+      }
       return;
     }
 
@@ -55,11 +61,14 @@ export function useAnimatedValue(
       cancelAnimationFrame(animationRef.current);
     }
 
-    const startValue = displayValue;
+    // Use current display value as start point (captured in ref for stability)
+    const startValue = Number.isFinite(displayValue) ? displayValue : targetValue;
+    startValueRef.current = startValue;
     const delta = targetValue - startValue;
 
-    // Skip animation if there's no change from current display
-    if (delta === 0) {
+    // Skip animation if there's no meaningful change
+    if (Math.abs(delta) < 1) {
+      setDisplayValue(targetValue);
       return;
     }
 
@@ -72,7 +81,7 @@ export function useAnimatedValue(
       const progress = Math.min(elapsed / duration, 1);
       const easedProgress = easeOutCubic(progress);
 
-      const currentValue = startValue + delta * easedProgress;
+      const currentValue = startValueRef.current + delta * easedProgress;
       setDisplayValue(Math.round(currentValue));
 
       if (progress < 1) {
@@ -91,7 +100,9 @@ export function useAnimatedValue(
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [targetValue, duration, displayValue]);
+    // Note: displayValue intentionally omitted to prevent re-triggering during animation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetValue, duration]);
 
   return displayValue;
 }

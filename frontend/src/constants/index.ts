@@ -53,6 +53,7 @@ export const STORAGE_KEYS = {
   THEME: 'eclosion-theme',
   FUNDS_BAR_POSITION: 'eclosion-funds-bar-position',
   NOTES_UI_STATE: 'eclosion-notes-ui-state',
+  HYPOTHESIZE_SCENARIOS: 'eclosion-hypothesize-scenarios',
 } as const;
 
 // ============================================================================

@@ -11,6 +11,7 @@
  *             - Unspent Expense Budgets
  *             - Monarch Goal Balances
  *             - Stash Balances
+ *             - Left to Budget (ready_to_assign)
  *
  * See .claude/rules/available-to-stash.md for full documentation.
  */
@@ -229,17 +230,20 @@ export function calculateAvailableToStash(
   const goalBalances = goalsDetail.reduce((sum, item) => sum + item.amount, 0);
   const stashBalances = stashItemsDetail.reduce((sum, item) => sum + item.amount, 0);
   const bufferAmount = options.bufferAmount ?? 0;
+  const leftToBudget = data.leftToBudget ?? 0;
 
   // Apply the formula and round to whole dollars for consistency
-  // Rounding here ensures the calculated value matches Monarch's rounded "Left to budget"
+  // Left to Budget is subtracted because it represents unallocated funds that
+  // should be tracked separately (monthly allocations draw from LTB, not Cash to Stash)
   const available = Math.round(
     cashOnHand +
-    expectedIncome -
-    creditCardDebt -
-    unspentBudgets -
-    goalBalances -
-    stashBalances -
-    bufferAmount
+      expectedIncome -
+      creditCardDebt -
+      unspentBudgets -
+      goalBalances -
+      stashBalances -
+      bufferAmount -
+      leftToBudget
   );
 
   // Build detailed breakdown
@@ -261,6 +265,7 @@ export function calculateAvailableToStash(
       goalBalances: Math.round(goalBalances),
       stashBalances: Math.round(stashBalances),
       bufferAmount: Math.round(bufferAmount),
+      leftToBudget: Math.round(leftToBudget),
     },
     detailedBreakdown,
     includesExpectedIncome: options.includeExpectedIncome,

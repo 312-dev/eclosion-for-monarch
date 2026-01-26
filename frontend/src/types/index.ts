@@ -41,6 +41,22 @@ export type {
 // Stash events (ephemeral, for hypothetical projections)
 export type { StashEvent, StashEventType, StashEventsMap } from './stashEvent';
 
+// Timeline types (for hypothesize mode emulator)
+export type {
+  TimelineResolution,
+  NamedEventType,
+  NamedEvent,
+  TimelineDataPoint,
+  TimelineItemConfig,
+  TimelineZoomState,
+  ProjectedCardState,
+  EditingEventContext,
+  TimelineScenarioState,
+  TimelineProjectionResult,
+  TimelineProjectionInput,
+} from './timeline';
+export { createDefaultTimelineState, DEFAULT_TIMELINE_ZOOM } from './timeline';
+
 // Monarch goals (displayed in Stash grid)
 export type { GoalStatus, MonarchGoal, MonarchGoalLayoutUpdate } from './monarchGoal';
 
@@ -200,8 +216,10 @@ export type {
 export {
   CASH_ACCOUNT_TYPES,
   CREDIT_CARD_ACCOUNT_TYPES,
+  DEBT_ACCOUNT_TYPES,
   isCashAccount,
   isCreditCardAccount,
+  isDebtAccount,
 } from './availableToStash';
 
 // Stash history and reports

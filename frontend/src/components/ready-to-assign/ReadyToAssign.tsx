@@ -20,6 +20,7 @@ import { Tooltip } from '../ui/Tooltip';
 import { useDropdown } from '../../hooks';
 import { calculateBurndownData } from '../charts';
 import { TargetIcon } from '../icons';
+import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
 import { MobileReadyToAssign } from './MobileReadyToAssign';
 import { StabilizationPopover, StabilizationTimeline } from './StabilizationTimeline';
 
@@ -135,6 +136,9 @@ export function ReadyToAssign({
   // Sidebar vertical layout
   return (
     <div className="stats-sidebar-content">
+      {/* Left to Budget Badge */}
+      <LeftToBudgetBadge data={data} variant="sidebar" />
+
       {/* Monthly Targets */}
       <div
         className={`rounded-xl px-4 pt-4 text-center relative ${isMonthlyFunded ? 'bg-(--monarch-success-bg)' : 'bg-monarch-orange-light'} ${stabilization.hasCatchUp ? 'pb-4 rounded-b-none border-x border-t border-monarch-border' : 'pb-6'}`}

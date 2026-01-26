@@ -80,6 +80,8 @@ export interface AvailableToStashData {
   stashBalances: number;
   /** Individual stash items with balances (for detailed breakdown) */
   stashItems?: StashItemBalance[];
+  /** Left to Budget (ready_to_assign from Monarch) - subtracted from Cash to Stash */
+  leftToBudget: number;
 }
 
 /**
@@ -137,6 +139,8 @@ export interface AvailableToStashBreakdown {
   stashBalances: number;
   /** Reserved buffer amount (0 if not set) */
   bufferAmount: number;
+  /** Left to Budget (ready_to_assign from Monarch) */
+  leftToBudget: number;
 }
 
 /**
@@ -175,6 +179,34 @@ export const CASH_ACCOUNT_TYPES = [
 export const CREDIT_CARD_ACCOUNT_TYPES = ['credit', 'credit_card'] as const;
 
 /**
+ * Account types that represent debts/liabilities.
+ * Based on Monarch's accountTypeOptions with group: "liability".
+ *
+ * Main types: credit, loan, other_liability
+ * Loan subtypes: auto, student, mortgage, home_equity, line_of_credit, etc.
+ */
+export const DEBT_ACCOUNT_TYPES = [
+  // Credit cards
+  'credit',
+  'credit_card',
+  // Loans (main type and subtypes)
+  'loan',
+  'auto',
+  'business',
+  'commercial',
+  'construction',
+  'consumer',
+  'home',
+  'home_equity',
+  'mortgage',
+  'overdraft',
+  'line_of_credit',
+  'student',
+  // Other
+  'other_liability',
+] as const;
+
+/**
  * Check if an account type is a cash account.
  */
 export function isCashAccount(accountType: string): boolean {
@@ -188,4 +220,12 @@ export function isCashAccount(accountType: string): boolean {
 export function isCreditCardAccount(accountType: string): boolean {
   const normalized = accountType.toLowerCase().replaceAll(/[^a-z_]/g, '');
   return (CREDIT_CARD_ACCOUNT_TYPES as readonly string[]).includes(normalized);
+}
+
+/**
+ * Check if an account type is a debt/liability account.
+ */
+export function isDebtAccount(accountType: string): boolean {
+  const normalized = accountType.toLowerCase().replaceAll(/[^a-z_]/g, '');
+  return (DEBT_ACCOUNT_TYPES as readonly string[]).includes(normalized);
 }
