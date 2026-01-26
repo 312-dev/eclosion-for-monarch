@@ -27,6 +27,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { StashItem } from '../../types';
 import { StashCard } from './StashCard';
 import { Icons } from '../icons';
+import { useIsInDistributionMode } from '../../context/DistributionModeContext';
 
 /**
  * Check if the event target is within the drag handle (image area).
@@ -190,7 +191,7 @@ function EmptyState({ message }: { message: string }) {
     <div className="relative">
       {/* Placeholder cards grid with fade mask */}
       <div
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-30"
+        className="grid grid-cols-1 min-[801px]:grid-cols-2 gap-4 opacity-30"
         style={{
           maskImage: 'linear-gradient(to bottom, black 0%, black 30%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 30%, transparent 100%)',
@@ -219,7 +220,10 @@ export const StashCardGrid = memo(function StashCardGrid({
   allocatingItemId,
   emptyMessage = 'No jars, no envelopes, no guesswork. Build your first stash.',
 }: StashCardGridProps) {
-  const sensors = useSensors(
+  const isInDistributionMode = useIsInDistributionMode();
+
+  // Disable drag sensors in distribution/hypothesize mode
+  const activeSensors = useSensors(
     useSensor(StashPointerSensor, {
       activationConstraint: {
         distance: 8, // 8px movement before drag starts (allows clicks)
@@ -229,6 +233,8 @@ export const StashCardGrid = memo(function StashCardGrid({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+  const disabledSensors = useSensors();
+  const sensors = isInDistributionMode ? disabledSensors : activeSensors;
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -261,7 +267,7 @@ export const StashCardGrid = memo(function StashCardGrid({
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={itemIds} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 min-[801px]:grid-cols-2 gap-4">
           {items.map((item) => (
             <SortableCard
               key={item.id}

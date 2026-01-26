@@ -1,3 +1,5 @@
+/* eslint-disable sonarjs/no-nested-conditional */
+/* eslint-disable max-lines */
 /**
  * NewStashForm Component
  *
@@ -7,7 +9,11 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useModalFooter } from '../ui/Modal';
-import { useCreateStashMutation, useStashConfigQuery, useAvailableToStash } from '../../api/queries';
+import {
+  useCreateStashMutation,
+  useStashConfigQuery,
+  useAvailableToStash,
+} from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import { useStashImageUpload } from '../../hooks';
@@ -29,6 +35,7 @@ import {
   GoalTypeSelector,
   StartingBalanceInput,
 } from './StashFormFields';
+import { DebtAccountSelectorModal } from './DebtAccountSelectorModal';
 import type { StashGoalType, ImageSelection } from '../../types';
 
 interface NewStashFormProps {
@@ -83,6 +90,7 @@ export function NewStashForm({
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
   const [startingBalance, setStartingBalance] = useState('');
   const [isStartingBalanceFocused, setIsStartingBalanceFocused] = useState(false);
+  const [isDebtSelectorOpen, setIsDebtSelectorOpen] = useState(false);
 
   // Get available to stash amount for validation
   // Use the same options as the widget so the numbers match
@@ -122,6 +130,7 @@ export function NewStashForm({
     }
   }, []);
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity -- Form validation requires multiple checks
   const handleSubmit = useCallback(async () => {
     const amountNum = Number.parseFloat(amount);
 
@@ -248,142 +257,158 @@ export function NewStashForm({
 
   return (
     <div className="space-y-3">
-        <NewStashImageUpload
-          sourceUrl={prefill?.sourceUrl}
-          selectedImage={selectedImage}
-          imagePreview={imagePreview}
-          onImageSelect={handleImageSelect}
-          onImageRemove={handleImageRemove}
-          onPreviewChange={setImagePreview}
-          onOpenverseSelect={handleOpenverseSelect}
-          openverseImageUrl={openverseImage?.thumbnail}
+      <NewStashImageUpload
+        sourceUrl={prefill?.sourceUrl}
+        selectedImage={selectedImage}
+        imagePreview={imagePreview}
+        onImageSelect={handleImageSelect}
+        onImageRemove={handleImageRemove}
+        onPreviewChange={setImagePreview}
+        onOpenverseSelect={handleOpenverseSelect}
+        openverseImageUrl={openverseImage?.thumbnail}
+      />
+
+      <div>
+        <NameInputWithEmoji
+          id="stash-name"
+          value={name}
+          onChange={setName}
+          emoji={emoji}
+          onEmojiChange={setEmoji}
+          onFocusChange={setIsNameFocused}
         />
-
-        <div>
-          <NameInputWithEmoji
-            id="stash-name"
-            value={name}
-            onChange={setName}
-            emoji={emoji}
-            onEmojiChange={setEmoji}
-            onFocusChange={setIsNameFocused}
-          />
-          {/* Aligned with text input (after emoji picker w-12 + gap-2) */}
-          <div
-            className={`pl-14 transition-all duration-200 overflow-hidden ${
-              isNameFocused || url || isUrlModalOpen
-                ? 'opacity-100 translate-y-0 mt-1 h-auto'
-                : 'opacity-0 -translate-y-1 pointer-events-none h-0'
-            }`}
-          >
-            <UrlDisplay value={url} onChange={setUrl} onModalOpenChange={setIsUrlModalOpen} />
-          </div>
-        </div>
-
-        {/* Goal container - intention inputs + progress preview */}
+        {/* Aligned with text input (after emoji picker w-12 + gap-2) */}
         <div
-          className="p-4 rounded-lg"
-          style={{
-            backgroundColor: 'var(--monarch-bg-page)',
-            border: '1px solid var(--monarch-border)',
-          }}
+          className={`pl-14 transition-all duration-200 overflow-hidden ${
+            isNameFocused || url || isUrlModalOpen
+              ? 'opacity-100 translate-y-0 mt-1 h-auto'
+              : 'opacity-0 -translate-y-1 pointer-events-none h-0'
+          }`}
         >
-          {/* Sentence-style intention input: "Save $X as a [type] by [date]" */}
-          <div className="flex items-center gap-x-2 gap-y-1 flex-wrap justify-center">
-            <span
-              className="h-10 inline-flex items-center"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
-              I intend to save
-            </span>
-            <AmountInput id="stash-amount" value={amount} onChange={setAmount} hideLabel />
-            <span
-              className="h-10 inline-flex items-center"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
-              {goalType === 'one_time' ? 'for a' : 'as a'}
-            </span>
-            <div className="basis-full h-0" />
-            <GoalTypeSelector value={goalType} onChange={setGoalType} hideLabel />
-            <span
-              className="h-10 inline-flex items-center"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
-              by
-            </span>
-            <TargetDateInput
-              id="stash-date"
-              value={targetDate}
-              onChange={setTargetDate}
-              minDate={today}
-              quickPickOptions={[]}
-              hideLabel
-            />
-            <div className="basis-full h-0" />
-            <span
-              className="h-10 inline-flex items-center self-start"
-              style={{ color: 'var(--monarch-text-muted)' }}
-            >
-              I&apos;ve already saved
-            </span>
-            <StartingBalanceInput
-              value={startingBalance}
-              onChange={setStartingBalance}
-              availableAmount={availableAmount}
-              isLoading={isLoadingAvailable}
-              isFocused={isStartingBalanceFocused}
-              onFocusChange={setIsStartingBalanceFocused}
-            />
-          </div>
+          <UrlDisplay value={url} onChange={setUrl} onModalOpenChange={setIsUrlModalOpen} />
+        </div>
+      </div>
 
-          {/* Progress Preview - shows calculated monthly rate and timeline */}
-          {amountNum > 0 && targetDate && (
-            <>
-              <div className="my-3 border-t" style={{ borderColor: 'var(--monarch-border)' }} />
-              <SavingsProgressBar
-                totalSaved={startingBalanceNum}
-                targetAmount={amountNum}
-                progressPercent={
-                  amountNum > 0 ? Math.min(100, (startingBalanceNum / amountNum) * 100) : 0
-                }
-                displayStatus={startingBalanceNum >= amountNum ? 'funded' : 'behind'}
-                isEnabled={true}
-              />
-              <div
-                className="flex justify-between text-sm mt-3 pt-3 border-t"
-                style={{ borderColor: 'var(--monarch-border)' }}
-              >
-                <div>
-                  <span style={{ color: 'var(--monarch-text-muted)' }}>Monthly: </span>
-                  <span style={{ color: 'var(--monarch-teal)', fontWeight: 500 }}>
-                    ${monthlyTarget}/mo
-                  </span>
-                </div>
-                <div style={{ color: 'var(--monarch-text-muted)' }}>
-                  {formatMonthsRemaining(monthsRemaining)} to go
-                </div>
-              </div>
-            </>
-          )}
+      {/* Goal container - intention inputs + progress preview */}
+      <div
+        className="p-4 rounded-lg"
+        style={{
+          backgroundColor: 'var(--monarch-bg-page)',
+          border: '1px solid var(--monarch-border)',
+        }}
+      >
+        {/* Sentence-style intention input: "Save $X as a [type] by [date]" */}
+        <div className="flex items-center gap-x-2 gap-y-1 flex-wrap justify-center">
+          <span
+            className="h-10 inline-flex items-center"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            I intend to save
+          </span>
+          <AmountInput
+            id="stash-amount"
+            value={amount}
+            onChange={setAmount}
+            hideLabel
+            showSearchButton={goalType === 'debt'}
+            onSearchClick={() => setIsDebtSelectorOpen(true)}
+          />
+          <span
+            className="h-10 inline-flex items-center"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            {goalType === 'one_time' ? 'for a' : goalType === 'debt' ? 'towards a' : 'as a'}
+          </span>
+          <div className="basis-full h-0" />
+          <GoalTypeSelector value={goalType} onChange={setGoalType} hideLabel />
+          <span
+            className="h-10 inline-flex items-center"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            by
+          </span>
+          <TargetDateInput
+            id="stash-date"
+            value={targetDate}
+            onChange={setTargetDate}
+            minDate={today}
+            quickPickOptions={[]}
+            hideLabel
+          />
+          <div className="basis-full h-0" />
+          <span
+            className="h-10 inline-flex items-center self-start"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            I&apos;ve already saved
+          </span>
+          <StartingBalanceInput
+            value={startingBalance}
+            onChange={setStartingBalance}
+            availableAmount={availableAmount}
+            isLoading={isLoadingAvailable}
+            isFocused={isStartingBalanceFocused}
+            onFocusChange={setIsStartingBalanceFocused}
+          />
         </div>
 
-        {/* Category Selection */}
-        <InlineCategorySelector
-          value={categorySelection}
-          onChange={setCategorySelection}
-          defaultCategoryGroupId={stashConfig?.defaultCategoryGroupId ?? undefined}
-        />
-
-        {/* Footer portaled to Modal's sticky footer area */}
-        {renderInFooter(
-          <div className="p-4 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
-            {renderFooter({
-              isDisabled,
-              isSubmitting,
-              onSubmit: handleSubmit,
-            })}
-          </div>
+        {/* Progress Preview - shows calculated monthly rate and timeline */}
+        {amountNum > 0 && targetDate && (
+          <>
+            <div className="my-3 border-t" style={{ borderColor: 'var(--monarch-border)' }} />
+            <SavingsProgressBar
+              totalSaved={startingBalanceNum}
+              targetAmount={amountNum}
+              progressPercent={
+                amountNum > 0 ? Math.min(100, (startingBalanceNum / amountNum) * 100) : 0
+              }
+              displayStatus={startingBalanceNum >= amountNum ? 'funded' : 'behind'}
+              isEnabled={true}
+            />
+            <div
+              className="flex justify-between text-sm mt-3 pt-3 border-t"
+              style={{ borderColor: 'var(--monarch-border)' }}
+            >
+              <div>
+                <span style={{ color: 'var(--monarch-text-muted)' }}>Monthly: </span>
+                <span style={{ color: 'var(--monarch-teal)', fontWeight: 500 }}>
+                  ${monthlyTarget}/mo
+                </span>
+              </div>
+              <div style={{ color: 'var(--monarch-text-muted)' }}>
+                {formatMonthsRemaining(monthsRemaining)} to go
+              </div>
+            </div>
+          </>
         )}
+      </div>
+
+      {/* Category Selection */}
+      <InlineCategorySelector
+        value={categorySelection}
+        onChange={setCategorySelection}
+        defaultCategoryGroupId={stashConfig?.defaultCategoryGroupId ?? undefined}
+      />
+
+      {/* Footer portaled to Modal's sticky footer area */}
+      {renderInFooter(
+        <div className="p-4 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
+          {renderFooter({
+            isDisabled,
+            isSubmitting,
+            onSubmit: handleSubmit,
+          })}
+        </div>
+      )}
+
+      {/* Debt Account Selector Modal */}
+      <DebtAccountSelectorModal
+        isOpen={isDebtSelectorOpen}
+        onClose={() => setIsDebtSelectorOpen(false)}
+        onSelect={(account) => {
+          setAmount(Math.abs(account.balance).toString());
+        }}
+      />
     </div>
   );
 }

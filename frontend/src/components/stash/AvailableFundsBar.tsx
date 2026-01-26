@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Available Funds Bar
  *
@@ -5,7 +6,15 @@
  * Includes buffer input in the breakdown tooltip.
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useLayoutEffect,
+  type ChangeEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { Icons } from '../icons';
 import {
@@ -19,6 +28,8 @@ import { BreakdownRow, ExpectedIncomeRow, BREAKDOWN_LABELS } from './BreakdownCo
 import { BufferInputRow } from './BufferInputRow';
 import { DistributeButton, HypothesizeButton } from './DistributeButton';
 import { useToast } from '../../context/ToastContext';
+import { useDistributionMode } from '../../context/DistributionModeContext';
+import { useAnimatedValue } from '../../hooks';
 import { UI, STORAGE_KEYS } from '../../constants';
 import { formatCurrency } from '../../utils/formatters';
 import type { StashItem } from '../../types';
@@ -58,11 +69,20 @@ interface AvailableFundsBarProps {
   readonly items: StashItem[];
 }
 
-export function AvailableFundsBar({
-  leftToBudget,
-  items,
-}: Readonly<AvailableFundsBarProps>) {
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Complex component with drag functionality
+export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFundsBarProps>) {
   const toast = useToast();
+  const {
+    mode,
+    customAvailableFunds,
+    setCustomAvailableFunds,
+    customLeftToBudget,
+    setCustomLeftToBudget,
+    totalStashedAllocated,
+    totalMonthlyAllocated,
+  } = useDistributionMode();
+  const isHypothesizeMode = mode === 'hypothesize';
+  const isInDistributionMode = mode !== null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
   const prevValueRef = useRef<number | null>(null);
@@ -110,6 +130,66 @@ export function AvailableFundsBar({
   const isPositive = displayedAvailable >= 0;
   const displayedStatusColor = isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)';
   const displayedFormattedAmount = formatCurrency(displayedAvailable, currencyOpts);
+
+  // State for hypothesize mode input
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const hypothesizeInputRef = useRef<HTMLInputElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [inputWidth, setInputWidth] = useState(60);
+
+  // Get display value for Cash to Stash
+  // When focused: show total available (editable)
+  // When not focused: show remaining (total - stashed allocations)
+  const baseAvailableFunds = customAvailableFunds ?? displayedAvailable;
+  const remainingFunds = isInDistributionMode
+    ? baseAvailableFunds - totalStashedAllocated
+    : baseAvailableFunds;
+  const displayFunds = isInputFocused ? baseAvailableFunds : remainingFunds;
+
+  // Get display value for Left to Budget
+  // When focused: show total LTB (editable)
+  // When not focused: show remaining (total - monthly allocations)
+  // Left to Budget state for hypothesize mode
+  const [isLtbInputFocused, setIsLtbInputFocused] = useState(false);
+  const ltbInputRef = useRef<HTMLInputElement>(null);
+  const ltbMeasureRef = useRef<HTMLSpanElement>(null);
+  const [ltbInputWidth, setLtbInputWidth] = useState(60);
+
+  // Calculate Left to Budget values
+  const baseLeftToBudget = customLeftToBudget ?? leftToBudget;
+  const remainingLtb = isInDistributionMode
+    ? baseLeftToBudget - totalMonthlyAllocated
+    : baseLeftToBudget;
+  const displayLtb = isLtbInputFocused ? baseLeftToBudget : remainingLtb;
+
+  // Animate the remaining funds for distribute mode countdown effect
+  const animatedRemainingFunds = useAnimatedValue(remainingFunds, { duration: 250 });
+  const isDisplayNegative = displayFunds < 0;
+  const hypothesizeDisplayValue = Math.abs(displayFunds).toLocaleString('en-US');
+
+  // Measure text width for hypothesize input (Cash to Stash)
+  useLayoutEffect(() => {
+    if (measureRef.current && isHypothesizeMode) {
+      setInputWidth(measureRef.current.offsetWidth);
+    }
+  }, [hypothesizeDisplayValue, isHypothesizeMode]);
+
+  // Measure text width for hypothesize input (Left to Budget)
+  const ltbHypothesizeDisplayValue = Math.abs(displayLtb).toLocaleString('en-US');
+  useLayoutEffect(() => {
+    if (ltbMeasureRef.current && isHypothesizeMode) {
+      setLtbInputWidth(ltbMeasureRef.current.offsetWidth);
+    }
+  }, [ltbHypothesizeDisplayValue, isHypothesizeMode]);
+
+  // Auto-focus hypothesize input when entering mode
+  useEffect(() => {
+    if (isHypothesizeMode && hypothesizeInputRef.current) {
+      hypothesizeInputRef.current.focus();
+      const len = hypothesizeInputRef.current.value.length;
+      hypothesizeInputRef.current.setSelectionRange(len, len);
+    }
+  }, [isHypothesizeMode]);
 
   // Track transitions to negative for shake animation
   useEffect(() => {
@@ -218,6 +298,7 @@ export function AvailableFundsBar({
       globalThis.removeEventListener('mousemove', handleMouseMove);
       globalThis.removeEventListener('mouseup', handleMouseUp);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dragOffset is intentionally read from closure during drag
   }, [isDragging, calculateSnapPosition]);
 
   const tooltipContent =
@@ -350,154 +431,283 @@ export function AvailableFundsBar({
       >
         <div
           ref={cardRef}
-          className={`pointer-events-auto rounded-xl overflow-hidden max-w-75 w-full relative ${shouldShake ? 'animate-error-shake' : ''}`}
+          className={`group pointer-events-auto rounded-xl overflow-hidden relative ${shouldShake ? 'animate-error-shake' : ''}`}
           style={getCardStyles()}
         >
-          {/* Drag handle - full width invisible button with corner grip indicators */}
-          <button
-            type="button"
-            className="absolute inset-x-0 top-0 h-8 cursor-grab active:cursor-grabbing group bg-transparent border-0 outline-none focus-visible:ring-2 focus-visible:ring-(--monarch-orange) focus-visible:ring-inset rounded-t-xl z-10"
-            onMouseDown={handleDragStart}
-            aria-label={`Reposition widget. Currently ${position}. Use arrow keys to move.`}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                const newPos = position === 'right' ? 'center' : 'left';
-                setPosition(newPos);
-                savePosition(newPos);
-              } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                const newPos = position === 'left' ? 'center' : 'right';
-                setPosition(newPos);
-                savePosition(newPos);
-              }
-            }}
-          >
-            {/* Corner grip indicators - 9 dots wide, 2 rows */}
-            <div className="absolute top-1.5 left-2 flex flex-col gap-0.5 transition-opacity opacity-0 group-hover:opacity-60">
-              <div className="flex gap-0.5">
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              </div>
-              <div className="flex gap-0.5">
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              </div>
-            </div>
-            <div className="absolute top-1.5 right-2 flex flex-col gap-0.5 transition-opacity opacity-0 group-hover:opacity-60">
-              <div className="flex gap-0.5">
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              </div>
-              <div className="flex gap-0.5">
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-                <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              </div>
-            </div>
-          </button>
-          {/* Header section */}
-          <div
-            className="flex items-center justify-center gap-2 px-4 py-2"
-            style={{ borderBottom: '1px solid var(--monarch-border)' }}
-          >
-            <Icons.Landmark
-              size={16}
-              style={{ color: 'var(--monarch-text-muted)' }}
-              aria-hidden="true"
-            />
-            <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
-              Available Funds
-            </span>
+          {/* Drag handle - top edge */}
+          <div className="flex justify-center py-1">
+            <button
+              type="button"
+              className="flex gap-0.5 px-2 py-0.5 cursor-grab active:cursor-grabbing rounded-md transition-opacity opacity-40 hover:opacity-80 focus-visible:opacity-80 focus-visible:ring-2 focus-visible:ring-(--monarch-orange) outline-none"
+              onMouseDown={handleDragStart}
+              aria-label={`Reposition widget. Currently ${position}. Use arrow keys to move.`}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  e.preventDefault();
+                  const newPos = position === 'right' ? 'center' : 'left';
+                  setPosition(newPos);
+                  savePosition(newPos);
+                } else if (e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  const newPos = position === 'left' ? 'center' : 'right';
+                  setPosition(newPos);
+                  savePosition(newPos);
+                }
+              }}
+            >
+              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
+              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
+              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
+              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
+              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
+              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
+            </button>
           </div>
 
-          {/* Amount section */}
-          <div
-            className="flex items-center justify-center px-4 py-3"
-            style={{ borderBottom: '1px solid var(--monarch-border)' }}
-          >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div
-                  className="h-9 w-28 rounded animate-pulse"
-                  style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-                />
-                <div
-                  className="w-4 h-4 rounded animate-pulse"
-                  style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-                />
-              </div>
-            ) : (
-              <HoverCard content={tooltipContent} side="top" align="center" closeDelay={400}>
-                <div className="flex items-center gap-2 cursor-help">
-                  <span
-                    className="text-3xl font-bold tabular-nums"
-                    style={{ color: displayedStatusColor }}
-                  >
-                    {displayedFormattedAmount}
-                  </span>
-                  <Icons.Info size={16} style={{ color: 'var(--monarch-text-muted)' }} />
-                </div>
-              </HoverCard>
-            )}
-          </div>
-
-          {/* Button group section */}
-          <div className="flex">
-            <HypothesizeButton
-              availableAmount={isLoading ? 0 : displayedAvailable}
-              leftToBudget={leftToBudget}
-              items={items}
-              compact
-              groupPosition="left"
-            />
-            {isLoading ? (
-              <div
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium animate-pulse"
+          {/* Horizontal layout: Left info | Center buttons | Right info */}
+          <div className="flex items-stretch justify-center relative">
+            {/* External link to Monarch - top right of content area, shows on hover */}
+            <a
+              href="https://app.monarchmoney.com/plan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute top-1 right-1.5 p-0.5 rounded opacity-0 group-hover:opacity-50 hover:opacity-100! transition-opacity"
+              aria-label="Open Monarch budget plan"
+            >
+              <Icons.ExternalLink size={10} style={{ color: 'var(--monarch-text-muted)' }} />
+            </a>
+            {/* Left: Cash to Stash - fixed width */}
+            <div
+              className="flex flex-col items-center justify-center py-2 px-3 w-44"
+              style={{
+                backgroundColor: (() => {
+                  if (isLoading) return 'var(--monarch-bg-card)';
+                  if (isPositive)
+                    return 'color-mix(in srgb, var(--monarch-success) 10%, var(--monarch-bg-card))';
+                  return 'color-mix(in srgb, var(--monarch-error) 10%, var(--monarch-bg-card))';
+                })(),
+              }}
+            >
+              <span
+                className="text-xs font-medium mb-0.5"
                 style={{
-                  backgroundColor: 'var(--monarch-bg-hover)',
-                  color: 'var(--monarch-text-muted)',
+                  color: isLoading ? 'var(--monarch-text-muted)' : displayedStatusColor,
+                  opacity: 0.7,
                 }}
               >
-                <Icons.Split size={14} style={{ opacity: 0.5 }} />
-                <span style={{ opacity: 0.5 }}>Distribute</span>
+                Cash to Stash
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Icons.Landmark
+                  size={16}
+                  style={{
+                    color: isLoading ? 'var(--monarch-text-muted)' : displayedStatusColor,
+                    opacity: 0.8,
+                  }}
+                  aria-hidden="true"
+                />
+                {isLoading && (
+                  <div
+                    className="h-6 w-16 rounded animate-pulse"
+                    style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+                  />
+                )}
+                {!isLoading && isHypothesizeMode && (
+                  <div
+                    className={`relative flex items-center px-2 py-0.5 rounded-lg transition-all duration-200 ${isInputFocused ? 'ring-2 ring-purple-400' : ''}`}
+                    style={{
+                      backgroundColor: 'rgba(147, 51, 234, 0.15)',
+                      border: '1px solid rgba(147, 51, 234, 0.5)',
+                    }}
+                  >
+                    <span
+                      className="text-base font-bold"
+                      style={{ color: isDisplayNegative ? '#e11d48' : 'white' }}
+                    >
+                      {isDisplayNegative ? '-$' : '$'}
+                    </span>
+                    <span
+                      ref={measureRef}
+                      className="absolute invisible whitespace-pre text-base font-bold tabular-nums"
+                      aria-hidden="true"
+                    >
+                      {hypothesizeDisplayValue || '0'}
+                    </span>
+                    <input
+                      ref={hypothesizeInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      value={hypothesizeDisplayValue}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const digitsOnly = e.target.value.replaceAll(/\D/g, '');
+                        const val = digitsOnly === '' ? 0 : Number.parseInt(digitsOnly, 10);
+                        setCustomAvailableFunds(val);
+                      }}
+                      onFocus={() => {
+                        setIsInputFocused(true);
+                        hypothesizeInputRef.current?.select();
+                      }}
+                      onBlur={() => setIsInputFocused(false)}
+                      className="text-base font-bold tabular-nums bg-transparent outline-none text-right"
+                      style={{
+                        width: Math.max(inputWidth, 24),
+                        color: isDisplayNegative ? '#e11d48' : 'white',
+                      }}
+                      aria-label="Custom available funds amount"
+                    />
+                  </div>
+                )}
+                {!isLoading && !isHypothesizeMode && (
+                  <HoverCard content={tooltipContent} side="top" align="center" closeDelay={400}>
+                    {mode === 'distribute' ? (
+                      // Distribute mode: show animated countdown of remaining funds
+                      <span
+                        className="text-lg font-bold tabular-nums"
+                        style={{
+                          color:
+                            remainingFunds < 0 ? 'var(--monarch-error)' : 'var(--monarch-success)',
+                        }}
+                      >
+                        {formatCurrency(animatedRemainingFunds, currencyOpts)}
+                      </span>
+                    ) : (
+                      // Normal mode: show available amount
+                      <span
+                        className="text-lg font-bold tabular-nums cursor-help"
+                        style={{ color: displayedStatusColor }}
+                      >
+                        {displayedFormattedAmount}
+                      </span>
+                    )}
+                  </HoverCard>
+                )}
               </div>
-            ) : (
-              <DistributeButton
-                availableAmount={displayedAvailable}
-                leftToBudget={leftToBudget}
-                items={items}
-                compact
-                groupPosition="right"
-              />
-            )}
+            </div>
+
+            {/* Center: Stacked icon buttons - stretch to fill height */}
+            <div className="flex flex-col self-stretch">
+              {isLoading ? (
+                <div
+                  className="flex items-center justify-center flex-1 px-2.5 rounded-t-md animate-pulse"
+                  style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+                >
+                  <Icons.Split size={16} style={{ opacity: 0.5 }} />
+                </div>
+              ) : (
+                <DistributeButton
+                  availableAmount={displayedAvailable}
+                  items={items}
+                  compact
+                  iconOnly
+                  groupPosition="top"
+                />
+              )}
+              <HypothesizeButton items={items} compact iconOnly groupPosition="bottom" />
+            </div>
+
+            {/* Right: Left to Budget - fixed width */}
+            {(() => {
+              // In distribution modes, show remaining LTB (after monthly allocations)
+              // In hypothesize mode with custom value, use custom value as base
+              const ltbIsNegative = displayLtb < 0;
+              const ltbIsPositive = displayLtb >= 0;
+              const ltbStatusColor = ltbIsPositive
+                ? 'var(--monarch-success)'
+                : 'var(--monarch-error)';
+
+              const ltbBgColor = (() => {
+                if (isLoading) return 'var(--monarch-bg-card)';
+                if (ltbIsPositive)
+                  return 'color-mix(in srgb, var(--monarch-success) 10%, var(--monarch-bg-card))';
+                return 'color-mix(in srgb, var(--monarch-error) 10%, var(--monarch-bg-card))';
+              })();
+
+              return (
+                <div
+                  className="flex flex-col items-center justify-center py-2 px-3 w-44"
+                  style={{ backgroundColor: ltbBgColor }}
+                >
+                  <span
+                    className="text-xs font-medium mb-0.5"
+                    style={{
+                      color: isLoading ? 'var(--monarch-text-muted)' : ltbStatusColor,
+                      opacity: 0.7,
+                    }}
+                  >
+                    Left to Budget
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Icons.Banknote
+                      size={16}
+                      style={{
+                        color: isLoading ? 'var(--monarch-text-muted)' : ltbStatusColor,
+                        opacity: 0.8,
+                      }}
+                      aria-hidden="true"
+                    />
+                    {isLoading && (
+                      <div
+                        className="h-6 w-12 rounded animate-pulse"
+                        style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
+                      />
+                    )}
+                    {!isLoading && isHypothesizeMode && (
+                      <div
+                        className={`relative flex items-center px-2 py-0.5 rounded-lg transition-all duration-200 ${isLtbInputFocused ? 'ring-2 ring-purple-400' : ''}`}
+                        style={{
+                          backgroundColor: 'rgba(147, 51, 234, 0.15)',
+                          border: '1px solid rgba(147, 51, 234, 0.5)',
+                        }}
+                      >
+                        <span
+                          className="text-base font-bold"
+                          style={{ color: ltbIsNegative ? '#e11d48' : 'white' }}
+                        >
+                          {ltbIsNegative ? '-$' : '$'}
+                        </span>
+                        <span
+                          ref={ltbMeasureRef}
+                          className="absolute invisible whitespace-pre text-base font-bold tabular-nums"
+                          aria-hidden="true"
+                        >
+                          {ltbHypothesizeDisplayValue || '0'}
+                        </span>
+                        <input
+                          ref={ltbInputRef}
+                          type="text"
+                          inputMode="numeric"
+                          value={ltbHypothesizeDisplayValue}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const digitsOnly = e.target.value.replaceAll(/\D/g, '');
+                            const val = digitsOnly === '' ? 0 : Number.parseInt(digitsOnly, 10);
+                            setCustomLeftToBudget(val);
+                          }}
+                          onFocus={() => {
+                            setIsLtbInputFocused(true);
+                            ltbInputRef.current?.select();
+                          }}
+                          onBlur={() => setIsLtbInputFocused(false)}
+                          className="text-base font-bold tabular-nums bg-transparent outline-none text-right"
+                          style={{
+                            width: Math.max(ltbInputWidth, 24),
+                            color: ltbIsNegative ? '#e11d48' : 'white',
+                          }}
+                          aria-label="Custom left to budget amount"
+                        />
+                      </div>
+                    )}
+                    {!isLoading && !isHypothesizeMode && (
+                      <span
+                        className="text-lg font-bold tabular-nums"
+                        style={{ color: ltbStatusColor }}
+                      >
+                        {formatCurrency(remainingLtb, currencyOpts)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

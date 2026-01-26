@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * StashCard - Card component for stash items
  *
@@ -18,6 +19,9 @@ import { parseLocalDate } from '../../utils/savingsCalculations';
 import { StashBudgetInput } from './StashBudgetInput';
 import { StashItemImage } from './StashItemImage';
 import { StashTitleDropdown } from './StashTitleDropdown';
+import { CardAllocationInput } from './CardAllocationInput';
+import { useDistributionModeType } from '../../context/DistributionModeContext';
+import { useProjectedStashItem } from '../../hooks';
 
 interface StashCardProps {
   readonly item: StashItem;
@@ -130,7 +134,13 @@ export const StashCard = memo(function StashCard({
   onViewReport,
   showTypeBadge = true,
 }: StashCardProps) {
-  const displayStatus: ItemStatus = item.status;
+  const distributionMode = useDistributionModeType();
+  const isInDistributionMode = distributionMode !== null;
+  const isHypothesizeMode = distributionMode === 'hypothesize';
+
+  // Get projected values in hypothesize mode (reverts to actual when mode exits)
+  const projectedItem = useProjectedStashItem(item);
+  const displayStatus: ItemStatus = projectedItem.status;
 
   // Format target date (parseLocalDate avoids timezone shift bugs with ISO dates)
   // Handle null/undefined target_date defensively
@@ -161,9 +171,25 @@ export const StashCard = memo(function StashCard({
   // For flex categories, progress bar should be based on total contributions (saved),
   // not remaining balance. This matches purchase goal behavior where progress is immune to spending.
   const totalContributions = rolloverAmount + budgetedThisMonth + creditsThisMonth;
-  const progressPercent = item.is_flexible_group
-    ? Math.min(100, item.amount > 0 ? (totalContributions / item.amount) * 100 : 0)
-    : Math.min(item.progress_percent, 100);
+
+  // Use projected values in hypothesize mode for visual preview
+  // When not in hypothesize mode or when exiting, projectedItem equals item (no projection)
+  const displayBalance = projectedItem.current_balance;
+
+  // Calculate progress percent based on mode and item type
+  const getProgressPercent = (): number => {
+    // In hypothesize mode with active projection, use projected progress
+    if (isHypothesizeMode && projectedItem.isProjected) {
+      return projectedItem.progress_percent;
+    }
+    // For flex categories, calculate from total contributions
+    if (item.is_flexible_group) {
+      return Math.min(100, item.amount > 0 ? (totalContributions / item.amount) * 100 : 0);
+    }
+    // Default: use item's progress percent
+    return Math.min(item.progress_percent, 100);
+  };
+  const progressPercent = getProgressPercent();
 
   return (
     <div
@@ -182,7 +208,7 @@ export const StashCard = memo(function StashCard({
           userSelect: 'none',
           containerType: 'size',
         }}
-        {...dragHandleProps}
+        {...(isInDistributionMode ? {} : dragHandleProps)}
       >
         <StashItemImage
           customImagePath={item.custom_image_path}
@@ -192,13 +218,37 @@ export const StashCard = memo(function StashCard({
           className={hasImage ? 'w-full h-full object-cover' : 'opacity-50'}
         />
 
-        {/* Goal type badge - top left (only shown when showTypeBadge is true) */}
-        {showTypeBadge &&
+        {/* Distribution mode overlay */}
+        {isInDistributionMode && !item.is_archived && (
+          <div
+            className="absolute inset-0 flex items-center justify-center transition-opacity"
+            style={{
+              backgroundColor:
+                distributionMode === 'distribute'
+                  ? 'rgba(20, 120, 60, 0.92)' // Green overlay (darker)
+                  : 'rgba(40, 10, 70, 0.95)', // Purple overlay (much darker)
+            }}
+          >
+            <CardAllocationInput itemId={item.id} itemName={item.name} />
+          </div>
+        )}
+
+        {/* Goal type badge - top left (only shown when showTypeBadge is true and not in distribution mode) */}
+        {!isInDistributionMode &&
+          showTypeBadge &&
           (() => {
             const badgeConfig = {
-              one_time: { icon: Icons.BadgeDollarSign, color: 'var(--monarch-info)', label: 'Purchase' },
+              one_time: {
+                icon: Icons.BadgeDollarSign,
+                color: 'var(--monarch-info)',
+                label: 'Purchase',
+              },
               debt: { icon: Icons.HandCoins, color: 'var(--monarch-warning)', label: 'Debt' },
-              savings_buffer: { icon: Icons.PiggyBank, color: 'var(--monarch-accent)', label: 'Savings Fund' },
+              savings_buffer: {
+                icon: Icons.PiggyBank,
+                color: 'var(--monarch-accent)',
+                label: 'Savings Fund',
+              },
             } as const;
             const config = badgeConfig[item.goal_type ?? 'one_time'];
             const BadgeIcon = config.icon;
@@ -219,8 +269,8 @@ export const StashCard = memo(function StashCard({
             );
           })()}
 
-        {/* Edit button - top right, shown on hover */}
-        {!item.is_archived && (
+        {/* Edit button - top right, shown on hover (hidden in distribution mode) */}
+        {!isInDistributionMode && !item.is_archived && (
           <button
             data-tour={isFirstCard ? 'stash-edit-item' : undefined}
             onClick={() => onEdit(item)}
@@ -235,15 +285,17 @@ export const StashCard = memo(function StashCard({
           </button>
         )}
 
-        {/* Status badge - bottom right */}
-        <div className="absolute bottom-2 right-2">
-          <StatusBadge
-            status={displayStatus}
-            isArchived={item.is_archived}
-            archivedAt={item.archived_at}
-            completedAt={item.completed_at}
-          />
-        </div>
+        {/* Status badge - bottom right (hidden in distribution mode) */}
+        {!isInDistributionMode && (
+          <div className="absolute bottom-2 right-2">
+            <StatusBadge
+              status={displayStatus}
+              isArchived={item.is_archived}
+              archivedAt={item.archived_at}
+              completedAt={item.completed_at}
+            />
+          </div>
+        )}
       </div>
 
       {/* Content Area - fixed height for consistency */}
@@ -343,6 +395,7 @@ export const StashCard = memo(function StashCard({
           {!item.is_archived && (
             <div className="shrink-0 flex flex-col items-end">
               <StashBudgetInput
+                itemId={item.id}
                 plannedBudget={item.planned_budget}
                 monthlyTarget={item.monthly_target}
                 onAllocate={(amount) => onAllocate(item.id, amount)}
@@ -372,7 +425,7 @@ export const StashCard = memo(function StashCard({
             </button>
           ) : (
             <SavingsProgressBar
-              totalSaved={item.current_balance}
+              totalSaved={displayBalance}
               targetAmount={item.amount}
               progressPercent={progressPercent}
               displayStatus={displayStatus}
@@ -382,7 +435,9 @@ export const StashCard = memo(function StashCard({
               creditsThisMonth={creditsThisMonth}
               // Flex categories behave like savings_buffer (spending reduces balance)
               goalType={item.is_flexible_group ? 'savings_buffer' : item.goal_type}
-              {...(item.available_to_spend !== undefined && { availableToSpend: item.available_to_spend })}
+              {...(item.available_to_spend !== undefined && {
+                availableToSpend: item.available_to_spend,
+              })}
             />
           )}
         </div>

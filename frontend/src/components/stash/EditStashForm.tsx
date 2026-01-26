@@ -1,3 +1,5 @@
+/* eslint-disable sonarjs/no-nested-conditional */
+/* eslint-disable max-lines */
 /**
  * EditStashForm Component
  *
@@ -24,6 +26,7 @@ import {
   CategoryInfoDisplay,
   StartingBalanceInput,
 } from './StashFormFields';
+import { DebtAccountSelectorModal } from './DebtAccountSelectorModal';
 import { useEditStashHandlers } from './useEditStashHandlers';
 import type { StashItem, StashGoalType } from '../../types';
 
@@ -93,6 +96,7 @@ export function EditStashForm({
   const [goalType, setGoalType] = useState<StashGoalType>(item.goal_type ?? 'one_time');
   const [isNameFocused, setIsNameFocused] = useState(false);
   const [isUrlModalOpen, setIsUrlModalOpen] = useState(false);
+  const [isDebtSelectorOpen, setIsDebtSelectorOpen] = useState(false);
 
   // Starting balance - pre-populate with existing rollover amount
   const initialStartingBalance = item.rollover_amount ?? 0;
@@ -272,12 +276,19 @@ export function EditStashForm({
             >
               I intend to save
             </span>
-            <AmountInput id="edit-stash-amount" value={amount} onChange={setAmount} hideLabel />
+            <AmountInput
+              id="edit-stash-amount"
+              value={amount}
+              onChange={setAmount}
+              hideLabel
+              showSearchButton={goalType === 'debt'}
+              onSearchClick={() => setIsDebtSelectorOpen(true)}
+            />
             <span
               className="h-10 inline-flex items-center"
               style={{ color: 'var(--monarch-text-muted)' }}
             >
-              {goalType === 'one_time' ? 'for a' : 'as a'}
+              {goalType === 'one_time' ? 'for a' : goalType === 'debt' ? 'towards a' : 'as a'}
             </span>
             <div className="basis-full h-0" />
             <GoalTypeSelector value={goalType} onChange={setGoalType} hideLabel />
@@ -379,6 +390,14 @@ export function EditStashForm({
           defaultCategoryGroupId: stashConfig.defaultCategoryGroupId,
         })}
         isSubmitting={isLinkingCategory}
+      />
+
+      <DebtAccountSelectorModal
+        isOpen={isDebtSelectorOpen}
+        onClose={() => setIsDebtSelectorOpen(false)}
+        onSelect={(account) => {
+          setAmount(Math.abs(account.balance).toString());
+        }}
       />
     </>
   );

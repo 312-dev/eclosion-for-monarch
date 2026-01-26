@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * MonarchGoalCard - Card component for Monarch savings goals
  *
@@ -21,6 +22,7 @@ import type { MonarchGoal } from '../../types/monarchGoal';
 import { Icons } from '../icons';
 import { formatCurrency } from '../../utils';
 import { MonarchGoalProgressBar } from './MonarchGoalProgressBar';
+import { useDistributionModeType } from '../../context/DistributionModeContext';
 
 interface MonarchGoalCardProps {
   readonly goal: MonarchGoal;
@@ -35,10 +37,7 @@ interface MonarchGoalCardProps {
 }
 
 /** Construct Monarch goal image URL from storage provider */
-function getMonarchImageUrl(
-  provider: string | null,
-  providerId: string | null
-): string | null {
+function getMonarchImageUrl(provider: string | null, providerId: string | null): string | null {
   if (!provider || !providerId) return null;
 
   // Monarch uses Cloudinary for some goal images
@@ -205,22 +204,43 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
 }: MonarchGoalCardProps) {
   const imageUrl = getMonarchImageUrl(goal.imageStorageProvider, goal.imageStorageProviderId);
   const hasImage = Boolean(imageUrl);
+  const distributionMode = useDistributionModeType();
 
   // Get current month abbreviation for label
   const currentMonthAbbr = new Date().toLocaleDateString('en-US', { month: 'short' });
+  const isInDistributionMode = distributionMode !== null;
 
   const openMonarchGoal = () => {
-    window.open(`https://app.monarch.com/goals/savings/${goal.id}`, '_blank', 'noopener,noreferrer');
+    window.open(
+      `https://app.monarch.com/goals/savings/${goal.id}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   return (
     <div
-      className={`group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col ${isDragging ? 'opacity-50' : ''}`}
+      className={`group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col relative ${isDragging ? 'opacity-50' : ''}`}
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         borderColor: 'var(--monarch-border)',
       }}
     >
+      {/* Distribution mode overlay - covers entire card */}
+      {isInDistributionMode && (
+        <div
+          className="group/overlay absolute inset-0 z-10 flex items-center justify-center cursor-not-allowed"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+        >
+          <Icons.EditOff
+            className="w-[50%] h-[50%] max-w-24 max-h-24 transition-opacity duration-200 group-hover/overlay:opacity-0"
+            style={{ color: 'rgba(160, 160, 160, 1)' }}
+          />
+          <span className="absolute inset-0 flex items-center justify-center text-center text-sm font-medium text-white/80 px-4 opacity-0 transition-opacity duration-200 group-hover/overlay:opacity-100">
+            Monarch Goals can only be edited in Monarch Money
+          </span>
+        </div>
+      )}
       {/* Image Area - drag handle */}
       <div
         className="stash-card-image flex-1 min-h-28 flex items-center justify-center relative cursor-grab active:cursor-grabbing"
@@ -233,11 +253,7 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
       >
         {/* Image or emoji */}
         {hasImage && imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={goal.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={imageUrl} alt={goal.name} className="w-full h-full object-cover" />
         ) : (
           <div
             className="flex items-center justify-center opacity-50"
@@ -306,7 +322,11 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
               >
                 {goal.name}
               </h3>
-              <Icons.ExternalLink size={14} className="shrink-0" style={{ color: 'var(--monarch-text-muted)' }} />
+              <Icons.ExternalLink
+                size={14}
+                className="shrink-0"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              />
             </div>
             {/* Goal description (matching Stash card style) - "Save" hidden on narrow cards */}
             <div

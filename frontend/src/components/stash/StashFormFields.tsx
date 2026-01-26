@@ -398,6 +398,10 @@ interface AmountInputProps {
   label?: string;
   /** Hide the label for inline/sentence layouts */
   hideLabel?: boolean;
+  /** Show a search button on the right side (for debt account lookup) */
+  showSearchButton?: boolean;
+  /** Callback when search button is clicked */
+  onSearchClick?: () => void;
 }
 
 export function AmountInput({
@@ -406,6 +410,8 @@ export function AmountInput({
   onChange,
   label = 'Amount',
   hideLabel = false,
+  showSearchButton = false,
+  onSearchClick,
 }: AmountInputProps) {
   const handleChange = (inputValue: string) => {
     const cleaned = inputValue.replaceAll(/\D/g, '');
@@ -448,15 +454,33 @@ export function AmountInput({
           value={displayValue}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="0"
-          className="pl-7 pr-3 py-2 rounded-md tabular-nums"
+          className={`pl-7 py-2 tabular-nums ${showSearchButton ? 'pr-0.5' : 'pr-3'}`}
           style={{
             width: hideLabel ? `${inputWidth + 3}ch` : '100%',
             minWidth: hideLabel ? '5ch' : undefined,
             backgroundColor: 'var(--monarch-bg-page)',
             border: '1px solid var(--monarch-border)',
+            borderRight: showSearchButton ? 'none' : '1px solid var(--monarch-border)',
+            borderRadius: showSearchButton ? '0.375rem 0 0 0.375rem' : '0.375rem',
             color: 'var(--monarch-text)',
           }}
         />
+        {showSearchButton && (
+          <button
+            type="button"
+            onClick={onSearchClick}
+            className="pl-0.5 pr-1.5 py-2 rounded-r-md transition-colors hover:bg-(--monarch-bg-card)"
+            style={{
+              backgroundColor: 'var(--monarch-bg-page)',
+              border: '1px solid var(--monarch-border)',
+              borderLeft: 'none',
+              color: 'var(--monarch-text-muted)',
+            }}
+            aria-label="Search debt accounts"
+          >
+            <Icons.Search size={16} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -646,15 +670,15 @@ export function StartingBalanceInput({
   // For new mode (initialValue = 0), check if the absolute value exceeds available
   const numericValue = Number.parseInt(value, 10) || 0;
   const delta = numericValue - initialValue;
-  const isOverAvailable =
-    availableAmount !== undefined && delta > 0 && delta > availableAmount;
+  const isOverAvailable = availableAmount !== undefined && delta > 0 && delta > availableAmount;
 
   const showAvailable = isFocused || isOverAvailable;
 
   // Compute available message and color
   // Shows remaining amount after accounting for the typed value (live updates as user types)
   const { availableMessage, availableColor } = useMemo(() => {
-    const formatAmount = (amount: number) => `${amount < 0 ? '-' : ''}$${Math.abs(Math.round(amount)).toLocaleString('en-US')}`;
+    const formatAmount = (amount: number) =>
+      `${amount < 0 ? '-' : ''}$${Math.abs(Math.round(amount)).toLocaleString('en-US')}`;
 
     if (isLoading) {
       return { availableMessage: 'Loading...', availableColor: 'var(--monarch-text-muted)' };
@@ -667,12 +691,21 @@ export function StartingBalanceInput({
     const remaining = availableAmount - Math.max(0, delta);
 
     if (remaining < 0) {
-      return { availableMessage: `${formatAmount(remaining)} left`, availableColor: 'var(--monarch-error)' };
+      return {
+        availableMessage: `${formatAmount(remaining)} left`,
+        availableColor: 'var(--monarch-error)',
+      };
     }
     if (remaining === 0 && availableAmount === 0 && initialValue === 0) {
-      return { availableMessage: 'No additional funds available', availableColor: 'var(--monarch-text-muted)' };
+      return {
+        availableMessage: 'No additional funds available',
+        availableColor: 'var(--monarch-text-muted)',
+      };
     }
-    return { availableMessage: `${formatAmount(remaining)} left`, availableColor: 'var(--monarch-success)' };
+    return {
+      availableMessage: `${formatAmount(remaining)} left`,
+      availableColor: 'var(--monarch-success)',
+    };
   }, [isLoading, availableAmount, delta, initialValue]);
 
   return (
@@ -682,8 +715,13 @@ export function StartingBalanceInput({
       }`}
     >
       <div className="relative inline-flex h-10 items-center">
+        <Icons.Landmark
+          size={14}
+          className="absolute left-2.5 top-1/2 -translate-y-1/2"
+          style={{ color: 'var(--monarch-text-muted)' }}
+        />
         <span
-          className="absolute left-3 top-1/2 -translate-y-1/2"
+          className="absolute left-7 top-1/2 -translate-y-1/2"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
           $
@@ -696,7 +734,7 @@ export function StartingBalanceInput({
           onFocus={() => onFocusChange(true)}
           onBlur={() => onFocusChange(false)}
           placeholder="0"
-          className="pl-7 pr-3 py-2 rounded-md tabular-nums"
+          className="pl-11 pr-3 py-2 rounded-md tabular-nums"
           style={{
             width: `${inputWidth + 3}ch`,
             minWidth: '5ch',
@@ -854,19 +892,27 @@ export function GoalTypeSelector({ value, onChange, hideLabel = false }: GoalTyp
                   setIsOpen(false);
                 }}
                 className={`w-full px-2.5 py-2.5 text-left first:rounded-t-md last:rounded-b-md transition-colors ${
-                  isSelected ? 'bg-(--monarch-bg-page)' : 'bg-transparent hover:bg-(--monarch-bg-page)'
+                  isSelected
+                    ? 'bg-(--monarch-bg-page)'
+                    : 'bg-transparent hover:bg-(--monarch-bg-page)'
                 }`}
               >
                 <div className="flex items-start gap-2.5">
                   <IconComponent className="w-4 h-4 mt-0.5 shrink-0" style={{ color: iconColor }} />
                   <div className="flex-1">
-                    <div className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
+                    <div
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--monarch-text-dark)' }}
+                    >
                       {option.title}
                     </div>
                     <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
                       {option.description}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
+                    <div
+                      className="text-[11px] mt-0.5"
+                      style={{ color: 'var(--monarch-text-muted)' }}
+                    >
                       {option.examples}
                     </div>
                   </div>

@@ -24,12 +24,18 @@ export { ArchivedItemsSection } from './ArchivedItemsSection';
 export { StashVsGoalsModal } from './StashVsGoalsModal';
 export { StashGoalExplainerLink } from './StashGoalExplainerLink';
 export { BrowserSetupModal } from './BrowserSetupModal';
+export { DebtAccountSelectorModal } from './DebtAccountSelectorModal';
 
 // Distribute feature components
 export { DistributeButton, HypothesizeButton } from './DistributeButton';
-export { DistributeWizard, type DistributeMode } from './DistributeWizard';
-export { DistributeScreen } from './DistributeScreen';
-export { DistributeItemRow } from './DistributeItemRow';
+export { DistributionModeBanner } from './DistributionModeBanner';
+export { CardAllocationInput } from './CardAllocationInput';
+export { ScenarioSidebarPanel } from './ScenarioSidebarPanel';
+export { ExitDistributeConfirmModal } from './ExitDistributeConfirmModal';
+export { ExitHypothesizeConfirmModal } from './ExitHypothesizeConfirmModal';
+
+// Timeline components (hypothesize mode)
+export { TimelinePanel, TimelineChart, TimelineZoomControls, TimelineSidebar } from './timeline';
 
 // Pending review components
 export { PendingReviewBanner } from './PendingReviewBanner';

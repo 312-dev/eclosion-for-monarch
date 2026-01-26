@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * StashWidgetGrid - Resizable widget grid for stash cards
  *
@@ -24,6 +25,7 @@ import type { MonarchGoal, MonarchGoalLayoutUpdate } from '../../types/monarchGo
 import { StashCard } from './StashCard';
 import { MonarchGoalCard } from './MonarchGoalCard';
 import { Icons } from '../icons';
+import { useIsInDistributionMode } from '../../context/DistributionModeContext';
 
 // Use RGL directly instead of WidthProvider to avoid ref conflicts
 const GridLayout = RGL;
@@ -74,10 +76,7 @@ function PlaceholderCard() {
           style={{ backgroundColor: 'var(--monarch-border)' }}
         />
         <div className="absolute top-2 right-2">
-          <div
-            className="w-16 h-5 rounded"
-            style={{ backgroundColor: 'var(--monarch-border)' }}
-          />
+          <div className="w-16 h-5 rounded" style={{ backgroundColor: 'var(--monarch-border)' }} />
         </div>
       </div>
       <div className="p-4">
@@ -107,10 +106,7 @@ function PlaceholderCard() {
           className="h-4 rounded mb-3"
           style={{ backgroundColor: 'var(--monarch-border)', width: '140px' }}
         />
-        <div
-          className="h-2 rounded-full"
-          style={{ backgroundColor: 'var(--monarch-border)' }}
-        />
+        <div className="h-2 rounded-full" style={{ backgroundColor: 'var(--monarch-border)' }} />
       </div>
     </div>
   );
@@ -156,10 +152,7 @@ function AddStashCard({
         className="px-4 pt-3 pb-4 shrink-0 flex flex-col items-center justify-center"
         style={{ maxHeight: 112 }}
       >
-        <h3
-          className="text-base font-semibold mb-1"
-          style={{ color: 'var(--monarch-text-dark)' }}
-        >
+        <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--monarch-text-dark)' }}>
           New Stash
         </h3>
         <p className="text-sm text-center" style={{ color: 'var(--monarch-text-muted)' }}>
@@ -174,7 +167,7 @@ function EmptyState({ message }: { readonly message: string }) {
   return (
     <div className="relative">
       <div
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-30"
+        className="grid grid-cols-1 min-[801px]:grid-cols-2 gap-4 opacity-30"
         style={{
           maskImage: 'linear-gradient(to bottom, black 0%, black 30%, transparent 100%)',
           WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 30%, transparent 100%)',
@@ -370,6 +363,8 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
   showTypeBadges = false,
   archivedItems = [],
 }: StashWidgetGridProps) {
+  const isInDistributionMode = useIsInDistributionMode();
+
   // Sort active items by sort_order (from database)
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -389,8 +384,8 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
 
   // Calculate effective columns based on width
   const effectiveCols = useMemo(() => {
-    if (containerWidth < 480) return 1;
-    return COLS; // 2 columns for medium+ screens
+    if (containerWidth <= 800) return 1;
+    return COLS; // 2 columns for wider screens
   }, [containerWidth]);
 
   // Create a stable key for items to detect meaningful changes
@@ -422,7 +417,9 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
    * Extracts new sort_order from position in the compacted layout.
    */
   const buildLayoutUpdates = useCallback(
-    (compacted: LayoutItem[]): { stashUpdates: StashLayoutUpdate[]; goalUpdates: MonarchGoalLayoutUpdate[] } => {
+    (
+      compacted: LayoutItem[]
+    ): { stashUpdates: StashLayoutUpdate[]; goalUpdates: MonarchGoalLayoutUpdate[] } => {
       const stashUpdates: StashLayoutUpdate[] = [];
       const goalUpdates: MonarchGoalLayoutUpdate[] = [];
 
@@ -524,12 +521,7 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
         const changed = compacted.some((item) => {
           const prev = prevById.get(item.i);
           if (!prev) return true;
-          return (
-            prev.x !== item.x ||
-            prev.y !== item.y ||
-            prev.w !== item.w ||
-            prev.h !== item.h
-          );
+          return prev.x !== item.x || prev.y !== item.y || prev.w !== item.w || prev.h !== item.h;
         });
         return changed ? compacted : prevLayout;
       });
@@ -560,17 +552,19 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
     return (
       <div className="w-full">
         <EmptyState message={emptyMessage} />
-        <div className="flex justify-center mt-6">
-          <button
-            data-tour="stash-add-item"
-            onClick={onAdd}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg text-base font-medium text-white transition-colors hover:opacity-90"
-            style={{ backgroundColor: 'var(--monarch-orange)' }}
-          >
-            <Icons.Plus size={20} />
-            Create Your First Stash
-          </button>
-        </div>
+        {!isInDistributionMode && (
+          <div className="flex justify-center mt-6">
+            <button
+              data-tour="stash-add-item"
+              onClick={onAdd}
+              className="flex items-center gap-2 px-6 py-3 rounded-lg text-base font-medium text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: 'var(--monarch-orange)' }}
+            >
+              <Icons.Plus size={20} />
+              Create Your First Stash
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -586,8 +580,8 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
         onLayoutChange={handleLayoutChange}
         onResizeStop={handleResizeStop}
         onDragStop={handleDragStop}
-        isResizable={true}
-        isDraggable={true}
+        isResizable={!isInDistributionMode}
+        isDraggable={!isInDistributionMode}
         draggableHandle=".stash-card-image"
         resizeHandles={['se']}
         margin={MARGIN}
@@ -632,16 +626,15 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
             </div>
           );
         })}
-        {/* Add placeholder card - unmovable, always at the end */}
-        <div key={ADD_PLACEHOLDER_ID} className="stash-grid-item">
-          <AddStashCard onAdd={onAdd} isFirst={sortedItems.length === 0} />
-        </div>
+        {/* Add placeholder card - unmovable, always at the end, hidden in distribution mode */}
+        {!isInDistributionMode && (
+          <div key={ADD_PLACEHOLDER_ID} className="stash-grid-item">
+            <AddStashCard onAdd={onAdd} isFirst={sortedItems.length === 0} />
+          </div>
+        )}
         {/* Archived items - static, dimmed, after the Add card */}
         {sortedArchivedItems.map((item) => (
-          <div
-            key={`${ARCHIVED_PREFIX}${item.id}`}
-            className="stash-grid-item opacity-60"
-          >
+          <div key={`${ARCHIVED_PREFIX}${item.id}`} className="stash-grid-item opacity-60">
             <StashCard
               item={item}
               onEdit={onEdit}
