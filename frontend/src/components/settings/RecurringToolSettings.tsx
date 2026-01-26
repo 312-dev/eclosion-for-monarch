@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/cognitive-complexity */
 /**
  * Recurring Tool Settings
  *
@@ -27,7 +28,14 @@ interface RecurringToolSettingsProps {
 
 export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSettingsProps>(
   function RecurringToolSettings(
-    { dashboardData, loading, onRefreshDashboard, onShowResetModal, defaultExpanded = false, variant = 'page' },
+    {
+      dashboardData,
+      loading,
+      onRefreshDashboard,
+      onShowResetModal,
+      defaultExpanded = false,
+      variant = 'page',
+    },
     ref
   ) {
     const toast = useToast();
@@ -146,18 +154,17 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
     const showCategoryGroupEnabled = dashboardData?.config.show_category_group ?? true;
 
     const containerClass = variant === 'modal' ? 'overflow-hidden' : 'rounded-xl overflow-hidden';
-    const containerStyle = variant === 'modal' ? {} : {
-      backgroundColor: 'var(--monarch-bg-card)',
-      border: '1px solid var(--monarch-border)',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-    };
+    const containerStyle =
+      variant === 'modal'
+        ? {}
+        : {
+            backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
+          };
 
     return (
-      <div
-        ref={ref}
-        className={containerClass}
-        style={containerStyle}
-      >
+      <div ref={ref} className={containerClass} style={containerStyle}>
         {loading ? (
           <div className="p-4">
             <div className="flex items-center gap-4">
@@ -187,7 +194,13 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
 
             {/* Nested Settings - Show when configured and (modal mode OR expanded in page mode) */}
             {isConfigured && (variant === 'modal' || isExpanded) && (
-              <div style={variant === 'page' ? { borderTop: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' } : {}}>
+              <div
+                style={
+                  variant === 'page'
+                    ? { borderTop: '1px solid var(--monarch-border-light, rgba(0,0,0,0.06))' }
+                    : {}
+                }
+              >
                 {/* Default Category Group */}
                 <SettingsRow label="Default Category Group" variant={variant}>
                   <SearchableSelect

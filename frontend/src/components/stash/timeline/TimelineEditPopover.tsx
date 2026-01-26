@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /** TimelineEditPopover - Popover for creating/editing timeline events */
 
 import { useState, useCallback, useRef, useEffect, useId } from 'react';

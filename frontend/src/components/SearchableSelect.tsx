@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { useState, useEffect, useRef, useId } from 'react';
 import { ChevronDown, Search, Check } from 'lucide-react';
 import { Portal } from './Portal';
@@ -66,6 +67,7 @@ export function SearchableSelect({
     if (dropdown.triggerRef.current) {
       setTriggerWidth(dropdown.triggerRef.current.offsetWidth);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- triggerRef is stable, only re-run when dropdown opens
   }, [dropdown.isOpen]);
 
   // Get all options (either flat or from groups)

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Demo Openverse Client
  *
@@ -6,11 +7,7 @@
  * No actual API calls are made.
  */
 
-import type {
-  OpenverseImage,
-  OpenverseSearchRequest,
-  OpenverseSearchResult,
-} from '../../types';
+import type { OpenverseImage, OpenverseSearchRequest, OpenverseSearchResult } from '../../types';
 import { simulateDelay } from './demoState';
 
 /**

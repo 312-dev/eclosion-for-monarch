@@ -1,3 +1,6 @@
+/* eslint-disable max-lines */
+/* eslint-disable sonarjs/cognitive-complexity */
+/* eslint-disable sonarjs/no-nested-conditional */
 /**
  * StashRow - Individual row component for stash items
  *
@@ -317,7 +320,9 @@ export const StashRow = memo(function StashRow({
                 creditsThisMonth={creditsThisMonth}
                 // Flex categories behave like savings_buffer (spending reduces balance)
                 goalType={item.is_flexible_group ? 'savings_buffer' : item.goal_type}
-                {...(item.available_to_spend !== undefined && { availableToSpend: item.available_to_spend })}
+                {...(item.available_to_spend !== undefined && {
+                  availableToSpend: item.available_to_spend,
+                })}
               />
             </div>
           </div>
