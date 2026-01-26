@@ -144,12 +144,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: scripts/screenshots-gen/package-lock.json
 
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-
       - name: Install screenshot generator dependencies
         working-directory: scripts/screenshots-gen
         run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: scripts/screenshots-gen
+        run: npx playwright install chromium --with-deps
 
       - name: Serve frontend and generate screenshots
         run: |
