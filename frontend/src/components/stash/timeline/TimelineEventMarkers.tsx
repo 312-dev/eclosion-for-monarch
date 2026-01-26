@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 /** TimelineEventMarkers - Renders event markers on the timeline chart using Recharts */
 
-import { useState, useCallback, useRef, useLayoutEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useLayoutEffect, useMemo, useEffect } from 'react';
 import { ReferenceDot } from 'recharts';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { NamedEvent, TimelineDataPoint, TimelineItemConfig } from '../../../types/timeline';
