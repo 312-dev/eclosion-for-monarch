@@ -154,9 +154,10 @@ jobs:
 
       - name: Serve frontend and generate screenshots
         run: |
-          # Start static file server in background
+          # Start static file server in background with SPA mode (-s)
+          # The -s flag serves index.html for all routes, enabling React Router
           cd frontend/dist
-          npx serve -l 4173 &
+          npx serve -s -l 4173 &
           SERVER_PID=$!
           sleep 3
 
