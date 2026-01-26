@@ -451,18 +451,24 @@ const isMarketingSite = isMarketingSiteHostname();
 
 /**
  * Create the appropriate router based on environment
+ *
+ * Priority:
+ * 1. Marketing site (Cloudflare Pages) - has demo at /demo/*
+ * 2. Global demo mode (VITE_DEMO_MODE=true without marketing hostname) - demo at root
+ * 3. Production (desktop or self-hosted)
  */
 function createAppRouter() {
   const createRouter = isDesktop ? createHashRouter : createBrowserRouter;
 
-  // Global demo mode (VITE_DEMO_MODE=true)
-  if (isGlobalDemoMode) {
-    return createRouter(globalDemoRoutes);
-  }
-
-  // Marketing site (Cloudflare Pages)
+  // Marketing site (Cloudflare Pages) - check first since marketing builds
+  // also set VITE_DEMO_MODE=true for demo functionality at /demo/*
   if (isMarketingSite) {
     return createRouter(marketingRoutes);
+  }
+
+  // Global demo mode (VITE_DEMO_MODE=true) - for standalone demo deployments
+  if (isGlobalDemoMode) {
+    return createRouter(globalDemoRoutes);
   }
 
   // Production (desktop or self-hosted)
