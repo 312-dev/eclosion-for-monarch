@@ -4,6 +4,7 @@
     "config:recommended",
     ":semanticCommits"
   ],
+  "rebaseWhen": "conflicted",
   "branchPrefix": "update/renovate-",
   "commitMessagePrefix": "chore(deps):",
   "prHourlyLimit": 3,
