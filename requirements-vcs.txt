@@ -3,4 +3,4 @@
 #   pip install --require-hashes -r requirements.txt
 #   pip install --no-deps -r requirements-vcs.txt
 
-git+https://github.com/312-dev/monarchmoney.git@ef71910  # custom header support + baseDate field + rollover fixes + Common_UpdateCategoryGroup operation
+git+https://github.com/312-dev/monarchmoney.git@47df079  # custom header support + baseDate field + rollover fixes + Common_UpdateCategoryGroup operation + optional oathtool import
