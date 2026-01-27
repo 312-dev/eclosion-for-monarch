@@ -113,9 +113,7 @@ export async function getCredentials(): Promise<OpenverseCredentials | null> {
 /**
  * Store credentials (in desktop safeStorage or web localStorage).
  */
-export async function storeCredentials(
-  credentials: OpenverseCredentials
-): Promise<boolean> {
+export async function storeCredentials(credentials: OpenverseCredentials): Promise<boolean> {
   if (isDesktopMode() && globalThis.electron?.openverse) {
     const success = await globalThis.electron.openverse.storeCredentials(credentials);
     if (success) {
@@ -267,12 +265,4 @@ export async function ensureCredentials(): Promise<OpenverseCredentials> {
   await storeCredentials(credentials);
 
   return credentials;
-}
-
-/**
- * Clear cached credentials (useful for testing or logout).
- */
-export function clearCredentialsCache(): void {
-  cachedCredentials = null;
-  cachedToken = null;
 }

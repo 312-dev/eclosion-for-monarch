@@ -218,8 +218,4 @@ export { useStashHistoryQuery, useInvalidateStashHistory } from './stashHistoryQ
 export { useMonarchGoalsQuery, useUpdateMonarchGoalLayoutsMutation } from './monarchGoalQueries';
 
 // Openverse (image search) queries
-export {
-  useOpenverseSearch,
-  useOpenverseImage,
-  generateOpenverseAttribution,
-} from './openverseQueries';
+export { useOpenverseSearch, generateOpenverseAttribution } from './openverseQueries';

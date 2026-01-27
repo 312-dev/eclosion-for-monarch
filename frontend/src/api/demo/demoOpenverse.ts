@@ -351,16 +351,6 @@ export async function searchImages(
 }
 
 /**
- * Get a single image by ID (demo mode).
- */
-export async function getImage(id: string): Promise<OpenverseImage | null> {
-  await simulateDelay(100);
-
-  const allImages = getAllSampleImages();
-  return allImages.find((img) => img.id === id) || null;
-}
-
-/**
  * Generate attribution text for an image.
  */
 export function generateAttribution(image: OpenverseImage): string {

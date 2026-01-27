@@ -176,6 +176,8 @@ export {
   convertPendingBookmark,
   importBookmarks,
   clearUnconvertedBookmarks,
+  // Favicon fetching
+  fetchFavicon,
   // Stash history (reports)
   getStashHistory,
   // Category rollover balance
@@ -191,6 +193,5 @@ export {
 // Openverse (external image search API)
 export {
   searchImages as searchOpenverseImages,
-  getImage as getOpenverseImage,
   generateAttribution as generateOpenverseAttribution,
 } from './openverse';

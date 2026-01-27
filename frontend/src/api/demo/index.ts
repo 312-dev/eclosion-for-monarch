@@ -122,6 +122,7 @@ export {
   linkStashCategory,
   syncStash,
   fetchOgImage,
+  fetchFavicon,
   reorderStashItems,
   updateStashLayouts,
   getStashCategoryGroups,
@@ -156,6 +157,5 @@ export { getMonarchGoals, updateMonarchGoalLayouts } from './demoMonarchGoals';
 // Openverse (image search)
 export {
   searchImages as searchOpenverseImages,
-  getImage as getOpenverseImage,
   generateAttribution as generateOpenverseAttribution,
 } from './demoOpenverse';

@@ -92,18 +92,6 @@ export interface OpenverseSearchResult {
 }
 
 /**
- * Registration request sent to Openverse API.
- */
-export interface OpenverseRegisterRequest {
-  /** Application name (must be unique across all Openverse clients) */
-  name: string;
-  /** Application description */
-  description: string;
-  /** Contact email */
-  email: string;
-}
-
-/**
  * Registration response from Openverse API.
  */
 export interface OpenverseRegisterResponse {
@@ -113,18 +101,6 @@ export interface OpenverseRegisterResponse {
   client_secret: string;
   /** Application name */
   name: string;
-}
-
-/**
- * Token request sent to Openverse API.
- */
-export interface OpenverseTokenRequest {
-  /** OAuth2 client ID */
-  client_id: string;
-  /** OAuth2 client secret */
-  client_secret: string;
-  /** Grant type (always "client_credentials") */
-  grant_type: 'client_credentials';
 }
 
 /**

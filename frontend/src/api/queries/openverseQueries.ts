@@ -47,38 +47,12 @@ export function useOpenverseSearch(
         pageSize,
       };
 
-      return isDemo
-        ? demoApi.searchOpenverseImages(request)
-        : api.searchOpenverseImages(request);
+      return isDemo ? demoApi.searchOpenverseImages(request) : api.searchOpenverseImages(request);
     },
     enabled: isEnabled,
     staleTime: 5 * 60 * 1000, // Results are fresh for 5 minutes
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     placeholderData: (previousData) => previousData, // Keep showing previous results while loading
-  });
-}
-
-/**
- * Get a single image by ID.
- *
- * @param id - Openverse image ID
- * @param options - Additional query options
- */
-export function useOpenverseImage(
-  id: string | null,
-  options?: { enabled?: boolean }
-) {
-  const isDemo = useDemo();
-  const isEnabled = (options?.enabled ?? true) && !!id;
-
-  return useQuery({
-    queryKey: [...getQueryKey(queryKeys.openverseSearch, isDemo), 'image', id],
-    queryFn: async () => {
-      if (!id) return null;
-      return isDemo ? demoApi.getOpenverseImage(id) : api.getOpenverseImage(id);
-    },
-    enabled: isEnabled,
-    staleTime: 60 * 60 * 1000, // Image details are fresh for 1 hour
   });
 }
 
