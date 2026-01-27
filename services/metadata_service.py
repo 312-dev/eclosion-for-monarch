@@ -258,13 +258,13 @@ async def _extract_og_image_url(session: aiohttp.ClientSession, url: str) -> str
             # Try og:image first
             # bs4 type stubs are incomplete - find() returns Tag which has .get()
             og_tag = soup.find("meta", property="og:image")
-            if og_tag and og_tag.get("content"):
-                return str(og_tag["content"])
+            if og_tag and og_tag.get("content"):  # type: ignore[attr-defined]
+                return str(og_tag["content"])  # type: ignore[index]
 
             # Fallback to twitter:image
             twitter_tag = soup.find("meta", attrs={"name": "twitter:image"})
-            if twitter_tag and twitter_tag.get("content"):
-                return str(twitter_tag["content"])
+            if twitter_tag and twitter_tag.get("content"):  # type: ignore[attr-defined]
+                return str(twitter_tag["content"])  # type: ignore[index]
 
             return None
 
@@ -330,9 +330,10 @@ async def fetch_favicon(domain: str, timeout: float = FAVICON_TIMEOUT) -> str | 
     """
     try:
         # Sanitize domain - strip protocol if provided
-        domain = _sanitize_domain(domain)
-        if not domain:
+        sanitized_domain = _sanitize_domain(domain)
+        if not sanitized_domain:
             return None
+        domain = sanitized_domain
 
         # Build base URL
         base_url = f"https://{domain}"
@@ -509,11 +510,11 @@ def _find_icon_links(soup: BeautifulSoup) -> list[tuple[str, int, str]]:
             "link", rel=lambda r, rt=rel_type: r and rt in r.lower() if r else False
         )
         for tag in tags:
-            href = tag.get("href")
+            href = tag.get("href")  # type: ignore[union-attr]
             if href:
-                sizes = tag.get("sizes", "")
-                size = _parse_icon_size(sizes)
-                icon_links.append((href, size, rel_type))
+                sizes = tag.get("sizes", "")  # type: ignore[union-attr]
+                size = _parse_icon_size(str(sizes))
+                icon_links.append((str(href), size, rel_type))
 
     # Sort by size (largest first), then by rel preference
     rel_priority = {"apple-touch-icon": 0, "icon": 1, "shortcut icon": 2}
