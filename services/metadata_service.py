@@ -256,15 +256,18 @@ async def _extract_og_image_url(session: aiohttp.ClientSession, url: str) -> str
             soup = BeautifulSoup(html, "lxml")
 
             # Try og:image first
-            # bs4 type stubs are incomplete - find() returns Tag which has .get()
             og_tag = soup.find("meta", property="og:image")
-            if og_tag and og_tag.get("content"):  # type: ignore[attr-defined]
-                return str(og_tag["content"])  # type: ignore[index]
+            if og_tag and hasattr(og_tag, "get"):
+                content = og_tag.get("content")
+                if content:
+                    return str(content)
 
             # Fallback to twitter:image
             twitter_tag = soup.find("meta", attrs={"name": "twitter:image"})
-            if twitter_tag and twitter_tag.get("content"):  # type: ignore[attr-defined]
-                return str(twitter_tag["content"])  # type: ignore[index]
+            if twitter_tag and hasattr(twitter_tag, "get"):
+                content = twitter_tag.get("content")
+                if content:
+                    return str(content)
 
             return None
 
@@ -478,7 +481,7 @@ def _is_favicon_large_enough(data: bytes, content_type: str) -> bool:
 
         # For other formats, just check dimensions
         width, height = image.size
-        return width >= MIN_FAVICON_SIZE and height >= MIN_FAVICON_SIZE
+        return bool(width >= MIN_FAVICON_SIZE and height >= MIN_FAVICON_SIZE)
 
     except Exception as e:
         logger.debug("Error checking favicon size: %s", e)
@@ -510,9 +513,11 @@ def _find_icon_links(soup: BeautifulSoup) -> list[tuple[str, int, str]]:
             "link", rel=lambda r, rt=rel_type: r and rt in r.lower() if r else False
         )
         for tag in tags:
-            href = tag.get("href")  # type: ignore[union-attr]
+            if not hasattr(tag, "get"):
+                continue
+            href = tag.get("href")
             if href:
-                sizes = tag.get("sizes", "")  # type: ignore[union-attr]
+                sizes = tag.get("sizes", "")
                 size = _parse_icon_size(str(sizes))
                 icon_links.append((str(href), size, rel_type))
 
