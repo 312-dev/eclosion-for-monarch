@@ -9,10 +9,9 @@
 #   2. Generate hashes: pip hash /tmp/dl/*.whl
 #   3. Update this file with all platform hashes
 #
-# pip - package installer (platform-independent wheel)
-pip==24.3.1 \
-    --hash=sha256:3790624780082365f47549d032f3770eeb2b1e8bd1f7b2e02dace1afa361b4ed
-
+# Note: pip is NOT included here - it's already installed by setup-python and
+# pip refuses to modify itself when running directly (Windows specific issue).
+#
 # setuptools - required by pyinstaller (platform-independent wheel)
 setuptools==80.10.1 \
     --hash=sha256:bf2e513eb8144c3298a3bd28ab1a5edb739131ec5c22e045ff93cd7f5319703a \
