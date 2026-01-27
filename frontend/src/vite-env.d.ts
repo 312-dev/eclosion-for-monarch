@@ -4,6 +4,7 @@ import type { ChangelogEntry } from './types';
 
 declare const __APP_VERSION__: string;
 declare const __BUILD_TIME__: string;
+declare const __DEMO_MODE__: boolean;
 declare const __CHANGELOG__: ChangelogEntry[];
 
 // MDX module declarations

@@ -48,12 +48,3 @@ export function useIsMarketingSite(): boolean {
     return MARKETING_HOSTNAMES.some((domain) => hostname.includes(domain));
   }, []);
 }
-
-/**
- * Check if the current site is a self-hosted instance.
- * Inverse of useIsMarketingSite.
- */
-export function useIsSelfHosted(): boolean {
-  const isMarketingSite = useIsMarketingSite();
-  return !isMarketingSite;
-}

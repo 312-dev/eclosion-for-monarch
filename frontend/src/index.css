@@ -422,8 +422,7 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--monarch-orange) !important;
-  box-shadow: 0 0 0 3px rgba(255, 105, 45, 0.15) !important;
+  box-shadow: none !important;
 }
 
 /* Override for white focus ring */
@@ -441,8 +440,7 @@ input.focus-none:focus {
 /* Checkbox and radio focus styles */
 input[type='checkbox']:focus-visible,
 input[type='radio']:focus-visible {
-  outline: 2px solid var(--monarch-orange);
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Checkbox accent color */

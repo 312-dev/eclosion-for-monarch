@@ -37,8 +37,7 @@ export function useAppTour({
   const isRecurringPage =
     location.pathname === '/recurring' || location.pathname === '/demo/recurring';
   const isNotesPage = location.pathname === '/notes' || location.pathname === '/demo/notes';
-  const isStashPage =
-    location.pathname === '/stash' || location.pathname === '/demo/stash';
+  const isStashPage = location.pathname === '/stashes' || location.pathname === '/demo/stashes';
   const hasTour = isRecurringPage || isNotesPage || isStashPage;
 
   // Check if recurring is configured (setup wizard completed)

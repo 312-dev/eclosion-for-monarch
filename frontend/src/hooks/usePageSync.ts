@@ -228,7 +228,7 @@ export function useCurrentPage(): PageName {
   const pathname = typeof globalThis.window === 'undefined' ? '' : globalThis.location.pathname;
 
   // Map pathname to page name
-  if (pathname.includes('/stash') || pathname.includes('/demo/stash')) {
+  if (pathname.includes('/stashes') || pathname.includes('/demo/stashes')) {
     return 'stash';
   }
   if (pathname.includes('/notes') || pathname.includes('/demo/notes')) {

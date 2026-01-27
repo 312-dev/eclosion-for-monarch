@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Auth context manages complex state machine with multiple authentication paths */
 /** Auth Context - manages authentication state including login, unlock, and validation. */
 import { createContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import {
@@ -99,7 +100,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
 
       // Determine user-friendly error message
-      let errorMessage = 'Unable to connect to the server';
+      const isDesktop = !!globalThis.electron;
+      let errorMessage = isDesktop
+        ? 'Unable to connect to Eclosion. Please restart the app or try again.'
+        : 'Unable to connect to the server';
       if (err instanceof Error) {
         if (isRateLimitErr) {
           errorMessage = 'Too many requests. Please wait a moment and try again.';
@@ -108,7 +112,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
           err.message.includes('network') ||
           err.message.includes('ERR_')
         ) {
-          errorMessage = 'Unable to connect to the server. Please check if the backend is running.';
+          errorMessage = isDesktop
+            ? 'Unable to connect to Eclosion. Please restart the app or try again.'
+            : 'Unable to connect to the server. Please check if the backend is running.';
         } else {
           errorMessage = err.message;
         }

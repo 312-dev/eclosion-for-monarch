@@ -159,8 +159,7 @@ export const FEATURES: FeatureDefinition[] = [
       {
         icon: 'Bookmark',
         title: 'Browser Sync',
-        description:
-          'Sync stashes from Firefox, Chrome, Edge, or Safari bookmarks automatically.',
+        description: 'Sync stashes from Firefox, Chrome, Edge, or Safari bookmarks automatically.',
       },
       {
         icon: 'Target',
@@ -178,8 +177,8 @@ export const FEATURES: FeatureDefinition[] = [
         description: "See status badges showing if you're funded, on track, or behind.",
       },
     ],
-    demoPath: '/demo/stash/',
-    appPath: '/stash',
+    demoPath: '/demo/stashes/',
+    appPath: '/stashes',
     sourcePaths: [
       'frontend/src/components/tabs/StashTab.tsx',
       'frontend/src/components/stash/',

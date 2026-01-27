@@ -323,7 +323,7 @@ const appShellChildren: RouteObject[] = [
   { path: 'dashboard', element: <DashboardTab /> },
   { path: 'recurring', element: <RecurringTab /> },
   { path: 'notes', element: <NotesTab /> },
-  { path: 'stash', element: <StashTab /> },
+  { path: 'stashes', element: <StashTab /> },
   { path: 'settings', element: <SettingsTab /> },
 ];
 
@@ -361,7 +361,7 @@ const demoRouteChildren: RouteObject[] = [
       { path: 'dashboard', element: <DashboardTab /> },
       { path: 'recurring', element: <RecurringTab /> },
       { path: 'notes', element: <NotesTab /> },
-      { path: 'stash', element: <StashTab /> },
+      { path: 'stashes', element: <StashTab /> },
       { path: 'settings', element: <SettingsTab /> },
     ],
   },
