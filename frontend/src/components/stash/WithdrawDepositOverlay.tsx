@@ -174,7 +174,7 @@ export function TakeStashOverlay({
   // Show tooltip when withdraw is disabled but there's a positive budgeted amount
   const showTakeTooltip = withdrawDisabled && budgetedAmount > 0;
 
-  const getButtonStyles = (isActive: boolean, isDisabled: boolean) => {
+  const getButtonStyles = (_isActive: boolean, isDisabled: boolean) => {
     if (isDisabled) {
       return {
         opacity: 1,
