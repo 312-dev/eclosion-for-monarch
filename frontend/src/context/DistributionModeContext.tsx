@@ -3,15 +3,8 @@
 
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { StashItem } from '../types';
-import type {
-  NamedEvent,
-  TimelineZoomState,
-  EditingEventContext,
-  TimelineScenarioState,
-} from '../types/timeline';
+import type { NamedEvent, TimelineZoomState, EditingEventContext } from '../types/timeline';
 import { createDefaultTimelineState } from '../types/timeline';
-
-const STORAGE_KEY = 'eclosion-hypothesize-scenarios';
 
 // ============================================================================
 // Types
@@ -19,21 +12,18 @@ const STORAGE_KEY = 'eclosion-hypothesize-scenarios';
 
 export type DistributionMode = 'distribute' | 'hypothesize';
 
-export interface SavedScenario {
+/** Data needed to load a scenario into the context */
+export interface ScenarioLoadData {
   id: string;
   name: string;
-  /** @deprecated Use stashedAllocations instead. Kept for backwards compatibility with old saved scenarios. */
-  allocations?: Record<string, number>;
-  /** Stashed allocations - draws from Cash to Stash */
   stashedAllocations: Record<string, number>;
-  /** Monthly allocations - draws from Left to Budget */
   monthlyAllocations: Record<string, number>;
   customAvailableFunds: number | null;
   customLeftToBudget: number | null;
-  createdAt: string;
-  updatedAt: string;
-  /** Timeline state (hypothesize mode) */
-  timeline?: TimelineScenarioState;
+  /** Timeline events to load */
+  timelineEvents?: NamedEvent[];
+  /** Per-item APY settings */
+  itemApys?: Record<string, number>;
 }
 
 interface DistributionModeState {
@@ -43,6 +33,8 @@ interface DistributionModeState {
   stashedAllocations: Record<string, number>;
   /** Per-item monthly allocations - draws from Left to Budget (itemId -> amount) */
   monthlyAllocations: Record<string, number>;
+  /** Starting stash total when entering mode (to avoid double-counting) */
+  startingStashTotal: number;
   /** Whether any changes have been made since entering mode */
   hasChanges: boolean;
   /** Custom available funds override (Hypothesize only) */
@@ -51,6 +43,12 @@ interface DistributionModeState {
   customLeftToBudget: number | null;
   /** Whether the scenario sidebar is open */
   isScenarioSidebarOpen: boolean;
+  /** ID of the currently loaded scenario (null if unsaved/new) */
+  loadedScenarioId: string | null;
+  /** Name of the currently loaded scenario (null if unsaved/new) */
+  loadedScenarioName: string | null;
+  /** Counter to signal submit request (increments on each request) */
+  submitRequestId: number;
   // ---- Timeline state (Hypothesize only) ----
   /** Named events on the timeline */
   timelineEvents: NamedEvent[];
@@ -89,18 +87,20 @@ interface DistributionModeContextValue extends DistributionModeState {
   totalStashedAllocated: number;
   /** Total monthly allocation amount (draws from Left to Budget) */
   totalMonthlyAllocated: number;
+  /** Starting stash total when entering mode (to calculate delta for remaining funds) */
+  startingStashTotal: number;
   /** Open/close the scenario sidebar */
   setScenarioSidebarOpen: (open: boolean) => void;
-  /** Load saved scenarios from localStorage */
-  getSavedScenarios: () => SavedScenario[];
-  /** Check if a scenario with the given name already exists */
-  scenarioNameExists: (name: string) => boolean;
-  /** Save current state as a scenario */
-  saveScenario: (name: string) => SavedScenario;
-  /** Load a saved scenario */
-  loadScenario: (id: string) => void;
-  /** Delete a saved scenario */
-  deleteScenario: (id: string) => void;
+  /** Load scenario data into the context state */
+  loadScenarioState: (data: ScenarioLoadData) => void;
+  /** ID of the currently loaded scenario (null if unsaved/new) */
+  loadedScenarioId: string | null;
+  /** Name of the currently loaded scenario (null if unsaved/new) */
+  loadedScenarioName: string | null;
+  /** Counter to signal submit request (increments on each request) */
+  submitRequestId: number;
+  /** Request a submit action (Apply for distribute, Save for hypothesize) */
+  requestSubmit: () => void;
   // ---- Timeline methods (Hypothesize only) ----
   /** Add a named event to the timeline */
   addTimelineEvent: (event: Omit<NamedEvent, 'id' | 'createdAt'>) => NamedEvent;
@@ -137,10 +137,14 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
       mode: null,
       stashedAllocations: {},
       monthlyAllocations: {},
+      startingStashTotal: 0,
       hasChanges: false,
       customAvailableFunds: null,
       customLeftToBudget: null,
       isScenarioSidebarOpen: false,
+      loadedScenarioId: null,
+      loadedScenarioName: null,
+      submitRequestId: 0,
       // Timeline state
       timelineEvents: [],
       itemApys: {},
@@ -155,17 +159,23 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
     const defaultTimeline = createDefaultTimelineState();
     // Initialize stashed allocations with each item's current balance
     const initialAllocations: Record<string, number> = {};
+    let startingTotal = 0;
     for (const item of items) {
       initialAllocations[item.id] = item.current_balance;
+      startingTotal += item.current_balance;
     }
     setState({
       mode: 'distribute',
       stashedAllocations: initialAllocations,
       monthlyAllocations: {},
+      startingStashTotal: startingTotal,
       hasChanges: false,
       customAvailableFunds: null,
       customLeftToBudget: null,
       isScenarioSidebarOpen: false,
+      loadedScenarioId: null,
+      loadedScenarioName: null,
+      submitRequestId: 0,
       // Timeline state (not used in distribute mode, but reset for cleanliness)
       timelineEvents: [],
       itemApys: {},
@@ -180,17 +190,23 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
     const defaultTimeline = createDefaultTimelineState();
     // Initialize stashed allocations with each item's current balance
     const initialAllocations: Record<string, number> = {};
+    let startingTotal = 0;
     for (const item of items) {
       initialAllocations[item.id] = item.current_balance;
+      startingTotal += item.current_balance;
     }
     setState({
       mode: 'hypothesize',
       stashedAllocations: initialAllocations,
       monthlyAllocations: {},
+      startingStashTotal: startingTotal,
       hasChanges: false,
       customAvailableFunds: null,
       customLeftToBudget: null,
       isScenarioSidebarOpen: false,
+      loadedScenarioId: null,
+      loadedScenarioName: null,
+      submitRequestId: 0,
       // Initialize timeline state with fresh dates
       timelineEvents: [],
       itemApys: {},
@@ -208,10 +224,14 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
       mode: null,
       stashedAllocations: {},
       monthlyAllocations: {},
+      startingStashTotal: 0,
       hasChanges: false,
       customAvailableFunds: null,
       customLeftToBudget: null,
       isScenarioSidebarOpen: false,
+      loadedScenarioId: null,
+      loadedScenarioName: null,
+      submitRequestId: 0,
       // Reset timeline state
       timelineEvents: [],
       itemApys: {},
@@ -286,6 +306,13 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
     setState((prev) => ({
       ...prev,
       isScenarioSidebarOpen: open,
+    }));
+  }, []);
+
+  const requestSubmit = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      submitRequestId: prev.submitRequestId + 1,
     }));
   }, []);
 
@@ -405,130 +432,28 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
     return Object.values(state.monthlyAllocations).reduce((sum, amount) => sum + amount, 0);
   }, [state.monthlyAllocations]);
 
-  // ---- Scenario persistence (localStorage) ----
+  // ---- Scenario state loading ----
 
-  const getSavedScenarios = useCallback((): SavedScenario[] => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return [];
-      return JSON.parse(stored) as SavedScenario[];
-    } catch {
-      return [];
-    }
+  const loadScenarioState = useCallback((data: ScenarioLoadData) => {
+    const defaultTimeline = createDefaultTimelineState();
+
+    setState((prev) => ({
+      ...prev,
+      stashedAllocations: data.stashedAllocations,
+      monthlyAllocations: data.monthlyAllocations,
+      customAvailableFunds: data.customAvailableFunds,
+      customLeftToBudget: data.customLeftToBudget,
+      hasChanges: false, // Loading a scenario resets the "changes" flag
+      loadedScenarioId: data.id,
+      loadedScenarioName: data.name,
+      // Restore timeline state
+      timelineEvents: data.timelineEvents ?? [],
+      itemApys: data.itemApys ?? {},
+      cursorDate: null, // Don't restore cursor (ephemeral UI state)
+      timelineZoom: defaultTimeline.zoom, // Don't restore zoom (ephemeral UI state)
+      editingEvent: null, // Don't restore editing state
+    }));
   }, []);
-
-  const scenarioNameExists = useCallback(
-    (name: string): boolean => {
-      const scenarios = getSavedScenarios();
-      return scenarios.some((s) => s.name.toLowerCase() === name.toLowerCase());
-    },
-    [getSavedScenarios]
-  );
-
-  const saveScenario = useCallback(
-    (name: string): SavedScenario => {
-      const scenarios = getSavedScenarios();
-      const now = new Date().toISOString();
-
-      // Check if scenario with this name already exists
-      const existingScenario = scenarios.find((s) => s.name === name);
-      const id = existingScenario?.id ?? crypto.randomUUID();
-
-      const scenario: SavedScenario = {
-        id,
-        name,
-        stashedAllocations: { ...state.stashedAllocations },
-        monthlyAllocations: { ...state.monthlyAllocations },
-        customAvailableFunds: state.customAvailableFunds,
-        customLeftToBudget: state.customLeftToBudget,
-        createdAt: existingScenario?.createdAt ?? now,
-        updatedAt: now,
-        // Include timeline state
-        timeline: {
-          events: [...state.timelineEvents],
-          itemApys: { ...state.itemApys },
-          cursorDate: state.cursorDate,
-          zoom: { ...state.timelineZoom },
-        },
-      };
-
-      if (existingScenario) {
-        const existingIndex = scenarios.indexOf(existingScenario);
-        scenarios[existingIndex] = scenario;
-      } else {
-        scenarios.unshift(scenario); // Add to beginning (most recent first)
-      }
-
-      // Limit to 10 scenarios
-      const trimmed = scenarios.slice(0, 10);
-
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-      } catch {
-        // localStorage may be unavailable
-      }
-
-      return scenario;
-    },
-    [
-      state.stashedAllocations,
-      state.monthlyAllocations,
-      state.customAvailableFunds,
-      state.customLeftToBudget,
-      state.timelineEvents,
-      state.itemApys,
-      state.cursorDate,
-      state.timelineZoom,
-      getSavedScenarios,
-    ]
-  );
-
-  const loadScenario = useCallback(
-    (id: string) => {
-      const scenarios = getSavedScenarios();
-      const scenario = scenarios.find((s) => s.id === id);
-      if (!scenario) return;
-
-      // Handle backwards compatibility: old scenarios had `allocations` instead of separate pools
-      // Treat old `allocations` as stashedAllocations since that was the primary use case
-      const stashedAllocations = scenario.stashedAllocations ?? scenario.allocations ?? {};
-      const monthlyAllocations = scenario.monthlyAllocations ?? {};
-
-      // Load timeline state (with defaults for old scenarios)
-      const defaultTimeline = createDefaultTimelineState();
-      const timeline = scenario.timeline ?? defaultTimeline;
-
-      setState((prev) => ({
-        ...prev,
-        stashedAllocations,
-        monthlyAllocations,
-        customAvailableFunds: scenario.customAvailableFunds,
-        customLeftToBudget: scenario.customLeftToBudget,
-        hasChanges: false, // Loading a scenario resets the "changes" flag
-        // Restore timeline state
-        timelineEvents: timeline.events ?? [],
-        itemApys: timeline.itemApys ?? {},
-        cursorDate: timeline.cursorDate ?? null,
-        timelineZoom: timeline.zoom ?? defaultTimeline.zoom,
-        editingEvent: null, // Don't restore editing state
-      }));
-    },
-    [getSavedScenarios]
-  );
-
-  const deleteScenario = useCallback(
-    (id: string) => {
-      const scenarios = getSavedScenarios();
-      const filtered = scenarios.filter((s) => s.id !== id);
-
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-      } catch {
-        // localStorage may be unavailable
-      }
-    },
-    [getSavedScenarios]
-  );
 
   const value: DistributionModeContextValue = useMemo(
     () => ({
@@ -544,12 +469,13 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
       setCustomLeftToBudget,
       totalStashedAllocated,
       totalMonthlyAllocated,
+      startingStashTotal: state.startingStashTotal,
       setScenarioSidebarOpen,
-      getSavedScenarios,
-      scenarioNameExists,
-      saveScenario,
-      loadScenario,
-      deleteScenario,
+      loadScenarioState,
+      loadedScenarioId: state.loadedScenarioId,
+      loadedScenarioName: state.loadedScenarioName,
+      submitRequestId: state.submitRequestId,
+      requestSubmit,
       // Timeline methods
       addTimelineEvent,
       updateTimelineEvent,
@@ -574,11 +500,8 @@ export function DistributionModeProvider({ children }: Readonly<{ children: Reac
       totalStashedAllocated,
       totalMonthlyAllocated,
       setScenarioSidebarOpen,
-      getSavedScenarios,
-      scenarioNameExists,
-      saveScenario,
-      loadScenario,
-      deleteScenario,
+      loadScenarioState,
+      requestSubmit,
       addTimelineEvent,
       updateTimelineEvent,
       deleteTimelineEvent,
@@ -604,10 +527,14 @@ const defaultContext: DistributionModeContextValue = {
   mode: null,
   stashedAllocations: {},
   monthlyAllocations: {},
+  startingStashTotal: 0,
   hasChanges: false,
   customAvailableFunds: null,
   customLeftToBudget: null,
   isScenarioSidebarOpen: false,
+  loadedScenarioId: null,
+  loadedScenarioName: null,
+  submitRequestId: 0,
   // Timeline state defaults (placeholder - will be overwritten when entering mode)
   timelineEvents: [],
   itemApys: {},
@@ -629,20 +556,8 @@ const defaultContext: DistributionModeContextValue = {
   setCustomAvailableFunds: () => {},
   setCustomLeftToBudget: () => {},
   setScenarioSidebarOpen: () => {},
-  getSavedScenarios: () => [],
-  scenarioNameExists: () => false,
-  saveScenario: () => ({
-    id: '',
-    name: '',
-    stashedAllocations: {},
-    monthlyAllocations: {},
-    customAvailableFunds: null,
-    customLeftToBudget: null,
-    createdAt: '',
-    updatedAt: '',
-  }),
-  loadScenario: () => {},
-  deleteScenario: () => {},
+  loadScenarioState: () => {},
+  requestSubmit: () => {},
   // Timeline methods
   addTimelineEvent: () => ({
     id: '',

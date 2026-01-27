@@ -115,3 +115,6 @@ export {
 // Timeline hooks (hypothesize mode)
 export { useTimelineProjection, useTimelineItemConfig } from './useTimelineProjection';
 export { useTimelineZoom } from './useTimelineZoom';
+
+// Distribution mode
+export { useDistributionBannerActions } from './useDistributionBannerActions';
