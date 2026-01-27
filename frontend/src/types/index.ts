@@ -10,9 +10,6 @@
 // Common types (shared across domains)
 export type { ItemStatus } from './common';
 
-// Savings goal base types (shared between recurring and stash)
-export type { SavingsGoalBase, SavingsGoalComputed } from './savingsGoal';
-
 // Stash items (savings goals)
 export type {
   StashGoalType,
@@ -241,9 +238,7 @@ export type {
   OpenverseSearchRequest,
   OpenverseLicenseFilter,
   OpenverseSearchResult,
-  OpenverseRegisterRequest,
   OpenverseRegisterResponse,
-  OpenverseTokenRequest,
   OpenverseTokenResponse,
   ImageSelection,
 } from './openverse';
