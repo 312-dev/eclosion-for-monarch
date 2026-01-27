@@ -816,6 +816,9 @@ export function useHypothesesQuery() {
         monthlyAllocations: h.monthly_allocations,
         monthlyTotal: h.monthly_total,
         events: h.events,
+        customAvailableFunds: h.custom_available_funds,
+        customLeftToBudget: h.custom_left_to_budget,
+        itemApys: h.item_apys ?? {},
         createdAt: h.created_at ?? new Date().toISOString(),
         updatedAt: h.updated_at ?? new Date().toISOString(),
       }));

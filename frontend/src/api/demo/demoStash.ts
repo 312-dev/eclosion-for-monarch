@@ -49,6 +49,7 @@ export {
   getStashConfig,
   updateStashConfig,
   fetchOgImage,
+  fetchFavicon,
 } from './demoStashConfig';
 
 /**
@@ -204,15 +205,18 @@ export async function updateCategoryRolloverBalance(
 ): Promise<{ success: boolean; category?: unknown }> {
   await simulateDelay();
 
+  let foundItem = false;
+
   updateDemoState((state) => {
     // Find the stash item with this category_id
     const itemIndex = state.stash.items.findIndex((item) => item.category_id === categoryId);
 
     if (itemIndex === -1) {
-      // Category not found in stash items - silently succeed
-      // (might be a goal or non-stash category)
+      // Item not found - will throw error after state update
       return state;
     }
+
+    foundItem = true;
 
     const item = state.stash.items[itemIndex]!;
     const newRollover = (item.rollover_amount ?? 0) + amount;
@@ -245,6 +249,10 @@ export async function updateCategoryRolloverBalance(
     };
   });
 
+  if (!foundItem) {
+    throw new Error(`Stash item with category_id '${categoryId}' not found`);
+  }
+
   return { success: true };
 }
 
@@ -264,14 +272,18 @@ export async function updateGroupRolloverBalance(
 ): Promise<{ success: boolean; group?: unknown }> {
   await simulateDelay();
 
+  let foundItems = false;
+
   updateDemoState((state) => {
     // Find all stash items in this group
     const itemsInGroup = state.stash.items.filter((item) => item.category_group_id === groupId);
 
     if (itemsInGroup.length === 0) {
-      // No items in this group - silently succeed
+      // No items in this group - will throw error after state update
       return state;
     }
+
+    foundItems = true;
 
     // Distribute the amount evenly across all items in the group
     // (In real Monarch, the group has a single balance, but in demo mode
@@ -308,6 +320,10 @@ export async function updateGroupRolloverBalance(
       },
     };
   });
+
+  if (!foundItems) {
+    throw new Error(`No stash items found in group '${groupId}'`);
+  }
 
   return { success: true };
 }
@@ -522,8 +538,15 @@ export async function getAvailableToStashData(): Promise<AvailableToStashData> {
   const selectedIds = state.stashConfig.selectedCashAccountIds;
   const readyToAssign = state.dashboard.ready_to_assign;
 
-  // Calculate total stash balances
+  // Calculate stash balances (both total and individual items for breakdown)
   const stashBalances = state.stash.items.reduce((sum, item) => sum + item.current_balance, 0);
+  const stashItems = state.stash.items
+    .filter((item) => item.current_balance > 0)
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      balance: item.current_balance,
+    }));
 
   // Define all accounts
   const allAccounts = [
@@ -663,6 +686,7 @@ export async function getAvailableToStashData(): Promise<AvailableToStashData> {
     plannedIncome: readyToAssign.planned_income,
     actualIncome: readyToAssign.actual_income,
     stashBalances,
+    stashItems,
     // Left to Budget (ready_to_assign) - subtracted from Cash to Stash calculation
     leftToBudget: readyToAssign.ready_to_assign,
   };
@@ -689,6 +713,9 @@ export async function getHypotheses(): Promise<GetHypothesesResponse> {
       monthly_allocations: h.monthlyAllocations,
       monthly_total: h.monthlyTotal,
       events: h.events,
+      custom_available_funds: h.customAvailableFunds ?? null,
+      custom_left_to_budget: h.customLeftToBudget ?? null,
+      item_apys: h.itemApys ?? {},
       created_at: h.createdAt,
       updated_at: h.updatedAt,
     })),
@@ -726,6 +753,9 @@ export async function saveHypothesis(
         monthlyAllocations: request.monthlyAllocations,
         monthlyTotal: request.monthlyTotal,
         events: request.events,
+        customAvailableFunds: request.customAvailableFunds ?? null,
+        customLeftToBudget: request.customLeftToBudget ?? null,
+        itemApys: request.itemApys ?? {},
         updatedAt: new Date().toISOString(),
       };
 
@@ -762,6 +792,9 @@ export async function saveHypothesis(
       monthlyAllocations: request.monthlyAllocations,
       monthlyTotal: request.monthlyTotal,
       events: request.events,
+      customAvailableFunds: request.customAvailableFunds ?? null,
+      customLeftToBudget: request.customLeftToBudget ?? null,
+      itemApys: request.itemApys ?? {},
       createdAt: now,
       updatedAt: now,
     };

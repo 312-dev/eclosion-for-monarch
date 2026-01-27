@@ -139,7 +139,7 @@ function getCurrentMonth(): string {
 
 /**
  * Calculate the frozen monthly target for a recurring item using baseDate.
- * This mirrors the logic from services/occurrence_calculator.py
+ * This mirrors the backend calculation logic in services/stash_service.py.
  *
  * Uses stateless calculation from stable inputs (baseDate, frequency, amount, rollover).
  */
@@ -1584,13 +1584,13 @@ function createDashboardData(items: RecurringItem[]): DashboardData {
     last_sync: new Date().toISOString(),
     data_month: new Date().toISOString().slice(0, 7),
     ready_to_assign: {
-      ready_to_assign: 523.47,
+      ready_to_assign: 523,
       planned_income: 5000,
-      actual_income: 4876.53,
+      actual_income: 4877,
       planned_expenses: 3200,
-      actual_expenses: 2845.32,
+      actual_expenses: 2845,
       planned_savings: 800,
-      remaining_income: 1231.21,
+      remaining_income: 1232,
     },
     rollup: createRollupData(items),
     notices: [],
@@ -1914,7 +1914,8 @@ export function createInitialMonarchGoals(): MonarchGoal[] {
       createdAt: emergencyCreated.toISOString(),
       progress: 37, // 37% of target
       estimatedMonthsUntilCompletion: 13,
-      forecastedCompletionDate: new Date(now.setMonth(now.getMonth() + 13)).toISOString().split('T')[0] || null,
+      forecastedCompletionDate:
+        new Date(now.setMonth(now.getMonth() + 13)).toISOString().split('T')[0] || null,
       plannedMonthlyContribution: 1800,
       status: 'at_risk',
       monthsAheadBehind: -2, // 2 months behind
@@ -1939,7 +1940,8 @@ export function createInitialMonarchGoals(): MonarchGoal[] {
       createdAt: vacationCreated.toISOString(),
       progress: 70, // 70% of target
       estimatedMonthsUntilCompletion: 2,
-      forecastedCompletionDate: new Date(now.setMonth(now.getMonth() + 2)).toISOString().split('T')[0] || null,
+      forecastedCompletionDate:
+        new Date(now.setMonth(now.getMonth() + 2)).toISOString().split('T')[0] || null,
       plannedMonthlyContribution: 900,
       status: 'ahead',
       monthsAheadBehind: 3, // 3 months ahead
@@ -1984,6 +1986,7 @@ export function createInitialMonarchGoals(): MonarchGoal[] {
 /**
  * Create initial demo pending bookmarks.
  * These are sample bookmarks awaiting user review.
+ * Logo URLs are set to null to test favicon migration on load.
  */
 export function createInitialPendingBookmarks(): PendingBookmark[] {
   return [
@@ -1993,7 +1996,7 @@ export function createInitialPendingBookmarks(): PendingBookmark[] {
       name: 'MacBook Pro - Apple',
       bookmark_id: 'bm-123',
       browser_type: 'chrome',
-      logo_url: 'https://www.apple.com/favicon.ico',
+      logo_url: null, // Fetched via favicon migration
       status: 'pending',
       created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -2003,7 +2006,7 @@ export function createInitialPendingBookmarks(): PendingBookmark[] {
       name: 'Sony WH-1000XM5 Wireless Headphones',
       bookmark_id: 'bm-456',
       browser_type: 'chrome',
-      logo_url: 'https://www.amazon.com/favicon.ico',
+      logo_url: null, // Fetched via favicon migration
       status: 'pending',
       created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     },
@@ -2013,7 +2016,7 @@ export function createInitialPendingBookmarks(): PendingBookmark[] {
       name: 'REI Co-op Half Dome 2 Plus Tent',
       bookmark_id: 'bm-789',
       browser_type: 'chrome',
-      logo_url: 'https://www.rei.com/favicon.ico',
+      logo_url: null, // Fetched via favicon migration
       status: 'pending',
       created_at: new Date().toISOString(),
     },

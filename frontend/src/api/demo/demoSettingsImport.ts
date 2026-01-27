@@ -190,6 +190,9 @@ function importStashTool(
       monthlyAllocations: h.monthly_allocations,
       monthlyTotal: h.monthly_total,
       events: h.events as StashEventsMap,
+      customAvailableFunds: h.custom_available_funds ?? null,
+      customLeftToBudget: h.custom_left_to_budget ?? null,
+      itemApys: h.item_apys ?? {},
       createdAt: h.created_at ?? new Date().toISOString(),
       updatedAt: h.updated_at ?? new Date().toISOString(),
     }));

@@ -212,6 +212,18 @@ export async function fetchOgImage(url: string): Promise<string | null> {
 }
 
 /**
+ * Fetch favicon from a domain and return as base64 data URL.
+ * Returns null if not found, too small (< 32x32), or fetch fails.
+ * Times out after 5 seconds.
+ */
+export async function fetchFavicon(domain: string): Promise<string | null> {
+  const response = await fetchApi<{ favicon: string | null }>(
+    `/stash/fetch-favicon?domain=${encodeURIComponent(domain)}`
+  );
+  return response.favicon;
+}
+
+/**
  * Reorder stash items.
  * @param itemIds - Array of item IDs in their new order
  * @deprecated Use updateStashLayouts for grid-based positioning
@@ -427,6 +439,9 @@ export async function saveHypothesis(
       monthly_allocations: request.monthlyAllocations,
       monthly_total: request.monthlyTotal,
       events: request.events,
+      custom_available_funds: request.customAvailableFunds,
+      custom_left_to_budget: request.customLeftToBudget,
+      item_apys: request.itemApys ?? {},
     }),
   });
 }

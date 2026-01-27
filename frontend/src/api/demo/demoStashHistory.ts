@@ -28,10 +28,10 @@ function generateMonthList(months: number): string[] {
 /**
  * Generate realistic mock history for a stash item.
  *
- * Simulates gradual progress with some variation:
- * - Start from 0 or a small initial balance
- * - Add monthly contributions that trend toward the monthly target
- * - Include some months with higher/lower contributions for realism
+ * Distributes the current balance across months since creation:
+ * - Calculates average contribution per month
+ * - Adds random variation for realism (±30%)
+ * - Ensures final balance matches current_balance exactly
  */
 function generateItemHistory(
   item: {
@@ -46,57 +46,61 @@ function generateItemHistory(
 ): StashHistoryItem {
   const monthData: StashMonthData[] = [];
 
-  // Determine how many months the item has existed
+  // Determine when the item was created
   const createdDate = item.created_at ? new Date(item.created_at) : new Date();
   const createdMonth = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}`;
 
-  // Work backwards from current balance to generate history
-  // We'll reverse-engineer a plausible history
   const currentBalance = item.current_balance;
-  const monthlyTarget = item.monthly_target || Math.round(item.amount / 12);
 
-  // Generate balances for each month
+  // Find months where the item existed
+  const activeMonths = months.filter((month) => month >= createdMonth);
+  const numActiveMonths = activeMonths.length;
+
+  // If no active months or no balance, return zeros
+  if (numActiveMonths === 0 || currentBalance === 0) {
+    for (const month of months) {
+      monthData.push({ month, balance: 0, contribution: 0 });
+    }
+    return { id: item.id, name: item.name, target_amount: item.amount, months: monthData };
+  }
+
+  // Calculate average contribution per month to reach current balance
+  const avgContribution = currentBalance / numActiveMonths;
+
+  // Generate raw contributions with variance (±30%)
+  const variation = 0.3;
+  const rawContributions: number[] = [];
+  for (let i = 0; i < numActiveMonths; i++) {
+    const randomFactor = 1 + (Math.random() - 0.5) * variation * 2;
+    rawContributions.push(Math.max(0, avgContribution * randomFactor));
+  }
+
+  // Normalize contributions to sum to currentBalance
+  const rawSum = rawContributions.reduce((a, b) => a + b, 0);
+  const contributions = rawContributions.map((c) => Math.round((c / rawSum) * currentBalance));
+
+  // Adjust for rounding errors on the last contribution
+  const actualSum = contributions.reduce((a, b) => a + b, 0);
+  const lastIndex = contributions.length - 1;
+  if (lastIndex >= 0 && contributions[lastIndex] !== undefined) {
+    contributions[lastIndex] += currentBalance - actualSum;
+  }
+
+  // Build month data
   let balance = 0;
-  let prevBalance = 0;
+  let contributionIndex = 0;
 
   for (const month of months) {
-    // Skip months before the item was created
     if (month < createdMonth) {
-      monthData.push({
-        month,
-        balance: 0,
-        contribution: 0,
-      });
-      continue;
-    }
-
-    // For months the item existed, simulate contributions
-    // Add some randomness for realism
-    const isCurrentMonth = month === months.at(-1);
-
-    if (isCurrentMonth) {
-      // Current month should match current balance
-      balance = currentBalance;
+      // Before creation: zero
+      monthData.push({ month, balance: 0, contribution: 0 });
     } else {
-      // Historical months: gradual progress with variation
-      const targetForMonth = monthlyTarget;
-      const variation = 0.3; // 30% variation
-      const randomFactor = 1 + (Math.random() - 0.5) * variation * 2;
-      const contribution = Math.round(targetForMonth * randomFactor);
-
-      // Don't exceed target amount
-      balance = Math.min(item.amount, prevBalance + Math.max(0, contribution));
+      // After creation: use calculated contribution
+      const contribution = contributions[contributionIndex] ?? 0;
+      balance += contribution;
+      monthData.push({ month, balance, contribution });
+      contributionIndex++;
     }
-
-    const contribution = balance - prevBalance;
-
-    monthData.push({
-      month,
-      balance,
-      contribution,
-    });
-
-    prevBalance = balance;
   }
 
   return {
