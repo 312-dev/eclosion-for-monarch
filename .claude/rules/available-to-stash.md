@@ -15,6 +15,7 @@ Available to Stash = Cash
                    - Unspent Expense Budgets
                    - Monarch Goal Balances
                    - Stash Balances
+                   - Left to Budget
 ```
 
 ### Components
@@ -24,9 +25,10 @@ Available to Stash = Cash
 | **Cash** | Sum of enabled cash accounts (checking, savings, PayPal/Venmo) | Monarch accounts |
 | **Expected Income** | Planned income not yet received (optional toggle) | Monarch planned income |
 | **CC Balances** | Current credit card balances | Monarch accounts |
-| **Unspent Expense Budgets** | `Σ max(0, budget - spent)` for expense categories | Monarch budget data |
+| **Unspent Expense Budgets** | `Σ max(0, remaining)` for expense categories (includes rollover) | Monarch budget data |
 | **Goal Balances** | Current balances of Monarch savings goals | Monarch goals |
 | **Stash Balances** | Current balances of Stash items | Eclosion stash data |
+| **Left to Budget** | Monarch's "Ready to Assign" / unallocated funds | Monarch budget data |
 
 ### Account Types
 
@@ -40,9 +42,20 @@ Available to Stash = Cash
 | Crypto | No |
 | 401k/IRA | No |
 
-## Why `max(0, budget - spent)` for Categories
+## Why `max(0, remaining)` for Categories
 
-We use "unspent budget" rather than "total budget" to avoid double-counting with CC balances.
+We use the `remaining` field (which includes rollover balances) rather than `budget - spent` to account for multi-month savings within categories.
+
+### The `remaining` Field
+
+The `remaining` field from Monarch includes rollover:
+```
+remaining = previousMonthRollover + budgeted - spent
+```
+
+This correctly handles:
+- Categories where users accumulate funds over multiple months
+- Rollover balances that represent committed money
 
 ### The Problem with Total Budget
 
@@ -55,8 +68,8 @@ If we subtracted total budgets AND CC balances:
 
 ### The Solution
 
-Using `max(0, budget - spent)`:
-- Only counts the UNSPENT portion of the budget
+Using `max(0, remaining)`:
+- Only counts the UNSPENT portion of the budget (including rollover)
 - CC spending is captured in the CC balance
 - No double-counting
 
@@ -69,6 +82,15 @@ Using `max(0, budget - spent)`:
 | Spend full $500 on CC | $5,000 | $500 | $0 | $4,500 |
 | Overspend $600 on CC | $5,000 | $600 | $0 | $4,400 |
 | Pay $300 to CC | $4,700 | $300 | $0 | $4,400 |
+
+## Left to Budget (Ready to Assign)
+
+**Important:** Subtract Monarch's "Ready to Assign" (left to budget) amount. This represents money that hasn't been allocated to any category yet.
+
+Why subtract it:
+- Money in "Ready to Assign" is technically available but the user may intend to budget it elsewhere
+- Including it would show inflated available funds
+- Once the user assigns it to a category, it flows into "Unspent Expense Budgets"
 
 ## Monarch Goals vs Stash
 

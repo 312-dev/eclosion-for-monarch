@@ -85,17 +85,18 @@ describe('MyComponent', () => {
 
 The custom `render()` automatically wraps components with:
 - `QueryClientProvider` (React Query)
-- `BrowserRouter` (React Router)
+- `MemoryRouter` (React Router - uses `createMemoryRouter` with `RouterProvider`)
 - `ThemeProvider`
 - `ToastProvider`
 - `TooltipProvider`
+- `DistributionModeProvider`
 
 **Test setup (`test/setup.ts`):**
 
 - Mocks `localStorage` for isolated tests
 - Mocks `window.matchMedia` for responsive tests
-- Injects `__APP_VERSION__` global
-- Auto-cleans up after each test
+- Injects `__APP_VERSION__`, `__BUILD_TIME__`, and `__CHANGELOG__` globals
+- Auto-cleans up after each test (both `beforeEach` and `afterEach`)
 
 **Key files:**
 
@@ -345,11 +346,11 @@ The `round_monthly_rate()` helper uses standard rounding with a minimum of $1:
 - Reduces overbudgeting by ~27% compared to ceil() on small amounts
 
 ```typescript
-// Backend (Python) - services/occurrence_calculator.py
+// Backend (Python) - services/stash_service.py
 def round_monthly_rate(rate: float) -> int:
     if rate <= 0:
         return 0
-    return max(1, int(rate + 0.5))  # round-half-up, min $1
+    return max(1, round(rate))  # standard rounding, min $1
 
 // Frontend (TypeScript) - utils/calculations.ts
 export function roundMonthlyRate(rate: number): number {
@@ -592,23 +593,34 @@ setTimeout(() => {}, UI.ANIMATION.NORMAL);
 ```
 frontend/src/
 ├── api/           # API client and endpoints
+│   ├── core/      # Core API layer (fetchApi, auth, rate limiting)
+│   ├── demo/      # Demo mode implementations (modular files)
 │   ├── queries/   # React Query hooks and stores
 │   │   ├── keys.ts                    # Centralized query keys
 │   │   ├── categoryStoreQueries.ts    # Category metadata store
 │   │   ├── categoryGroupStoreQueries.ts # Category groups store
 │   │   ├── configStoreQueries.ts      # Config selectors
 │   │   ├── dashboardQueries.ts        # Dashboard data
-│   │   └── ...                        # Feature-specific queries
-│   ├── client.ts  # Production API client
-│   └── demoClient.ts # Demo mode API client
+│   │   ├── stashQueries.ts            # Stash feature queries
+│   │   └── ...                        # Feature-specific queries/mutations
+│   ├── client.ts     # Production API client
+│   ├── demoClient.ts # Demo mode API client (re-exports from demo/)
+│   └── demoData.ts   # Initial seed data for demo mode
 ├── components/    # React components
 │   ├── charts/    # Chart components (burndown, etc.)
 │   ├── icons/     # SVG icon components
+│   ├── import/    # Import functionality
 │   ├── layout/    # Layout components (Sidebar, AppShell)
+│   ├── login/     # Login-related components
 │   ├── marketing/ # Marketing/landing page components
+│   ├── notes/     # Notes feature components
 │   ├── recurring/ # Recurring expense components
+│   ├── rollup/    # Rollup functionality
+│   ├── settings/  # Settings components
+│   ├── stash/     # Stash feature components (largest subsystem)
 │   ├── tabs/      # Tab panel components
 │   ├── ui/        # Reusable UI components
+│   ├── uninstall/ # Uninstall functionality
 │   └── wizards/   # Setup wizard components
 ├── constants/     # Shared constants
 ├── context/       # React contexts
@@ -925,7 +937,7 @@ import { calculateItemDisplayStatus } from '../../hooks/useItemDisplayStatus';
 const newStatus = calculateItemDisplayStatus(updatedItem);
 ```
 
-The `calculateMonthlyTarget` function mirrors the backend Python logic in `services/occurrence_calculator.py`. If the backend logic changes, the frontend function must be updated to match.
+The `calculateMonthlyTarget` function mirrors the backend Python logic in `services/stash_service.py`. If the backend logic changes, the frontend function must be updated to match.
 
 ### Key Files
 
@@ -961,7 +973,7 @@ if (isBetaEnvironment()) {
 }
 
 // Get environment-appropriate URLs
-const docsUrl = getDocsBaseUrl();  // https://docs.eclosion.app or https://beta-docs.eclosion.app
+const docsUrl = getDocsBaseUrl();  // https://eclosion.app/docs or https://beta.eclosion.app/docs
 const siteUrl = getSiteBaseUrl();  // https://eclosion.app or https://beta.eclosion.app
 ```
 
