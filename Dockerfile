@@ -8,7 +8,7 @@ ARG RELEASE_CHANNEL=dev
 
 # Stage 1: Build frontend
 # Pin to digest for reproducible builds (Dependabot will update this)
-FROM node:24-alpine@sha256:931d7d57f8c1fd0e2179dbff7cc7da4c9dd100998bc2b32afc85142d8efbc213 AS frontend-builder
+FROM node:24-alpine@sha256:cd6fb7efa6490f039f3471a189214d5f548c11df1ff9e5b181aa49e22c14383e AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -27,7 +27,7 @@ RUN npm run build
 # Stage 2: Build Python dependencies
 # Use Chainguard's dev image which includes pip and build tools
 # Pin to digest for reproducible builds (Dependabot will update this)
-FROM cgr.dev/chainguard/python:latest-dev@sha256:601a4d2278e75935bf67650e9edc16365388039092549bda6c320ea556dbd9bc AS python-builder
+FROM cgr.dev/chainguard/python:latest-dev@sha256:acc653950174f718ca4f3fd65161cd4d8e963b708a351b5f32ff1e3b37ec6523 AS python-builder
 
 WORKDIR /app
 
@@ -46,7 +46,7 @@ RUN python -m venv /app/venv && \
 # Stage 3: Runtime with minimal Chainguard image
 # This image has 0-5 CVEs typically vs 800+ in python:3.12-slim
 # Pin to digest for reproducible builds (Dependabot will update this)
-FROM cgr.dev/chainguard/python:latest@sha256:678e879909418cd070927d0ba1ed018be98d43929db2457c37b9b9764703678c
+FROM cgr.dev/chainguard/python:latest@sha256:215e0f214dc7f761932129115eb7d0dc17a3045e4eab4ff4a562334df5d2b709
 
 # Re-declare build args for this stage
 ARG BUILD_TIME=unknown
