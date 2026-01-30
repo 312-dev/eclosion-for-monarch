@@ -1407,6 +1407,8 @@ class StashService:
                 # Image data
                 "image_storage_provider": goal["image_storage_provider"],
                 "image_storage_provider_id": goal["image_storage_provider_id"],
+                # Icon/emoji
+                "icon": goal.get("icon"),
             }
 
             enriched_goals.append(enriched_goal)

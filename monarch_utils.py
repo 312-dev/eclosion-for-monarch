@@ -582,6 +582,8 @@ async def get_savings_goals_full(mm) -> list[dict[str, Any]]:
                 # Image data
                 "image_storage_provider": goal.get("imageStorageProvider"),
                 "image_storage_provider_id": goal.get("imageStorageProviderId"),
+                # Icon/emoji (if set by user in Monarch)
+                "icon": goal.get("icon"),
             }
         )
 
