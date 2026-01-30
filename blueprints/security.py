@@ -1,7 +1,7 @@
 # Security blueprint
 # /security/* endpoints for security status and audit logs
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, request
 from markupsafe import escape as markupsafe_escape
 
 from core import api_handler, config
