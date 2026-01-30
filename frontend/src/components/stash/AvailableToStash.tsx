@@ -7,7 +7,7 @@
  * See .claude/rules/available-to-stash.md for calculation details.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Icons } from '../icons';
 import { useAvailableToStash } from '../../api/queries';
 import { HoverCard } from '../ui/HoverCard';
@@ -66,6 +66,42 @@ export function AvailableToStash({
     }
   }, [data]);
 
+  const breakdown = data?.breakdown;
+
+  // Calculate running totals for each line item (must be before early return)
+  const runningTotals = useMemo(() => {
+    if (!breakdown) return null;
+    const expectedIncome = includeExpectedIncome ? breakdown.expectedIncome : 0;
+    return {
+      afterExpectedIncome: expectedIncome,
+      afterCash: expectedIncome + breakdown.cashOnHand,
+      afterGoals: expectedIncome + breakdown.cashOnHand - breakdown.goalBalances,
+      afterCC:
+        expectedIncome + breakdown.cashOnHand - breakdown.goalBalances - breakdown.creditCardDebt,
+      afterUnspent:
+        expectedIncome +
+        breakdown.cashOnHand -
+        breakdown.goalBalances -
+        breakdown.creditCardDebt -
+        breakdown.unspentBudgets,
+      afterStash:
+        expectedIncome +
+        breakdown.cashOnHand -
+        breakdown.goalBalances -
+        breakdown.creditCardDebt -
+        breakdown.unspentBudgets -
+        breakdown.stashBalances,
+      afterBuffer:
+        expectedIncome +
+        breakdown.cashOnHand -
+        breakdown.goalBalances -
+        breakdown.creditCardDebt -
+        breakdown.unspentBudgets -
+        breakdown.stashBalances -
+        breakdown.bufferAmount,
+    };
+  }, [breakdown, includeExpectedIncome]);
+
   if (isLoading) {
     if (mode === 'compact') {
       return (
@@ -103,14 +139,13 @@ export function AvailableToStash({
     );
   }
 
-  const breakdown = data?.breakdown;
   const detailedBreakdown = data?.detailedBreakdown;
 
   const openModal = () => setIsModalOpen(true);
 
   const tooltipContent =
-    breakdown && detailedBreakdown ? (
-      <div className="text-sm space-y-2 min-w-56">
+    breakdown && detailedBreakdown && runningTotals ? (
+      <div className="text-sm space-y-2 min-w-72">
         <div
           className="font-medium border-b pb-1 mb-2"
           style={{ borderColor: 'var(--monarch-border)' }}
@@ -118,46 +153,56 @@ export function AvailableToStash({
           Cash to Stash
         </div>
         <div className="space-y-1">
+          {includeExpectedIncome && breakdown.expectedIncome > 0 && (
+            <BreakdownRow
+              label={BREAKDOWN_LABELS.expectedIncome}
+              amount={breakdown.expectedIncome}
+              isPositive
+              runningTotal={runningTotals.afterExpectedIncome}
+            />
+          )}
           <BreakdownRow
             label={BREAKDOWN_LABELS.cashOnHand}
             amount={breakdown.cashOnHand}
             isPositive
             items={detailedBreakdown.cashAccounts}
             onExpand={openModal}
+            runningTotal={runningTotals.afterCash}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.goalBalances}
             amount={breakdown.goalBalances}
             items={detailedBreakdown.goals}
             onExpand={openModal}
+            runningTotal={runningTotals.afterGoals}
           />
-          {includeExpectedIncome && breakdown.expectedIncome > 0 && (
-            <BreakdownRow
-              label={BREAKDOWN_LABELS.expectedIncome}
-              amount={breakdown.expectedIncome}
-              isPositive
-            />
-          )}
           <BreakdownRow
             label={BREAKDOWN_LABELS.creditCardDebt}
             amount={breakdown.creditCardDebt}
             items={detailedBreakdown.creditCards}
             onExpand={openModal}
+            runningTotal={runningTotals.afterCC}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.unspentBudgets}
             amount={breakdown.unspentBudgets}
             items={detailedBreakdown.unspentCategories}
             onExpand={openModal}
+            runningTotal={runningTotals.afterUnspent}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.stashBalances}
             amount={breakdown.stashBalances}
             items={detailedBreakdown.stashItems}
             onExpand={openModal}
+            runningTotal={runningTotals.afterStash}
           />
           {breakdown.bufferAmount > 0 && (
-            <BreakdownRow label={BREAKDOWN_LABELS.reservedBuffer} amount={breakdown.bufferAmount} />
+            <BreakdownRow
+              label={BREAKDOWN_LABELS.reservedBuffer}
+              amount={breakdown.bufferAmount}
+              runningTotal={runningTotals.afterBuffer}
+            />
           )}
         </div>
         <div

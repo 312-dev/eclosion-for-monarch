@@ -25,6 +25,7 @@ import type { MonarchGoal, MonarchGoalLayoutUpdate } from '../../types/monarchGo
 import { StashCard } from './StashCard';
 import { MonarchGoalCard } from './MonarchGoalCard';
 import { Icons } from '../icons';
+import { PlusIcon, type PlusIconHandle } from '../ui/plus';
 import { useIsInDistributionMode } from '../../context/DistributionModeContext';
 
 // Use RGL directly instead of WidthProvider to avoid ref conflicts
@@ -119,10 +120,14 @@ function AddStashCard({
   readonly onAdd: () => void;
   readonly isFirst: boolean;
 }) {
+  const iconRef = useRef<PlusIconHandle>(null);
+
   return (
     <button
       data-tour="stash-add-item"
       onClick={onAdd}
+      onMouseEnter={() => iconRef.current?.startAnimation()}
+      onMouseLeave={() => iconRef.current?.stopAnimation()}
       className="group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full w-full flex flex-col cursor-pointer"
       style={{
         backgroundColor: 'var(--monarch-bg-page)',
@@ -137,13 +142,13 @@ function AddStashCard({
         }}
       >
         <div
-          className="w-16 h-16 rounded-full flex items-center justify-center transition-all group-hover:scale-110"
+          className="w-16 h-16 rounded-full flex items-center justify-center transition-transform will-change-transform group-hover:scale-110"
           style={{
             backgroundColor: 'var(--monarch-orange)',
             opacity: 0.9,
           }}
         >
-          <Icons.Plus size={32} style={{ color: '#fff' }} />
+          <PlusIcon ref={iconRef} size={32} style={{ color: '#fff' }} />
         </div>
       </div>
 
@@ -588,22 +593,33 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
         containerPadding={[0, 0]}
         useCSSTransforms={true}
         compactType="vertical"
-        preventCollision={true}
+        preventCollision={false}
       >
         {sortedItems.map((item, index) => {
           const isGoal = 'type' in item && item.type === 'monarch_goal';
+          // Find the first Monarch goal for tour targeting
+          const firstGoalIndex = sortedItems.findIndex(
+            (i) => 'type' in i && i.type === 'monarch_goal'
+          );
+          const isFirstGoal = isGoal && index === firstGoalIndex;
+          // Find the first stash item for tour targeting
+          const firstStashIndex = sortedItems.findIndex(
+            (i) => !('type' in i) || i.type !== 'monarch_goal'
+          );
+          const isFirstStash = !isGoal && index === firstStashIndex;
 
           return (
             <div
               key={item.id}
               className="stash-grid-item relative"
-              data-tour={index === 0 && !isGoal ? 'stash-move-card' : undefined}
+              data-tour={isFirstStash ? 'stash-move-card' : undefined}
             >
               {isGoal ? (
                 <MonarchGoalCard
                   goal={item}
                   size={{ cols: item.col_span ?? 1, rows: item.row_span ?? 1 }}
                   showTypeBadge={showTypeBadges}
+                  isFirstGoal={isFirstGoal}
                 />
               ) : (
                 <StashCard
@@ -612,12 +628,12 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
                   onAllocate={onAllocate}
                   isAllocating={allocatingItemId === item.id}
                   size={{ cols: item.col_span ?? 1, rows: item.row_span ?? 1 }}
-                  isFirstCard={index === 0}
+                  isFirstCard={isFirstStash}
                   showTypeBadge={showTypeBadges}
                   {...(onViewReport && { onViewReport })}
                 />
               )}
-              {index === 0 && !isGoal && (
+              {isFirstStash && (
                 <div
                   data-tour="stash-resize-card"
                   className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none"

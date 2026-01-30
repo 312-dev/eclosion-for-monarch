@@ -16,6 +16,8 @@ interface BreakdownRowProps {
   readonly isPositive?: boolean;
   readonly items?: BreakdownLineItem[];
   readonly onExpand?: () => void;
+  /** Running total after this line item (shown in muted text) */
+  readonly runningTotal?: number;
 }
 
 export function BreakdownRow({
@@ -24,6 +26,7 @@ export function BreakdownRow({
   isPositive = false,
   items,
   onExpand,
+  runningTotal,
 }: BreakdownRowProps) {
   const color = isPositive ? 'var(--monarch-green)' : 'var(--monarch-red)';
   const sign = isPositive ? '+' : '-';
@@ -45,16 +48,7 @@ export function BreakdownRow({
     </span>
   );
 
-  if (!hasItems) {
-    return (
-      <div className="flex justify-between">
-        <span style={{ color: 'var(--monarch-text-muted)' }}>{label}</span>
-        {amountDisplay}
-      </div>
-    );
-  }
-
-  const nestedTooltipContent = (
+  const nestedTooltipContent = hasItems ? (
     <div className="text-xs max-w-64">
       <div
         className="flex items-center justify-between font-medium pb-1 mb-1 border-b"
@@ -92,14 +86,30 @@ export function BreakdownRow({
         ))}
       </div>
     </div>
-  );
+  ) : null;
 
   return (
-    <div className="flex justify-between">
-      <span style={{ color: 'var(--monarch-text-muted)' }}>{label}</span>
-      <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
-        {amountDisplay}
-      </HoverCard>
+    <div className="flex justify-between items-center gap-2">
+      <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+        {label}
+      </span>
+      <span className="tabular-nums text-right" style={{ minWidth: '4.5rem' }}>
+        {hasItems ? (
+          <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
+            {amountDisplay}
+          </HoverCard>
+        ) : (
+          amountDisplay
+        )}
+      </span>
+      {runningTotal !== undefined && (
+        <span
+          className="tabular-nums text-right"
+          style={{ color: 'var(--monarch-text-muted)', minWidth: '4.5rem', opacity: 0.7 }}
+        >
+          {formatAvailableAmount(runningTotal)}
+        </span>
+      )}
     </div>
   );
 }

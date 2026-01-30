@@ -1,19 +1,12 @@
 /**
  * MonarchGoalProgressBar - Progress bar for Monarch savings goals
  *
- * Displays time-based progress with a vertical marker showing expected progress.
- * This is DISTINCT from SavingsProgressBar used by Stash items.
- *
- * Key differences:
- * - Uses time-based progress (not budget vs target)
- * - Shows vertical marker for expected progress based on time elapsed
- * - Different color scheme matching Monarch's goal status
+ * Wraps SavingsProgressBar with Monarch goal-specific color mapping.
  */
 
 import { memo } from 'react';
 import type { MonarchGoal } from '../../types/monarchGoal';
-import { formatCurrency } from '../../utils';
-import { Tooltip } from '../ui/Tooltip';
+import { SavingsProgressBar } from '../shared/SavingsProgressBar';
 
 interface MonarchGoalProgressBarProps {
   /** Current balance toward goal (available after spending) */
@@ -48,179 +41,26 @@ export const MonarchGoalProgressBar = memo(function MonarchGoalProgressBar({
   const hasTarget = targetAmount !== null && targetAmount > 0;
   const actualProgress = hasTarget ? Math.min(progress, 100) : 100;
   const progressColor = STATUS_COLORS[status];
-  // "To go" is based on net contribution, not current balance
-  // This matches the "saved" display (netContribution) for consistency
-  const remaining = hasTarget ? Math.max(0, targetAmount - netContribution) : 0;
+
+  // Calculate spending (difference between contributions and current balance)
+  const spentAmount = Math.max(0, netContribution - currentBalance);
+  const hasSpending = spentAmount > 0;
+
+  // When no target, use netContribution as target so "to go" shows $0
+  const displayTarget = hasTarget ? targetAmount : netContribution;
 
   return (
-    <div>
-      {/* Progress bar */}
-      <div
-        className="w-full rounded-full h-1.5"
-        style={{ backgroundColor: 'var(--monarch-bg-hover)' }}
-      >
-        <div
-          className="h-full rounded-full transition-all"
-          style={{
-            width: `${actualProgress}%`,
-            backgroundColor: progressColor,
-          }}
-        />
-      </div>
-
-      {/* Progress text */}
-      <div className="text-xs mt-0.5 flex justify-between" style={{ color: 'var(--monarch-text-muted)' }}>
-        <div>
-          {/* Show "available" and "saved" with tooltips when they differ, otherwise just show plain "saved" */}
-          {currentBalance === netContribution ? (
-            // No spending or credits - just show plain "saved"
-            <span className="text-monarch-text-dark">
-              {formatCurrency(netContribution, { maximumFractionDigits: 0 })} saved
-            </span>
-          ) : (
-            // Has spending or credits - show tooltips
-            <>
-              {/* Available tooltip */}
-              <Tooltip
-                content={
-                  <div className="text-sm space-y-2 min-w-56">
-                    <div
-                      className="font-medium border-b pb-1 mb-2"
-                      style={{ borderColor: 'var(--monarch-border)' }}
-                    >
-                      Available Breakdown
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span style={{ color: 'var(--monarch-text-muted)' }}>Contributions</span>
-                        <span style={{ color: 'var(--monarch-green)' }}>
-                          +{formatCurrency(netContribution, { maximumFractionDigits: 0 })}
-                        </span>
-                      </div>
-                      {netContribution > currentBalance ? (
-                        // Spending occurred
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--monarch-text-muted)' }}>Spent</span>
-                          <span style={{ color: 'var(--monarch-red)' }}>
-                            -{formatCurrency(netContribution - currentBalance, { maximumFractionDigits: 0 })}
-                          </span>
-                        </div>
-                      ) : (
-                        // Credits/refunds occurred
-                        <div className="flex justify-between">
-                          <span style={{ color: 'var(--monarch-text-muted)' }}>Credits</span>
-                          <span style={{ color: 'var(--monarch-green)' }}>
-                            +{formatCurrency(currentBalance - netContribution, { maximumFractionDigits: 0 })}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="flex justify-between font-medium pt-2 border-t"
-                      style={{ borderColor: 'var(--monarch-border)' }}
-                    >
-                      <span>Available</span>
-                      <span style={{ color: 'var(--monarch-text-dark)' }}>
-                        {formatCurrency(currentBalance, { maximumFractionDigits: 0 })}
-                      </span>
-                    </div>
-                  </div>
-                }
-              >
-                <span
-                  className="text-monarch-text-dark cursor-help"
-                  style={{ borderBottom: '1px dotted var(--monarch-text-muted)' }}
-                >
-                  {formatCurrency(currentBalance, { maximumFractionDigits: 0 })} available
-                </span>
-              </Tooltip>
-              <span className="text-monarch-text-dark">, </span>
-
-              {/* Saved tooltip (only when there's spending/credits) */}
-              <Tooltip
-                content={
-                  <div className="text-sm space-y-2 min-w-56">
-                    <div
-                      className="font-medium border-b pb-1 mb-2"
-                      style={{ borderColor: 'var(--monarch-border)' }}
-                    >
-                      Balance Breakdown
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between">
-                        <span style={{ color: 'var(--monarch-text-muted)' }}>Total contributed</span>
-                        <span style={{ color: 'var(--monarch-green)' }}>
-                          +{formatCurrency(netContribution, { maximumFractionDigits: 0 })}
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="flex justify-between font-medium pt-2 border-t"
-                      style={{ borderColor: 'var(--monarch-border)' }}
-                    >
-                      <span>Total Saved</span>
-                      <span style={{ color: 'var(--monarch-text-dark)' }}>
-                        {formatCurrency(netContribution, { maximumFractionDigits: 0 })}
-                      </span>
-                    </div>
-                  </div>
-                }
-              >
-                <span
-                  className="text-monarch-text-dark cursor-help"
-                  style={{ borderBottom: '1px dotted var(--monarch-text-muted)' }}
-                >
-                  {formatCurrency(netContribution, { maximumFractionDigits: 0 })} saved
-                </span>
-              </Tooltip>
-            </>
-          )}
-        </div>
-        {hasTarget && (
-          <Tooltip
-            content={
-              <div className="text-sm space-y-2 min-w-56">
-                <div
-                  className="font-medium border-b pb-1 mb-2"
-                  style={{ borderColor: 'var(--monarch-border)' }}
-                >
-                  Goal Progress
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span style={{ color: 'var(--monarch-text-muted)' }}>Target</span>
-                    <span style={{ color: 'var(--monarch-text-dark)' }}>
-                      {formatCurrency(targetAmount, { maximumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: 'var(--monarch-text-muted)' }}>Saved</span>
-                    <span style={{ color: 'var(--monarch-green)' }}>
-                      {formatCurrency(netContribution, { maximumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className="flex justify-between font-medium pt-2 border-t"
-                  style={{ borderColor: 'var(--monarch-border)' }}
-                >
-                  <span>Remaining</span>
-                  <span style={{ color: 'var(--monarch-text-dark)' }}>
-                    {formatCurrency(remaining, { maximumFractionDigits: 0 })}
-                  </span>
-                </div>
-              </div>
-            }
-          >
-            <span
-              className="cursor-help"
-              style={{ borderBottom: '1px dotted var(--monarch-text-muted)' }}
-            >
-              {formatCurrency(remaining, { maximumFractionDigits: 0 })} to go
-            </span>
-          </Tooltip>
-        )}
-      </div>
-    </div>
+    <SavingsProgressBar
+      totalSaved={netContribution}
+      targetAmount={displayTarget}
+      progressPercent={actualProgress}
+      progressColor={progressColor}
+      savedLabel="saved"
+      // When there's spending, show available breakdown
+      {...(hasSpending && {
+        availableToSpend: currentBalance,
+        budgetedThisMonth: netContribution,
+      })}
+    />
   );
 });

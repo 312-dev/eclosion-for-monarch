@@ -24,45 +24,15 @@ import {
 } from '../../api/queries';
 import { HoverCard } from '../ui/HoverCard';
 import { BreakdownDetailModal } from './BreakdownDetailModal';
-import {
-  BreakdownRow,
-  ExpectedIncomeRow,
-  LeftToBudgetRow,
-  BREAKDOWN_LABELS,
-} from './BreakdownComponents';
+import { BreakdownRow, ExpectedIncomeRow, BREAKDOWN_LABELS } from './BreakdownComponents';
 import { BufferInputRow } from './BufferInputRow';
 import { DistributeButton, HypothesizeButton } from './DistributeButton';
 import { useToast } from '../../context/ToastContext';
 import { useDistributionMode } from '../../context/DistributionModeContext';
 import { useAnimatedValue } from '../../hooks';
-import { UI, STORAGE_KEYS } from '../../constants';
+import { UI } from '../../constants';
 import { formatCurrency } from '../../utils/formatters';
 import type { StashItem } from '../../types';
-
-/** Position options for the floating bar */
-type BarPosition = 'left' | 'center' | 'right';
-
-/** Load saved position from localStorage */
-function loadSavedPosition(): BarPosition {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.FUNDS_BAR_POSITION);
-    if (saved === 'left' || saved === 'center' || saved === 'right') {
-      return saved;
-    }
-  } catch {
-    // localStorage may be unavailable
-  }
-  return 'center';
-}
-
-/** Save position to localStorage */
-function savePosition(position: BarPosition): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.FUNDS_BAR_POSITION, position);
-  } catch {
-    // localStorage may be unavailable
-  }
-}
 
 /** Currency formatting options for whole dollars */
 const currencyOpts = { maximumFractionDigits: 0 };
@@ -92,13 +62,6 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
   const prevValueRef = useRef<number | null>(null);
-
-  // Position state for snap-to-corner behavior
-  const [position, setPosition] = useState<BarPosition>(loadSavedPosition);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState<{ x: number; width: number } | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef<{ grabOffsetX: number } | null>(null);
 
   // Get config for settings and mutation for saving
   // Read directly from query to ensure immediate updates after mutations
@@ -135,6 +98,10 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
   const displayedAvailable = availableBeforeBuffer - bufferAmount;
   const isPositive = displayedAvailable >= 0;
   const displayedStatusColor = isPositive ? 'var(--monarch-success)' : 'var(--monarch-error)';
+  // Icon color uses theme-aware variables for better contrast in light mode
+  const displayedIconColor = isPositive
+    ? 'var(--status-icon-positive)'
+    : 'var(--status-icon-negative)';
   const displayedFormattedAmount = formatCurrency(displayedAvailable, currencyOpts);
 
   // State for hypothesize mode input
@@ -247,70 +214,6 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
 
   const openModal = () => setIsModalOpen(true);
 
-  // Calculate position for snap based on drag location
-  const calculateSnapPosition = useCallback((mouseX: number): BarPosition => {
-    // Get content area bounds (right of sidebar)
-    const contentLeft = sidebarWidth;
-    const contentRight = window.innerWidth;
-    const contentWidth = contentRight - contentLeft;
-
-    // Calculate relative position within content area (0-1)
-    const relativeX = (mouseX - contentLeft) / contentWidth;
-
-    // Snap thresholds: left third, middle third, right third
-    if (relativeX < 0.33) return 'left';
-    if (relativeX > 0.67) return 'right';
-    return 'center';
-  }, []);
-
-  // Handle drag start - track where user grabbed relative to card
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const card = cardRef.current;
-    if (!card) return;
-
-    const rect = card.getBoundingClientRect();
-    // Store the offset from the card's left edge to where the user clicked
-    const grabOffsetX = e.clientX - rect.left;
-
-    dragStartRef.current = { grabOffsetX };
-    setIsDragging(true);
-    // Store the card's current position and width so it doesn't shrink during drag
-    setDragOffset({ x: rect.left, width: rect.width });
-  }, []);
-
-  // Handle drag move
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragStartRef.current || !dragOffset) return;
-
-      const { grabOffsetX } = dragStartRef.current;
-      // Position card so the grab point stays under the mouse
-      const newLeft = e.clientX - grabOffsetX;
-      setDragOffset({ x: newLeft, width: dragOffset.width });
-    };
-
-    const handleMouseUp = (e: MouseEvent) => {
-      const newPosition = calculateSnapPosition(e.clientX);
-      setPosition(newPosition);
-      savePosition(newPosition);
-      setIsDragging(false);
-      setDragOffset(null);
-      dragStartRef.current = null;
-    };
-
-    globalThis.addEventListener('mousemove', handleMouseMove);
-    globalThis.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      globalThis.removeEventListener('mousemove', handleMouseMove);
-      globalThis.removeEventListener('mouseup', handleMouseUp);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- dragOffset is intentionally read from closure during drag
-  }, [isDragging, calculateSnapPosition]);
-
   // Calculate LTB breakdown values using the leftToBudget PROP (from dashboard) as the source of truth
   // The breakdown.leftToBudget comes from a separate query and may be out of sync
   const budgetedIncome = detailedBreakdown?.leftToBudgetDetail[0]?.amount ?? 0;
@@ -319,9 +222,36 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
   const calculatedSavingsAndOther = budgetedIncome - budgetedCategories - leftToBudget;
   const showSavingsLine = Math.abs(Math.round(calculatedSavingsAndOther)) >= 1;
 
+  // Calculate running totals for breakdown display
+  const runningTotals = breakdown
+    ? {
+        afterExpectedIncome: breakdown.expectedIncome,
+        afterCash: breakdown.expectedIncome + breakdown.cashOnHand,
+        afterGoals: breakdown.expectedIncome + breakdown.cashOnHand - breakdown.goalBalances,
+        afterCC:
+          breakdown.expectedIncome +
+          breakdown.cashOnHand -
+          breakdown.goalBalances -
+          breakdown.creditCardDebt,
+        afterUnspent:
+          breakdown.expectedIncome +
+          breakdown.cashOnHand -
+          breakdown.goalBalances -
+          breakdown.creditCardDebt -
+          breakdown.unspentBudgets,
+        afterStash:
+          breakdown.expectedIncome +
+          breakdown.cashOnHand -
+          breakdown.goalBalances -
+          breakdown.creditCardDebt -
+          breakdown.unspentBudgets -
+          breakdown.stashBalances,
+      }
+    : null;
+
   const tooltipContent =
-    breakdown && detailedBreakdown ? (
-      <div className="text-sm space-y-2 min-w-56">
+    breakdown && detailedBreakdown && runningTotals ? (
+      <div className="text-sm space-y-2 min-w-72">
         <div
           className="font-medium border-b pb-1 mb-2"
           style={{ borderColor: 'var(--monarch-border)' }}
@@ -333,6 +263,7 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
             amount={rawExpectedIncome}
             isEnabled={includeExpectedIncome}
             onToggle={handleToggleExpectedIncome}
+            runningTotal={runningTotals.afterExpectedIncome}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.cashOnHand}
@@ -340,58 +271,64 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
             isPositive
             items={detailedBreakdown.cashAccounts}
             onExpand={openModal}
+            runningTotal={runningTotals.afterCash}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.goalBalances}
             amount={breakdown.goalBalances}
             items={detailedBreakdown.goals}
             onExpand={openModal}
+            runningTotal={runningTotals.afterGoals}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.creditCardDebt}
             amount={breakdown.creditCardDebt}
             items={detailedBreakdown.creditCards}
             onExpand={openModal}
+            runningTotal={runningTotals.afterCC}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.unspentBudgets}
             amount={breakdown.unspentBudgets}
             items={detailedBreakdown.unspentCategories}
             onExpand={openModal}
+            runningTotal={runningTotals.afterUnspent}
           />
           <BreakdownRow
             label={BREAKDOWN_LABELS.stashBalances}
             amount={breakdown.stashBalances}
             items={detailedBreakdown.stashItems}
             onExpand={openModal}
-          />
-          <LeftToBudgetRow
-            label={BREAKDOWN_LABELS.leftToBudget}
-            amount={leftToBudget}
-            income={budgetedIncome}
-            totalBudgeted={budgetedCategories}
-            {...(showSavingsLine && { savingsAndOther: calculatedSavingsAndOther })}
+            runningTotal={runningTotals.afterStash}
           />
           <BufferInputRow
             availableBeforeBuffer={availableBeforeBuffer}
             savedBuffer={bufferAmount}
             onSave={saveBuffer}
+            runningTotal={displayedAvailable}
           />
         </div>
         <div
           className="flex justify-between font-medium pt-2 border-t"
           style={{ borderColor: 'var(--monarch-border)' }}
         >
-          <span>Available</span>
+          <span>Cash to Stash</span>
           <span style={{ color: displayedStatusColor }}>{displayedFormattedAmount}</span>
         </div>
       </div>
     ) : null;
 
+  // LTB running totals
+  const ltbRunningTotals = {
+    afterIncome: budgetedIncome,
+    afterCategories: budgetedIncome - budgetedCategories,
+    afterSavings: budgetedIncome - budgetedCategories - calculatedSavingsAndOther,
+  };
+
   // LTB tooltip for the right side of the floating bar (uses same calculated values as above)
   const ltbTooltipContent =
     breakdown && detailedBreakdown ? (
-      <div className="text-sm space-y-2 min-w-48">
+      <div className="text-sm space-y-2 min-w-72">
         <div
           className="font-medium border-b pb-1 mb-2"
           style={{ borderColor: 'var(--monarch-border)' }}
@@ -399,23 +336,56 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
           Left to Budget
         </div>
         <div className="space-y-1">
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted income</span>
-            <span style={{ color: 'var(--monarch-green)' }}>
+          <div className="flex justify-between items-center gap-2">
+            <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+              Budgeted income
+            </span>
+            <span
+              className="tabular-nums text-right"
+              style={{ color: 'var(--monarch-green)', minWidth: '4.5rem' }}
+            >
               +{formatCurrency(budgetedIncome, currencyOpts)}
             </span>
+            <span
+              className="tabular-nums text-right"
+              style={{ color: 'var(--monarch-text-muted)', minWidth: '4.5rem', opacity: 0.7 }}
+            >
+              {formatCurrency(ltbRunningTotals.afterIncome, currencyOpts)}
+            </span>
           </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted categories</span>
-            <span style={{ color: 'var(--monarch-red)' }}>
+          <div className="flex justify-between items-center gap-2">
+            <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+              Budgeted categories
+            </span>
+            <span
+              className="tabular-nums text-right"
+              style={{ color: 'var(--monarch-red)', minWidth: '4.5rem' }}
+            >
               -{formatCurrency(budgetedCategories, currencyOpts)}
+            </span>
+            <span
+              className="tabular-nums text-right"
+              style={{ color: 'var(--monarch-text-muted)', minWidth: '4.5rem', opacity: 0.7 }}
+            >
+              {formatCurrency(ltbRunningTotals.afterCategories, currencyOpts)}
             </span>
           </div>
           {showSavingsLine && (
-            <div className="flex justify-between">
-              <span style={{ color: 'var(--monarch-text-muted)' }}>Savings & other</span>
-              <span style={{ color: 'var(--monarch-red)' }}>
+            <div className="flex justify-between items-center gap-2">
+              <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+                Savings & other
+              </span>
+              <span
+                className="tabular-nums text-right"
+                style={{ color: 'var(--monarch-red)', minWidth: '4.5rem' }}
+              >
                 -{formatCurrency(calculatedSavingsAndOther, currencyOpts)}
+              </span>
+              <span
+                className="tabular-nums text-right"
+                style={{ color: 'var(--monarch-text-muted)', minWidth: '4.5rem', opacity: 0.7 }}
+              >
+                {formatCurrency(ltbRunningTotals.afterSavings, currencyOpts)}
               </span>
             </div>
           )}
@@ -440,103 +410,28 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
   const cardShadow =
     '0 -12px 48px rgba(0, 0, 0, 0.25), 0 -4px 16px rgba(0, 0, 0, 0.15), 0 0 80px rgba(0, 0, 0, 0.1)';
 
-  // Sidebar width for centering calculation
-  const sidebarWidth = 220;
-
-  // Calculate positioning styles for the container
-  const getContainerStyles = useCallback((): React.CSSProperties => {
-    // Snap positions with smooth transition
-    const baseStyles: React.CSSProperties = {
-      left: sidebarWidth,
-      transition: isDragging ? 'none' : 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    };
-
-    switch (position) {
-      case 'left':
-        return { ...baseStyles, justifyContent: 'flex-start', paddingLeft: '2rem' };
-      case 'right':
-        return { ...baseStyles, justifyContent: 'flex-end', paddingRight: '2rem' };
-      case 'center':
-      default:
-        return { ...baseStyles, justifyContent: 'center' };
-    }
-  }, [position, isDragging]);
-
-  // Calculate styles for the card (applies drag offset when dragging)
-  const getCardStyles = useCallback((): React.CSSProperties => {
-    const baseStyles: React.CSSProperties = {
-      backgroundColor: 'var(--monarch-bg-card)',
-      border: '1px solid var(--monarch-border)',
-      boxShadow: cardShadow,
-    };
-
-    if (isDragging && dragOffset) {
-      return {
-        ...baseStyles,
-        position: 'fixed',
-        left: dragOffset.x,
-        bottom: 72,
-        width: dragOffset.width,
-        transition: 'none',
-      };
-    }
-
-    return {
-      ...baseStyles,
-      transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-    };
-  }, [isDragging, dragOffset, cardShadow]);
-
   const floatingBar = createPortal(
     <>
-      {/* Vignette gradient - full width, behind footer (z-10) */}
+      {/* Vignette gradient - offset by sidebar on desktop, behind footer (z-10) */}
       <div
-        className="fixed bottom-0 left-0 right-0 h-64 z-10 pointer-events-none"
+        className="fixed bottom-0 left-0 md:left-55 right-0 h-64 z-10 pointer-events-none"
         style={{
           background:
             'linear-gradient(to top, var(--monarch-bg-page) 0%, var(--monarch-bg-page) 40%, transparent 100%)',
         }}
       />
-      {/* Fixed floating card - positioned based on user preference */}
-      <div
-        className="fixed bottom-18 right-0 z-40 flex pointer-events-none"
-        style={getContainerStyles()}
-      >
+      {/* Fixed floating card - always centered */}
+      {/* Desktop: offset by sidebar width (220px), bottom-18 for footer */}
+      {/* Mobile: full width centered, bottom-20 for mobile nav */}
+      <div className="fixed left-0 right-0 md:left-55 bottom-20 md:bottom-18 z-40 flex justify-center pointer-events-none">
         <div
-          ref={cardRef}
           className={`group pointer-events-auto rounded-xl overflow-hidden relative ${shouldShake ? 'animate-error-shake' : ''}`}
-          style={getCardStyles()}
+          style={{
+            backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
+            boxShadow: cardShadow,
+          }}
         >
-          {/* Drag handle - top edge */}
-          <div className="flex justify-center py-1">
-            <button
-              type="button"
-              className="flex gap-0.5 px-2 py-0.5 cursor-grab active:cursor-grabbing rounded-md transition-opacity opacity-40 hover:opacity-80 focus-visible:opacity-80 focus-visible:ring-2 focus-visible:ring-(--monarch-orange) outline-none"
-              onMouseDown={handleDragStart}
-              aria-label={`Reposition widget. Currently ${position}. Use arrow keys to move.`}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowLeft') {
-                  e.preventDefault();
-                  const newPos = position === 'right' ? 'center' : 'left';
-                  setPosition(newPos);
-                  savePosition(newPos);
-                } else if (e.key === 'ArrowRight') {
-                  e.preventDefault();
-                  const newPos = position === 'left' ? 'center' : 'right';
-                  setPosition(newPos);
-                  savePosition(newPos);
-                }
-              }}
-            >
-              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-              <div className="w-1 h-1 rounded-full bg-(--monarch-text-muted)" />
-            </button>
-          </div>
-
           {/* Horizontal layout: Left info | Center buttons | Right info */}
           <div className="flex items-stretch justify-center relative">
             {/* External link to Monarch - top right of content area, shows on hover */}
@@ -571,14 +466,15 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                 Cash to Stash
               </span>
               <div className="flex items-center gap-1.5">
-                <Icons.Landmark
-                  size={16}
-                  style={{
-                    color: isLoading ? 'var(--monarch-text-muted)' : displayedStatusColor,
-                    opacity: 0.8,
-                  }}
-                  aria-hidden="true"
-                />
+                {(isLoading || isHypothesizeMode) && (
+                  <Icons.MoneyBills
+                    size={16}
+                    style={{
+                      color: isLoading ? 'var(--monarch-text-muted)' : displayedIconColor,
+                    }}
+                    aria-hidden="true"
+                  />
+                )}
                 {isLoading && (
                   <div
                     className="h-6 w-16 rounded animate-pulse"
@@ -589,13 +485,17 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                   <div
                     className={`relative flex items-center px-2 py-0.5 rounded-lg transition-all duration-200 ${isInputFocused ? 'ring-2 ring-purple-400' : ''}`}
                     style={{
-                      backgroundColor: 'rgba(147, 51, 234, 0.15)',
-                      border: '1px solid rgba(147, 51, 234, 0.5)',
+                      backgroundColor: 'var(--hypothesize-input-bg)',
+                      border: '1px solid var(--hypothesize-input-border)',
                     }}
                   >
                     <span
                       className="text-base font-bold"
-                      style={{ color: isDisplayNegative ? '#e11d48' : 'white' }}
+                      style={{
+                        color: isDisplayNegative
+                          ? 'var(--monarch-error)'
+                          : 'var(--hypothesize-input-text)',
+                      }}
                     >
                       {isDisplayNegative ? '-$' : '$'}
                     </span>
@@ -624,7 +524,9 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                       className="text-base font-bold tabular-nums bg-transparent outline-none text-right"
                       style={{
                         width: Math.max(inputWidth, 24),
-                        color: isDisplayNegative ? '#e11d48' : 'white',
+                        color: isDisplayNegative
+                          ? 'var(--monarch-error)'
+                          : 'var(--hypothesize-input-text)',
                       }}
                       aria-label="Custom available funds amount"
                     />
@@ -632,26 +534,37 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                 )}
                 {!isLoading && !isHypothesizeMode && (
                   <HoverCard content={tooltipContent} side="top" align="center" closeDelay={400}>
-                    {mode === 'distribute' ? (
-                      // Distribute mode: show animated countdown of remaining funds
-                      <span
-                        className="text-lg font-bold tabular-nums"
+                    <div className="flex items-center gap-1.5 cursor-help">
+                      <Icons.MoneyBills
+                        size={16}
                         style={{
-                          color:
-                            remainingFunds < 0 ? 'var(--monarch-error)' : 'var(--monarch-success)',
+                          color: displayedIconColor,
                         }}
-                      >
-                        {formatCurrency(animatedRemainingFunds, currencyOpts)}
-                      </span>
-                    ) : (
-                      // Normal mode: show available amount
-                      <span
-                        className="text-lg font-bold tabular-nums cursor-help"
-                        style={{ color: displayedStatusColor }}
-                      >
-                        {displayedFormattedAmount}
-                      </span>
-                    )}
+                        aria-hidden="true"
+                      />
+                      {mode === 'distribute' ? (
+                        // Distribute mode: show animated countdown of remaining funds
+                        <span
+                          className="text-lg font-bold tabular-nums"
+                          style={{
+                            color:
+                              remainingFunds < 0
+                                ? 'var(--monarch-error)'
+                                : 'var(--monarch-success)',
+                          }}
+                        >
+                          {formatCurrency(animatedRemainingFunds, currencyOpts)}
+                        </span>
+                      ) : (
+                        // Normal mode: show available amount
+                        <span
+                          className="text-lg font-bold tabular-nums"
+                          style={{ color: displayedStatusColor }}
+                        >
+                          {displayedFormattedAmount}
+                        </span>
+                      )}
+                    </div>
                   </HoverCard>
                 )}
               </div>
@@ -667,13 +580,7 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                   <Icons.Split size={16} style={{ opacity: 0.5 }} />
                 </div>
               ) : (
-                <DistributeButton
-                  availableAmount={displayedAvailable}
-                  items={items}
-                  compact
-                  iconOnly
-                  groupPosition="top"
-                />
+                <DistributeButton items={items} compact iconOnly groupPosition="top" />
               )}
               <HypothesizeButton items={items} compact iconOnly groupPosition="bottom" />
             </div>
@@ -687,6 +594,10 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
               const ltbStatusColor = ltbIsPositive
                 ? 'var(--monarch-success)'
                 : 'var(--monarch-error)';
+              // Icon color uses theme-aware variables for better contrast in light mode
+              const ltbIconColor = ltbIsPositive
+                ? 'var(--status-icon-positive)'
+                : 'var(--status-icon-negative)';
 
               const ltbBgColor = (() => {
                 if (isLoading) return 'var(--monarch-bg-card)';
@@ -726,19 +637,23 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                     <div className="flex items-center gap-1.5">
                       <Icons.CircleFadingPlus
                         size={16}
-                        style={{ color: ltbStatusColor, opacity: 0.8 }}
+                        style={{ color: ltbIconColor }}
                         aria-hidden="true"
                       />
                       <div
                         className={`relative flex items-center px-2 py-0.5 rounded-lg transition-all duration-200 ${isLtbInputFocused ? 'ring-2 ring-purple-400' : ''}`}
                         style={{
-                          backgroundColor: 'rgba(147, 51, 234, 0.15)',
-                          border: '1px solid rgba(147, 51, 234, 0.5)',
+                          backgroundColor: 'var(--hypothesize-input-bg)',
+                          border: '1px solid var(--hypothesize-input-border)',
                         }}
                       >
                         <span
                           className="text-base font-bold"
-                          style={{ color: ltbIsNegative ? '#e11d48' : 'white' }}
+                          style={{
+                            color: ltbIsNegative
+                              ? 'var(--monarch-error)'
+                              : 'var(--hypothesize-input-text)',
+                          }}
                         >
                           {ltbIsNegative ? '-$' : '$'}
                         </span>
@@ -767,7 +682,9 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                           className="text-base font-bold tabular-nums bg-transparent outline-none text-right"
                           style={{
                             width: Math.max(ltbInputWidth, 24),
-                            color: ltbIsNegative ? '#e11d48' : 'white',
+                            color: ltbIsNegative
+                              ? 'var(--monarch-error)'
+                              : 'var(--hypothesize-input-text)',
                           }}
                           aria-label="Custom left to budget amount"
                         />
@@ -784,7 +701,7 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
                       <div className="flex items-center gap-1.5 cursor-help">
                         <Icons.CircleFadingPlus
                           size={16}
-                          style={{ color: ltbStatusColor, opacity: 0.8 }}
+                          style={{ color: ltbIconColor }}
                           aria-hidden="true"
                         />
                         <span
@@ -800,6 +717,119 @@ export function AvailableFundsBar({ leftToBudget, items }: Readonly<AvailableFun
               );
             })()}
           </div>
+          {/* Footer: Combined total - subtle darkened background */}
+          {!isLoading &&
+            (() => {
+              const combinedTotal = remainingFunds + remainingLtb;
+              const isPositiveTotal = combinedTotal >= 0;
+              const totalAvailableTooltip = (
+                <div className="text-sm space-y-2 min-w-72">
+                  <div
+                    className="font-medium border-b pb-1 mb-2"
+                    style={{ borderColor: 'var(--monarch-border)' }}
+                  >
+                    Total Available
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+                        Cash to Stash
+                      </span>
+                      <span
+                        className="tabular-nums text-right"
+                        style={{
+                          color:
+                            remainingFunds >= 0 ? 'var(--monarch-green)' : 'var(--monarch-red)',
+                          minWidth: '4.5rem',
+                        }}
+                      >
+                        {remainingFunds >= 0 ? '+' : ''}
+                        {formatCurrency(remainingFunds, currencyOpts)}
+                      </span>
+                      <span
+                        className="tabular-nums text-right"
+                        style={{
+                          color: 'var(--monarch-text-muted)',
+                          minWidth: '4.5rem',
+                          opacity: 0.7,
+                        }}
+                      >
+                        {formatCurrency(remainingFunds, currencyOpts)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+                        Left to Budget
+                      </span>
+                      <span
+                        className="tabular-nums text-right"
+                        style={{
+                          color: remainingLtb >= 0 ? 'var(--monarch-green)' : 'var(--monarch-red)',
+                          minWidth: '4.5rem',
+                        }}
+                      >
+                        {remainingLtb >= 0 ? '+' : ''}
+                        {formatCurrency(remainingLtb, currencyOpts)}
+                      </span>
+                      <span
+                        className="tabular-nums text-right"
+                        style={{
+                          color: 'var(--monarch-text-muted)',
+                          minWidth: '4.5rem',
+                          opacity: 0.7,
+                        }}
+                      >
+                        {formatCurrency(combinedTotal, currencyOpts)}
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    className="flex justify-between font-medium pt-2 border-t"
+                    style={{ borderColor: 'var(--monarch-border)' }}
+                  >
+                    <span>Total</span>
+                    <span
+                      style={{
+                        color: isPositiveTotal ? 'var(--monarch-success)' : 'var(--monarch-error)',
+                      }}
+                    >
+                      {formatCurrency(combinedTotal, currencyOpts)}
+                    </span>
+                  </div>
+                </div>
+              );
+              return (
+                <div
+                  className="flex items-center justify-center gap-1 py-1 px-3 border-t text-xs"
+                  style={{
+                    borderColor: 'var(--monarch-border)',
+                    backgroundColor: 'var(--monarch-bg-hover)',
+                    color: 'var(--monarch-text-muted)',
+                  }}
+                >
+                  <span>
+                    Total Available:{' '}
+                    <span
+                      className="font-medium tabular-nums"
+                      style={{
+                        color: isPositiveTotal ? 'var(--monarch-success)' : 'var(--monarch-error)',
+                      }}
+                    >
+                      {formatCurrency(combinedTotal, currencyOpts)}
+                    </span>
+                  </span>
+                  <HoverCard content={totalAvailableTooltip} side="top" align="center">
+                    <button
+                      type="button"
+                      className="p-0.5 rounded hover:bg-white/10 transition-colors"
+                      aria-label="Total available breakdown"
+                    >
+                      <Icons.Info size={12} style={{ color: 'var(--monarch-text-muted)' }} />
+                    </button>
+                  </HoverCard>
+                </div>
+              );
+            })()}
         </div>
       </div>
     </>,

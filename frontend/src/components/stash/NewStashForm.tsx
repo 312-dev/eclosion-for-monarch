@@ -364,6 +364,7 @@ export function NewStashForm({
               }
               displayStatus={startingBalanceNum >= amountNum ? 'funded' : 'behind'}
               isEnabled={true}
+              savedLabel="committed"
             />
             <div
               className="flex justify-between text-sm mt-3 pt-3 border-t"

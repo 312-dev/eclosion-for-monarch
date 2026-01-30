@@ -12,6 +12,7 @@ import { useState, useCallback, useRef, useEffect, useId, type ReactNode } from 
 import { createPortal } from 'react-dom';
 import { ExternalLinkIcon, Icons } from '../icons';
 import { decodeHtmlEntities } from '../../utils';
+import { motion, AnimatePresence, slideDownVariants } from '../motion';
 
 interface StashTitleDropdownProps {
   readonly stashName: string;
@@ -148,56 +149,63 @@ export function StashTitleDropdown({
       </button>
 
       {/* Portal the dropdown menu to body to avoid overflow clipping */}
-      {isOpen &&
-        createPortal(
-          <div
-            id={menuId}
-            role="menu"
-            aria-labelledby={triggerId}
-            aria-label={`Options for ${decodeHtmlEntities(stashName)}`}
-            onKeyDown={handleMenuKeyDown}
-            tabIndex={-1}
-            className="fixed py-1 rounded-lg shadow-lg text-sm dropdown-menu bg-monarch-bg-card border border-monarch-border"
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-              zIndex: 1000,
-              minWidth: '240px',
-            }}
-          >
-            {/* View report */}
-            <button
-              ref={(el) => {
-                menuItemsRef.current[itemIndex++] = el;
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              id={menuId}
+              role="menu"
+              aria-labelledby={triggerId}
+              aria-label={`Options for ${decodeHtmlEntities(stashName)}`}
+              onKeyDown={handleMenuKeyDown}
+              tabIndex={-1}
+              className="fixed py-1 rounded-lg shadow-lg text-sm dropdown-menu bg-monarch-bg-card border border-monarch-border origin-top-left"
+              style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+                zIndex: 1000,
+                minWidth: '240px',
               }}
-              role="menuitem"
-              onClick={handleViewReport}
-              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
+              variants={slideDownVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
             >
-              <Icons.BarChart2 size={14} />
-              View report
-            </button>
-
-            {/* View category on Monarch */}
-            {monarchUrl && (
-              <a
+              {/* View report */}
+              <button
                 ref={(el) => {
                   menuItemsRef.current[itemIndex++] = el;
                 }}
                 role="menuitem"
-                href={monarchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={close}
+                onClick={handleViewReport}
                 className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
               >
-                <ExternalLinkIcon size={14} />
-                View category on Monarch
-              </a>
-            )}
-          </div>,
-          document.body
-        )}
+                <Icons.BarChart2 size={14} />
+                View report
+              </button>
+
+              {/* View category on Monarch */}
+              {monarchUrl && (
+                <a
+                  ref={(el) => {
+                    menuItemsRef.current[itemIndex++] = el;
+                  }}
+                  role="menuitem"
+                  href={monarchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={close}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
+                >
+                  <ExternalLinkIcon size={14} />
+                  View category on Monarch
+                </a>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }

@@ -43,6 +43,8 @@ interface BreakdownRowProps {
   readonly isPositive?: boolean;
   readonly items?: BreakdownLineItem[];
   readonly onExpand?: () => void;
+  /** Running total after this line item (shown in muted text) */
+  readonly runningTotal?: number;
 }
 
 /**
@@ -55,6 +57,7 @@ export function BreakdownRow({
   isPositive = false,
   items,
   onExpand,
+  runningTotal,
 }: BreakdownRowProps) {
   const color = isPositive ? 'var(--monarch-green)' : 'var(--monarch-red)';
   const sign = isPositive ? '+' : '-';
@@ -118,14 +121,26 @@ export function BreakdownRow({
   );
 
   return (
-    <div className="flex justify-between">
-      <span style={{ color: 'var(--monarch-text-muted)' }}>{label}</span>
-      {hasItems ? (
-        <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
-          {amountDisplay}
-        </HoverCard>
-      ) : (
-        amountDisplay
+    <div className="flex justify-between items-center gap-2">
+      <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>
+        {label}
+      </span>
+      <span className="tabular-nums text-right" style={{ minWidth: '4.5rem' }}>
+        {hasItems ? (
+          <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
+            {amountDisplay}
+          </HoverCard>
+        ) : (
+          amountDisplay
+        )}
+      </span>
+      {runningTotal !== undefined && (
+        <span
+          className="tabular-nums text-right"
+          style={{ color: 'var(--monarch-text-muted)', minWidth: '4.5rem', opacity: 0.7 }}
+        >
+          {formatAvailableAmount(runningTotal)}
+        </span>
       )}
     </div>
   );
@@ -135,18 +150,25 @@ interface ExpectedIncomeRowProps {
   readonly amount: number;
   readonly isEnabled: boolean;
   readonly onToggle: () => void;
+  /** Running total after this line item (shown in muted text) */
+  readonly runningTotal?: number;
 }
 
 /**
  * Expected income row with a checkbox to toggle inclusion.
  */
-export function ExpectedIncomeRow({ amount, isEnabled, onToggle }: ExpectedIncomeRowProps) {
+export function ExpectedIncomeRow({
+  amount,
+  isEnabled,
+  onToggle,
+  runningTotal,
+}: ExpectedIncomeRowProps) {
   const color = isEnabled ? 'var(--monarch-green)' : 'var(--monarch-text-muted)';
   const sign = isEnabled ? '+' : '';
 
   return (
-    <div className="flex justify-between items-center">
-      <label className="flex items-center gap-1.5 cursor-pointer">
+    <div className="flex justify-between items-center gap-2">
+      <label className="flex items-center gap-1.5 cursor-pointer flex-1">
         <span style={{ color: 'var(--monarch-text-muted)' }}>
           {BREAKDOWN_LABELS.expectedIncome}
         </span>
@@ -167,109 +189,36 @@ export function ExpectedIncomeRow({ amount, isEnabled, onToggle }: ExpectedIncom
         />
       </label>
       <span
+        className="tabular-nums text-right"
         style={{
           color,
           opacity: isEnabled ? 1 : 0.5,
           textDecoration: isEnabled ? 'none' : 'line-through',
+          minWidth: '4.5rem',
         }}
       >
         {sign}
         {formatAvailableAmount(amount)}
       </span>
-    </div>
-  );
-}
-
-interface LeftToBudgetRowProps {
-  readonly label: string;
-  readonly amount: number;
-  readonly income: number;
-  readonly totalBudgeted: number;
-  /** Savings & other amount (calculated: income - categories - LTB). Only shown if provided. */
-  readonly savingsAndOther?: number;
-}
-
-/**
- * Left to Budget row with hover tooltip showing calculation breakdown.
- * Shows: Budgeted Income - Budgeted Categories - Savings & Other = LTB
- */
-export function LeftToBudgetRow({
-  label,
-  amount,
-  income,
-  totalBudgeted,
-  savingsAndOther,
-}: LeftToBudgetRowProps) {
-  // LTB is SUBTRACTED from available funds:
-  // - Positive LTB (under-budgeted) reduces available → show as red/minus
-  // - Negative LTB (over-budgeted) increases available → show as green/plus
-  const isPositiveContribution = amount < 0;
-  const color = isPositiveContribution ? 'var(--monarch-green)' : 'var(--monarch-red)';
-  const displayAmount = Math.abs(amount);
-  const sign = isPositiveContribution ? '+' : '-';
-
-  const nestedTooltipContent = (
-    <div className="text-xs max-w-64">
-      <div
-        className="font-medium pb-1 mb-1 border-b"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
-        {label} Breakdown
-      </div>
-      <div className="space-y-0.5">
-        <div className="flex justify-between gap-4">
-          <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted income</span>
-          <span className="tabular-nums" style={{ color: 'var(--monarch-green)' }}>
-            +{formatAvailableAmount(income)}
-          </span>
-        </div>
-        <div className="flex justify-between gap-4">
-          <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted categories</span>
-          <span className="tabular-nums" style={{ color: 'var(--monarch-red)' }}>
-            -{formatAvailableAmount(totalBudgeted)}
-          </span>
-        </div>
-        {savingsAndOther !== undefined && (
-          <div className="flex justify-between gap-4">
-            <span style={{ color: 'var(--monarch-text-muted)' }}>Savings & other</span>
-            <span className="tabular-nums" style={{ color: 'var(--monarch-red)' }}>
-              -{formatAvailableAmount(savingsAndOther)}
-            </span>
-          </div>
-        )}
-        <div
-          className="flex justify-between gap-4 pt-1 mt-1 border-t"
-          style={{ borderColor: 'var(--monarch-border)' }}
-        >
-          <span style={{ color: 'var(--monarch-text-muted)' }}>= {label}</span>
-          <span className="tabular-nums font-medium" style={{ color }}>
-            {sign}
-            {formatAvailableAmount(displayAmount)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="flex justify-between">
-      <span style={{ color: 'var(--monarch-text-muted)' }}>{label}</span>
-      <HoverCard content={nestedTooltipContent} side="right" closeDelay={400}>
+      {runningTotal !== undefined && (
         <span
-          className="cursor-help"
+          className="tabular-nums text-right"
           style={{
-            color,
-            borderBottom: `1px dashed color-mix(in srgb, ${color} 40%, transparent)`,
-            paddingBottom: '2px',
+            color: 'var(--monarch-text-muted)',
+            minWidth: '4.5rem',
+            opacity: isEnabled ? 0.7 : 0.4,
+            textDecoration: isEnabled ? 'none' : 'line-through',
           }}
         >
-          {sign}
-          {formatAvailableAmount(displayAmount)}
+          {formatAvailableAmount(runningTotal)}
         </span>
-      </HoverCard>
+      )}
     </div>
   );
 }
+
+// Re-export LeftToBudgetRow from its own module for backwards compatibility
+export { LeftToBudgetRow } from './LeftToBudgetRow';
 
 // ============================================================================
 // Modal Components

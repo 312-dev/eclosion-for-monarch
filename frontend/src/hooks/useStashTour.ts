@@ -4,14 +4,18 @@
  * Manages the stash page guided tour with trigger-based steps.
  * Steps are dynamically generated based on available data.
  * Tour state is persisted in localStorage.
+ *
+ * Step triggers (progressive disclosure):
+ * - Phase 1: Always shown (add-item, reports-tab)
+ * - Phase 2: When items exist (progress-bar, budget-input, take-stash, edit-item, move-card, resize-card)
+ * - Phase 3: When Monarch Goals enabled (monarch-goal-badge)
+ * - Phase 4: Browser integration (sync-bookmarks) - desktop or browser configured
+ * - Phase 5: Pending bookmarks (pending-bookmarks)
  */
 
 import { useMemo, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import {
-  STASH_TOUR_STEPS,
-  type StashTourStepId,
-} from '../components/layout/stashTourSteps';
+import { STASH_TOUR_STEPS, type StashTourStepId } from '../components/layout/stashTourSteps';
 
 // localStorage key for tour state
 export const STASH_TOUR_STATE_KEY = 'eclosion-stash-tour';
@@ -26,7 +30,7 @@ const INITIAL_TOUR_STATE: TourState = {
 
 /** Data needed to evaluate which tour steps should be shown */
 export interface StashTourData {
-  /** Number of stash items */
+  /** Number of stash items (not including Monarch goals) */
   itemCount: number;
   /** Number of pending bookmarks awaiting review */
   pendingCount: number;
@@ -34,34 +38,51 @@ export interface StashTourData {
   isBrowserConfigured: boolean;
   /** Whether running in desktop mode (Electron) */
   isDesktop: boolean;
+  /** Whether Monarch Goals are enabled in settings */
+  hasMonarchGoalsEnabled: boolean;
+  /** Number of active Monarch goals (when goals are enabled) */
+  monarchGoalCount: number;
 }
 
 /**
  * Evaluates which tour steps should be shown based on current data.
  * Returns steps in order they should be presented.
+ *
+ * This implements progressive disclosure - steps only appear when
+ * the relevant UI elements and data are available.
  */
 function evaluateTriggers(data: StashTourData | undefined): StashTourStepId[] {
   if (!data) return [];
 
-  const stepIds: StashTourStepId[] = [];
+  // Build step list using spread to satisfy linter (no multiple pushes)
+  const stepIds: StashTourStepId[] = [
+    // Phase 1: Always shown (core concepts)
+    'add-item',
+    'reports-tab',
 
-  // Step 1: Add Item - always shown as it's the primary action
-  stepIds.push('add-item');
+    // Phase 2: When items exist (card interactions)
+    ...(data.itemCount > 0
+      ? ([
+          'progress-bar',
+          'budget-input',
+          'take-stash',
+          'edit-item',
+          'move-card',
+          'resize-card',
+        ] as const)
+      : []),
 
-  // Step 2: Sync Bookmarks - show if desktop mode or browser configured
-  if (data.isDesktop || data.isBrowserConfigured) {
-    stepIds.push('sync-bookmarks');
-  }
+    // Phase 3: When Monarch Goals enabled
+    ...(data.hasMonarchGoalsEnabled && data.monarchGoalCount > 0
+      ? (['monarch-goal-badge'] as const)
+      : []),
 
-  // Steps 3-5: Card interaction tips - shown when items exist
-  if (data.itemCount > 0) {
-    stepIds.push('edit-item', 'move-card', 'resize-card');
-  }
+    // Phase 4: Browser integration
+    ...(data.isDesktop || data.isBrowserConfigured ? (['sync-bookmarks'] as const) : []),
 
-  // Step 6: Pending Bookmarks - shown when there are pending items to review
-  if (data.pendingCount > 0) {
-    stepIds.push('pending-bookmarks');
-  }
+    // Phase 5: Pending bookmarks
+    ...(data.pendingCount > 0 ? (['pending-bookmarks'] as const) : []),
+  ];
 
   return stepIds;
 }
@@ -96,9 +117,7 @@ export function useStashTour(data: StashTourData | undefined): UseStashTourRetur
 
   // Filter tour steps to only include those whose triggers are met
   const steps = useMemo(() => {
-    return STASH_TOUR_STEPS.filter((step) =>
-      activeStepIds.includes(step.id as StashTourStepId)
-    );
+    return STASH_TOUR_STEPS.filter((step) => activeStepIds.includes(step.id));
   }, [activeStepIds]);
 
   const markAsSeen = useCallback(() => {

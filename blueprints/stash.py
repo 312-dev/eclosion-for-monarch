@@ -572,7 +572,9 @@ async def update_rollover_balance():
     except (ValueError, TypeError):
         raise ValidationError("'amount' must be an integer")
 
+    logger.info(f"[Rollover API] Calling update_category_rollover_balance({category_id}, {amount_int})")
     result = await update_category_rollover_balance(category_id, amount_int)
+    logger.info(f"[Rollover API] Result: {result}")
 
     # Check for errors in the response
     update_result = result.get("updateCategory", {})
@@ -581,12 +583,10 @@ async def update_rollover_balance():
         error_msg = errors.get("message", "Failed to update rollover balance")
         raise ValidationError(error_msg)
 
-    return jsonify(
-        {
-            "success": True,
-            "category": update_result.get("category"),
-        }
-    )
+    return {
+        "success": True,
+        "category": update_result.get("category"),
+    }
 
 
 @stash_bp.route("/update-group-rollover-balance", methods=["POST"])

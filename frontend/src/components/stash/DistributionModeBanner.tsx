@@ -16,6 +16,7 @@ export function DistributionModeBanner() {
   const {
     mode,
     loadedScenarioName,
+    loadedScenarioId,
     isApplying,
     isSaving,
     showConfirmDialog,
@@ -24,6 +25,7 @@ export function DistributionModeBanner() {
     handleApply,
     handleOpenScenarios,
     handleSave,
+    handleSaveAndExit,
     handleSaveWithName,
     handleCancelSave,
     handleConfirmExit,
@@ -127,6 +129,27 @@ export function DistributionModeBanner() {
                   aria-label={loadedScenarioName ? `Save ${loadedScenarioName}` : 'Save scenario'}
                 >
                   <Icons.Save size={18} style={{ color: textColor }} />
+                </button>
+              </Tooltip>
+              <Tooltip
+                content={
+                  loadedScenarioId
+                    ? `Save "${loadedScenarioName}" and exit`
+                    : 'Save as new scenario and exit'
+                }
+                side="bottom"
+              >
+                <button
+                  onClick={handleSaveAndExit}
+                  disabled={isSaving}
+                  className="p-1.5 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                  aria-label={
+                    loadedScenarioId
+                      ? `Save ${loadedScenarioName} and exit`
+                      : 'Save scenario and exit'
+                  }
+                >
+                  <Icons.Check size={18} style={{ color: textColor }} />
                 </button>
               </Tooltip>
             </>

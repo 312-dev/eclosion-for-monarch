@@ -11,7 +11,10 @@
  *             - Unspent Expense Budgets
  *             - Monarch Goal Balances
  *             - Stash Balances
- *             - Left to Budget (ready_to_assign)
+ *
+ * Note: Left to Budget is NOT subtracted because it's a budgeting concept
+ * (budgeted income - budgeted expenses), not actual cash. It's shown
+ * separately in the UI as additional budget capacity.
  *
  * See .claude/rules/available-to-stash.md for full documentation.
  */
@@ -233,8 +236,8 @@ export function calculateAvailableToStash(
   const leftToBudget = data.leftToBudget ?? 0;
 
   // Apply the formula and round to whole dollars for consistency
-  // Left to Budget is subtracted because it represents unallocated funds that
-  // should be tracked separately (monthly allocations draw from LTB, not Cash to Stash)
+  // Note: Left to Budget is NOT subtracted - it's a budgeting concept (budgeted income
+  // minus budgeted expenses), not actual cash. It's shown separately in the UI.
   const available = Math.round(
     cashOnHand +
       expectedIncome -
@@ -242,8 +245,7 @@ export function calculateAvailableToStash(
       unspentBudgets -
       goalBalances -
       stashBalances -
-      bufferAmount -
-      leftToBudget
+      bufferAmount
   );
 
   // Calculate total budgeted for LTB breakdown

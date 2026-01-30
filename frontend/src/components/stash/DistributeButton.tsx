@@ -1,16 +1,10 @@
 /**
- * DistributeButton and HypothesizeButton Components
+ * DistributeButton Component
  *
- * Two buttons for fund distribution and what-if planning:
- *
- * DistributeButton:
+ * Button for fund distribution:
  * - Enters distribute mode (inline overlay on cards)
- * - Disabled when availableAmount <= 0, no stash items, or rate limited
- *
- * HypothesizeButton:
- * - Enters hypothesize mode (inline overlay, localStorage only)
- * - Always enabled as long as there are stash items
- * - Allows "what-if" planning with any hypothetical amount
+ * - Disabled when no stash items or rate limited
+ * - Allows distribution even with no available funds (for reallocation)
  */
 
 import { useState } from 'react';
@@ -19,26 +13,12 @@ import { useIsRateLimited } from '../../context/RateLimitContext';
 import { useDistributionMode } from '../../context/DistributionModeContext';
 import { Tooltip } from '../ui/Tooltip';
 import { ExitDistributeConfirmModal } from './ExitDistributeConfirmModal';
-import { ExitHypothesizeConfirmModal } from './ExitHypothesizeConfirmModal';
 import type { StashItem } from '../../types';
 
 /** Position in a button group for styling borders/corners */
 type ButtonGroupPosition = 'left' | 'right' | 'top' | 'bottom' | 'standalone';
 
 interface DistributeButtonProps {
-  /** Available funds to distribute (after buffer) */
-  readonly availableAmount: number;
-  /** List of stash items to distribute to */
-  readonly items: StashItem[];
-  /** Compact mode for button groups */
-  readonly compact?: boolean;
-  /** Position in button group for styling */
-  readonly groupPosition?: ButtonGroupPosition;
-  /** Icon-only mode (no label) */
-  readonly iconOnly?: boolean;
-}
-
-interface HypothesizeButtonProps {
   /** List of stash items to distribute to */
   readonly items: StashItem[];
   /** Compact mode for button groups */
@@ -84,39 +64,41 @@ function getSizeClasses(isCell: boolean, compact: boolean): string {
 }
 
 /**
+ * Render the appropriate exit icon based on whether there are changes.
+ */
+function renderExitIcon(hasChanges: boolean, iconSize: number): React.ReactNode {
+  return hasChanges ? <Icons.Check size={iconSize} /> : <Icons.X size={iconSize} />;
+}
+
+/**
  * Distribute button - allocates Available to Stash funds.
  * When in distribute mode, becomes an "Exit" button.
+ * If there are unsaved changes, shows a checkmark for "Apply & Exit".
  */
 export function DistributeButton({
-  availableAmount,
   items,
   compact = false,
   groupPosition = 'standalone',
   iconOnly = false,
 }: DistributeButtonProps) {
   const isRateLimited = useIsRateLimited();
-  const { enterDistributeMode, exitMode, mode, hasChanges } = useDistributionMode();
+  const { enterDistributeMode, exitMode, mode, hasChanges, requestSubmit } = useDistributionMode();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const activeStashItems = getActiveStashItems(items);
   const hasNoItems = activeStashItems.length === 0;
-  const nothingToDistribute = availableAmount <= 0;
   const isInDistributeMode = mode === 'distribute';
   const isInOtherMode = mode !== null && mode !== 'distribute';
 
   // When in distribute mode, button is always enabled (for exiting)
-  // Otherwise, disabled if no items, nothing to distribute, rate limited, or in hypothesize mode
-  const isDisabled = isInDistributeMode
-    ? false
-    : isRateLimited || hasNoItems || nothingToDistribute || isInOtherMode;
+  // Otherwise, disabled if no items, rate limited, or in hypothesize mode
+  // Note: We allow distribute mode even with no available funds (user may want to reallocate)
+  const isDisabled = isInDistributeMode ? false : isRateLimited || hasNoItems || isInOtherMode;
 
   // Determine tooltip message based on disabled reason
   const getTooltipMessage = (): string | null => {
     if (isInOtherMode) {
       return 'Exit current mode first';
-    }
-    if (nothingToDistribute && !isInDistributeMode) {
-      return "There's nothing available to distribute. Use Hypothesize for what-if planning.";
     }
     if (hasNoItems) {
       return 'Create some stash items first';
@@ -130,7 +112,8 @@ export function DistributeButton({
   const handleClick = () => {
     if (isInDistributeMode) {
       if (hasChanges) {
-        setShowConfirmModal(true);
+        // Apply changes and exit - requestSubmit triggers the save
+        requestSubmit();
       } else {
         exitMode();
       }
@@ -148,14 +131,14 @@ export function DistributeButton({
   const greenBgSolid = 'color-mix(in srgb, var(--monarch-success) 50%, var(--monarch-bg-card))';
   const greenBgLight = 'color-mix(in srgb, var(--monarch-success) 30%, var(--monarch-bg-page))';
   const greenText = 'var(--monarch-success)';
-  const greenBright = '#4ade80'; // Brighter green for icon-only mode
 
   const getBgColor = () => {
     if (iconOnly) return greenBgSolid;
     return greenBgLight;
   };
   const bgColor = getBgColor();
-  const textColor = iconOnly ? greenBright : greenText;
+  // Use CSS variable for icon-only mode (adapts to light/dark theme)
+  const textColor = iconOnly ? 'var(--distribute-btn-icon)' : greenText;
   const boxShadow = iconOnly
     ? 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 2px rgba(0,0,0,0.2)'
     : undefined;
@@ -165,8 +148,8 @@ export function DistributeButton({
     return compact ? 14 : 18;
   };
 
-  // Add subtle pulse animation to icon when funds are available to distribute
-  const iconPulseClass = isDisabled ? '' : 'animate-icon-pulse';
+  const exitLabel = hasChanges ? 'Apply & Exit' : 'Exit Mode';
+  const iconSize = getIconSize();
 
   const buttonContent = (
     <button
@@ -178,16 +161,16 @@ export function DistributeButton({
         color: isDisabled ? 'var(--monarch-text-muted)' : textColor,
         boxShadow: isDisabled ? undefined : boxShadow,
       }}
-      aria-label={isInDistributeMode ? 'Exit distribute mode' : 'Distribute funds'}
+      aria-label={isInDistributeMode ? exitLabel : 'Distribute funds'}
     >
       {isInDistributeMode ? (
         <>
-          <Icons.X size={getIconSize()} />
-          {!iconOnly && <span>Exit Mode</span>}
+          {renderExitIcon(hasChanges, iconSize)}
+          {!iconOnly && <span>{exitLabel}</span>}
         </>
       ) : (
         <>
-          <Icons.Split size={getIconSize()} className={iconPulseClass} />
+          <Icons.Split size={iconSize} />
           {!iconOnly && <span>Distribute</span>}
         </>
       )}
@@ -196,8 +179,13 @@ export function DistributeButton({
 
   // Always show tooltip in icon-only mode, or when there's a disabled message
   const showTooltip = iconOnly || tooltipMessage;
-  const defaultTooltip = isInDistributeMode ? 'Exit distribute mode' : 'Distribute funds';
-  const tooltipContent = tooltipMessage ?? defaultTooltip;
+  const getDefaultTooltip = () => {
+    if (isInDistributeMode) {
+      return hasChanges ? 'Apply changes and exit' : 'Exit distribute mode';
+    }
+    return 'Distribute funds';
+  };
+  const tooltipContent = tooltipMessage ?? getDefaultTooltip();
 
   const buttonWithTooltip = showTooltip ? (
     <Tooltip content={tooltipContent} side="top">
@@ -218,124 +206,5 @@ export function DistributeButton({
   );
 }
 
-/**
- * Hypothesize button - "what-if" planning without saving.
- * When in hypothesize mode, becomes an "Exit" button.
- */
-export function HypothesizeButton({
-  items,
-  compact = false,
-  groupPosition = 'standalone',
-  iconOnly = false,
-}: HypothesizeButtonProps) {
-  const { enterHypothesizeMode, exitMode, mode, hasChanges } = useDistributionMode();
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-
-  const activeStashItems = getActiveStashItems(items);
-  const hasNoItems = activeStashItems.length === 0;
-  const isInHypothesizeMode = mode === 'hypothesize';
-  const isInOtherMode = mode !== null && mode !== 'hypothesize';
-
-  // Only disabled if no items or in distribute mode (not hypothesize mode)
-  const isDisabled = hasNoItems || isInOtherMode;
-
-  // Determine tooltip message based on disabled reason
-  const getTooltipMessage = (): string | null => {
-    if (isInOtherMode) {
-      return 'Exit current mode first';
-    }
-    if (hasNoItems) {
-      return 'Create some stash items first';
-    }
-    return null;
-  };
-
-  const handleClick = () => {
-    if (isInHypothesizeMode) {
-      if (hasChanges) {
-        setShowConfirmModal(true);
-      } else {
-        exitMode();
-      }
-    } else {
-      enterHypothesizeMode(activeStashItems);
-    }
-  };
-
-  const tooltipMessage = getTooltipMessage();
-  const isCell = compact && groupPosition !== 'standalone';
-  const sizeClasses = iconOnly ? 'px-2.5 flex-1' : getSizeClasses(isCell, compact);
-  const radiusClasses = isCell ? '' : getGroupRadiusClasses(groupPosition);
-
-  // Purple color for hypothesize mode
-  const purpleBgSolid = 'color-mix(in srgb, #9333ea 50%, var(--monarch-bg-card))';
-  const purpleBgLight = 'rgba(147, 51, 234, 0.2)';
-  const purpleText = '#a855f7';
-  const purpleBright = '#c084fc'; // Brighter purple for icon-only mode
-
-  // Determine colors based on context
-  const getBgColor = () => {
-    if (iconOnly) return purpleBgSolid;
-    if (isCell) return 'var(--monarch-bg-page)';
-    return purpleBgLight;
-  };
-  const bgColor = getBgColor();
-  const textColor = iconOnly ? purpleBright : purpleText;
-  const boxShadow = iconOnly
-    ? 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 2px rgba(0,0,0,0.2)'
-    : undefined;
-
-  const getIconSize = () => {
-    if (iconOnly) return 16;
-    return compact ? 14 : 18;
-  };
-
-  const buttonContent = (
-    <button
-      onClick={handleClick}
-      disabled={isDisabled}
-      className={`flex items-center justify-center gap-1.5 ${sizeClasses} ${radiusClasses} font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110`}
-      style={{
-        backgroundColor: isDisabled ? 'var(--monarch-bg-hover)' : bgColor,
-        color: isDisabled ? 'var(--monarch-text-muted)' : textColor,
-        boxShadow: isDisabled ? undefined : boxShadow,
-      }}
-      aria-label={isInHypothesizeMode ? 'Exit hypothesize mode' : 'Hypothesize fund allocation'}
-    >
-      {isInHypothesizeMode ? (
-        <>
-          <Icons.X size={getIconSize()} />
-          {!iconOnly && <span>Exit Mode</span>}
-        </>
-      ) : (
-        <>
-          <Icons.FlaskConical size={getIconSize()} />
-          {!iconOnly && <span>Hypothesize</span>}
-        </>
-      )}
-    </button>
-  );
-
-  // Always show tooltip in icon-only mode, or when there's a disabled message
-  const showTooltip = iconOnly || tooltipMessage;
-  const defaultTooltip = isInHypothesizeMode ? 'Exit hypothesize mode' : 'Hypothesize';
-  const tooltipContent = tooltipMessage ?? defaultTooltip;
-
-  const buttonWithTooltip = showTooltip ? (
-    <Tooltip content={tooltipContent} side="bottom">
-      {buttonContent}
-    </Tooltip>
-  ) : (
-    buttonContent
-  );
-
-  return (
-    <>
-      {buttonWithTooltip}
-      <ExitHypothesizeConfirmModal
-        isOpen={showConfirmModal}
-        onClose={() => setShowConfirmModal(false)}
-      />
-    </>
-  );
-}
+// Re-export HypothesizeButton from its own module for backwards compatibility
+export { HypothesizeButton } from './HypothesizeButton';

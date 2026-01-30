@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { X, ChevronDown, Check } from 'lucide-react';
 import type { NamedEvent, NamedEventType, TimelineItemConfig } from '../../../types/timeline';
 import { Z_INDEX } from '../../../constants';
+import { createArrowKeyHandler } from '../../../hooks/useArrowKeyIncrement';
 
 const POPOVER_WIDTH = 288;
 const POPOVER_HEIGHT = 450;
@@ -159,6 +160,19 @@ export function TimelineEditPopover({
   const [date, setDate] = useState(event?.date ?? initialDate);
   const [error, setError] = useState<string | null>(null);
   const minDate = new Date().toISOString().slice(0, 7);
+
+  const handleAmountKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const currentValue = Number.parseInt(amount, 10) || 0;
+    const arrowHandler = createArrowKeyHandler({
+      value: currentValue,
+      onChange: (newValue) => {
+        setAmount(newValue === 0 ? '' : String(newValue));
+      },
+      step: 1,
+      min: 0,
+    });
+    arrowHandler(e);
+  };
 
   const [position, setPosition] = useState<{ top: number; left?: number; right?: number } | null>(
     null
@@ -356,6 +370,7 @@ export function TimelineEditPopover({
               inputMode="numeric"
               value={amount}
               onChange={(e) => setAmount(e.target.value.replaceAll(/\D/g, ''))}
+              onKeyDown={handleAmountKeyDown}
               placeholder="0"
               className="w-full pl-7 pr-3 py-1.5 rounded text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-orange"
               style={inputStyle}

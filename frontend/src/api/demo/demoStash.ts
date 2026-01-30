@@ -687,7 +687,7 @@ export async function getAvailableToStashData(): Promise<AvailableToStashData> {
     actualIncome: readyToAssign.actual_income,
     stashBalances,
     stashItems,
-    // Left to Budget (ready_to_assign) - subtracted from Cash to Stash calculation
+    // Left to Budget (ready_to_assign) - shown separately in UI, not subtracted from Cash to Stash
     leftToBudget: readyToAssign.ready_to_assign,
   };
 }

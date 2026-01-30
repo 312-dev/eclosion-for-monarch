@@ -46,8 +46,7 @@ export function EditStashProgress({
 
   // Adjust balance and rollover for starting balance changes (live preview)
   const adjustedBalance = item.current_balance + startingBalanceDelta;
-  const progressPercent =
-    goalAmount > 0 ? Math.min(100, (adjustedBalance / goalAmount) * 100) : 0;
+  const progressPercent = goalAmount > 0 ? Math.min(100, (adjustedBalance / goalAmount) * 100) : 0;
 
   // Recalculate status based on adjusted balance
   const getAdjustedStatus = (): ItemStatus => {
@@ -85,6 +84,7 @@ export function EditStashProgress({
           rolloverAmount={rolloverAmount}
           budgetedThisMonth={item.planned_budget}
           creditsThisMonth={creditsThisMonth}
+          savedLabel="committed"
           goalType={goalType}
           {...(item.available_to_spend !== undefined && {
             availableToSpend: (item.available_to_spend ?? 0) + startingBalanceDelta,

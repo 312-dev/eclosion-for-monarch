@@ -13,6 +13,29 @@ import { getSafeHref } from '../../utils';
 import { getQuickPickDates } from '../../utils/savingsCalculations';
 import { Z_INDEX } from '../../constants';
 import type { StashGoalType } from '../../types';
+import { createArrowKeyHandler } from '../../hooks/useArrowKeyIncrement';
+
+/**
+ * Creates a keydown handler for numeric string inputs with arrow key support.
+ * Shared between AmountInput and StartingBalanceInput.
+ */
+function createNumericStringKeyHandler(
+  value: string,
+  onChange: (value: string) => void
+): (e: React.KeyboardEvent<HTMLInputElement>) => void {
+  return (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const currentValue = value ? Number.parseInt(value, 10) : 0;
+    const arrowHandler = createArrowKeyHandler({
+      value: currentValue,
+      onChange: (newValue) => {
+        onChange(newValue === 0 ? '' : String(newValue));
+      },
+      step: 1,
+      min: 0,
+    });
+    arrowHandler(e);
+  };
+}
 
 // Re-export modal-specific components for backward compatibility
 export {
@@ -418,6 +441,8 @@ export function AmountInput({
     onChange(cleaned);
   };
 
+  const handleKeyDown = createNumericStringKeyHandler(value, onChange);
+
   // Format the display value with commas
   const displayValue = useMemo(() => {
     if (!value || value === '0') return '';
@@ -453,6 +478,7 @@ export function AmountInput({
           inputMode="numeric"
           value={displayValue}
           onChange={(e) => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="0"
           className={`pl-7 py-2 tabular-nums ${showSearchButton ? 'pr-0.5' : 'pr-3'}`}
           style={{
@@ -654,6 +680,8 @@ export function StartingBalanceInput({
     onChange(cleaned);
   };
 
+  const handleKeyDown = createNumericStringKeyHandler(value, onChange);
+
   // Format the display value with commas
   const displayValue = useMemo(() => {
     if (!value || value === '0') return '';
@@ -715,13 +743,8 @@ export function StartingBalanceInput({
       }`}
     >
       <div className="relative inline-flex h-10 items-center">
-        <Icons.Landmark
-          size={14}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2"
-          style={{ color: 'var(--monarch-text-muted)' }}
-        />
         <span
-          className="absolute left-7 top-1/2 -translate-y-1/2"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
           $
@@ -731,10 +754,11 @@ export function StartingBalanceInput({
           inputMode="numeric"
           value={displayValue}
           onChange={(e) => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           onFocus={() => onFocusChange(true)}
           onBlur={() => onFocusChange(false)}
           placeholder="0"
-          className="pl-11 pr-3 py-2 rounded-md tabular-nums"
+          className="pl-7 pr-3 py-2 rounded-md tabular-nums"
           style={{
             width: `${inputWidth + 3}ch`,
             minWidth: '5ch',

@@ -473,11 +473,10 @@ class StashService:
                     current_balance = remaining_balance
                     available_to_spend = remaining_balance
 
-                # Add category-level rollover starting balance (NOT for flexible groups)
-                # For flexible groups: Monarch's remainingAmount already includes the
-                # starting balance via "Rollover from last month", so we don't add it again.
-                # For category-level rollover: the starting balance may not be reflected
-                # in the current month's remainingAmount, so we add it here.
+                # Get category-level rollover starting balance for logging/display
+                # NOTE: Do NOT add this to current_balance - Monarch's remainingAmount
+                # already includes the rollover starting balance. Adding it again would
+                # cause double-counting.
                 rollover_starting_balance = 0.0
                 if not is_completed and not is_flexible_group:
                     cat_id = item.get("monarch_category_id")
@@ -485,8 +484,6 @@ class StashService:
                         rollover_starting_balance = category_rollover_starting_balances.get(
                             cat_id, 0.0
                         )
-                        if rollover_starting_balance > 0:
-                            current_balance += rollover_starting_balance
 
                 # Log balance retrieval for all items
                 logger.info(

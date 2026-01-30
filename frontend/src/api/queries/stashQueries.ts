@@ -20,6 +20,7 @@ import type {
   UpdateStashItemRequest,
   SaveHypothesisRequest,
   DashboardData,
+  AvailableToStashData,
 } from '../../types';
 import {
   calculateMonthsRemaining,
@@ -453,7 +454,6 @@ export function useDeleteStashMutation() {
 export function useAllocateStashMutation() {
   const isDemo = useDemo();
   const queryClient = useQueryClient();
-  const smartInvalidate = useSmartInvalidate();
   const stashKey = getQueryKey(queryKeys.stash, isDemo);
   const dashboardKey = getQueryKey(queryKeys.dashboard, isDemo);
 
@@ -516,8 +516,10 @@ export function useAllocateStashMutation() {
     },
 
     onSettled: () => {
-      // Always refetch after error or success to ensure server sync
-      smartInvalidate('allocateStash');
+      // NOTE: We intentionally do NOT invalidate/refetch here.
+      // Monarch has eventual consistency - a refetch immediately after write
+      // may return stale data, overwriting our correct optimistic updates.
+      // Let the normal staleTime (30s) handle eventual sync with Monarch.
     },
   });
 }
@@ -532,7 +534,6 @@ interface BatchAllocation {
 export function useAllocateStashBatchMutation() {
   const isDemo = useDemo();
   const queryClient = useQueryClient();
-  const smartInvalidate = useSmartInvalidate();
   const stashKey = getQueryKey(queryKeys.stash, isDemo);
   const dashboardKey = getQueryKey(queryKeys.dashboard, isDemo);
 
@@ -609,8 +610,10 @@ export function useAllocateStashBatchMutation() {
     },
 
     onSettled: () => {
-      // Always refetch after error or success to ensure server sync
-      smartInvalidate('allocateStashBatch');
+      // NOTE: We intentionally do NOT invalidate/refetch here.
+      // Monarch has eventual consistency - a refetch immediately after write
+      // may return stale data, overwriting our correct optimistic updates.
+      // Let the normal staleTime (30s) handle eventual sync with Monarch.
     },
   });
 }
@@ -768,32 +771,163 @@ export function useInvalidateStash() {
   };
 }
 
-/** Update category rollover starting balance (used by Distribute wizard for rollover portion) */
+/** Update category rollover starting balance with optimistic updates */
 export function useUpdateCategoryRolloverMutation() {
   const isDemo = useDemo();
-  const smartInvalidate = useSmartInvalidate();
+  const queryClient = useQueryClient();
+  const stashKey = getQueryKey(queryKeys.stash, isDemo);
+  const availableKey = getQueryKey(queryKeys.availableToStash, isDemo);
+
   return useMutation({
     mutationFn: ({ categoryId, amount }: { categoryId: string; amount: number }) =>
       isDemo
         ? demoApi.updateCategoryRolloverBalance(categoryId, amount)
         : api.updateCategoryRolloverBalance(categoryId, amount),
-    onSuccess: () => {
-      smartInvalidate('updateCategoryRollover');
+
+    onMutate: async ({ categoryId, amount }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: stashKey });
+      await queryClient.cancelQueries({ queryKey: availableKey });
+
+      // Snapshot previous values
+      const previousStash = queryClient.getQueryData<StashData>(stashKey);
+      const previousAvailable = queryClient.getQueryData<AvailableToStashData>(availableKey);
+
+      // Optimistically update stash cache
+      if (previousStash) {
+        queryClient.setQueryData<StashData>(stashKey, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => {
+              if (item.category_id !== categoryId) return item;
+              // Update rollover-related fields
+              const newRollover = (item.rollover_amount ?? 0) + amount;
+              const newBalance = item.current_balance + amount;
+              const newAvailable = (item.available_to_spend ?? 0) + amount;
+              return computeStashItem({
+                ...item,
+                rollover_amount: Math.max(0, newRollover),
+                current_balance: Math.max(0, newBalance),
+                available_to_spend: Math.max(0, newAvailable),
+              });
+            }),
+          };
+        });
+      }
+
+      // Optimistically update available-to-stash cache
+      // Deposits increase stash balance, reducing available funds
+      if (previousAvailable) {
+        queryClient.setQueryData<AvailableToStashData>(availableKey, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            stashBalances: old.stashBalances + amount,
+          };
+        });
+      }
+
+      return { previousStash, previousAvailable };
+    },
+
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousStash) {
+        queryClient.setQueryData(stashKey, context.previousStash);
+      }
+      if (context?.previousAvailable) {
+        queryClient.setQueryData(availableKey, context.previousAvailable);
+      }
+    },
+
+    onSettled: () => {
+      // NOTE: We intentionally do NOT invalidate/refetch here.
+      // Monarch has eventual consistency - a refetch immediately after write
+      // may return stale data, overwriting our correct optimistic updates.
+      // The optimistic updates in onMutate are correct (the mutation was confirmed).
+      // Let the normal staleTime (30s) handle eventual sync with Monarch.
     },
   });
 }
 
-/** Update category group rollover starting balance (used by Distribute wizard for flexible groups) */
+/** Update category group rollover starting balance with optimistic updates */
 export function useUpdateGroupRolloverMutation() {
   const isDemo = useDemo();
-  const smartInvalidate = useSmartInvalidate();
+  const queryClient = useQueryClient();
+  const stashKey = getQueryKey(queryKeys.stash, isDemo);
+  const availableKey = getQueryKey(queryKeys.availableToStash, isDemo);
+
   return useMutation({
     mutationFn: ({ groupId, amount }: { groupId: string; amount: number }) =>
       isDemo
         ? demoApi.updateGroupRolloverBalance(groupId, amount)
         : api.updateGroupRolloverBalance(groupId, amount),
-    onSuccess: () => {
-      smartInvalidate('updateGroupRollover');
+
+    onMutate: async ({ groupId, amount }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: stashKey });
+      await queryClient.cancelQueries({ queryKey: availableKey });
+
+      // Snapshot previous values
+      const previousStash = queryClient.getQueryData<StashData>(stashKey);
+      const previousAvailable = queryClient.getQueryData<AvailableToStashData>(availableKey);
+
+      // Optimistically update stash cache for flexible group items
+      if (previousStash) {
+        queryClient.setQueryData<StashData>(stashKey, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((item) => {
+              // Match flexible group items by category_group_id
+              if (!item.is_flexible_group || item.category_group_id !== groupId) return item;
+              // Update rollover-related fields
+              const newRollover = (item.rollover_amount ?? 0) + amount;
+              const newBalance = item.current_balance + amount;
+              const newAvailable = (item.available_to_spend ?? 0) + amount;
+              return computeStashItem({
+                ...item,
+                rollover_amount: Math.max(0, newRollover),
+                current_balance: Math.max(0, newBalance),
+                available_to_spend: Math.max(0, newAvailable),
+              });
+            }),
+          };
+        });
+      }
+
+      // Optimistically update available-to-stash cache
+      // Deposits increase stash balance, reducing available funds
+      if (previousAvailable) {
+        queryClient.setQueryData<AvailableToStashData>(availableKey, (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            stashBalances: old.stashBalances + amount,
+          };
+        });
+      }
+
+      return { previousStash, previousAvailable };
+    },
+
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousStash) {
+        queryClient.setQueryData(stashKey, context.previousStash);
+      }
+      if (context?.previousAvailable) {
+        queryClient.setQueryData(availableKey, context.previousAvailable);
+      }
+    },
+
+    onSettled: () => {
+      // NOTE: We intentionally do NOT invalidate/refetch here.
+      // Monarch has eventual consistency - a refetch immediately after write
+      // may return stale data, overwriting our correct optimistic updates.
+      // The optimistic updates in onMutate are correct (the mutation was confirmed).
+      // Let the normal staleTime (30s) handle eventual sync with Monarch.
     },
   });
 }

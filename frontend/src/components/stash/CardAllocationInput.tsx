@@ -8,6 +8,7 @@
 import { useRef, useState, useCallback, type ChangeEvent, type KeyboardEvent } from 'react';
 import { TbMoneybag } from 'react-icons/tb';
 import { useDistributionMode } from '../../context/DistributionModeContext';
+import { createArrowKeyHandler } from '../../hooks/useArrowKeyIncrement';
 
 interface CardAllocationInputProps {
   /** Stash item ID */
@@ -54,6 +55,17 @@ export function CardAllocationInput({ itemId, itemName }: CardAllocationInputPro
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // Handle arrow key increment/decrement
+      const arrowHandler = createArrowKeyHandler({
+        value: currentValue,
+        onChange: (newValue) => {
+          setStashedAllocation(itemId, newValue);
+        },
+        step: 1,
+        min: 0,
+      });
+      arrowHandler(e);
+
       if (e.key === 'Enter') {
         (e.target as HTMLInputElement).blur();
         requestSubmit();
@@ -61,7 +73,7 @@ export function CardAllocationInput({ itemId, itemName }: CardAllocationInputPro
         (e.target as HTMLInputElement).blur();
       }
     },
-    [requestSubmit]
+    [currentValue, itemId, setStashedAllocation, requestSubmit]
   );
 
   const isDistribute = mode === 'distribute';

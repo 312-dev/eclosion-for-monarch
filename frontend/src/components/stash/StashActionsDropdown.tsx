@@ -23,6 +23,7 @@ import {
 import { CategoryGroupDropdown } from '../recurring/CategoryGroupDropdown';
 import { decodeHtmlEntities } from '../../utils';
 import { useIsRateLimited } from '../../context/RateLimitContext';
+import { motion, AnimatePresence, slideDownVariants } from '../motion';
 
 interface StashActionsDropdownProps {
   readonly item: StashItem;
@@ -90,9 +91,7 @@ export function StashActionsDropdown({
   // Handle keyboard navigation
   const handleMenuKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      const items = menuItemsRef.current.filter(
-        (item): item is HTMLButtonElement => item !== null
-      );
+      const items = menuItemsRef.current.filter((item): item is HTMLButtonElement => item !== null);
       const currentIndex = focusIndexRef.current;
 
       switch (e.key) {
@@ -164,89 +163,95 @@ export function StashActionsDropdown({
         )}
       </button>
 
-      {isOpen && (
-        <div
-          id={menuId}
-          role="menu"
-          aria-labelledby={triggerId}
-          aria-label={`Actions for ${decodeHtmlEntities(item.name)}`}
-          onKeyDown={handleMenuKeyDown}
-          tabIndex={-1}
-          className="absolute right-0 top-full mt-1 z-popover py-1 rounded-lg shadow-lg text-sm min-w-45 dropdown-menu bg-monarch-bg-card border border-monarch-border"
-        >
-          {/* Edit item */}
-          <button
-            ref={(el) => {
-              menuItemsRef.current[itemIndex++] = el;
-            }}
-            role="menuitem"
-            onClick={() => handleAction(onEdit)}
-            className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            id={menuId}
+            role="menu"
+            aria-labelledby={triggerId}
+            aria-label={`Actions for ${decodeHtmlEntities(item.name)}`}
+            onKeyDown={handleMenuKeyDown}
+            tabIndex={-1}
+            className="absolute right-0 top-full mt-1 z-popover py-1 rounded-lg shadow-lg text-sm min-w-45 dropdown-menu bg-monarch-bg-card border border-monarch-border origin-top-right"
+            variants={slideDownVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            <EditIcon size={14} />
-            Edit details
-          </button>
-
-          {/* Open source URL */}
-          {item.source_url && (
-            <a
-              href={item.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={close}
+            {/* Edit item */}
+            <button
+              ref={(el) => {
+                menuItemsRef.current[itemIndex++] = el;
+              }}
+              role="menuitem"
+              onClick={() => handleAction(onEdit)}
               className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
             >
-              <ExternalLinkIcon size={14} />
-              Open source URL
-            </a>
-          )}
+              <EditIcon size={14} />
+              Edit details
+            </button>
 
-          {/* Change category group */}
-          {onChangeGroup && item.category_group_name && (
-            <>
-              <div className="border-t my-1 border-monarch-border" />
-              <div className="px-3 py-2 flex items-center gap-2 text-monarch-text-dark">
-                <FolderIcon size={14} />
-                <CategoryGroupDropdown
-                  currentGroupName={item.category_group_name}
-                  onChangeGroup={async (groupId, groupName) => {
-                    close();
-                    await onChangeGroup(groupId, groupName);
-                  }}
-                />
-              </div>
-            </>
-          )}
+            {/* Open source URL */}
+            {item.source_url && (
+              <a
+                href={item.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={close}
+                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-text-dark"
+              >
+                <ExternalLinkIcon size={14} />
+                Open source URL
+              </a>
+            )}
 
-          <div className="border-t my-1 border-monarch-border" />
+            {/* Change category group */}
+            {onChangeGroup && item.category_group_name && (
+              <>
+                <div className="border-t my-1 border-monarch-border" />
+                <div className="px-3 py-2 flex items-center gap-2 text-monarch-text-dark">
+                  <FolderIcon size={14} />
+                  <CategoryGroupDropdown
+                    currentGroupName={item.category_group_name}
+                    onChangeGroup={async (groupId, groupName) => {
+                      close();
+                      await onChangeGroup(groupId, groupName);
+                    }}
+                  />
+                </div>
+              </>
+            )}
 
-          {/* Archive */}
-          <button
-            ref={(el) => {
-              menuItemsRef.current[itemIndex++] = el;
-            }}
-            role="menuitem"
-            onClick={() => handleAsyncAction(onArchive)}
-            className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-teal"
-          >
-            <PackageIcon size={14} />
-            Archive
-          </button>
+            <div className="border-t my-1 border-monarch-border" />
 
-          {/* Delete */}
-          <button
-            ref={(el) => {
-              menuItemsRef.current[itemIndex++] = el;
-            }}
-            role="menuitem"
-            onClick={() => handleAsyncAction(handleDelete)}
-            className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-warning"
-          >
-            <TrashIcon size={14} />
-            Delete
-          </button>
-        </div>
-      )}
+            {/* Archive */}
+            <button
+              ref={(el) => {
+                menuItemsRef.current[itemIndex++] = el;
+              }}
+              role="menuitem"
+              onClick={() => handleAsyncAction(onArchive)}
+              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-teal"
+            >
+              <PackageIcon size={14} />
+              Archive
+            </button>
+
+            {/* Delete */}
+            <button
+              ref={(el) => {
+                menuItemsRef.current[itemIndex++] = el;
+              }}
+              role="menuitem"
+              onClick={() => handleAsyncAction(handleDelete)}
+              className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-black/5 transition-colors text-monarch-warning"
+            >
+              <TrashIcon size={14} />
+              Delete
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

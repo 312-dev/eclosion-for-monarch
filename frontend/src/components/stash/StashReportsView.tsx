@@ -90,12 +90,7 @@ function ChartSkeleton() {
 }
 
 export function StashReportsView() {
-  const {
-    settings,
-    setTimeRange,
-    setActiveTab,
-    clearStashFilter,
-  } = useReportSettings();
+  const { settings, setTimeRange, setActiveTab, clearStashFilter } = useReportSettings();
 
   const { data, isLoading, error } = useStashHistoryQuery(settings.timeRange, { enabled: true });
 
@@ -193,10 +188,7 @@ export function StashReportsView() {
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <Icons.Filter size={16} style={{ color: 'var(--monarch-text-muted)' }} />
             <span className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-              Showing report for:{' '}
-              <span className="font-medium">
-                {filteredStashItem.name}
-              </span>
+              Showing report for: <span className="font-medium">{filteredStashItem.name}</span>
             </span>
           </div>
           <button
@@ -241,9 +233,7 @@ export function StashReportsView() {
                     onClick={() => setTimeRange(option.value)}
                     className={`px-3 py-1.5 text-sm font-medium transition-colors ${hoverClass}`}
                     style={{
-                      backgroundColor: isActive
-                        ? 'rgba(0, 0, 0, 0.35)'
-                        : 'transparent',
+                      backgroundColor: isActive ? 'rgba(0, 0, 0, 0.35)' : 'transparent',
                       color: isActive ? 'white' : 'var(--monarch-text-dark)',
                       borderRight: isLastOption ? 'none' : '1px solid var(--monarch-border)',
                     }}
@@ -269,7 +259,7 @@ export function StashReportsView() {
             >
               {(['timeline', 'contributions'] as const).map((tab) => {
                 const isActive = settings.activeTab === tab;
-                const label = tab === 'timeline' ? 'Timeline' : 'Contributions';
+                const label = tab === 'timeline' ? 'Timeline' : 'Commitments';
                 const hoverClass = isActive ? '' : 'hover:bg-(--monarch-bg-hover)';
                 return (
                   <button
@@ -277,9 +267,7 @@ export function StashReportsView() {
                     onClick={() => setActiveTab(tab)}
                     className={`px-3 py-1.5 text-sm font-medium transition-colors ${hoverClass}`}
                     style={{
-                      backgroundColor: isActive
-                        ? 'rgba(0, 0, 0, 0.35)'
-                        : 'transparent',
+                      backgroundColor: isActive ? 'rgba(0, 0, 0, 0.35)' : 'transparent',
                       color: isActive ? 'white' : 'var(--monarch-text-dark)',
                       borderRight: tab === 'timeline' ? '1px solid var(--monarch-border)' : 'none',
                     }}
@@ -290,7 +278,6 @@ export function StashReportsView() {
               })}
             </div>
           </div>
-
         </div>
       </div>
 

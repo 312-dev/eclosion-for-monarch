@@ -45,6 +45,7 @@ export function useDistributionBannerActions() {
   const [showSaveNameDialog, setShowSaveNameDialog] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [exitAfterSave, setExitAfterSave] = useState(false);
   const lastSubmitRequestId = useRef(0);
 
   const handleDismiss = useCallback(() => {
@@ -178,6 +179,26 @@ export function useDistributionBannerActions() {
     }
   }, [loadedScenarioId, loadedScenarioName, buildSaveRequest, saveMutation, toast]);
 
+  const handleSaveAndExit = useCallback(() => {
+    if (loadedScenarioId && loadedScenarioName) {
+      // Editing existing scenario: save directly, then exit
+      setIsSaving(true);
+      const request = buildSaveRequest(loadedScenarioName);
+      saveMutation.mutate(request, {
+        onSuccess: () => {
+          toast.success(`Saved "${loadedScenarioName}"`);
+          exitMode();
+        },
+        onError: () => toast.error('Failed to save scenario'),
+        onSettled: () => setIsSaving(false),
+      });
+    } else {
+      // New scenario: prompt for name, then exit after save
+      setExitAfterSave(true);
+      setShowSaveNameDialog(true);
+    }
+  }, [loadedScenarioId, loadedScenarioName, buildSaveRequest, saveMutation, toast, exitMode]);
+
   const handleSaveWithName = useCallback(
     (name: string) => {
       setIsSaving(true);
@@ -186,15 +207,25 @@ export function useDistributionBannerActions() {
         onSuccess: () => {
           toast.success(`Saved "${name}"`);
           setShowSaveNameDialog(false);
+          if (exitAfterSave) {
+            setExitAfterSave(false);
+            exitMode();
+          }
         },
-        onError: () => toast.error('Failed to save scenario'),
+        onError: () => {
+          toast.error('Failed to save scenario');
+          setExitAfterSave(false);
+        },
         onSettled: () => setIsSaving(false),
       });
     },
-    [buildSaveRequest, saveMutation, toast]
+    [buildSaveRequest, saveMutation, toast, exitAfterSave, exitMode]
   );
 
-  const handleCancelSave = useCallback(() => setShowSaveNameDialog(false), []);
+  const handleCancelSave = useCallback(() => {
+    setShowSaveNameDialog(false);
+    setExitAfterSave(false);
+  }, []);
 
   useEffect(() => {
     if (submitRequestId > lastSubmitRequestId.current) {
@@ -217,6 +248,7 @@ export function useDistributionBannerActions() {
   return {
     mode,
     loadedScenarioName,
+    loadedScenarioId,
     hasChanges,
     isApplying,
     isSaving,
@@ -226,6 +258,7 @@ export function useDistributionBannerActions() {
     handleApply,
     handleOpenScenarios,
     handleSave,
+    handleSaveAndExit,
     handleSaveWithName,
     handleCancelSave,
     handleConfirmExit,

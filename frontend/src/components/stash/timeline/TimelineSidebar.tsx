@@ -15,6 +15,7 @@ import type {
 } from '../../../types/timeline';
 import { formatAPY } from '../../../utils/hysaCalculations';
 import { parseDateString } from '../../../utils/timelineProjection';
+import { createArrowKeyHandler } from '../../../hooks/useArrowKeyIncrement';
 
 /** Format date with full month name and year for sidebar display */
 function formatSidebarDate(dateStr: string, resolution: TimelineResolution): string {
@@ -71,14 +72,28 @@ function ApyEditor({ currentApy, onSave, onCancel }: ApyEditorProps) {
   }, [value, onSave, onCancel]);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Handle arrow key increment/decrement
+      const currentValue = Number.parseFloat(value) || 0;
+      const arrowHandler = createArrowKeyHandler({
+        value: currentValue,
+        onChange: (newValue) => {
+          setValue(String(Math.max(0, Math.min(100, newValue))));
+        },
+        step: 0.1,
+        shiftStep: 1,
+        min: 0,
+        max: 100,
+      });
+      arrowHandler(e);
+
       if (e.key === 'Enter') {
         handleSave();
       } else if (e.key === 'Escape') {
         onCancel();
       }
     },
-    [handleSave, onCancel]
+    [handleSave, onCancel, value]
   );
 
   return (

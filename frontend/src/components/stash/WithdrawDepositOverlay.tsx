@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
   useCallback,
-  useMemo,
+  useEffect,
   type ChangeEvent,
   type KeyboardEvent,
   type MouseEvent,
@@ -17,124 +17,237 @@ import {
   type PointerEvent,
 } from 'react';
 import { Icons } from '../icons';
-import { Tooltip } from '../ui/Tooltip';
+import { createArrowKeyHandler } from '../../hooks/useArrowKeyIncrement';
+import {
+  getButtonIconColor,
+  getButtonBgColor,
+  getStashButtonLabel,
+  getStashButtonIconName,
+  getAvailableAmountText,
+  processInputChange,
+  getModeSwitchFromKey,
+  getInputBorderColor,
+  calculateInputWidth,
+  parseNumericValue,
+  formatDisplayValue,
+} from './overlayButtonStyles';
 
 interface TakeStashOverlayProps {
   /** Stash item ID */
   readonly itemId: string;
   /** Item name for accessibility */
   readonly itemName: string;
-  /** Available amount for withdrawal (rollover only) */
+  /** Current balance of the stash item */
+  readonly currentBalance: number;
+  /** Available amount for withdrawal (rollover + budget) */
   readonly withdrawAvailable: number;
   /** Available amount for deposit (from Cash to Stash pool) */
   readonly depositAvailable: number;
+  /** Left to Budget amount that can be used for additional stashing */
+  readonly leftToBudget?: number;
+  /** Rollover amount (stashed cash) - withdrawals exceeding this dip into budget */
+  readonly rolloverAmount: number;
   /** Callback when user confirms withdrawal */
   readonly onTake: (amount: number) => void;
   /** Callback when user confirms deposit */
   readonly onStash: (amount: number) => void;
   /** Callback to cancel/close the overlay */
   readonly onCancel: () => void;
+  /** Callback when Take mode state or amount changes */
+  readonly onTakeModeChange?: (isTakeMode: boolean, isDippingIntoBudget: boolean) => void;
+  /** Callback when Stash mode is drawing from Left to Budget */
+  readonly onStashBudgetChange?: (additionalBudget: number, isOverLimit: boolean) => void;
+  /** Callback when input value changes (for keeping overlay open) */
+  readonly onInputValueChange?: (hasValue: boolean) => void;
   /** Whether an action is currently processing */
   readonly isProcessing?: boolean;
   /** Whether this is shown in distribution mode (persistent) vs hover mode */
   readonly isDistributionMode?: boolean;
-  /** Current budgeted amount for the item (used for tooltip when withdraw is disabled) */
-  readonly budgetedAmount?: number;
 }
 
 export function TakeStashOverlay({
   itemId: _itemId, // Reserved for future use (e.g., tracking pending operations)
   itemName,
+  currentBalance: _currentBalance, // Reserved for future use (e.g., display or validation)
   withdrawAvailable,
   depositAvailable,
+  leftToBudget = 0,
+  rolloverAmount,
   onTake,
   onStash,
   onCancel,
+  onTakeModeChange,
+  onStashBudgetChange,
+  onInputValueChange,
   isProcessing = false,
   isDistributionMode: _isDistributionMode = false,
-  budgetedAmount = 0,
 }: TakeStashOverlayProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [rawValue, setRawValue] = useState<string>('');
-  const [isNegative, setIsNegative] = useState(false);
+
+  // Default to Take mode if nothing available to stash
+  // Use clamped values so negative Cash to Stash doesn't reduce Left to Budget availability
+  const maxStashAvailable = Math.max(0, depositAvailable) + Math.max(0, leftToBudget);
+  const [isNegative, setIsNegative] = useState(maxStashAvailable <= 0);
 
   // Parse numeric value from raw input
-  const numericValue = rawValue === '' ? 0 : Number.parseInt(rawValue, 10);
-
-  // Calculate display value with formatting
-  const formattedValue = numericValue > 0 ? numericValue.toLocaleString('en-US') : '';
-
-  // Calculate input width
-  const digitCount = rawValue.length;
-  const commaCount = Math.floor((digitCount - 1) / 3);
-  const inputWidth = Math.min(10, Math.max(2, digitCount + commaCount * 0.3));
+  const numericValue = parseNumericValue(rawValue);
+  const formattedValue = formatDisplayValue(numericValue);
+  const inputWidth = calculateInputWidth(rawValue);
 
   // Determine current mode based on sign
   const isTakeMode = isNegative;
   const isStashMode = !isNegative;
 
-  // Validation
-  const maxAmount = isTakeMode ? withdrawAvailable : depositAvailable;
+  // Calculate if current Take amount would dip into the budget
+  const isDippingIntoBudget = isTakeMode && numericValue > rolloverAmount;
+
+  // Notify parent of Take mode changes
+  useEffect(() => {
+    onTakeModeChange?.(isTakeMode, isDippingIntoBudget);
+  }, [isTakeMode, isDippingIntoBudget, onTakeModeChange]);
+
+  // Notify parent when input has a value (to keep overlay open)
+  useEffect(() => {
+    onInputValueChange?.(numericValue > 0);
+  }, [numericValue, onInputValueChange]);
+
+  // Calculate max stash amount (Cash to Stash + Left to Budget)
+  // Don't let negative Cash to Stash reduce the available Left to Budget
+  const availableLeftToBudget = Math.max(0, leftToBudget);
+  const availableCashToStash = Math.max(0, depositAvailable);
+  const maxStashAmount = availableCashToStash + availableLeftToBudget;
+
+  // Button styles - withdrawAvailable now includes both rollover + budget
+  const withdrawDisabled = withdrawAvailable <= 0;
+  // Stash is enabled if EITHER Cash to Stash OR Left to Budget is positive
+  const depositDisabled = depositAvailable <= 0 && availableLeftToBudget <= 0;
+  // When neither Take nor Stash/Budget is available, disable everything
+  const allActionsDisabled = withdrawDisabled && depositDisabled;
+
+  // Calculate additional budget needed from Left to Budget when stashing
+  // Cap at available Left to Budget so we don't show amounts beyond what's available
+  // When Cash to Stash is negative/zero, ALL stash amount comes from Left to Budget
+  const rawAdditionalBudget = isStashMode ? Math.max(0, numericValue - availableCashToStash) : 0;
+  const additionalBudget = Math.min(rawAdditionalBudget, availableLeftToBudget);
+
+  // Validation - use combined limit for stash mode
+  const maxAmount = isTakeMode ? withdrawAvailable : maxStashAmount;
   const isOverLimit = numericValue > maxAmount;
+  // Only flag as over limit when user has actually typed an amount
+  const isStashOverLimit = isStashMode && isOverLimit && numericValue > 0;
+
+  // Notify parent of stash budget changes (including over-limit state)
+  useEffect(() => {
+    onStashBudgetChange?.(additionalBudget, isStashOverLimit);
+  }, [additionalBudget, isStashOverLimit, onStashBudgetChange]);
   const canSubmit = numericValue > 0 && !isOverLimit && !isProcessing;
 
-  // Derive error message from current state (no setState in effect)
-  const error = useMemo(() => {
-    if (!isOverLimit) return null;
-    return isTakeMode
-      ? `Cannot exceed available balance of $${withdrawAvailable.toLocaleString()}`
-      : `Cannot exceed available funds of $${depositAvailable.toLocaleString()}`;
-  }, [isOverLimit, isTakeMode, withdrawAvailable, depositAvailable]);
-
   // Input border color based on mode
-  const modeColor = isTakeMode ? '#f97316' : '#22c55e';
-  const inputBorderColor = error ? '#ef4444' : modeColor;
+  const inputBorderColor = getInputBorderColor(isTakeMode, isOverLimit);
 
-  const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
+  // Determine stash button label based on funding source
+  const stashButtonLabel = getStashButtonLabel(
+    numericValue,
+    availableCashToStash,
+    availableLeftToBudget
+  );
+  const stashIconName = getStashButtonIconName(stashButtonLabel);
 
-    // Check for negative sign at start
-    if (input.startsWith('-')) {
-      setIsNegative(true);
-      // Extract digits only (ignore the negative sign for storage)
-      const digitsOnly = input.slice(1).replaceAll(/\D/g, '');
+  // Pre-compute button colors to simplify JSX
+  const stashIconColor = getButtonIconColor({
+    isDisabled: depositDisabled,
+    isActive: isStashMode,
+    mode: 'stash',
+  });
+  const stashBgColor = getButtonBgColor({
+    isDisabled: depositDisabled,
+    isActive: isStashMode,
+    mode: 'stash',
+  });
+  const takeIconColor = getButtonIconColor({
+    isDisabled: withdrawDisabled,
+    isActive: isTakeMode,
+    mode: 'take',
+  });
+  const takeBgColor = getButtonBgColor({
+    isDisabled: withdrawDisabled,
+    isActive: isTakeMode,
+    mode: 'take',
+  });
+
+  const handleChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const { newIsNegative, digitsOnly } = processInputChange(
+        e.target.value,
+        withdrawDisabled,
+        depositDisabled
+      );
+      if (newIsNegative !== null) {
+        setIsNegative(newIsNegative);
+      }
       setRawValue(digitsOnly);
-    } else {
-      // Extract digits only
-      const digitsOnly = input.replaceAll(/\D/g, '');
-      setRawValue(digitsOnly);
-    }
-  }, []);
+    },
+    [withdrawDisabled, depositDisabled]
+  );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      // Handle minus key to toggle withdraw mode
-      if (e.key === '-') {
+      // Handle sign keys and backspace to toggle modes
+      const modeSwitch = getModeSwitchFromKey(
+        e.key,
+        rawValue,
+        isNegative,
+        withdrawDisabled,
+        depositDisabled
+      );
+      if (modeSwitch !== null) {
         e.preventDefault();
-        setIsNegative(true);
+        setIsNegative(modeSwitch);
         return;
       }
 
-      // Backspace with empty input in negative mode -> switch to positive
-      if (e.key === 'Backspace' && rawValue === '' && isNegative) {
-        e.preventDefault();
-        setIsNegative(false);
-        return;
-      }
-
-      if (e.key === 'Enter' && canSubmit) {
-        e.preventDefault();
-        if (isTakeMode) {
-          onTake(numericValue);
-        } else {
-          onStash(numericValue);
-        }
-      } else if (e.key === 'Escape') {
+      // Handle Escape
+      if (e.key === 'Escape') {
         e.preventDefault();
         onCancel();
+        return;
       }
+
+      // Handle Enter submission
+      if (e.key === 'Enter' && canSubmit) {
+        e.preventDefault();
+        (isTakeMode ? onTake : onStash)(numericValue);
+        setRawValue('');
+        return;
+      }
+
+      // Handle arrow key increment/decrement
+      const arrowDisabled = isProcessing || allActionsDisabled;
+      createArrowKeyHandler({
+        value: numericValue,
+        onChange: (newValue) => setRawValue(newValue === 0 ? '' : String(newValue)),
+        step: 1,
+        min: 0,
+        max: maxAmount,
+        disabled: arrowDisabled,
+      })(e);
     },
-    [canSubmit, isTakeMode, numericValue, onTake, onStash, onCancel, rawValue, isNegative]
+    [
+      canSubmit,
+      isTakeMode,
+      numericValue,
+      onTake,
+      onStash,
+      onCancel,
+      rawValue,
+      isNegative,
+      maxAmount,
+      isProcessing,
+      allActionsDisabled,
+      withdrawDisabled,
+      depositDisabled,
+    ]
   );
 
   const handleFocus = useCallback(() => {
@@ -144,48 +257,39 @@ export function TakeStashOverlay({
   }, []);
 
   const handleTakeClick = useCallback(() => {
-    // If already in withdraw mode with a valid amount, submit
-    if (isTakeMode && canSubmit) {
+    // If already in Take mode with a valid amount, submit
+    const canTake =
+      isTakeMode && numericValue > 0 && numericValue <= withdrawAvailable && !isProcessing;
+    if (canTake) {
       onTake(numericValue);
+      setRawValue(''); // Clear input after submission
       return;
     }
 
-    // Otherwise, toggle to withdraw mode (add negative sign)
+    // Otherwise, switch to Take mode first (requires second click to submit)
     setIsNegative(true);
     inputRef.current?.focus();
-  }, [isTakeMode, canSubmit, numericValue, onTake]);
+  }, [isTakeMode, numericValue, withdrawAvailable, isProcessing, onTake]);
 
   const handleStashClick = useCallback(() => {
-    // If already in deposit mode with a valid amount, submit
-    if (isStashMode && canSubmit) {
+    // If already in Stash mode with a valid amount, submit
+    const canDeposit =
+      isStashMode && numericValue > 0 && numericValue <= depositAvailable && !isProcessing;
+    if (canDeposit) {
       onStash(numericValue);
+      setRawValue(''); // Clear input after submission
       return;
     }
 
-    // Otherwise, toggle to deposit mode (remove negative sign)
+    // Otherwise, switch to Stash mode first (requires second click to submit)
     setIsNegative(false);
     inputRef.current?.focus();
-  }, [isStashMode, canSubmit, numericValue, onStash]);
+  }, [isStashMode, numericValue, depositAvailable, isProcessing, onStash]);
 
-  // Button styles
-  const withdrawDisabled = withdrawAvailable <= 0;
-  const depositDisabled = depositAvailable <= 0;
-
-  // Show tooltip when withdraw is disabled but there's a positive budgeted amount
-  const showTakeTooltip = withdrawDisabled && budgetedAmount > 0;
-
-  const getButtonStyles = (_isActive: boolean, isDisabled: boolean) => {
-    if (isDisabled) {
-      return {
-        opacity: 1,
-        cursor: 'not-allowed',
-      };
-    }
-    return {
-      opacity: 1,
-      cursor: 'pointer',
-    };
-  };
+  const getButtonStyles = (_isActive: boolean, isDisabled: boolean) => ({
+    opacity: 1,
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+  });
 
   // Stop drag events from propagating to the parent grid
   const stopDragPropagation = useCallback((e: MouseEvent | TouchEvent | PointerEvent) => {
@@ -203,14 +307,17 @@ export function TakeStashOverlay({
 
         {/* Input container - solid background, no focus ring */}
         <div
-          className="relative flex items-center justify-center px-4 py-2 rounded-lg"
+          className={`relative flex items-center justify-center px-4 py-2 rounded-lg ${allActionsDisabled ? 'opacity-50' : ''}`}
           style={{
-            backgroundColor: '#1a1a1a',
-            border: `1px solid ${inputBorderColor}`,
+            backgroundColor: 'var(--overlay-input-bg)',
+            border: `1px solid ${allActionsDisabled ? 'var(--overlay-divider)' : inputBorderColor}`,
           }}
         >
-          <span className="text-xl font-semibold" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            {isNegative && '-'}$
+          <span
+            className={`text-xl font-semibold ${allActionsDisabled ? 'cursor-not-allowed' : ''}`}
+            style={{ color: 'var(--overlay-text-muted)' }}
+          >
+            {isNegative ? '-' : '+'}$
           </span>
           <input
             ref={inputRef}
@@ -221,76 +328,84 @@ export function TakeStashOverlay({
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
             placeholder="0"
-            disabled={isProcessing}
+            disabled={isProcessing || allActionsDisabled}
             aria-label={`${isTakeMode ? 'Take' : 'Stash'} amount for ${itemName}`}
-            className="focus-none min-w-8 text-xl font-semibold bg-transparent outline-none focus-visible:outline-none text-white placeholder:text-white/40 tabular-nums text-right disabled:opacity-50"
-            style={{ width: `${inputWidth}ch` }}
+            className="focus-none min-w-8 text-xl font-semibold bg-transparent outline-none focus-visible:outline-none tabular-nums text-right disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ width: `${inputWidth}ch`, color: 'var(--overlay-input-text)' }}
           />
         </div>
 
-        {/* Error message */}
-        {error && <span className="text-sm text-red-400 text-center max-w-48">{error}</span>}
+        {/* Available amount indicator - static amounts, red when exceeded */}
+        <div
+          className="text-xs tabular-nums"
+          style={{ color: isOverLimit ? 'var(--monarch-error)' : 'var(--overlay-text-muted)' }}
+        >
+          {getAvailableAmountText({
+            isTakeMode,
+            withdrawAvailable,
+            availableCashToStash,
+            availableLeftToBudget,
+          })}
+        </div>
 
         {/* Action buttons - horizontal layout */}
         <div className="flex items-center gap-1.5">
-          {/* Take button */}
-          <Tooltip
-            content="You must reduce budgeted amount to free up further funds."
-            disabled={!showTakeTooltip}
-            side="bottom"
-          >
-            <button
-              type="button"
-              onClick={handleTakeClick}
-              disabled={withdrawDisabled || isProcessing}
-              className="flex flex-col items-start px-4 py-2 rounded-lg transition-all focus-visible:outline-none"
-              style={{
-                backgroundColor: isTakeMode ? '#78350f' : '#333',
-                ...getButtonStyles(isTakeMode, withdrawDisabled),
-              }}
-              aria-label={`Take from ${itemName}`}
-            >
-              <span
-                className={`text-sm font-medium ${isTakeMode ? 'text-orange-300' : 'text-white/60'}`}
-              >
-                Take
-              </span>
-              <span className={`text-xs ${isTakeMode ? 'text-orange-300/70' : 'text-white/40'}`}>
-                ${withdrawAvailable.toLocaleString()} stash
-              </span>
-            </button>
-          </Tooltip>
-
-          {/* Vertical divider */}
-          <div className="w-px h-6 bg-white/30" />
-
-          {/* Stash button */}
+          {/* Stash button - green hue (muted when inactive, grey when disabled) */}
           <button
             type="button"
             onClick={handleStashClick}
             disabled={depositDisabled || isProcessing}
-            className="flex flex-col items-start px-4 py-2 rounded-lg transition-all focus-visible:outline-none"
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg transition-all focus-visible:outline-none"
             style={{
-              backgroundColor: isStashMode ? '#14532d' : '#333',
+              backgroundColor: stashBgColor,
               ...getButtonStyles(isStashMode, depositDisabled),
             }}
             aria-label={`Stash to ${itemName}`}
           >
-            <span
-              className={`text-sm font-medium ${isStashMode ? 'text-green-300' : 'text-white/60'}`}
-            >
-              Stash
+            {/* Icon varies based on label */}
+            {stashIconName === 'CircleFadingPlus' && (
+              <Icons.CircleFadingPlus size={16} style={{ color: stashIconColor }} />
+            )}
+            {stashIconName === 'ArrowsUpFromLine' && (
+              <Icons.ArrowsUpFromLine size={16} style={{ color: stashIconColor }} />
+            )}
+            {stashIconName === 'BanknoteArrowUp' && (
+              <Icons.BanknoteArrowUp size={16} style={{ color: stashIconColor }} />
+            )}
+            <span className="text-sm font-medium" style={{ color: stashIconColor }}>
+              {stashButtonLabel}
             </span>
-            <span className={`text-xs ${isStashMode ? 'text-green-300/70' : 'text-white/40'}`}>
-              ${depositAvailable.toLocaleString()} cash
+          </button>
+
+          {/* Vertical divider */}
+          <div className="w-px h-6" style={{ backgroundColor: 'var(--overlay-divider)' }} />
+
+          {/* Take button - orange hue (muted when inactive, grey when disabled) */}
+          <button
+            type="button"
+            onClick={handleTakeClick}
+            disabled={withdrawDisabled || isProcessing}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg transition-all focus-visible:outline-none"
+            style={{
+              backgroundColor: takeBgColor,
+              ...getButtonStyles(isTakeMode, withdrawDisabled),
+            }}
+            aria-label={`Take from ${itemName}`}
+          >
+            <Icons.BanknoteArrowDown size={16} style={{ color: takeIconColor }} />
+            <span className="text-sm font-medium" style={{ color: takeIconColor }}>
+              Take
             </span>
           </button>
         </div>
 
         {/* Processing indicator */}
         {isProcessing && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-            <Icons.Spinner size={24} className="text-white" />
+          <div
+            className="absolute inset-0 flex items-center justify-center rounded-lg"
+            style={{ backgroundColor: 'var(--overlay-bg)' }}
+          >
+            <Icons.Spinner size={24} style={{ color: 'var(--overlay-text)' }} />
           </div>
         )}
       </fieldset>

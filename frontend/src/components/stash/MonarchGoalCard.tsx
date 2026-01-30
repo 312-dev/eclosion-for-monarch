@@ -24,6 +24,7 @@ import { formatCurrency } from '../../utils';
 import { MonarchGoalProgressBar } from './MonarchGoalProgressBar';
 import { useDistributionModeType } from '../../context/DistributionModeContext';
 import { Tooltip } from '../ui/Tooltip';
+import { motion, AnimatePresence, TIMING } from '../motion';
 
 interface MonarchGoalCardProps {
   readonly goal: MonarchGoal;
@@ -35,6 +36,8 @@ interface MonarchGoalCardProps {
   readonly size?: { cols: number; rows: number };
   /** Whether to show the type badge (Goal vs Stash) - shown when mixed content */
   readonly showTypeBadge?: boolean;
+  /** Whether this is the first goal (for tour targeting) */
+  readonly isFirstGoal?: boolean;
 }
 
 /** Construct Monarch goal image URL from storage provider */
@@ -160,8 +163,8 @@ function GoalStatusBadge({ status }: { readonly status: MonarchGoal['status'] })
     <span
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        color: '#fff',
+        backgroundColor: 'var(--card-badge-bg)',
+        color: 'var(--card-badge-text)',
         backdropFilter: 'blur(4px)',
         border: `1px solid ${config.color}`,
       }}
@@ -202,6 +205,7 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
   dragHandleProps,
   isDragging,
   showTypeBadge = true,
+  isFirstGoal = false,
 }: MonarchGoalCardProps) {
   const imageUrl = getMonarchImageUrl(goal.imageStorageProvider, goal.imageStorageProviderId);
   const hasImage = Boolean(imageUrl);
@@ -228,20 +232,30 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
       }}
     >
       {/* Distribution mode overlay - covers entire card */}
-      {isInDistributionMode && (
-        <div
-          className="group/overlay absolute inset-0 z-10 flex items-center justify-center cursor-not-allowed"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
-        >
-          <Icons.EditOff
-            className="w-[50%] h-[50%] max-w-24 max-h-24 transition-opacity duration-200 group-hover/overlay:opacity-0"
-            style={{ color: 'rgba(160, 160, 160, 1)' }}
-          />
-          <span className="absolute inset-0 flex items-center justify-center text-center text-sm font-medium text-white/80 px-4 opacity-0 transition-opacity duration-200 group-hover/overlay:opacity-100">
-            Monarch Goals can only be edited in Monarch Money
-          </span>
-        </div>
-      )}
+      <AnimatePresence>
+        {isInDistributionMode && (
+          <motion.div
+            key="goal-overlay"
+            className="group/overlay absolute inset-0 z-10 flex items-center justify-center cursor-not-allowed"
+            style={{ backgroundColor: 'var(--overlay-bg)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: TIMING.fast }}
+          >
+            <Icons.EditOff
+              className="w-[50%] h-[50%] max-w-24 max-h-24 transition-opacity duration-200 group-hover/overlay:opacity-0"
+              style={{ color: 'var(--overlay-text-muted)' }}
+            />
+            <span
+              className="absolute inset-0 flex items-center justify-center text-center text-sm font-medium px-4 opacity-0 transition-opacity duration-200 group-hover/overlay:opacity-100"
+              style={{ color: 'var(--overlay-text-muted)' }}
+            >
+              Monarch Goals can only be edited in Monarch Money
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Image Area - drag handle */}
       <div
         className="stash-card-image flex-1 min-h-28 flex items-center justify-center relative cursor-grab active:cursor-grabbing"
@@ -266,12 +280,15 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
 
         {/* Monarch Goal badge - top left (only shown when showTypeBadge is true) */}
         {showTypeBadge && (
-          <div className="absolute top-2 left-2">
+          <div
+            className="absolute top-2 left-2"
+            data-tour={isFirstGoal ? 'stash-monarch-goal' : undefined}
+          >
             <span
               className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium"
               style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                color: 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: 'var(--card-badge-bg)',
+                color: 'var(--card-badge-text)',
                 backdropFilter: 'blur(4px)',
               }}
             >
@@ -289,7 +306,7 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
           rel="noopener noreferrer"
           className="absolute top-2 right-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity icon-btn-hover"
           style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'var(--card-edit-btn-bg)',
             backdropFilter: 'blur(4px)',
           }}
           aria-label={`Open ${goal.name} in Monarch Money`}
@@ -298,7 +315,7 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
           onMouseDown={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
         >
-          <Icons.ExternalLink size={18} style={{ color: '#fff' }} />
+          <Icons.ExternalLink size={18} style={{ color: 'var(--card-edit-btn-icon)' }} />
         </a>
 
         {/* Status badge - bottom right */}
@@ -310,8 +327,8 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
       {/* Content Area - clickable to open in Monarch */}
       <button
         onClick={openMonarchGoal}
-        className="px-4 pt-3 pb-4 shrink-0 flex flex-col text-left w-full hover:bg-opacity-50 transition-colors"
-        style={{ height: 112 }}
+        className="px-4 pt-3 pb-4 shrink-0 flex flex-col text-left w-full hover:bg-opacity-50 transition-colors cursor-pointer"
+        style={{ height: 124 }}
         aria-label={`Open ${goal.name} in Monarch Money`}
       >
         {/* Top row: Title and info */}

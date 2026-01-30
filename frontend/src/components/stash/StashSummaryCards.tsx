@@ -32,10 +32,7 @@ interface SummaryMetrics {
 /**
  * Calculate summary metrics from stash history data.
  */
-function calculateMetrics(
-  data: StashHistoryResponse,
-  visibleStashIds: string[]
-): SummaryMetrics {
+function calculateMetrics(data: StashHistoryResponse, visibleStashIds: string[]): SummaryMetrics {
   // Filter to visible stashes only
   const visibleItems = data.items.filter((item) => visibleStashIds.includes(item.id));
 
@@ -153,10 +150,13 @@ export function StashSummaryCards({ data, visibleStashIds }: StashSummaryCardsPr
       >
         <div className="flex items-center justify-between mb-8">
           <div className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-            Total stashed
+            Total committed
           </div>
           {metrics.totalStashedChange !== null && (
-            <div className="text-sm font-medium" style={{ color: getPercentageColor(metrics.totalStashedChange) }}>
+            <div
+              className="text-sm font-medium"
+              style={{ color: getPercentageColor(metrics.totalStashedChange) }}
+            >
               {formatPercentage(metrics.totalStashedChange)}
             </div>
           )}
@@ -197,12 +197,18 @@ export function StashSummaryCards({ data, visibleStashIds }: StashSummaryCardsPr
             Net change
           </div>
           {metrics.thisMonthChange !== null && (
-            <div className="text-sm font-medium" style={{ color: getPercentageColor(metrics.thisMonthChange) }}>
+            <div
+              className="text-sm font-medium"
+              style={{ color: getPercentageColor(metrics.thisMonthChange) }}
+            >
               {formatPercentage(metrics.thisMonthChange)}
             </div>
           )}
         </div>
-        <div className="text-4xl font-semibold" style={{ color: getThisMonthColor(metrics.thisMonth) }}>
+        <div
+          className="text-4xl font-semibold"
+          style={{ color: getThisMonthColor(metrics.thisMonth) }}
+        >
           {formatCurrency(metrics.thisMonth, currencyOpts)}
         </div>
       </div>
@@ -220,7 +226,10 @@ export function StashSummaryCards({ data, visibleStashIds }: StashSummaryCardsPr
             {metrics.remaining > 0 ? 'Left to save' : 'Goal reached'}
           </div>
           {metrics.remainingChange !== null && (
-            <div className="text-sm font-medium" style={{ color: getPercentageColor(metrics.remainingChange, true) }}>
+            <div
+              className="text-sm font-medium"
+              style={{ color: getPercentageColor(metrics.remainingChange, true) }}
+            >
               {formatPercentage(metrics.remainingChange)}
             </div>
           )}

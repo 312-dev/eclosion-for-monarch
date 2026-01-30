@@ -5,7 +5,9 @@
  * Each bookmark can be skipped or converted to a stash item.
  */
 
-import { Bookmark, ChevronDown } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { BookmarkIcon, type BookmarkIconHandle } from '../ui/bookmark';
 import type { PendingBookmark } from '../../types';
 import { PendingReviewRow } from './PendingReviewRow';
 
@@ -26,6 +28,22 @@ export function PendingReviewSection({
   onCreateTarget,
   skippingIds = new Set(),
 }: PendingReviewSectionProps) {
+  const bookmarkRef = useRef<BookmarkIconHandle>(null);
+
+  // Loop animation every 2 seconds when collapsed to draw attention
+  useEffect(() => {
+    if (isExpanded) return;
+
+    // Play immediately when collapsed
+    bookmarkRef.current?.startAnimation();
+
+    const interval = setInterval(() => {
+      bookmarkRef.current?.startAnimation();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isExpanded]);
+
   if (pendingItems.length === 0) return null;
 
   return (
@@ -47,7 +65,7 @@ export function PendingReviewSection({
         aria-label={`${isExpanded ? 'Collapse' : 'Expand'} pending review section`}
       >
         <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--monarch-orange-light)' }}>
-          <Bookmark size={18} style={{ color: 'var(--monarch-orange)' }} />
+          <BookmarkIcon ref={bookmarkRef} size={18} style={{ color: 'var(--monarch-orange)' }} />
         </div>
         <div className="flex-1 flex items-center gap-2">
           <span className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>

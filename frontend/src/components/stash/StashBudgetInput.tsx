@@ -10,6 +10,7 @@ import { useIsRateLimited } from '../../context/RateLimitContext';
 import { useAvailableToStashDrawerOptional } from '../../context';
 import { useDistributionMode } from '../../context/DistributionModeContext';
 import { Tooltip } from '../ui/Tooltip';
+import { createArrowKeyHandler } from '../../hooks/useArrowKeyIncrement';
 
 /**
  * Format a number with commas for display. Returns empty string for 0.
@@ -34,6 +35,18 @@ interface StashBudgetInputProps {
   readonly monthlyTarget: number;
   readonly onAllocate: (newAmount: number) => Promise<void>;
   readonly isAllocating: boolean;
+  /** Whether the Take overlay is currently active */
+  readonly isTakeModeActive?: boolean;
+  /** Whether the Take amount would dip into the budgeted amount */
+  readonly isDippingIntoBudget?: boolean;
+  /** Additional budget being added from Left to Budget via Stash mode */
+  readonly additionalBudgetFromStash?: number;
+  /** Whether the Stash amount exceeds the combined available limit */
+  readonly isStashOverLimit?: boolean;
+  /** Whether the withdraw/deposit overlay is visible on the card */
+  readonly isOverlayVisible?: boolean;
+  /** Optional data-tour attribute for guided tour targeting */
+  readonly dataTour?: string | undefined;
 }
 
 export function StashBudgetInput({
@@ -42,6 +55,12 @@ export function StashBudgetInput({
   monthlyTarget,
   onAllocate,
   isAllocating,
+  isTakeModeActive = false,
+  isDippingIntoBudget = false,
+  additionalBudgetFromStash = 0,
+  isStashOverLimit = false,
+  isOverlayVisible = false,
+  dataTour,
 }: StashBudgetInputProps) {
   const [budgetInput, setBudgetInput] = useState(formatWithCommas(plannedBudget));
   const [prevPlannedBudget, setPrevPlannedBudget] = useState(plannedBudget);
@@ -52,10 +71,19 @@ export function StashBudgetInput({
   const drawerContext = useAvailableToStashDrawerOptional();
 
   const { requestSubmit } = useDistributionMode();
-  const isDisabled = isAllocating || isRateLimited;
+  const isAddingFromLeftToBudget = additionalBudgetFromStash > 0;
+  const isDisabled =
+    isAllocating ||
+    isRateLimited ||
+    isTakeModeActive ||
+    isAddingFromLeftToBudget ||
+    isOverlayVisible;
   const isHypothesizeMode = distributionMode === 'hypothesize';
   const isDistributeMode = distributionMode === 'distribute';
   const isInDistributionMode = isHypothesizeMode || isDistributeMode;
+
+  // Calculate projected budget when adding from Left to Budget
+  const projectedBudget = plannedBudget + additionalBudgetFromStash;
 
   // Adjust state during render when prop changes (React recommended pattern)
   if (plannedBudget !== prevPlannedBudget) {
@@ -104,6 +132,22 @@ export function StashBudgetInput({
   };
 
   const handleBudgetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle arrow key increment/decrement
+    const currentValue = parseFormatted(budgetInput);
+    const arrowHandler = createArrowKeyHandler({
+      value: currentValue,
+      onChange: (newValue) => {
+        setBudgetInput(formatWithCommas(newValue));
+        if (isHypothesizeMode) {
+          setMonthlyAllocation(itemId, newValue);
+        }
+      },
+      step: 1,
+      min: 0,
+      disabled: isDisabled,
+    });
+    arrowHandler(e);
+
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
       // In distribution modes, trigger apply/save
@@ -125,24 +169,63 @@ export function StashBudgetInput({
   const target = Math.round(monthlyTarget);
   const targetFormatted = target.toLocaleString('en-US');
 
+  // Display value: show projected budget when adding from Left to Budget
+  const displayValue = isAddingFromLeftToBudget ? formatWithCommas(projectedBudget) : budgetInput;
+
   // Calculate width: digits need ~1ch, commas need ~0.3ch
-  const digitCount = budgetInput.replaceAll(/\D/g, '').length || 1; // At least 1 for placeholder
-  const commaCount = (budgetInput.match(/,/g) || []).length;
+  const digitCount = displayValue.replaceAll(/\D/g, '').length || 1; // At least 1 for placeholder
+  const commaCount = (displayValue.match(/,/g) || []).length;
   // Min 1ch, max 8ch (covers up to 999,999 which is $1M)
   const inputWidth = Math.min(8, Math.max(1, digitCount + commaCount * 0.3));
 
   // Determine border and background styles based on mode
   const getModeStyles = () => {
+    // Stash amount exceeds combined available - error highlight
+    if (isStashOverLimit) {
+      return {
+        className: '',
+        style: {
+          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'var(--monarch-error)',
+        },
+      };
+    }
+    // Stash mode drawing from Left to Budget - green highlight
+    if (isAddingFromLeftToBudget) {
+      return {
+        className: '',
+        style: {
+          backgroundColor: 'var(--overlay-btn-bg-active-stash)',
+          borderColor: 'var(--monarch-success)',
+        },
+      };
+    }
+    // Take mode dipping into budget - orange highlight
+    if (isDippingIntoBudget) {
+      return {
+        className: '',
+        style: {
+          backgroundColor: 'var(--overlay-btn-bg-active-take)',
+          borderColor: 'var(--monarch-warning)',
+        },
+      };
+    }
     if (isHypothesizeMode) {
       return {
-        className: 'border-purple-500/40',
-        style: { backgroundColor: 'rgba(40, 10, 70, 0.6)' },
+        className: '',
+        style: {
+          backgroundColor: 'var(--hypothesize-input-bg)',
+          borderColor: 'var(--hypothesize-input-border)',
+        },
       };
     }
     if (isDistributeMode) {
       return {
-        className: 'border-green-500/40',
-        style: { backgroundColor: 'rgba(10, 70, 40, 0.6)' },
+        className: '',
+        style: {
+          backgroundColor: 'var(--distribute-input-bg)',
+          borderColor: 'var(--distribute-input-border)',
+        },
       };
     }
     return {
@@ -154,8 +237,9 @@ export function StashBudgetInput({
   const modeStyles = getModeStyles();
 
   return (
-    <div
-      className={`inline-flex items-center rounded border px-2 py-1 focus-within:border-monarch-orange ${modeStyles.className}`}
+    <label
+      data-tour={dataTour}
+      className={`inline-flex items-center rounded border px-2 py-1 focus-within:border-monarch-orange ${modeStyles.className} ${isDisabled ? 'cursor-not-allowed' : 'cursor-text'}`}
       style={modeStyles.style}
       data-no-dnd="true"
     >
@@ -163,7 +247,7 @@ export function StashBudgetInput({
       <input
         type="text"
         inputMode="numeric"
-        value={budgetInput}
+        value={displayValue}
         onChange={handleBudgetChange}
         onKeyDown={handleBudgetKeyDown}
         onBlur={handleBudgetSubmit}
@@ -171,14 +255,12 @@ export function StashBudgetInput({
         disabled={isDisabled}
         placeholder="0"
         aria-label="Budget amount"
-        className="text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none tabular-nums"
+        className="text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 disabled:cursor-not-allowed outline-none tabular-nums"
         style={{ width: `${inputWidth}ch` }}
       />
       <Tooltip content="Monthly savings target to reach your goal by the target date" side="bottom">
-        <span className="text-monarch-text-muted ml-1 cursor-help tabular-nums">
-          / {targetFormatted}
-        </span>
+        <span className="text-monarch-text-muted ml-1 tabular-nums">/ {targetFormatted}</span>
       </Tooltip>
-    </div>
+    </label>
   );
 }

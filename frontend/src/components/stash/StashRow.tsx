@@ -318,6 +318,7 @@ export const StashRow = memo(function StashRow({
                 rolloverAmount={rolloverAmount}
                 budgetedThisMonth={budgetedThisMonth}
                 creditsThisMonth={creditsThisMonth}
+                savedLabel="committed"
                 // Flex categories behave like savings_buffer (spending reduces balance)
                 goalType={item.is_flexible_group ? 'savings_buffer' : item.goal_type}
                 {...(item.available_to_spend !== undefined && {
