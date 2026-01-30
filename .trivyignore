@@ -17,11 +17,3 @@ CVE-2026-0915
 # CVE-2025-15281: glibc wordexp with WRDE_REUSE/WRDE_APPEND uninitialized memory
 # Waiting for Chainguard to update base image to glibc 2.42-r7
 CVE-2025-15281
-
-# CVE-2025-15467: OpenSSL remote code execution or DoS
-# Waiting for Chainguard to update base image to OpenSSL 3.6.1-r0+
-CVE-2025-15467
-
-# CVE-2025-69419: OpenSSL arbitrary code execution
-# Waiting for Chainguard to update base image to OpenSSL 3.6.1-r0+
-CVE-2025-69419
