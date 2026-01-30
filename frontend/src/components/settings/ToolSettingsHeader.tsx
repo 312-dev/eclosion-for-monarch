@@ -42,6 +42,7 @@ export function ToolSettingsHeader({
           className="p-2.5 rounded-lg shrink-0"
           style={{
             backgroundColor: isActive ? 'var(--monarch-orange-light)' : 'var(--monarch-bg-page)',
+            color: 'var(--tool-header-icon)',
           }}
         >
           {icon}
