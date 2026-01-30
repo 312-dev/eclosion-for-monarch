@@ -11,23 +11,29 @@
  * - Withdraw/Deposit overlay on hover
  */
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { StashItem, ItemStatus, StashData } from '../../types';
 import { SavingsProgressBar } from '../shared';
 import { Icons } from '../icons';
 import { formatCurrency, getStatusStyles } from '../../utils';
-import { parseLocalDate } from '../../utils/savingsCalculations';
+import { parseLocalDate, calculateExpectedProgress } from '../../utils/savingsCalculations';
 import { StashBudgetInput } from './StashBudgetInput';
 import { StashItemImage } from './StashItemImage';
 import { StashTitleDropdown } from './StashTitleDropdown';
 import { TakeStashOverlay } from './WithdrawDepositOverlay';
 import { motion, AnimatePresence, TIMING } from '../motion';
+import { AnimatedEmoji } from '../ui';
 // Note: CardAllocationInput is no longer used - replaced by TakeStashOverlay
 import {
   useDistributionModeType,
   useDistributionMode,
 } from '../../context/DistributionModeContext';
+import {
+  TOUR_SHOW_OVERLAY_EVENT,
+  TOUR_SHOW_EDIT_BUTTON_EVENT,
+  TOUR_HIDE_ALL_EVENT,
+} from '../layout/stashTourSteps';
 import { useProjectedStashItem } from '../../hooks';
 import {
   useAvailableToStash,
@@ -169,6 +175,44 @@ export const StashCard = memo(function StashCard({
   // Track mouse and focus state separately - overlay closes only when both leave
   const [isMouseInside, setIsMouseInside] = useState(false);
   const [isFocusInside, setIsFocusInside] = useState(false);
+
+  // Tour-forced UI states (show overlay/edit during guided tour)
+  const [tourShowOverlay, setTourShowOverlay] = useState(false);
+  const [tourShowEditButton, setTourShowEditButton] = useState(false);
+
+  // Card-level hover state for animated emoji
+  const [isCardHovered, setIsCardHovered] = useState(false);
+
+  // Listen for tour events to show overlay/edit button (only on first card)
+  useEffect(() => {
+    if (!isFirstCard) return;
+
+    const handleShowOverlay = () => {
+      setTourShowOverlay(true);
+      setShowOverlay(true);
+    };
+    const handleShowEditButton = () => {
+      setTourShowEditButton(true);
+    };
+    const handleHideAll = () => {
+      setTourShowOverlay(false);
+      setTourShowEditButton(false);
+      // Don't force-close overlay if mouse/focus is inside
+      if (!isMouseInside && !isFocusInside) {
+        setShowOverlay(false);
+      }
+    };
+
+    globalThis.addEventListener(TOUR_SHOW_OVERLAY_EVENT, handleShowOverlay);
+    globalThis.addEventListener(TOUR_SHOW_EDIT_BUTTON_EVENT, handleShowEditButton);
+    globalThis.addEventListener(TOUR_HIDE_ALL_EVENT, handleHideAll);
+
+    return () => {
+      globalThis.removeEventListener(TOUR_SHOW_OVERLAY_EVENT, handleShowOverlay);
+      globalThis.removeEventListener(TOUR_SHOW_EDIT_BUTTON_EVENT, handleShowEditButton);
+      globalThis.removeEventListener(TOUR_HIDE_ALL_EVENT, handleHideAll);
+    };
+  }, [isFirstCard, isMouseInside, isFocusInside]);
 
   // Track Take mode state for budget input highlighting
   const [isTakeModeActive, setIsTakeModeActive] = useState(false);
@@ -505,11 +549,11 @@ export const StashCard = memo(function StashCard({
 
   const handleMouseLeave = useCallback(() => {
     setIsMouseInside(false);
-    // Only close if focus is also outside AND input has no value
-    if (!isFocusInside && !hasInputValue) {
+    // Only close if focus is also outside AND input has no value AND tour isn't forcing it open
+    if (!isFocusInside && !hasInputValue && !tourShowOverlay) {
       closeOverlay();
     }
-  }, [isFocusInside, hasInputValue, closeOverlay]);
+  }, [isFocusInside, hasInputValue, tourShowOverlay, closeOverlay]);
 
   // Focus handler - track when focus enters the overlay area
   const handleFocus = useCallback(() => {
@@ -532,12 +576,12 @@ export const StashCard = memo(function StashCard({
         return;
       }
       setIsFocusInside(false);
-      // Only close if mouse is also outside AND input has no value
-      if (!isMouseInside && !hasInputValue) {
+      // Only close if mouse is also outside AND input has no value AND tour isn't forcing it open
+      if (!isMouseInside && !hasInputValue && !tourShowOverlay) {
         closeOverlay();
       }
     },
-    [isMouseInside, hasInputValue, closeOverlay]
+    [isMouseInside, hasInputValue, tourShowOverlay, closeOverlay]
   );
 
   // Get projected values in hypothesize mode (reverts to actual when mode exits)
@@ -594,12 +638,15 @@ export const StashCard = memo(function StashCard({
   const progressPercent = getProgressPercent();
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- hover handlers for visual animation only
     <div
       className="group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         borderColor: 'var(--monarch-border)',
       }}
+      onMouseEnter={() => setIsCardHovered(true)}
+      onMouseLeave={() => setIsCardHovered(false)}
     >
       {/* Image Area - drag handle (fills remaining space after content) */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- role="button" is applied conditionally via spread when not archived */}
@@ -651,7 +698,7 @@ export const StashCard = memo(function StashCard({
                 <motion.div
                   key="stash-overlay"
                   className="absolute inset-0 flex items-center justify-center"
-                  style={{ backgroundColor: overlayBgColor }}
+                  style={{ backgroundColor: overlayBgColor, backdropFilter: 'blur(8px)' }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -700,14 +747,14 @@ export const StashCard = memo(function StashCard({
             return (
               <div className="absolute top-2 left-2">
                 <span
-                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium"
                   style={{
                     backgroundColor: 'var(--card-badge-bg)',
                     color: 'var(--card-badge-text)',
                     backdropFilter: 'blur(4px)',
                   }}
                 >
-                  <BadgeIcon size={12} style={{ color: config.color }} />
+                  <BadgeIcon size={14} style={{ color: config.color }} />
                   {config.label}
                 </span>
               </div>
@@ -723,7 +770,9 @@ export const StashCard = memo(function StashCard({
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className="absolute top-2 right-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity icon-btn-hover"
+            className={`absolute top-2 right-2 p-2 rounded-lg transition-opacity icon-btn-hover ${
+              tourShowEditButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}
             style={{
               backgroundColor: 'var(--card-edit-btn-bg)',
               backdropFilter: 'blur(4px)',
@@ -771,7 +820,14 @@ export const StashCard = memo(function StashCard({
                       title={item.name}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {hasImage && (
+                        <AnimatedEmoji
+                          emoji={item.emoji || '🎯'}
+                          isAnimating={isCardHovered}
+                          size={20}
+                          className="mr-1.5 align-middle"
+                        />
+                      )}
                       {item.name}
                     </a>
                   ) : (
@@ -780,7 +836,14 @@ export const StashCard = memo(function StashCard({
                       style={{ color: 'var(--monarch-text-dark)' }}
                       title={item.name}
                     >
-                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {hasImage && (
+                        <AnimatedEmoji
+                          emoji={item.emoji || '🎯'}
+                          isAnimating={isCardHovered}
+                          size={20}
+                          className="mr-1.5 align-middle"
+                        />
+                      )}
                       {item.name}
                     </h3>
                   )}
@@ -796,7 +859,14 @@ export const StashCard = memo(function StashCard({
                       style={{ color: 'var(--monarch-text-dark)' }}
                       title={item.name}
                     >
-                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {hasImage && (
+                        <AnimatedEmoji
+                          emoji={item.emoji || '🎯'}
+                          isAnimating={isCardHovered}
+                          size={20}
+                          className="mr-1.5 align-middle"
+                        />
+                      )}
                       {item.name}
                     </a>
                   ) : (
@@ -805,7 +875,14 @@ export const StashCard = memo(function StashCard({
                       style={{ color: 'var(--monarch-text-dark)' }}
                       title={item.name}
                     >
-                      {hasImage && <span className="mr-1.5">{item.emoji || '🎯'}</span>}
+                      {hasImage && (
+                        <AnimatedEmoji
+                          emoji={item.emoji || '🎯'}
+                          isAnimating={isCardHovered}
+                          size={20}
+                          className="mr-1.5 align-middle"
+                        />
+                      )}
                       {item.name}
                     </h3>
                   )}
@@ -902,6 +979,12 @@ export const StashCard = memo(function StashCard({
               savedLabel="committed"
               // Flex categories behave like savings_buffer (spending reduces balance)
               goalType={item.is_flexible_group ? 'savings_buffer' : item.goal_type}
+              // Show expected progress tick for time-based goals (not savings_buffer which has no end date)
+              expectedProgressPercent={
+                item.goal_type === 'savings_buffer'
+                  ? null
+                  : calculateExpectedProgress(item.target_date)
+              }
               {...(item.available_to_spend !== undefined && {
                 availableToSpend: item.available_to_spend,
               })}

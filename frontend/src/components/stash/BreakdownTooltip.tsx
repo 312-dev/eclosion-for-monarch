@@ -60,12 +60,6 @@ export function BreakdownTooltip({
 
   return (
     <div className="text-sm space-y-2 min-w-72">
-      <div
-        className="font-medium border-b pb-1 mb-2"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
-        Cash to Stash
-      </div>
       <div className="space-y-1">
         {includeExpectedIncome && breakdown.expectedIncome > 0 && (
           <BreakdownRow

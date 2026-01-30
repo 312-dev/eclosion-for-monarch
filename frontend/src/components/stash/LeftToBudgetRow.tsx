@@ -44,12 +44,6 @@ export function LeftToBudgetRow({
 
   const nestedTooltipContent = (
     <div className="text-xs max-w-72">
-      <div
-        className="font-medium pb-1 mb-1 border-b"
-        style={{ borderColor: 'var(--monarch-border)' }}
-      >
-        {label} Breakdown
-      </div>
       <div className="space-y-0.5">
         <div className="flex justify-between items-center gap-2">
           <span className="flex-1" style={{ color: 'var(--monarch-text-muted)' }}>

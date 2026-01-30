@@ -150,22 +150,12 @@ export const FEATURES: FeatureDefinition[] = [
   {
     id: 'stashes',
     name: 'Stashes',
-    tagline: 'Save for one-time purchases with browser sync',
+    tagline: 'Track and reach your savings goals',
     description:
-      'Create savings goals for one-time purchases and sync them from your browser bookmarks. Track progress with visual cards you can resize and rearrange.',
+      'Create a visual dashboard of savings goals for things you want. Set target amounts and dates, track your progress with status badges, and organize cards your way with drag and drop.',
     icon: 'Coins',
     status: 'available',
     benefits: [
-      {
-        icon: 'Bookmark',
-        title: 'Browser Sync',
-        description: 'Sync stashes from Firefox, Chrome, Edge, or Safari bookmarks automatically.',
-      },
-      {
-        icon: 'Target',
-        title: 'Target Dates',
-        description: 'Set goal dates and see monthly savings targets calculated automatically.',
-      },
       {
         icon: 'Package',
         title: 'Visual Dashboard',
@@ -175,6 +165,16 @@ export const FEATURES: FeatureDefinition[] = [
         icon: 'CheckCircle',
         title: 'Progress Tracking',
         description: "See status badges showing if you're funded, on track, or behind.",
+      },
+      {
+        icon: 'Target',
+        title: 'Target Dates',
+        description: 'Set goal dates and see monthly savings targets calculated automatically.',
+      },
+      {
+        icon: 'Bookmark',
+        title: 'Browser Sync',
+        description: 'Optionally sync stashes from Firefox, Chrome, Edge, or Safari bookmarks.',
       },
     ],
     demoPath: '/demo/stashes/',

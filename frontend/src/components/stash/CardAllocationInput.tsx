@@ -77,7 +77,7 @@ export function CardAllocationInput({ itemId, itemName }: CardAllocationInputPro
   );
 
   const isDistribute = mode === 'distribute';
-  const focusRingColor = isDistribute ? 'ring-green-400' : 'ring-purple-400';
+  const focusRingColor = isDistribute ? 'ring-[var(--monarch-success)]' : 'ring-purple-400';
 
   return (
     <div className="flex flex-col items-center gap-1.5">

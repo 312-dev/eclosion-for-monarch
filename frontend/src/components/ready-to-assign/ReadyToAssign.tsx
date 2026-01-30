@@ -4,8 +4,7 @@
  * Accessibility features:
  * - aria-label on interactive elements
  * - aria-describedby for progress bars
- * - Keyboard accessible popover with Escape to close
- * - Proper focus management
+ * - Tooltips with hover interaction
  */
 
 import { useMemo, useId } from 'react';
@@ -17,12 +16,11 @@ import type {
 } from '../../types';
 import { formatCurrency } from '../../utils';
 import { Tooltip } from '../ui/Tooltip';
-import { useDropdown } from '../../hooks';
 import { calculateBurndownData } from '../charts';
 import { TargetIcon } from '../icons';
 import { LeftToBudgetBadge } from '../LeftToBudgetBadge';
 import { MobileReadyToAssign } from './MobileReadyToAssign';
-import { StabilizationPopover, StabilizationTimeline } from './StabilizationTimeline';
+import { StabilizationTimeline } from './StabilizationTimeline';
 
 interface ReadyToAssignProps {
   data: ReadyToAssignData;
@@ -40,16 +38,6 @@ export function ReadyToAssign({
   variant = 'sidebar',
 }: ReadyToAssignProps) {
   const progressBarId = useId();
-  const popoverId = useId();
-
-  const infoDropdown = useDropdown<HTMLDivElement, HTMLButtonElement>({
-    alignment: 'right',
-    offset: { y: 8 },
-  });
-
-  const handleFocusTrigger = () => {
-    infoDropdown.triggerRef.current?.focus();
-  };
 
   // Calculate current monthly cost as sum of frozen targets - this is what you
   // actually need to budget THIS month. Future months use max(frozen, ideal).
@@ -158,7 +146,7 @@ export function ReadyToAssign({
             }
           >
             <span
-              className="absolute top-3 right-3 cursor-help text-white"
+              className="absolute top-3 right-3 cursor-help text-monarch-text-dark"
               data-tour="untracked-warning"
             >
               <svg
@@ -227,30 +215,15 @@ export function ReadyToAssign({
             </div>
           </div>
         )}
-
-        {/* Stable Rate Info Popover */}
-        <StabilizationPopover
-          popoverId={popoverId}
-          isOpen={infoDropdown.isOpen}
-          position={infoDropdown.position}
-          onClose={infoDropdown.close}
-          onFocusTrigger={handleFocusTrigger}
-          dropdownRef={infoDropdown.dropdownRef}
-          stabilization={stabilization}
-          catchUpAmount={catchUpAmount}
-          itemsBehindCount={itemsBehind.length}
-          currentMonthlyCost={currentMonthlyCost}
-        />
       </div>
 
-      {/* Stabilization Timeline + Card */}
+      {/* Stabilization Timeline */}
       <StabilizationTimeline
-        popoverId={popoverId}
-        isOpen={infoDropdown.isOpen}
-        onToggle={infoDropdown.toggle}
-        triggerRef={infoDropdown.triggerRef}
         stabilization={stabilization}
         timelineMonths={timelineMonths}
+        catchUpAmount={catchUpAmount}
+        itemsBehindCount={itemsBehind.length}
+        currentMonthlyCost={currentMonthlyCost}
       />
     </div>
   );

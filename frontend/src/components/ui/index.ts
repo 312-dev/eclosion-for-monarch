@@ -44,6 +44,7 @@ export { CurrencyInput, type CurrencyInputProps } from './CurrencyInput';
 export { MerchantIcon, type MerchantIconProps } from './MerchantIcon';
 export { ToolPageHeader } from './ToolPageHeader';
 export { ToolSettingsModal, type ToolType } from './ToolSettingsModal';
+export { AnimatedEmoji } from './AnimatedEmoji';
 
 // Re-export icons from the centralized icons module for convenience
 export * from '../icons';

@@ -128,12 +128,12 @@ export function RecurringTab() {
   }
 
   return (
-    <div className="recurring-tab-layout tab-content-enter" data-testid="recurring-content">
+    <div className="recurring-tab-layout tab-content-enter px-6" data-testid="recurring-content">
       {/* Main content area */}
       <div className="recurring-tab-content">
         {/* Header */}
         <ToolPageHeader
-          icon={<RecurringIcon size={24} />}
+          icon={<RecurringIcon size={40} />}
           title="Recurring Expenses"
           description="Track and manage recurring bills and subscriptions"
           onSettingsClick={() => setShowSettingsModal(true)}

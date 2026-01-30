@@ -16,6 +16,7 @@
  */
 
 import { memo, useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import { TOUR_SHOW_RESIZE_HANDLE_EVENT, TOUR_HIDE_ALL_EVENT } from '../layout/stashTourSteps';
 import { type LayoutItem } from 'react-grid-layout/legacy';
 import RGL from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
@@ -138,7 +139,7 @@ function AddStashCard({
       <div
         className="flex-1 min-h-28 flex items-center justify-center"
         style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.2)',
+          backgroundColor: 'var(--monarch-border)',
         }}
       >
         <div
@@ -370,6 +371,23 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
 }: StashWidgetGridProps) {
   const isInDistributionMode = useIsInDistributionMode();
 
+  // Tour-forced resize handle visibility
+  const [tourShowResizeHandle, setTourShowResizeHandle] = useState(false);
+
+  // Listen for tour events to show resize handle
+  useEffect(() => {
+    const handleShowResizeHandle = () => setTourShowResizeHandle(true);
+    const handleHideAll = () => setTourShowResizeHandle(false);
+
+    globalThis.addEventListener(TOUR_SHOW_RESIZE_HANDLE_EVENT, handleShowResizeHandle);
+    globalThis.addEventListener(TOUR_HIDE_ALL_EVENT, handleHideAll);
+
+    return () => {
+      globalThis.removeEventListener(TOUR_SHOW_RESIZE_HANDLE_EVENT, handleShowResizeHandle);
+      globalThis.removeEventListener(TOUR_HIDE_ALL_EVENT, handleHideAll);
+    };
+  }, []);
+
   // Sort active items by sort_order (from database)
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -575,7 +593,10 @@ export const StashWidgetGrid = memo(function StashWidgetGrid({
   }
 
   return (
-    <div ref={containerRef} className="stash-widget-grid w-full">
+    <div
+      ref={containerRef}
+      className={`stash-widget-grid w-full${tourShowResizeHandle ? ' tour-show-resize' : ''}`}
+    >
       <GridLayout
         className="layout"
         layout={layout}

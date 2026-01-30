@@ -53,12 +53,12 @@ export function DistributionModeBanner() {
   const isDistribute = mode === 'distribute';
   const isHypothesize = mode === 'hypothesize';
 
-  // Banner colors
+  // Banner colors - use theme-appropriate text colors for readability
   const bannerBg = isDistribute ? 'var(--monarch-success-bg)' : 'rgba(147, 51, 234, 0.15)';
   const bannerBorder = isDistribute ? 'var(--monarch-success)' : '#9333ea';
-  const iconColor = isDistribute ? 'var(--monarch-success)' : '#d8b4fe';
-  const textColor = '#ffffff';
-  const descriptionColor = 'rgba(255, 255, 255, 0.8)';
+  const iconColor = isDistribute ? 'var(--monarch-success)' : '#9333ea';
+  const textColor = isDistribute ? 'var(--monarch-success)' : '#7c3aed';
+  const descriptionColor = 'var(--monarch-text-muted)';
 
   return (
     <>

@@ -6,11 +6,12 @@
  * Tour state is persisted in localStorage.
  *
  * Step triggers (progressive disclosure):
- * - Phase 1: Always shown (add-item, reports-tab)
+ * - Phase 1: Always shown (available-funds, distribute-mode, hypothesize-mode, add-item)
  * - Phase 2: When items exist (progress-bar, budget-input, take-stash, edit-item, arrange-cards)
- * - Phase 3: When Monarch Goals enabled (monarch-goal-badge)
- * - Phase 4: Browser integration (sync-bookmarks) - desktop or browser configured
- * - Phase 5: Pending bookmarks (pending-bookmarks)
+ * - Phase 3: Secondary features (reports-tab)
+ * - Phase 4: When Monarch Goals enabled (monarch-goal-badge)
+ * - Phase 5: Browser integration (sync-bookmarks) - desktop or browser configured
+ * - Phase 6: Pending bookmarks (pending-bookmarks)
  */
 
 import { useMemo, useCallback } from 'react';
@@ -56,24 +57,29 @@ function evaluateTriggers(data: StashTourData | undefined): StashTourStepId[] {
 
   // Build step list using spread to satisfy linter (no multiple pushes)
   const stepIds: StashTourStepId[] = [
-    // Phase 1: Always shown (core concepts)
+    // Phase 1: Always shown (core concepts - most important first)
+    'available-funds',
+    'distribute-mode',
+    'hypothesize-mode',
     'add-item',
-    'reports-tab',
 
     // Phase 2: When items exist (card interactions)
     ...(data.itemCount > 0
       ? (['progress-bar', 'budget-input', 'take-stash', 'edit-item', 'arrange-cards'] as const)
       : []),
 
-    // Phase 3: When Monarch Goals enabled
+    // Phase 3: Secondary features (always shown)
+    'reports-tab',
+
+    // Phase 4: When Monarch Goals enabled
     ...(data.hasMonarchGoalsEnabled && data.monarchGoalCount > 0
       ? (['monarch-goal-badge'] as const)
       : []),
 
-    // Phase 4: Browser integration
+    // Phase 5: Browser integration
     ...(data.isDesktop || data.isBrowserConfigured ? (['sync-bookmarks'] as const) : []),
 
-    // Phase 5: Pending bookmarks
+    // Phase 6: Pending bookmarks
     ...(data.pendingCount > 0 ? (['pending-bookmarks'] as const) : []),
   ];
 

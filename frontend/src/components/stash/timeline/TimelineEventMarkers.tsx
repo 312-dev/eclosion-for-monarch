@@ -521,7 +521,7 @@ function EventMarkerTooltip({
                   </div>
                   <div>
                     {event.type === 'deposit' ? (
-                      <span style={{ color: 'var(--monarch-success, #22c55e)' }}>
+                      <span style={{ color: 'var(--monarch-success, #22a06b)' }}>
                         +{formatCurrency(event.amount)}
                       </span>
                     ) : (

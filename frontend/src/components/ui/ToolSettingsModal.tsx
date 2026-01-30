@@ -10,8 +10,13 @@ import { useState, useMemo } from 'react';
 import { Modal } from './Modal';
 import { RecurringToolSettings } from '../settings/RecurringToolSettings';
 import { StashToolSettings } from '../settings/StashToolSettings';
+import { NotesToolSettings } from '../settings/NotesToolSettings';
 import { RecurringResetModal } from '../settings/RecurringResetModal';
-import { useDashboardQuery, useClearUnconvertedBookmarksMutation, useUpdateStashConfigMutation } from '../../api/queries';
+import {
+  useDashboardQuery,
+  useClearUnconvertedBookmarksMutation,
+  useUpdateStashConfigMutation,
+} from '../../api/queries';
 import { useToast } from '../../context/ToastContext';
 
 export type ToolType = 'recurring' | 'stash' | 'notes';
@@ -27,7 +32,11 @@ export function ToolSettingsModal({ isOpen, onClose, tool }: ToolSettingsModalPr
 
   // Recurring-specific state
   const [showRecurringResetModal, setShowRecurringResetModal] = useState(false);
-  const { data: dashboardData, refetch: refetchDashboard, isLoading: dashboardLoading } = useDashboardQuery();
+  const {
+    data: dashboardData,
+    refetch: refetchDashboard,
+    isLoading: dashboardLoading,
+  } = useDashboardQuery();
 
   // Stash-specific state
   const clearUnconvertedBookmarks = useClearUnconvertedBookmarksMutation();
@@ -36,9 +45,10 @@ export function ToolSettingsModal({ isOpen, onClose, tool }: ToolSettingsModalPr
   // Calculate recurring stats for reset modal
   const { totalCategories, totalItems } = useMemo(() => {
     if (!dashboardData) return { totalCategories: 0, totalItems: 0 };
-    const dedicatedItems = dashboardData.items.filter(
-      (item) => item.is_enabled && !item.is_in_rollup && item.category_id
-    ) || [];
+    const dedicatedItems =
+      dashboardData.items.filter(
+        (item) => item.is_enabled && !item.is_in_rollup && item.category_id
+      ) || [];
     const rollupItems = dashboardData.rollup?.items || [];
     return {
       totalCategories: dedicatedItems.length + (dashboardData.rollup?.category_id ? 1 : 0),
@@ -51,7 +61,11 @@ export function ToolSettingsModal({ isOpen, onClose, tool }: ToolSettingsModalPr
   };
 
   const handleUnlinkBookmarks = async () => {
-    if (!globalThis.confirm('Are you sure you want to unlink bookmark sync? This will clear all pending bookmarks.')) {
+    if (
+      !globalThis.confirm(
+        'Are you sure you want to unlink bookmark sync? This will clear all pending bookmarks.'
+      )
+    ) {
       return;
     }
 
@@ -116,13 +130,7 @@ export function ToolSettingsModal({ isOpen, onClose, tool }: ToolSettingsModalPr
           />
         )}
 
-        {tool === 'notes' && (
-          <div className="p-6">
-            <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
-              Monthly Notes are always enabled. You can hide specific categories from the Settings screen.
-            </p>
-          </div>
-        )}
+        {tool === 'notes' && <NotesToolSettings defaultExpanded={true} variant="modal" />}
       </Modal>
 
       {/* Nested modal */}

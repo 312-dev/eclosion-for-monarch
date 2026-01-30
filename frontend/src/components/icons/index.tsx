@@ -43,7 +43,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowBigDownDash,
-  ArrowUpFromLine,
+  ArrowsUpFromLine,
   Menu,
   Search,
   Filter,
@@ -179,7 +179,8 @@ export const TrendDownIcon = ChevronsDown;
 export const ArrowUpIcon = ArrowUp;
 export const ArrowDownIcon = ArrowDown;
 export const ArrowBigDownDashIcon = ArrowBigDownDash;
-export const ArrowUpFromLineIcon = ArrowUpFromLine;
+
+export const ArrowsUpFromLineIcon = ArrowsUpFromLine;
 export const MenuIcon = Menu;
 export const SearchIcon = Search;
 export const FilterIcon = Filter;
@@ -253,6 +254,7 @@ export const WalletIcon = Wallet;
 export const BanknoteIcon = Banknote;
 export const BanknoteArrowUpIcon = BanknoteArrowUp;
 export const BanknoteArrowDownIcon = BanknoteArrowDown;
+
 export const TrendingUpDownIcon = TrendingUpDown;
 export const SquareIcon = Square;
 export const CheckSquareIcon = CheckSquare;
@@ -579,7 +581,7 @@ export const Icons = {
   ArrowUp: ArrowUpIcon,
   ArrowDown: ArrowDownIcon,
   ArrowBigDownDash: ArrowBigDownDashIcon,
-  ArrowsUpFromLine: ArrowUpFromLineIcon,
+  ArrowsUpFromLine: ArrowsUpFromLineIcon,
 
   // UI
   Menu: MenuIcon,
@@ -684,7 +686,7 @@ export const Icons = {
   Banknote: BanknoteIcon,
   BanknoteArrowUp: BanknoteArrowUpIcon,
   BanknoteArrowDown: BanknoteArrowDownIcon,
-  MoneyBills: WalletIcon,
+  MoneyBills: BanknoteIcon,
   TrendingUpDown: TrendingUpDownIcon,
 
   // Selection
@@ -711,4 +713,9 @@ export const Icons = {
   CircleFadingPlus: CircleFadingPlusIcon,
 };
 
-export { Mail as MailIcon, HelpCircle as HelpIcon } from 'lucide-react';
+export {
+  Mail as MailIcon,
+  HelpCircle as HelpIcon,
+  ArrowUpFromLine as ArrowUpFromLineIcon,
+  CircleDollarSign as CircleDollarSignIcon,
+} from 'lucide-react';

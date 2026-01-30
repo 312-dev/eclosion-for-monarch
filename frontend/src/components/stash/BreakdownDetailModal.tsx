@@ -138,7 +138,7 @@ export function BreakdownDetailModal({
           }}
         >
           <span className="text-sm font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-            Total Available
+            Total Commitable
           </span>
           <span className="text-2xl font-semibold" style={{ color: statusColor }}>
             {formattedAmount}

@@ -491,7 +491,7 @@ async function checkAndRunStartupSync(sessionRestored: boolean): Promise<void> {
 
   if (syncResult.synced && syncResult.success) {
     const syncTime = new Date().toLocaleTimeString();
-    updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+    updateTrayMenu(handleSyncClick);
     updateHealthStatus(true, syncTime);
   }
   // Sync failures on startup are silent - user can check tray status or sync manually
@@ -510,8 +510,7 @@ async function startBackendAndInitialize(): Promise<void> {
   // Fetch last sync time and update tray
   const lastSyncIso = await backendManager.fetchLastSyncTime();
   if (lastSyncIso) {
-    const syncStatus = `Last sync: ${formatRelativeTime(lastSyncIso)}`;
-    updateTrayMenu(handleSyncClick, syncStatus);
+    updateTrayMenu(handleSyncClick);
     updateHealthStatus(true, formatRelativeTime(lastSyncIso));
   }
 
@@ -580,7 +579,7 @@ async function handleSyncClick(): Promise<void> {
   const result = await backendManager.triggerSync(passphrase);
   if (result.success) {
     const syncTime = new Date().toLocaleTimeString();
-    updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+    updateTrayMenu(handleSyncClick);
     updateHealthStatus(true, syncTime);
   } else if (isRateLimitError(result.error)) {
     // Rate limited - notify renderer to show banner
@@ -617,7 +616,7 @@ function setupPowerMonitor(): void {
         // Update tray status if sync was triggered and succeeded
         if (result.synced && result.success) {
           const syncTime = new Date().toLocaleTimeString();
-          updateTrayMenu(handleSyncClick, `Last sync: ${syncTime}`);
+          updateTrayMenu(handleSyncClick);
           updateHealthStatus(true, syncTime);
         }
         // Wake sync failures are silent - user can check tray status or sync manually

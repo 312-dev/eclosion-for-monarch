@@ -80,7 +80,6 @@ export function StashBudgetInput({
     isOverlayVisible;
   const isHypothesizeMode = distributionMode === 'hypothesize';
   const isDistributeMode = distributionMode === 'distribute';
-  const isInDistributionMode = isHypothesizeMode || isDistributeMode;
 
   // Calculate projected budget when adding from Left to Budget
   const projectedBudget = plannedBudget + additionalBudgetFromStash;
@@ -150,8 +149,9 @@ export function StashBudgetInput({
 
     if (e.key === 'Enter') {
       (e.target as HTMLInputElement).blur();
-      // In distribution modes, trigger apply/save
-      if (isInDistributionMode) {
+      // In hypothesize mode, trigger apply/save on Enter
+      // In distribute mode, changes are applied live so just blur (don't exit mode)
+      if (isHypothesizeMode) {
         requestSubmit();
       }
     } else if (e.key === 'Escape') {

@@ -223,7 +223,7 @@ export function NotesTab() {
 
   return (
     <NotesEditorProvider>
-      <div className="max-w-7xl mx-auto px-4 tab-content-enter">
+      <div className="max-w-7xl mx-auto px-6 tab-content-enter">
         {/* Header */}
         <ToolPageHeader
           icon={<NotesIcon size={40} />}

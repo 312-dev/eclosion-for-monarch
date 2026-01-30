@@ -16,14 +16,15 @@
  * - Different progress bar visualization
  */
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Target } from 'lucide-react';
 import type { MonarchGoal } from '../../types/monarchGoal';
 import { Icons } from '../icons';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, extractLeadingEmoji, stripLeadingEmoji } from '../../utils';
 import { MonarchGoalProgressBar } from './MonarchGoalProgressBar';
 import { useDistributionModeType } from '../../context/DistributionModeContext';
 import { Tooltip } from '../ui/Tooltip';
+import { AnimatedEmoji } from '../ui';
 import { motion, AnimatePresence, TIMING } from '../motion';
 
 interface MonarchGoalCardProps {
@@ -210,6 +211,7 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
   const imageUrl = getMonarchImageUrl(goal.imageStorageProvider, goal.imageStorageProviderId);
   const hasImage = Boolean(imageUrl);
   const distributionMode = useDistributionModeType();
+  const [isCardHovered, setIsCardHovered] = useState(false);
 
   // Get current month abbreviation for label
   const currentMonthAbbr = new Date().toLocaleDateString('en-US', { month: 'short' });
@@ -224,12 +226,15 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- hover handlers for visual animation only
     <div
       className={`group rounded-xl border overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col relative ${isDragging ? 'opacity-50' : ''}`}
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         borderColor: 'var(--monarch-border)',
       }}
+      onMouseEnter={() => setIsCardHovered(true)}
+      onMouseLeave={() => setIsCardHovered(false)}
     >
       {/* Distribution mode overlay - covers entire card */}
       <AnimatePresence>
@@ -271,10 +276,15 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
           <img src={imageUrl} alt={goal.name} className="w-full h-full object-cover" />
         ) : (
           <div
-            className="flex items-center justify-center opacity-50"
+            className="flex items-center justify-center"
             style={{ fontSize: 'min(50cqh, 96px)', lineHeight: 1 }}
           >
-            💰
+            <AnimatedEmoji
+              emoji={goal.icon || '💰'}
+              isAnimating={isCardHovered}
+              size={96}
+              className="opacity-50"
+            />
           </div>
         )}
 
@@ -285,14 +295,14 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
             data-tour={isFirstGoal ? 'stash-monarch-goal' : undefined}
           >
             <span
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium"
               style={{
                 backgroundColor: 'var(--card-badge-bg)',
                 color: 'var(--card-badge-text)',
                 backdropFilter: 'blur(4px)',
               }}
             >
-              <Target size={12} style={{ color: 'rgb(255, 105, 45)' }} />
+              <Target size={14} style={{ color: 'rgb(255, 105, 45)' }} />
               Monarch Goal
             </span>
           </div>
@@ -304,7 +314,7 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
           href={`https://app.monarch.com/goals/savings/${goal.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute top-2 right-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity icon-btn-hover"
+          className="absolute top-2 right-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity icon-btn-hover cursor-pointer"
           style={{
             backgroundColor: 'var(--card-edit-btn-bg)',
             backdropFilter: 'blur(4px)',
@@ -337,13 +347,31 @@ export const MonarchGoalCard = memo(function MonarchGoalCard({
           <div className="min-w-0 flex-1">
             {/* Title */}
             <div className="flex items-center gap-1.5 min-w-0">
-              <h3
-                className="text-base font-medium truncate hover:underline"
-                style={{ color: 'var(--monarch-text-dark)' }}
-                title={goal.name}
-              >
-                {goal.name}
-              </h3>
+              {(() => {
+                // Use goal.icon if available, otherwise extract from name
+                const emoji = goal.icon || extractLeadingEmoji(goal.name);
+                // Strip emoji from name if we're showing it separately as animated
+                const displayName =
+                  hasImage && emoji && !goal.icon ? stripLeadingEmoji(goal.name) : goal.name;
+                return (
+                  <h3
+                    className="text-base font-medium truncate hover:underline"
+                    style={{ color: 'var(--monarch-text-dark)' }}
+                    title={goal.name}
+                  >
+                    {hasImage && emoji && (
+                      <AnimatedEmoji
+                        emoji={emoji}
+                        isAnimating={isCardHovered}
+                        size={20}
+                        className="mr-1.5 align-middle"
+                      />
+                    )}
+                    {displayName}
+                  </h3>
+                );
+              })()}
+
               <Icons.ExternalLink
                 size={14}
                 className="shrink-0"

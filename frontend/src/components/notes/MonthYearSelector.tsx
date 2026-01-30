@@ -133,11 +133,8 @@ export function MonthYearSelector({
         {/* Center: Calendar icon + Month/Year title */}
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-2">
-            <div
-              className="p-2 rounded-xl"
-              style={{ backgroundColor: 'var(--monarch-orange-light)' }}
-            >
-              <Calendar size={18} style={{ color: 'var(--monarch-orange)' }} />
+            <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--monarch-bg-hover)' }}>
+              <Calendar size={18} style={{ color: 'var(--monarch-text-muted)' }} />
             </div>
             <div ref={monthRef} className="relative">
               <button

@@ -18,7 +18,7 @@ const inputStyle = {
 };
 const labelClass = 'block text-xs font-medium mb-1';
 const inputClass =
-  'w-full px-3 py-1.5 rounded text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-orange';
+  'w-full px-3 py-1.5 rounded text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-text-muted';
 
 /** Custom dropdown for stash item selection with color dots */
 interface StashItemDropdownProps {
@@ -372,7 +372,7 @@ export function TimelineEditPopover({
               onChange={(e) => setAmount(e.target.value.replaceAll(/\D/g, ''))}
               onKeyDown={handleAmountKeyDown}
               placeholder="0"
-              className="w-full pl-7 pr-3 py-1.5 rounded text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-orange"
+              className="w-full pl-7 pr-3 py-1.5 rounded text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-text-muted"
               style={inputStyle}
             />
             {type === 'rate_change' && (

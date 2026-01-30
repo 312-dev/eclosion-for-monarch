@@ -148,7 +148,7 @@ export function DistributeButton({
     return compact ? 14 : 18;
   };
 
-  const exitLabel = hasChanges ? 'Apply & Exit' : 'Exit Mode';
+  const exitLabel = 'Exit';
   const iconSize = getIconSize();
 
   const buttonContent = (
@@ -181,7 +181,7 @@ export function DistributeButton({
   const showTooltip = iconOnly || tooltipMessage;
   const getDefaultTooltip = () => {
     if (isInDistributeMode) {
-      return hasChanges ? 'Apply changes and exit' : 'Exit distribute mode';
+      return 'Exit distribute mode';
     }
     return 'Distribute funds';
   };

@@ -18,11 +18,13 @@ import {
   useStashConfigQuery,
   useStashCategoryGroupsQuery,
   useUpdateStashConfigMutation,
+  useStashQuery,
 } from '../../api/queries';
 import { queryKeys, getQueryKey } from '../../api/queries/keys';
 import { StashIcon } from '../wizards/SetupWizardIcons';
 import { ToolSettingsHeader } from './ToolSettingsHeader';
 import { SettingsRow } from './SettingsRow';
+import { SettingsSectionHeader } from './SettingsSectionHeader';
 import { ToggleSwitch } from './ToggleSwitch';
 import { CashAccountSelectionModal } from './CashAccountSelectionModal';
 
@@ -63,6 +65,7 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
     // Queries
     const { data: config, isLoading: configLoading } = useStashConfigQuery();
     const { data: categoryGroups = [], isLoading: groupsLoading } = useStashCategoryGroupsQuery();
+    const { data: stashData } = useStashQuery();
     const updateConfig = useUpdateStashConfigMutation();
 
     type SettingKey =
@@ -252,10 +255,46 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
       ? BROWSER_LABELS[config.selectedBrowser] || config.selectedBrowser
       : 'Not configured';
 
-    // Description for header - show browser info if sync is configured
-    const description = isBrowserSyncConfigured
-      ? `Synced with ${browserLabel}`
-      : 'Track savings goals for purchases';
+    // Calculate stash count for description
+    const stashCount = stashData?.items.length ?? 0;
+
+    // Description for header - show stash count and bookmark sync status
+    const getDescription = () => {
+      if (!hasAnyConfig && stashCount === 0) {
+        return 'Track savings goals for purchases';
+      }
+
+      const parts: React.ReactNode[] = [];
+
+      // Add stash count
+      if (stashCount > 0) {
+        parts.push(
+          <span key="count">
+            {stashCount} {stashCount === 1 ? 'stash' : 'stashes'}
+          </span>
+        );
+      }
+
+      // Add bookmark sync status
+      if (isBrowserSyncConfigured) {
+        if (parts.length > 0) {
+          parts.push(
+            <span key="sep" style={{ color: 'var(--monarch-border)' }}>
+              |
+            </span>
+          );
+        }
+        parts.push(<span key="sync">Bookmark sync enabled</span>);
+      }
+
+      if (parts.length === 0) {
+        return 'No stashes yet';
+      }
+
+      return <span className="flex items-center gap-3">{parts}</span>;
+    };
+
+    const description = getDescription();
 
     const containerClass = variant === 'modal' ? 'overflow-hidden' : 'rounded-xl overflow-hidden';
     const containerStyle =
@@ -306,7 +345,7 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                     : {}
                 }
               >
-                {/* Default Category Group - General setting, always shown */}
+                {/* === GENERAL SECTION === */}
                 <SettingsRow label="Default Category Group" variant={variant}>
                   <SearchableSelect
                     value={config?.defaultCategoryGroupId || ''}
@@ -317,10 +356,13 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                     disabled={isSaving('group')}
                     loading={groupsLoading}
                     className="min-w-45"
+                    insideModal={variant === 'modal'}
                   />
                 </SettingsRow>
 
-                {/* Include expected income in Available Funds calculation */}
+                {/* === AVAILABLE FUNDS SECTION === */}
+                <SettingsSectionHeader title="Available Funds" variant={variant} />
+
                 <SettingsRow
                   label="Include expected income"
                   description="Add planned income to Available Funds calculation"
@@ -338,10 +380,9 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   />
                 </SettingsRow>
 
-                {/* Cash Account Selection */}
                 <SettingsRow
                   label="Cash accounts"
-                  description="Select which accounts to include in Available Funds (credit cards always included)"
+                  description="Select which accounts to include (credit cards always included)"
                   variant={variant}
                 >
                   <button
@@ -360,7 +401,6 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   </button>
                 </SettingsRow>
 
-                {/* Reserved Buffer Amount */}
                 <SettingsRow
                   label="Reserved buffer"
                   description="Reserve funds that won't count toward Available Funds"
@@ -387,7 +427,9 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   </div>
                 </SettingsRow>
 
-                {/* Show Monarch goals in Stash */}
+                {/* === DISPLAY SECTION === */}
+                <SettingsSectionHeader title="Display" variant={variant} />
+
                 <SettingsRow
                   label="Show Monarch savings goals"
                   description="Display your Monarch Money savings goals alongside Stash items"
@@ -405,7 +447,9 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   />
                 </SettingsRow>
 
-                {/* Auto-archive when goal met - General setting, always shown */}
+                {/* === AUTOMATION SECTION === */}
+                <SettingsSectionHeader title="Automation" variant={variant} />
+
                 <SettingsRow
                   label="Auto-archive completed"
                   description="Archive items at the start of the month after being fully funded"
@@ -424,33 +468,35 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                   />
                 </SettingsRow>
 
-                {/* Bookmark sync setup - Show when not configured */}
+                {/* === BOOKMARK SYNC SECTION (Desktop only) === */}
                 {!isBrowserSyncConfigured && onSetupBookmarkSync && (
-                  <SettingsRow
-                    label="Bookmark sync"
-                    description="Convert browser bookmarks to stashes"
-                    isLast
-                    variant={variant}
-                  >
-                    <button
-                      type="button"
-                      onClick={onSetupBookmarkSync}
-                      className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
-                      style={{
-                        backgroundColor: 'var(--monarch-orange)',
-                        color: 'white',
-                      }}
-                      aria-label="Set up bookmark sync"
+                  <>
+                    <SettingsSectionHeader title="Bookmark Sync" variant={variant} />
+                    <SettingsRow
+                      label="Browser bookmarks"
+                      description="Convert browser bookmarks to stashes"
+                      isLast
+                      variant={variant}
                     >
-                      Setup
-                    </button>
-                  </SettingsRow>
+                      <button
+                        type="button"
+                        onClick={onSetupBookmarkSync}
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors"
+                        style={{
+                          backgroundColor: 'var(--monarch-orange)',
+                          color: 'white',
+                        }}
+                        aria-label="Set up bookmark sync"
+                      >
+                        Setup
+                      </button>
+                    </SettingsRow>
+                  </>
                 )}
 
-                {/* Bookmark-specific settings - Only show when browser sync is configured */}
                 {isBrowserSyncConfigured && (
                   <>
-                    {/* Bookmark source with Change/Unlink buttons */}
+                    <SettingsSectionHeader title="Bookmark Sync" variant={variant} />
                     <SettingsRow
                       label="Bookmark source"
                       description={`Synced with ${browserLabel}`}
@@ -490,7 +536,6 @@ export const StashToolSettings = forwardRef<HTMLDivElement, StashToolSettingsPro
                       </div>
                     </SettingsRow>
 
-                    {/* Auto-archive when bookmark deleted - nested under bookmark source */}
                     <SettingsRow
                       label="Archive when bookmark deleted"
                       description="Automatically archive items when source bookmark is removed"

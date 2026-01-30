@@ -88,7 +88,7 @@ export function DeleteStashConfirmModal({
               checked={deleteCategory}
               onChange={(e) => setDeleteCategory(e.target.checked)}
               disabled={isDeleting}
-              className="mt-1 w-4 h-4 rounded border-gray-300 text-monarch-orange focus:ring-monarch-orange"
+              className="mt-1 w-4 h-4 rounded border-gray-300 text-monarch-orange focus:ring-monarch-text-muted"
             />
             <div>
               <span className="text-sm font-medium" style={{ color: 'var(--monarch-text)' }}>

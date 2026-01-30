@@ -111,7 +111,7 @@ function DeploymentCard({
       `}
       style={{
         // @ts-expect-error CSS custom property
-        '--tw-ring-color': 'var(--monarch-orange)',
+        '--tw-ring-color': 'var(--monarch-text-muted)',
       }}
       aria-pressed={selected}
     >

@@ -10,6 +10,7 @@ import { useBlocker } from 'react-router-dom';
 import { ExternalLink, Target } from 'lucide-react';
 import { usePageTitle, useBookmarks, useStashSync } from '../../hooks';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
+import { FolderSyncIcon, type FolderSyncIconHandle } from '../ui/FolderSyncIcon';
 import {
   NewStashModal,
   EditStashModal,
@@ -63,6 +64,58 @@ interface ModalPrefill {
   name?: string;
   sourceUrl?: string;
   sourceBookmarkId?: string;
+}
+
+/** Sync bookmarks button with animated folder-sync icon */
+function SyncBookmarksButton({
+  isBrowserConfigured,
+  isSyncing,
+  browserName,
+  onSync,
+}: {
+  isBrowserConfigured: boolean;
+  isSyncing: boolean;
+  browserName: string;
+  onSync: () => void;
+}) {
+  const syncIconRef = useRef<FolderSyncIconHandle>(null);
+
+  // Control animation based on syncing state
+  useEffect(() => {
+    if (isSyncing) {
+      syncIconRef.current?.startAnimation();
+    } else {
+      syncIconRef.current?.stopAnimation();
+    }
+  }, [isSyncing]);
+
+  return (
+    <div className="flex justify-center mb-3">
+      <button
+        data-tour="stash-sync-bookmarks"
+        onClick={onSync}
+        onMouseEnter={() => syncIconRef.current?.startAnimation()}
+        onMouseLeave={() => !isSyncing && syncIconRef.current?.stopAnimation()}
+        disabled={isSyncing}
+        className="flex items-center gap-2 px-2 py-1 text-sm font-medium transition-colors hover:opacity-80"
+        style={{
+          color: 'var(--monarch-text-dark)',
+        }}
+      >
+        {isBrowserConfigured ? (
+          <>
+            <FolderSyncIcon ref={syncIconRef} size={16} className="pointer-events-none" />
+            Sync {browserName}
+          </>
+        ) : (
+          <>
+            <Icons.Download size={16} />
+            Import Folder from Browser Bookmarks
+          </>
+        )}
+      </button>
+    </div>
+  );
 }
 
 export function StashTab() {
@@ -480,29 +533,12 @@ export function StashTab() {
 
           {/* Sync/Import button - hidden during hypothesis/distribution mode */}
           {mode === null && (
-            <div className="flex justify-center mb-3">
-              <button
-                data-tour="stash-sync-bookmarks"
-                onClick={() => syncBookmarks()}
-                disabled={isSyncing}
-                className="flex items-center gap-2 px-2 py-1 text-sm font-medium transition-colors hover:opacity-80"
-                style={{
-                  color: 'var(--monarch-text-dark)',
-                }}
-              >
-                {isBrowserConfigured ? (
-                  <>
-                    <Icons.Refresh size={16} className={isSyncing ? 'animate-spin' : ''} />
-                    Sync {getBrowserName(configData?.selectedBrowser ?? null)}
-                  </>
-                ) : (
-                  <>
-                    <Icons.Download size={16} />
-                    Import Folder from Browser Bookmarks
-                  </>
-                )}
-              </button>
-            </div>
+            <SyncBookmarksButton
+              isBrowserConfigured={isBrowserConfigured}
+              isSyncing={isSyncing}
+              browserName={getBrowserName(configData?.selectedBrowser ?? null)}
+              onSync={() => syncBookmarks()}
+            />
           )}
 
           {/* Hide bookmark sections when in hypothesis/distribution mode */}

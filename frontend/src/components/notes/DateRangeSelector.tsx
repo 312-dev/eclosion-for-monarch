@@ -150,7 +150,7 @@ export function DateRangeSelector({
               backgroundColor: 'var(--monarch-bg-card)',
               color: 'var(--monarch-text-dark)',
               border: '1px solid var(--monarch-border)',
-              '--tw-ring-color': 'var(--monarch-orange)',
+              '--tw-ring-color': 'var(--monarch-text-muted)',
             } as React.CSSProperties
           }
         >
@@ -168,7 +168,7 @@ export function DateRangeSelector({
               backgroundColor: 'var(--monarch-bg-card)',
               color: 'var(--monarch-text-dark)',
               border: '1px solid var(--monarch-border)',
-              '--tw-ring-color': 'var(--monarch-orange)',
+              '--tw-ring-color': 'var(--monarch-text-muted)',
             } as React.CSSProperties
           }
         >
@@ -245,7 +245,7 @@ export function DateRangeSelector({
                   {
                     backgroundColor,
                     color: textColor,
-                    '--tw-ring-color': 'var(--monarch-orange)',
+                    '--tw-ring-color': 'var(--monarch-text-muted)',
                   } as React.CSSProperties
                 }
               >

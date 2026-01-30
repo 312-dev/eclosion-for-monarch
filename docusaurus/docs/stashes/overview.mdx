@@ -1,6 +1,6 @@
 ---
 title: Overview
-description: Learn how to save for one-time purchases with browser bookmark sync in Eclosion.
+description: Track and reach your savings goals with a visual dashboard in Eclosion.
 sidebar_position: 1
 ---
 
@@ -10,19 +10,9 @@ import { Bookmark, Target, Grid, CheckCircle } from 'lucide-react';
 
 # Stashes
 
-The Stashes tab helps you save for one-time purchases like electronics, furniture, or travel. Create savings goals, track your progress, and optionally sync items from your browser bookmarks.
+Create a visual dashboard of savings goals for things you want. Set target amounts and dates, track your progress with status badges, and organize cards your way with drag and drop.
 
 <FeatureGrid>
-  <FeatureCard
-    icon={<Bookmark size={24} />}
-    title="Browser Sync"
-    description="Automatically import stashes from your bookmarks"
-  />
-  <FeatureCard
-    icon={<Target size={24} />}
-    title="Target Dates"
-    description="Set goal dates with automatic monthly target calculation"
-  />
   <FeatureCard
     icon={<Grid size={24} />}
     title="Visual Dashboard"
@@ -33,11 +23,21 @@ The Stashes tab helps you save for one-time purchases like electronics, furnitur
     title="Progress Tracking"
     description="See at a glance if you're funded, on track, or behind"
   />
+  <FeatureCard
+    icon={<Target size={24} />}
+    title="Target Dates"
+    description="Set goal dates with automatic monthly target calculation"
+  />
+  <FeatureCard
+    icon={<Bookmark size={24} />}
+    title="Browser Sync"
+    description="Optionally import stashes from your bookmarks"
+  />
 </FeatureGrid>
 
 ## How It Works
 
-Stashes represent one-time purchase goals, unlike recurring expenses which repeat on a schedule. Each item has:
+Stashes represent savings goals for things you want, unlike recurring expenses which repeat on a schedule. Each stash has:
 
 - **Target amount**: How much you need to save
 - **Target date**: When you want to have the money ready
@@ -142,7 +142,7 @@ The remaining amount is spread across months until your target date:
 Once your balance reaches the target amount, the item shows as "Funded" and the monthly target drops to $0. The item remains visible until you archive it.
 
 :::note
-Wishlist targets use the same rounding rules as recurring expenses. Small targets show at least $1/month.
+Stash targets use the same rounding rules as recurring expenses. Small targets show at least $1/month.
 :::
 
 ## Status Badges

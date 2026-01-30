@@ -15,8 +15,6 @@ interface PendingReviewRowProps {
   isSkipping?: boolean;
   /** Index for staggered animation (0-14 for list-item-enter) */
   animationIndex?: number;
-  /** Whether this is the first row (for tour targeting) */
-  isFirstRow?: boolean;
 }
 
 export function PendingReviewRow({
@@ -25,7 +23,6 @@ export function PendingReviewRow({
   onCreateTarget,
   isSkipping = false,
   animationIndex = 0,
-  isFirstRow = false,
 }: PendingReviewRowProps) {
   // Decode HTML entities from API response (XSS sanitization encodes apostrophes etc.)
   const displayName = decodeHtmlEntities(item.name);
@@ -105,10 +102,7 @@ export function PendingReviewRow({
       </div>
 
       {/* Actions */}
-      <div
-        className="flex items-center gap-2 shrink-0"
-        data-tour={isFirstRow ? 'stash-pending-bookmarks' : undefined}
-      >
+      <div className="flex items-center gap-2 shrink-0">
         <button
           type="button"
           onClick={onSkip}

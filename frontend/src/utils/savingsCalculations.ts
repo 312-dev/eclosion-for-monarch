@@ -154,6 +154,43 @@ export function calculateShortfall(currentBalance: number, amount: number): numb
 }
 
 /**
+ * Calculate expected progress percentage based on the monthly target.
+ *
+ * This shows where progress "should be" if saving the monthly target each month.
+ * Based on the same logic as calculateStashMonthlyTarget:
+ * - Monthly target = shortfall / (monthsRemaining + 1)
+ * - After completing this month, you should have 1 month's worth saved
+ * - Expected progress = 1 / (monthsRemaining + 1) * 100
+ *
+ * @param targetDate - When the goal should be reached (ISO string)
+ * @param currentDate - Current date (ISO string, optional - defaults to today)
+ * @returns Expected progress percentage (0-100), or null if cannot be calculated
+ */
+export function calculateExpectedProgress(
+  targetDate: string | undefined | null,
+  currentDate?: string
+): number | null {
+  if (!targetDate) {
+    return null;
+  }
+
+  // Calculate months remaining (same logic as calculateStashMonthlyTarget)
+  const monthsRemaining = calculateMonthsRemaining(targetDate, currentDate);
+
+  // If target is this month or past, expected is 100%
+  if (monthsRemaining <= 0) {
+    return 100;
+  }
+
+  // Total months in the plan = monthsRemaining + 1 (includes current month)
+  // After this month, you should have completed 1 out of totalMonths
+  const totalMonths = monthsRemaining + 1;
+  const expected = (1 / totalMonths) * 100;
+
+  return Math.min(100, Math.max(0, expected));
+}
+
+/**
  * Format months remaining as a human-readable string.
  *
  * @param monthsRemaining - Number of months

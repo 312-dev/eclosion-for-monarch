@@ -146,12 +146,6 @@ export function AvailableToStash({
   const tooltipContent =
     breakdown && detailedBreakdown && runningTotals ? (
       <div className="text-sm space-y-2 min-w-72">
-        <div
-          className="font-medium border-b pb-1 mb-2"
-          style={{ borderColor: 'var(--monarch-border)' }}
-        >
-          Cash to Stash
-        </div>
         <div className="space-y-1">
           {includeExpectedIncome && breakdown.expectedIncome > 0 && (
             <BreakdownRow
@@ -257,6 +251,8 @@ export function AvailableToStash({
           className={`rounded-lg px-4 py-1.5 flex flex-col items-center transition-opacity ${shouldShake ? 'animate-error-shake' : ''}`}
           style={{
             backgroundColor: isPositive ? 'var(--monarch-success-bg)' : 'var(--monarch-error-bg)',
+            boxShadow:
+              '0 2px 4px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.05), 0 8px 16px rgba(0,0,0,0.04), 0 16px 32px rgba(0,0,0,0.02)',
           }}
         >
           <span

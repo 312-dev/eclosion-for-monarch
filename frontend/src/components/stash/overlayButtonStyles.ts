@@ -193,8 +193,8 @@ export function getModeSwitchFromKey(
  * Get the input border color based on mode and validation state
  */
 export function getInputBorderColor(isTakeMode: boolean, isOverLimit: boolean): string {
-  if (isOverLimit) return '#ef4444';
-  return isTakeMode ? '#f97316' : '#22c55e';
+  if (isOverLimit) return 'var(--monarch-error)';
+  return isTakeMode ? 'var(--overlay-btn-text-take)' : 'var(--overlay-btn-text-stash)';
 }
 
 /**

@@ -126,7 +126,7 @@
 
   /* Text colors */
   --monarch-text-dark: #22201d;
-  --monarch-text-muted: #7e7b78;
+  --monarch-text-muted: #5f5c59;
   --monarch-text-light: #888888;
 
   /* Background colors */
@@ -136,16 +136,23 @@
   --monarch-bg-input: #ffffff;
   --monarch-bg-elevated: #ffffff;
 
-  /* Tooltip colors - warm dark background for light mode (stone-800/stone-50) */
-  --monarch-tooltip-bg: #292524;
-  --monarch-tooltip-text: #fafaf9;
-  --monarch-tooltip-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --monarch-tooltip-input-bg: #1f1e1d;
-  --monarch-tooltip-border: #3d3b39;
+  /* Tooltip colors - light background for light mode */
+  --monarch-tooltip-bg: #ffffff;
+  --monarch-tooltip-text: #292524;
+  --monarch-tooltip-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  --monarch-tooltip-input-bg: #f5f5f4;
+  --monarch-tooltip-border: #e7e5e4;
 
   /* Border colors */
   --monarch-border: #e8e6e3;
   --monarch-border-light: #f0efed;
+
+  /* Progress bar track (unfilled portion) - soft gray for light mode */
+  --progress-bar-track: #edebe8;
+  /* Progress bar success fill - matches monarch-success for palette consistency */
+  --progress-bar-success: #22a06b;
 
   /* Status colors */
   --monarch-success: #22a06b;
@@ -198,49 +205,49 @@
      Stash Card Overlay System
      ============================================================================
      Semi-transparent overlays that appear on hover over stash card images.
-     These need to work on top of any image, so they use dark backgrounds
-     with light text for universal contrast.
+     Light mode uses light backgrounds with dark text for a softer appearance.
+     Dark mode uses dark backgrounds with light text.
      ============================================================================ */
 
-  /* Overlay backgrounds - semi-transparent dark for hover, tinted for modes */
-  --overlay-bg: rgba(0, 0, 0, 0.85);
-  --overlay-distribute-bg: rgba(20, 120, 60, 0.92);
-  --overlay-hypothesize-bg: rgba(40, 10, 70, 0.95);
+  /* Overlay backgrounds - semi-transparent light for light mode */
+  --overlay-bg: rgba(255, 255, 255, 0.92);
+  --overlay-distribute-bg: rgba(220, 252, 231, 0.95);
+  --overlay-hypothesize-bg: rgba(243, 232, 255, 0.95);
 
-  /* Overlay text colors */
-  --overlay-text: rgba(255, 255, 255, 0.95);
-  --overlay-text-muted: rgba(255, 255, 255, 0.6);
+  /* Overlay text colors - dark for light mode */
+  --overlay-text: rgba(0, 0, 0, 0.9);
+  --overlay-text-muted: rgba(0, 0, 0, 0.7);
 
-  /* Overlay input styling */
-  --overlay-input-bg: rgba(255, 255, 255, 0.1);
-  --overlay-input-text: rgba(255, 255, 255, 0.95);
-  --overlay-divider: rgba(255, 255, 255, 0.2);
+  /* Overlay input styling - solid colors for light mode */
+  --overlay-input-bg: #ffffff;
+  --overlay-input-text: #1a1a1a;
+  --overlay-divider: #d4d4d4;
 
-  /* Overlay button styling */
-  --overlay-btn-bg: rgba(255, 255, 255, 0.1);
-  --overlay-btn-text: rgba(255, 255, 255, 0.7);
-  --overlay-btn-bg-active-stash: rgba(34, 197, 94, 0.2);
-  --overlay-btn-bg-active-take: rgba(249, 115, 22, 0.2);
-  --overlay-btn-text-stash: #22c55e;
-  --overlay-btn-text-take: #f97316;
+  /* Overlay button styling - solid colors for light mode */
+  --overlay-btn-bg: #f5f5f5;
+  --overlay-btn-text: #404040;
+  --overlay-btn-bg-active-stash: #dcfce7;
+  --overlay-btn-bg-active-take: #ffedd5;
+  --overlay-btn-text-stash: #16a34a;
+  --overlay-btn-text-take: #ea580c;
 
-  /* Card badges and buttons (sit on top of images, need dark bg for contrast) */
-  --card-badge-bg: rgba(0, 0, 0, 0.7);
-  --card-badge-text: rgba(255, 255, 255, 0.9);
-  --card-edit-btn-bg: rgba(0, 0, 0, 0.5);
-  --card-edit-btn-icon: #ffffff;
+  /* Card badges and buttons - light bg for light mode */
+  --card-badge-bg: rgba(255, 255, 255, 0.85);
+  --card-badge-text: rgba(0, 0, 0, 0.85);
+  --card-edit-btn-bg: rgba(255, 255, 255, 0.7);
+  --card-edit-btn-icon: #374151;
 
   /* ============================================================================
      Distribution Mode Styling
      ============================================================================ */
 
-  /* Distribute mode (green) */
-  --distribute-btn-icon: #4ade80;
+  /* Distribute mode (green) - darker for light bg contrast */
+  --distribute-btn-icon: #15803d;
   --distribute-input-bg: rgba(34, 197, 94, 0.15);
   --distribute-input-border: rgba(34, 197, 94, 0.5);
 
-  /* Hypothesize mode (purple) */
-  --hypothesize-btn-icon: #c084fc;
+  /* Hypothesize mode (purple) - darker for light bg contrast */
+  --hypothesize-btn-icon: #7c3aed;
   --hypothesize-input-bg: rgba(147, 51, 234, 0.15);
   --hypothesize-input-border: rgba(147, 51, 234, 0.5);
   --hypothesize-input-text: #9333ea;
@@ -314,6 +321,11 @@
   --monarch-border: #3d3b39;
   --monarch-border-light: #2d2c2a;
 
+  /* Progress bar track (unfilled portion) */
+  --progress-bar-track: #302f2d;
+  /* Progress bar success fill - matches monarch-success for palette consistency */
+  --progress-bar-success: #34d399;
+
   /* Status colors - adjusted for dark backgrounds */
   --monarch-success: #34d399;
   --monarch-success-bg: rgba(34, 211, 153, 0.15);
@@ -346,13 +358,13 @@
   --overlay-hypothesize-bg: rgba(40, 10, 70, 0.95);
   --overlay-text: rgba(255, 255, 255, 0.95);
   --overlay-text-muted: rgba(255, 255, 255, 0.6);
-  --overlay-input-bg: rgba(255, 255, 255, 0.1);
+  --overlay-input-bg: #1f2023;
   --overlay-input-text: rgba(255, 255, 255, 0.95);
   --overlay-divider: rgba(255, 255, 255, 0.2);
-  --overlay-btn-bg: rgba(255, 255, 255, 0.1);
+  --overlay-btn-bg: #1f2023;
   --overlay-btn-text: rgba(255, 255, 255, 0.7);
-  --overlay-btn-bg-active-stash: rgba(34, 197, 94, 0.2);
-  --overlay-btn-bg-active-take: rgba(249, 115, 22, 0.2);
+  --overlay-btn-bg-active-stash: #1a3326;
+  --overlay-btn-bg-active-take: #332213;
   --overlay-btn-text-stash: #4ade80;
   --overlay-btn-text-take: #fb923c;
 
@@ -1264,23 +1276,17 @@ input[type='radio'] {
 /* Settings Page Layout */
 .settings-page {
   display: block;
+  padding: 0 1.5rem; /* Consistent with other tool tabs (px-6) */
 }
 
 .settings-content {
-  max-width: 640px;
+  max-width: 800px;
   min-width: 0;
 }
 
 /* Scroll offset for settings sections to account for fixed header */
 .settings-content > [id] {
   scroll-margin-top: calc(var(--header-height) + 1.5rem);
-}
-
-/* Full width on smaller screens */
-@media (max-width: 1023px) {
-  .settings-content {
-    max-width: 100%;
-  }
 }
 
 /* App Footer */
@@ -1474,6 +1480,7 @@ input[type='radio'] {
   .recurring-tab-layout {
     display: flex;
     flex-direction: row;
+    align-items: flex-start;
     gap: 0;
   }
 }
@@ -1804,6 +1811,14 @@ span.react-resizable-handle.react-resizable-handle-se {
 
 /* Show resize handle only when hovering over the bottom-right corner */
 span.react-resizable-handle.react-resizable-handle-se:hover {
+  opacity: 1 !important;
+}
+
+/* Force resize handle visible during guided tour arrange-cards step */
+/* Target the resize handle in the react-grid-item that contains the tour target */
+.tour-show-resize
+  .react-grid-item:has([data-tour='stash-move-card'])
+  > span.react-resizable-handle.react-resizable-handle-se {
   opacity: 1 !important;
 }
 

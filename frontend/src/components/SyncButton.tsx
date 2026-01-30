@@ -84,41 +84,41 @@ export function SyncButton({
   };
 
   if (compact) {
-    const syncStatus = lastSync ? `Synced ${formattedTime}` : 'Not yet synced';
-    const statusText = getStatusText();
-    const showSyncedPrefix = !isLoading && lastSync;
+    const syncStatus = lastSync ? `Synced ${formattedTime}` : null;
+
+    const getTooltipContent = () => {
+      if (isRateLimited) return 'Rate limited — please wait a few minutes';
+      if (isLoading) return 'Syncing with Monarch...';
+      return syncStatus ? `Sync with Monarch. ${syncStatus}` : 'Sync with Monarch';
+    };
+
+    const getAriaLabel = () => {
+      if (isLoading) return 'Syncing data with Monarch';
+      if (syncStatus) return `Sync now. Last synced: ${syncStatus}`;
+      return 'Sync now';
+    };
 
     const compactButton = (
       <button
         type="button"
         onClick={onSync}
         disabled={isDisabled}
-        className={`flex items-center gap-1.5 text-xs disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:opacity-70 ${
+        className={`flex items-center justify-center p-1.5 rounded disabled:opacity-60 disabled:cursor-not-allowed transition-colors hover:bg-(--monarch-bg-page) ${
           isLoading ? 'cursor-wait' : ''
         }`}
         style={{ color: syncBlocked ? 'var(--monarch-warning)' : 'var(--monarch-text-muted)' }}
-        aria-label={
-          isLoading ? 'Syncing data with Monarch' : `Sync now. Last synced: ${syncStatus}`
-        }
+        aria-label={getAriaLabel()}
         aria-busy={isLoading}
       >
-        {isLoading ? <SpinnerIcon size={14} /> : <SyncIcon size={14} />}
-        <span aria-live="polite">
-          {showSyncedPrefix && <span className="hidden sm:inline">Synced </span>}
-          {statusText}
-        </span>
+        {isLoading ? <SpinnerIcon size={16} /> : <SyncIcon size={16} />}
       </button>
     );
 
     return (
-      <div className="flex items-center gap-2">
-        {isRateLimited ? (
-          <Tooltip content="Rate limited — please wait a few minutes">
-            <span className="inline-block">{compactButton}</span>
-          </Tooltip>
-        ) : (
-          compactButton
-        )}
+      <div className="flex items-center gap-1.5">
+        <Tooltip content={getTooltipContent()}>
+          <span className="inline-block">{compactButton}</span>
+        </Tooltip>
         {syncBlocked && !isSyncing && (
           <span
             className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded"

@@ -13,6 +13,7 @@ import { useApiClient, useSavingStates } from '../../hooks';
 import { useInvalidateDashboard, useCategoryGroupsQuery } from '../../api/queries';
 import { RecurringToolHeader } from './RecurringToolHeader';
 import { SettingsRow } from './SettingsRow';
+import { SettingsSectionHeader } from './SettingsSectionHeader';
 import { ToggleSwitch } from './ToggleSwitch';
 import { ThresholdInput } from './ThresholdInput';
 import type { DashboardData } from '../../types';
@@ -201,7 +202,7 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
                     : {}
                 }
               >
-                {/* Default Category Group */}
+                {/* === GENERAL SECTION === */}
                 <SettingsRow label="Default Category Group" variant={variant}>
                   <SearchableSelect
                     value={dashboardData?.config.target_group_id || ''}
@@ -215,8 +216,14 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
                   />
                 </SettingsRow>
 
-                {/* Auto-add new recurring */}
-                <SettingsRow label="Auto-add new recurring" variant={variant}>
+                {/* === AUTOMATION SECTION === */}
+                <SettingsSectionHeader title="Automation" variant={variant} />
+
+                <SettingsRow
+                  label="Auto-add new recurring"
+                  description="Automatically track new recurring expenses from Monarch"
+                  variant={variant}
+                >
                   <ToggleSwitch
                     checked={autoSyncEnabled}
                     onChange={handleAutoTrackChange}
@@ -240,7 +247,6 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
                   </SettingsRow>
                 )}
 
-                {/* Auto-categorize transactions */}
                 <SettingsRow
                   label="Auto-categorize transactions"
                   description="Categorize new recurring transactions to tracking categories"
@@ -256,7 +262,9 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
                   />
                 </SettingsRow>
 
-                {/* Show category group */}
+                {/* === DISPLAY SECTION === */}
+                <SettingsSectionHeader title="Display" variant={variant} />
+
                 <SettingsRow
                   label="Show category group"
                   description="Display category group name under each item"

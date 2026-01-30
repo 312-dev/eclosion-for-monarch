@@ -63,6 +63,7 @@ export function PendingReviewSection({
         style={{ backgroundColor: 'var(--monarch-bg-page)', border: 'none' }}
         aria-expanded={isExpanded}
         aria-label={`${isExpanded ? 'Collapse' : 'Expand'} pending review section`}
+        data-tour="stash-pending-bookmarks"
       >
         <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--monarch-orange-light)' }}>
           <BookmarkIcon ref={bookmarkRef} size={18} style={{ color: 'var(--monarch-orange)' }} />
@@ -105,7 +106,6 @@ export function PendingReviewSection({
               onCreateTarget={() => onCreateTarget(item)}
               isSkipping={skippingIds.has(item.id)}
               animationIndex={index}
-              isFirstRow={index === 0}
             />
           ))}
         </div>

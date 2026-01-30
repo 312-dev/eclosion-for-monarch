@@ -201,7 +201,7 @@ export function createTray(onSyncClick: () => Promise<void>): void {
 }
 
 // Store pending menu update args for debounced rebuild
-let pendingMenuUpdate: { onSyncClick: () => Promise<void>; syncStatus?: string } | null = null;
+let pendingMenuUpdate: { onSyncClick: () => Promise<void> } | null = null;
 
 /**
  * Actually build and set the tray menu (called after debounce).
@@ -209,7 +209,7 @@ let pendingMenuUpdate: { onSyncClick: () => Promise<void>; syncStatus?: string }
 function buildTrayMenu(): void {
   if (!tray || !pendingMenuUpdate) return;
 
-  const { onSyncClick, syncStatus } = pendingMenuUpdate;
+  const { onSyncClick } = pendingMenuUpdate;
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -222,10 +222,6 @@ function buildTrayMenu(): void {
       click: async (): Promise<void> => {
         await onSyncClick();
       },
-    },
-    {
-      label: syncStatus || 'Last sync: Never',
-      enabled: false,
     },
     { type: 'separator' },
     {
@@ -254,14 +250,11 @@ function buildTrayMenu(): void {
  * Update the tray context menu (debounced to prevent excessive rebuilds).
  * Multiple rapid calls will only trigger one menu rebuild after the debounce period.
  */
-export function updateTrayMenu(
-  onSyncClick: () => Promise<void>,
-  syncStatus?: string
-): void {
+export function updateTrayMenu(onSyncClick: () => Promise<void>): void {
   if (!tray) return;
 
   // Store the latest args for when debounce fires
-  pendingMenuUpdate = { onSyncClick, syncStatus };
+  pendingMenuUpdate = { onSyncClick };
 
   // Clear any pending debounce timer
   if (trayMenuDebounceTimer) {
@@ -273,15 +266,14 @@ export function updateTrayMenu(
 }
 
 /**
- * Refresh the tray menu with the current relative time.
- * Called periodically to keep the "X ago" display up to date.
+ * Refresh the tray menu.
+ * Called periodically to keep menu state current.
  */
 function refreshTrayMenuTime(): void {
   if (!tray || !storedSyncClickHandler || !lastSyncIsoTimestamp) return;
 
   const timeAgo = formatRelativeTime(lastSyncIsoTimestamp);
-  const syncStatus = `Last sync: ${timeAgo}`;
-  updateTrayMenu(storedSyncClickHandler, syncStatus);
+  updateTrayMenu(storedSyncClickHandler);
   updateHealthStatus(true, timeAgo);
 }
 

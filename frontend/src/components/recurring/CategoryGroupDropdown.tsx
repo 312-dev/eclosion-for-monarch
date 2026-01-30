@@ -23,7 +23,11 @@ interface CategoryGroupDropdownProps {
   readonly disabled?: boolean;
 }
 
-export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disabled }: CategoryGroupDropdownProps) {
+export function CategoryGroupDropdown({
+  currentGroupName,
+  onChangeGroup,
+  disabled,
+}: CategoryGroupDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -54,52 +58,55 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
   };
 
   // Keyboard navigation handler
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        handleOpen();
-      }
-      return;
-    }
-
-    switch (e.key) {
-      case 'Escape':
-        e.preventDefault();
-        setIsOpen(false);
-        triggerRef.current?.focus();
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        setFocusedIndex(prev => (prev < groups.length - 1 ? prev + 1 : 0));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setFocusedIndex(prev => (prev > 0 ? prev - 1 : groups.length - 1));
-        break;
-      case 'Home':
-        e.preventDefault();
-        setFocusedIndex(0);
-        break;
-      case 'End':
-        e.preventDefault();
-        setFocusedIndex(groups.length - 1);
-        break;
-      case 'Enter':
-      case ' ': {
-        e.preventDefault();
-        const selectedGroup = groups[focusedIndex];
-        if (focusedIndex >= 0 && selectedGroup) {
-          handleSelect(selectedGroup);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!isOpen) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleOpen();
         }
-        break;
+        return;
       }
-      case 'Tab':
-        setIsOpen(false);
-        break;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpen/handleSelect are stable
-  }, [isOpen, groups, focusedIndex]);
+
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault();
+          setIsOpen(false);
+          triggerRef.current?.focus();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev < groups.length - 1 ? prev + 1 : 0));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : groups.length - 1));
+          break;
+        case 'Home':
+          e.preventDefault();
+          setFocusedIndex(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          setFocusedIndex(groups.length - 1);
+          break;
+        case 'Enter':
+        case ' ': {
+          e.preventDefault();
+          const selectedGroup = groups[focusedIndex];
+          if (focusedIndex >= 0 && selectedGroup) {
+            handleSelect(selectedGroup);
+          }
+          break;
+        }
+        case 'Tab':
+          setIsOpen(false);
+          break;
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpen/handleSelect are stable
+    },
+    [isOpen, groups, focusedIndex]
+  );
 
   // Focus the selected option when dropdown opens or focus changes
   useEffect(() => {
@@ -111,7 +118,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
   // Set initial focus to current group when opening
   useEffect(() => {
     if (isOpen && groups.length > 0 && !isLoading) {
-      const currentIndex = groups.findIndex(g => g.name === currentGroupName);
+      const currentIndex = groups.findIndex((g) => g.name === currentGroupName);
       setFocusedIndex(Math.max(currentIndex, 0));
     }
   }, [isOpen, groups, isLoading, currentGroupName]);
@@ -125,7 +132,9 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
 
   return (
     <div className="relative inline-flex items-center gap-1 min-w-0 max-w-full" ref={dropdownRef}>
-      <span className="truncate" id={`${triggerId}-label`}>{decodeHtmlEntities(currentGroupName)}</span>
+      <span className="truncate" id={`${triggerId}-label`}>
+        {decodeHtmlEntities(currentGroupName)}
+      </span>
       <Tooltip content="Change category group">
         <button
           id={triggerId}
@@ -162,7 +171,11 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
           }}
         >
           {isLoading ? (
-            <div className="px-3 py-2" style={{ color: 'var(--monarch-text-light)' }} aria-live="polite">
+            <div
+              className="px-3 py-2"
+              style={{ color: 'var(--monarch-text-light)' }}
+              aria-live="polite"
+            >
               Loading...
             </div>
           ) : (
@@ -174,7 +187,9 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
                 <button
                   key={group.id}
                   id={`${menuId}-option-${index}`}
-                  ref={el => { optionRefs.current[index] = el; }}
+                  ref={(el) => {
+                    optionRefs.current[index] = el;
+                  }}
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => handleSelect(group)}
@@ -182,7 +197,7 @@ export function CategoryGroupDropdown({ currentGroupName, onChangeGroup, disable
                   style={{
                     color: isSelected ? 'var(--monarch-orange)' : 'var(--monarch-text-dark)',
                     backgroundColor: bgColor,
-                    outline: isFocused ? '2px solid var(--monarch-orange)' : 'none',
+                    outline: isFocused ? '2px solid var(--monarch-text-muted)' : 'none',
                     outlineOffset: '-2px',
                   }}
                 >

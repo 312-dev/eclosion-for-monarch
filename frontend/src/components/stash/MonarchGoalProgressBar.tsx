@@ -23,11 +23,11 @@ interface MonarchGoalProgressBarProps {
 
 /** Status colors for progress bar - uses CSS variables for theme support */
 const STATUS_COLORS = {
-  ahead: 'var(--monarch-success)', // Green
+  ahead: 'var(--progress-bar-success)', // Rewarding green
   on_track: 'var(--monarch-info)', // Blue
   at_risk: 'var(--monarch-warning)', // Yellow
-  completed: 'var(--monarch-success)', // Green
-  no_target: 'var(--monarch-success)', // Green - "save as you go" goals are always fully funded
+  completed: 'var(--progress-bar-success)', // Rewarding green
+  no_target: 'var(--progress-bar-success)', // Rewarding green - "save as you go" goals are always fully funded
 } as const;
 
 export const MonarchGoalProgressBar = memo(function MonarchGoalProgressBar({

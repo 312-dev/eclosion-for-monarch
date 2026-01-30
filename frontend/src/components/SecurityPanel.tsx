@@ -44,7 +44,7 @@ function LoginEvent({ event }: { event: SecurityEvent }) {
           className="w-2 h-2 rounded-full"
           style={{
             backgroundColor: event.success
-              ? 'var(--monarch-success, #22c55e)'
+              ? 'var(--monarch-success, #22a06b)'
               : 'var(--monarch-error, #ef4444)',
           }}
         />

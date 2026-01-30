@@ -19,6 +19,8 @@ export {
   formatDateTime,
   decodeHtmlEntities,
   spacifyEmoji,
+  extractLeadingEmoji,
+  stripLeadingEmoji,
   FREQUENCY_LABELS,
   FREQUENCY_SHORT_LABELS,
   FREQUENCY_ORDER,

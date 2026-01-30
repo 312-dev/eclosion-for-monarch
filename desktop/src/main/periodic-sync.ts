@@ -206,9 +206,9 @@ async function executePeriodicSync(): Promise<void> {
       const syncTime = new Date().toLocaleTimeString();
       debugLog(`Periodic sync completed at ${syncTime}`);
 
-      // Update tray menu with sync time (no notification - background syncs are silent)
+      // Update tray menu (no notification - background syncs are silent)
       if (syncClickHandler) {
-        updateTrayMenu(syncClickHandler, `Last sync: ${syncTime}`);
+        updateTrayMenu(syncClickHandler);
       }
       updateHealthStatus(true, syncTime);
     } else {

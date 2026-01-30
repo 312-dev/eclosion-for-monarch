@@ -4,35 +4,43 @@
  * Tour step definitions for the stash page guided tour.
  * Each step targets a specific UI element via data-tour attribute.
  *
- * Steps are shown incrementally based on the user's data:
- * - Empty state: add-item, reports-tab
- * - Has items: progress-bar, budget-input, take-stash, edit-item, arrange-cards
- * - Has Monarch Goals: monarch-goal-badge
- * - Has browser configured: sync-bookmarks
- * - Has pending bookmarks: pending-bookmarks
+ * Steps are ordered by importance and visual flow:
+ * - Core concepts: available-funds, distribute-mode, hypothesize-mode, add-item
+ * - Card interactions: progress-bar, budget-input, take-stash, edit-item, arrange-cards
+ * - Secondary features: reports-tab
+ * - Monarch Goals: monarch-goal-badge
+ * - Browser integration: sync-bookmarks
+ * - Pending bookmarks: pending-bookmarks
+ *
+ * Steps are shown incrementally based on user's data state.
  */
 
 import type { ReactNode } from 'react';
+import { TourStepContent } from './TourStepContent';
 
 export type StashTourStepId =
-  // Phase 1: Always shown
+  | 'available-funds'
+  | 'distribute-mode'
+  | 'hypothesize-mode'
   | 'add-item'
   | 'reports-tab'
-  // Phase 2: When items exist
   | 'progress-bar'
   | 'budget-input'
   | 'take-stash'
   | 'edit-item'
   | 'arrange-cards'
-  // Phase 3: When Monarch Goals enabled
   | 'monarch-goal-badge'
-  // Phase 4: Browser integration
   | 'sync-bookmarks'
-  // Phase 5: Pending bookmarks
   | 'pending-bookmarks';
 
 /** Custom event dispatched to expand the pending bookmarks section during tour */
 export const EXPAND_PENDING_SECTION_EVENT = 'eclosion:expand-pending-section';
+
+/** Custom events to activate tour-specific UI states */
+export const TOUR_SHOW_OVERLAY_EVENT = 'eclosion:tour-show-overlay';
+export const TOUR_SHOW_EDIT_BUTTON_EVENT = 'eclosion:tour-show-edit-button';
+export const TOUR_SHOW_RESIZE_HANDLE_EVENT = 'eclosion:tour-show-resize-handle';
+export const TOUR_HIDE_ALL_EVENT = 'eclosion:tour-hide-all';
 
 interface TourStep {
   id: StashTourStepId;
@@ -42,248 +50,188 @@ interface TourStep {
   action?: () => void;
 }
 
+const hideAllAction = () => globalThis.dispatchEvent(new CustomEvent(TOUR_HIDE_ALL_EVENT));
+
 export const STASH_TOUR_STEPS: TourStep[] = [
-  // ====================
-  // Phase 1: Always shown (introduce core concepts)
-  // ====================
+  // Phase 1: Core concepts (always shown)
+  {
+    id: 'available-funds',
+    selector: '[data-tour="stash-available-funds"]',
+    content: () => (
+      <TourStepContent title="Available Funds Widget">
+        This widget shows two key numbers: <strong>Cash to Stash</strong> (left) is money you can
+        safely allocate without disrupting your budget. <strong>Left to Budget</strong> (right) is
+        your unassigned income for the month. Hover over each to see the breakdown.
+      </TourStepContent>
+    ),
+    position: 'top',
+    action: hideAllAction,
+  },
+  {
+    id: 'distribute-mode',
+    selector: '[data-tour="stash-distribute-mode"]',
+    content: () => (
+      <TourStepContent title="Distribution Mode">
+        Click to enter <strong>Distribution Mode</strong>. This lets you quickly allocate your
+        available funds across multiple stashes at once. Type amounts on each card, then apply all
+        changes together.
+      </TourStepContent>
+    ),
+    position: 'top',
+    action: hideAllAction,
+  },
+  {
+    id: 'hypothesize-mode',
+    selector: '[data-tour="stash-hypothesize-mode"]',
+    content: () => (
+      <TourStepContent title="Hypothesis Mode">
+        Enter <strong>Hypothesis Mode</strong> to explore &ldquo;what-if&rdquo; scenarios. Adjust
+        your available funds and monthly allocations to see how different strategies affect your
+        timeline. Save scenarios to compare them later.
+      </TourStepContent>
+    ),
+    position: 'top',
+    action: hideAllAction,
+  },
   {
     id: 'add-item',
     selector: '[data-tour="stash-add-item"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Start a Stash
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Create your first stash to save for something you want. Set a goal amount, target date,
-          and track your progress toward things that matter to you.
-        </p>
-      </div>
+      <TourStepContent title="Start a Stash">
+        Create your first stash to save for something you want. Set a goal amount, target date, and
+        track your progress toward things that matter to you.
+      </TourStepContent>
     ),
     position: 'bottom',
-  },
-  {
-    id: 'reports-tab',
-    selector: '[data-tour="stash-reports-tab"]',
-    content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Reports Tab
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Track your savings progress over time. See charts of your commitment history, monthly
-          contributions, and how close you are to reaching each goal.
-        </p>
-      </div>
-    ),
-    position: 'bottom',
+    action: hideAllAction,
   },
 
-  // ====================
-  // Phase 2: When items exist (teach card interactions)
-  // ====================
+  // Phase 2: When items exist (card interactions)
   {
     id: 'progress-bar',
     selector: '[data-tour="stash-progress-bar"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Committed Progress
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          This bar shows how much you&apos;ve <strong>committed</strong> toward your goal. Committed
-          funds are rolled over from previous months plus what you&apos;ve budgeted this month.
-          Hover to see the breakdown.
-        </p>
-      </div>
+      <TourStepContent title="Committed Progress">
+        This bar shows how much you&apos;ve <strong>committed</strong> toward your goal. Committed
+        funds are rolled over from previous months plus what you&apos;ve budgeted this month. Hover
+        to see the breakdown.
+      </TourStepContent>
     ),
     position: 'top',
+    action: hideAllAction,
   },
   {
     id: 'budget-input',
     selector: '[data-tour="stash-budget-input"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Monthly Budget
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Enter how much to budget this month. The number after the slash shows your suggested
-          monthly target to reach your goal by the target date. Use arrow keys to quickly adjust.
-        </p>
-      </div>
+      <TourStepContent title="Monthly Budget">
+        Enter how much to budget this month. The number after the slash shows your suggested monthly
+        target to reach your goal by the target date. Use arrow keys to quickly adjust.
+      </TourStepContent>
     ),
     position: 'left',
+    action: hideAllAction,
   },
   {
     id: 'take-stash',
     selector: '[data-tour="stash-take-stash"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Take or Stash Funds
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Hover over a card to deposit extra funds or take money out. <strong>Taking</strong> draws
-          from your committed balance. <strong>Stashing</strong> moves available funds into this
-          goal.
-        </p>
-      </div>
+      <TourStepContent title="Take or Stash Funds">
+        Hover over a card to deposit extra funds or take money out. <strong>Taking</strong> draws
+        from your committed balance. <strong>Stashing</strong> moves available funds into this goal.
+      </TourStepContent>
     ),
     position: 'left',
+    action: () => {
+      hideAllAction();
+      globalThis.dispatchEvent(new CustomEvent(TOUR_SHOW_OVERLAY_EVENT));
+    },
   },
   {
     id: 'edit-item',
     selector: '[data-tour="stash-edit-item"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Edit Items
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Click the pencil icon to edit item details like name, amount, target date, or image.
-        </p>
-      </div>
+      <TourStepContent title="Edit Items">
+        Click the pencil icon to edit item details like name, amount, target date, or image.
+      </TourStepContent>
     ),
     position: 'left',
+    action: () => {
+      hideAllAction();
+      globalThis.dispatchEvent(new CustomEvent(TOUR_SHOW_EDIT_BUTTON_EVENT));
+    },
   },
   {
     id: 'arrange-cards',
     selector: '[data-tour="stash-move-card"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Arrange Cards
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Drag cards by their image area to rearrange. Drag the bottom-right corner to resize.
-        </p>
-      </div>
+      <TourStepContent title="Arrange Cards">
+        Drag cards by their image area to rearrange. Drag the bottom-right corner to resize.
+      </TourStepContent>
     ),
     position: 'right',
+    action: () => {
+      hideAllAction();
+      globalThis.dispatchEvent(new CustomEvent(TOUR_SHOW_RESIZE_HANDLE_EVENT));
+    },
   },
 
-  // ====================
-  // Phase 3: When Monarch Goals enabled (explain the difference)
-  // ====================
+  // Phase 3: Secondary features
+  {
+    id: 'reports-tab',
+    selector: '[data-tour="stash-reports-tab"]',
+    content: () => (
+      <TourStepContent title="Reports Tab">
+        Track your savings progress over time. See charts of your commitment history, monthly
+        contributions, and how close you are to reaching each goal.
+      </TourStepContent>
+    ),
+    position: 'bottom',
+    action: hideAllAction,
+  },
+
+  // Phase 4: When Monarch Goals enabled
   {
     id: 'monarch-goal-badge',
     selector: '[data-tour="stash-monarch-goal"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Monarch Goals
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          <strong>Monarch Goals</strong> are read-only and synced from Monarch Money.{' '}
-          <strong>Stashes</strong> are managed here with more detailed tracking. Both show your
-          savings progress, but stashes give you finer control over monthly budgets.
-        </p>
-      </div>
+      <TourStepContent title="Monarch Goals">
+        <strong>Monarch Goals</strong> are read-only and synced from Monarch Money.{' '}
+        <strong>Stashes</strong> are managed here with more detailed tracking. Both show your
+        savings progress, but stashes give you finer control over monthly budgets.
+      </TourStepContent>
     ),
     position: 'left',
+    action: hideAllAction,
   },
 
-  // ====================
-  // Phase 4: Browser integration
-  // ====================
+  // Phase 5: Browser integration
   {
     id: 'sync-bookmarks',
     selector: '[data-tour="stash-sync-bookmarks"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Import from Bookmarks
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Already have items bookmarked in your browser? Sync them here to quickly import and
-          convert them into savings goals.
-        </p>
-      </div>
+      <TourStepContent title="Import from Bookmarks">
+        Already have items bookmarked in your browser? Sync them here to quickly import and convert
+        them into savings goals.
+      </TourStepContent>
     ),
     position: 'bottom',
+    action: hideAllAction,
   },
 
-  // ====================
-  // Phase 5: Pending bookmarks
-  // ====================
+  // Phase 6: Pending bookmarks
   {
     id: 'pending-bookmarks',
     selector: '[data-tour="stash-pending-bookmarks"]',
     content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Review Imported Bookmarks
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Imported bookmarks appear here for review. Click &ldquo;Create Target&rdquo; to add one to
-          your stash, or &ldquo;Skip&rdquo; to ignore it.
-        </p>
-      </div>
+      <TourStepContent title="Review Imported Bookmarks">
+        Imported bookmarks appear here for review. Click &ldquo;Create Target&rdquo; to add one to
+        your stash, or &ldquo;Skip&rdquo; to ignore it.
+      </TourStepContent>
     ),
     position: 'bottom',
     action: () => {
-      // Dispatch event to expand the pending section when this step is shown
+      hideAllAction();
       globalThis.dispatchEvent(new CustomEvent(EXPAND_PENDING_SECTION_EVENT));
     },
   },

@@ -34,20 +34,33 @@ export function RecurringItemProgress({
 
   return (
     <div>
-      <div className="w-full rounded-full h-1.5 bg-neutral-600">
+      <div
+        className="w-full rounded-full h-1.5"
+        style={{ backgroundColor: 'var(--progress-bar-track)' }}
+      >
         <div
           className="h-1.5 rounded-full transition-all"
-          style={{ width: `${progressPercent}%`, backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color }}
+          style={{
+            width: `${progressPercent}%`,
+            backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color,
+          }}
         />
       </div>
       <div className="text-xs mt-0.5 flex justify-between">
         {hasRollover ? (
-          <Tooltip content={
-            <>
-              <div>{formatCurrency(rolloverAmount, { maximumFractionDigits: 0 })} rolled over</div>
-              <div>{formatCurrency(budgetedThisMonth, { maximumFractionDigits: 0 })} budgeted this month</div>
-            </>
-          }>
+          <Tooltip
+            content={
+              <>
+                <div>
+                  {formatCurrency(rolloverAmount, { maximumFractionDigits: 0 })} rolled over
+                </div>
+                <div>
+                  {formatCurrency(budgetedThisMonth, { maximumFractionDigits: 0 })} budgeted this
+                  month
+                </div>
+              </>
+            }
+          >
             <span className="text-monarch-text-dark cursor-help underline decoration-dotted underline-offset-2">
               {formatCurrency(totalSaved, { maximumFractionDigits: 0 })} saved
             </span>

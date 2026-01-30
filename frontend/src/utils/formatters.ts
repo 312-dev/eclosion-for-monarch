@@ -350,3 +350,33 @@ export function spacifyEmoji(text: string): string {
 
   return `${emoji} ${rest}`;
 }
+
+/**
+ * Extract the leading emoji from a string, if present.
+ *
+ * @param text - String that may start with an emoji
+ * @returns The leading emoji, or null if no emoji found
+ */
+export function extractLeadingEmoji(text: string): string | null {
+  if (!text) return null;
+
+  const match = LEADING_EMOJI_REGEX.exec(text);
+  if (!match) return null;
+
+  return match[0];
+}
+
+/**
+ * Strip the leading emoji from a string, if present.
+ *
+ * @param text - String that may start with an emoji
+ * @returns String with leading emoji removed (and leading space trimmed)
+ */
+export function stripLeadingEmoji(text: string): string {
+  if (!text) return text;
+
+  const match = LEADING_EMOJI_REGEX.exec(text);
+  if (!match) return text;
+
+  return text.slice(match[0].length).trimStart();
+}
