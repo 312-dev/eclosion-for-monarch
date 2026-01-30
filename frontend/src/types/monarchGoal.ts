@@ -43,6 +43,9 @@ export interface MonarchGoal {
   // Image data (from Monarch API)
   imageStorageProvider: string | null;
   imageStorageProviderId: string | null;
+
+  // Icon/emoji (if set by user in Monarch)
+  icon: string | null;
 }
 
 export interface MonarchGoalLayoutUpdate {

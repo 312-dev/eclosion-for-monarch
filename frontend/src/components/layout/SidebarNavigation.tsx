@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   Settings,
   Lock,
@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { RecurringIcon, NotesIcon, StashIcon } from '../wizards/WizardComponents';
 import { Tooltip } from '../ui/Tooltip';
+import { ToolSettingsModal, type ToolType } from '../ui/ToolSettingsModal';
 import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
 import { useMediaQuery } from '../../hooks';
@@ -160,12 +161,12 @@ function ComingSoonNavItem({
 }
 
 export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) {
-  const navigate = useNavigate();
   const location = useLocation();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [showLockButton, setShowLockButton] = useState(!isDesktop);
+  const [settingsModalTool, setSettingsModalTool] = useState<ToolType | null>(null);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
   const comingSoonFeatures = getComingSoonFeatures();
   const prefix = isDemo ? '/demo' : '';
@@ -193,7 +194,16 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   });
 
   const handleSettingsClick = (hash: string) => {
-    navigate(`${prefix}/settings${hash}`);
+    // Convert hash to tool type: #notes -> 'notes', #recurring -> 'recurring', #stash -> 'stash'
+    const toolMap: Record<string, ToolType> = {
+      '#notes': 'notes',
+      '#recurring': 'recurring',
+      '#stash': 'stash',
+    };
+    const tool = toolMap[hash];
+    if (tool) {
+      setSettingsModalTool(tool);
+    }
   };
 
   const handleSettingsSectionClick = (sectionId: string) => {
@@ -329,6 +339,15 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
             </button>
           </div>
         </div>
+      )}
+
+      {/* Tool Settings Modal */}
+      {settingsModalTool && (
+        <ToolSettingsModal
+          isOpen={true}
+          onClose={() => setSettingsModalTool(null)}
+          tool={settingsModalTool}
+        />
       )}
     </nav>
   );

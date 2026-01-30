@@ -160,7 +160,7 @@ export function MonthPicker({ currentMonth, onSelect, onClose }: MonthPickerProp
 
               const backgroundColor = isSelected ? 'var(--monarch-orange)' : 'transparent';
               const textColor = isSelected ? 'white' : 'var(--monarch-text-dark)';
-              const ringColor = isCurrent && !isSelected ? 'var(--monarch-orange)' : undefined;
+              const ringColor = isCurrent && !isSelected ? 'var(--monarch-text-muted)' : undefined;
 
               return (
                 <button

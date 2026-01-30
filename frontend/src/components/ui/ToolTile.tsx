@@ -15,13 +15,7 @@ export interface ToolTileProps {
   disabled?: boolean;
 }
 
-export function ToolTile({
-  name,
-  description,
-  icon,
-  onClick,
-  disabled,
-}: ToolTileProps) {
+export function ToolTile({ name, description, icon, onClick, disabled }: ToolTileProps) {
   return (
     <button
       type="button"
@@ -38,19 +32,15 @@ export function ToolTile({
         <div
           className="shrink-0 p-3 rounded-lg"
           style={{
-            backgroundColor: disabled
-              ? 'var(--monarch-bg-page)'
-              : 'var(--monarch-orange-light)',
+            backgroundColor: disabled ? 'var(--monarch-bg-page)' : 'var(--monarch-orange-light)',
+            color: disabled ? 'var(--monarch-text-muted)' : 'var(--tool-header-icon)',
           }}
         >
           {icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h3
-              className="font-semibold text-lg"
-              style={{ color: 'var(--monarch-text-dark)' }}
-            >
+            <h3 className="font-semibold text-lg" style={{ color: 'var(--monarch-text-dark)' }}>
               {name}
             </h3>
             {!disabled && (
@@ -61,10 +51,7 @@ export function ToolTile({
               />
             )}
           </div>
-          <p
-            className="text-sm mt-1"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
+          <p className="text-sm mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
             {description}
           </p>
         </div>

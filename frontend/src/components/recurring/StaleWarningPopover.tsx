@@ -54,7 +54,7 @@ export function StaleWarningPopover() {
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         aria-controls={isOpen ? popoverId : undefined}
-        className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-orange"
+        className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-monarch-text-muted"
       >
         <WarningFilledIcon size={16} color="var(--monarch-warning)" />
       </button>

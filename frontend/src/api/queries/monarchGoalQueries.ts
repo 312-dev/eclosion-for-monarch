@@ -55,6 +55,7 @@ function transformGoalFromApi(raw: Record<string, unknown>): MonarchGoal {
       typeof raw['image_storage_provider_id'] === 'string'
         ? raw['image_storage_provider_id']
         : null,
+    icon: typeof raw['icon'] === 'string' ? raw['icon'] : null,
   };
 }
 

@@ -303,7 +303,7 @@ export function Modal({
             {/* Body - wrapped in context provider for footer portal */}
             <ModalFooterContext.Provider value={footerContainer}>
               <div
-                className="modal-body-scroll p-4 flex-1 min-h-0 overflow-y-scroll"
+                className="modal-body-scroll p-4 flex-1 min-h-0 overflow-y-auto"
                 style={{
                   boxShadow:
                     'inset 0 8px 8px -8px rgba(0,0,0,0.15), inset 0 -8px 8px -8px rgba(0,0,0,0.15)',

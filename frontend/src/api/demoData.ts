@@ -1928,6 +1928,7 @@ export function createInitialMonarchGoals(): MonarchGoal[] {
       isCompleted: false,
       imageStorageProvider: null,
       imageStorageProviderId: null,
+      icon: '🚨',
     },
     {
       type: 'monarch_goal',
@@ -1954,6 +1955,7 @@ export function createInitialMonarchGoals(): MonarchGoal[] {
       isCompleted: false,
       imageStorageProvider: null,
       imageStorageProviderId: null,
+      icon: '✈️',
     },
     {
       type: 'monarch_goal',
@@ -1979,6 +1981,7 @@ export function createInitialMonarchGoals(): MonarchGoal[] {
       isCompleted: false,
       imageStorageProvider: null,
       imageStorageProviderId: null,
+      icon: '💛',
     },
   ];
 }

@@ -288,7 +288,10 @@ function FeatureCard({
     <div className="p-6 rounded-xl border border-(--monarch-border) bg-(--monarch-bg-card) hover:border-(--monarch-orange) transition-colors">
       <div
         className="w-12 h-12 rounded-lg flex items-center justify-center mb-4"
-        style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+        style={{
+          backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
+          color: accentColor,
+        }}
       >
         {icon}
       </div>
@@ -335,7 +338,7 @@ export function FeaturesSection() {
             description="Syncs directly with Monarch Money to keep your data always up to date. Changes flow both ways seamlessly."
           />
           <FeatureCard
-            accentColor="#10b981"
+            accentColor="var(--monarch-success)"
             icon={
               <svg
                 className="w-6 h-6"

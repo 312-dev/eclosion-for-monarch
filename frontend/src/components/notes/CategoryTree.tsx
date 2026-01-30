@@ -121,10 +121,10 @@ export function CategoryTree({
                       style={{
                         backgroundColor: group.effectiveNote.isInherited
                           ? 'var(--monarch-bg-hover)'
-                          : 'rgba(34, 197, 94, 0.15)',
+                          : 'var(--monarch-success-bg)',
                         color: group.effectiveNote.isInherited
                           ? 'var(--monarch-text-muted)'
-                          : '#22c55e',
+                          : 'var(--monarch-success)',
                       }}
                     >
                       {group.effectiveNote.isInherited ? 'inherited' : 'edited'}

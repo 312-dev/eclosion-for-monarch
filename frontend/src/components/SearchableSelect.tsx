@@ -167,7 +167,7 @@ export function SearchableSelect({
     if (opt.disabled) stateClass = 'opacity-50 cursor-not-allowed bg-(--monarch-bg-page)';
     else if (isSelected) stateClass = 'bg-(--monarch-orange)/10 text-(--monarch-orange)';
     const activeClass =
-      isActive && !opt.disabled ? 'ring-2 ring-inset ring-(--monarch-orange)' : '';
+      isActive && !opt.disabled ? 'ring-2 ring-inset ring-(--monarch-text-muted)' : '';
 
     return (
       <button
@@ -216,7 +216,7 @@ export function SearchableSelect({
               ? 'opacity-50 cursor-not-allowed'
               : 'hover:border-(--monarch-text-muted) cursor-pointer'
           }
-          ${dropdown.isOpen ? 'border-(--monarch-orange) ring-1 ring-(--monarch-orange)/20' : ''}
+          ${dropdown.isOpen ? 'border-(--monarch-text-muted)' : ''}
         `}
       >
         <span

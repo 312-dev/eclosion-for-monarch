@@ -166,10 +166,9 @@ export function EmojiPicker({ currentEmoji, onSelect, disabled, showChevron }: E
                       <button
                         className={`flex size-8 items-center justify-center rounded-md text-lg transition-colors ${
                           isSelected
-                            ? 'ring-2 ring-inset bg-(--monarch-orange-10)'
+                            ? 'ring-2 ring-inset ring-(--monarch-text-muted) bg-(--monarch-bg-hover)'
                             : 'hover:bg-(--monarch-bg-hover)'
                         }`}
-                        style={isSelected ? { '--tw-ring-color': 'var(--monarch-orange)' } as React.CSSProperties : undefined}
                         {...props}
                       >
                         {emoji.emoji}
