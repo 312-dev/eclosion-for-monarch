@@ -118,3 +118,11 @@ export { useTimelineZoom } from './useTimelineZoom';
 
 // Distribution mode
 export { useDistributionBannerActions } from './useDistributionBannerActions';
+
+// Arrow key increment/decrement for numeric inputs
+export {
+  useArrowKeyIncrement,
+  combineWithArrowKeyHandler,
+  createArrowKeyHandler,
+  type ArrowKeyIncrementOptions,
+} from './useArrowKeyIncrement';
