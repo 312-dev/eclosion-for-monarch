@@ -127,8 +127,8 @@ function setupCSP(): void {
             "style-src 'self' 'unsafe-inline'", // Tailwind uses inline styles
             "img-src 'self' data: https:", // Allow external images (icons, etc.)
             "font-src 'self' data:",
-            // Allow backend API, GitHub raw for ideas.json fallback, GitHub API for beta changelog, and jsDelivr for emoji data
-            "connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://raw.githubusercontent.com https://api.github.com https://cdn.jsdelivr.net",
+            // Allow backend API, GitHub raw for ideas.json fallback, GitHub API for beta changelog, jsDelivr for emoji data, and Openverse for image search
+            "connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://raw.githubusercontent.com https://api.github.com https://cdn.jsdelivr.net https://api.openverse.org",
           ].join('; '),
         ],
       },
