@@ -193,6 +193,94 @@
 
   /* List stagger delay */
   --stagger-delay: 25ms;
+
+  /* ============================================================================
+     Stash Card Overlay System
+     ============================================================================
+     Semi-transparent overlays that appear on hover over stash card images.
+     These need to work on top of any image, so they use dark backgrounds
+     with light text for universal contrast.
+     ============================================================================ */
+
+  /* Overlay backgrounds - semi-transparent dark for hover, tinted for modes */
+  --overlay-bg: rgba(0, 0, 0, 0.85);
+  --overlay-distribute-bg: rgba(20, 120, 60, 0.92);
+  --overlay-hypothesize-bg: rgba(40, 10, 70, 0.95);
+
+  /* Overlay text colors */
+  --overlay-text: rgba(255, 255, 255, 0.95);
+  --overlay-text-muted: rgba(255, 255, 255, 0.6);
+
+  /* Overlay input styling */
+  --overlay-input-bg: rgba(255, 255, 255, 0.1);
+  --overlay-input-text: rgba(255, 255, 255, 0.95);
+  --overlay-divider: rgba(255, 255, 255, 0.2);
+
+  /* Overlay button styling */
+  --overlay-btn-bg: rgba(255, 255, 255, 0.1);
+  --overlay-btn-text: rgba(255, 255, 255, 0.7);
+  --overlay-btn-bg-active-stash: rgba(34, 197, 94, 0.2);
+  --overlay-btn-bg-active-take: rgba(249, 115, 22, 0.2);
+  --overlay-btn-text-stash: #22c55e;
+  --overlay-btn-text-take: #f97316;
+
+  /* Card badges and buttons (sit on top of images, need dark bg for contrast) */
+  --card-badge-bg: rgba(0, 0, 0, 0.7);
+  --card-badge-text: rgba(255, 255, 255, 0.9);
+  --card-edit-btn-bg: rgba(0, 0, 0, 0.5);
+  --card-edit-btn-icon: #ffffff;
+
+  /* ============================================================================
+     Distribution Mode Styling
+     ============================================================================ */
+
+  /* Distribute mode (green) */
+  --distribute-btn-icon: #4ade80;
+  --distribute-input-bg: rgba(34, 197, 94, 0.15);
+  --distribute-input-border: rgba(34, 197, 94, 0.5);
+
+  /* Hypothesize mode (purple) */
+  --hypothesize-btn-icon: #c084fc;
+  --hypothesize-input-bg: rgba(147, 51, 234, 0.15);
+  --hypothesize-input-border: rgba(147, 51, 234, 0.5);
+  --hypothesize-input-text: #9333ea;
+
+  /* ============================================================================
+     Additional Color Aliases
+     ============================================================================ */
+
+  /* Primary action color (brand orange) */
+  --monarch-primary: var(--monarch-orange);
+  --monarch-primary-hover: var(--monarch-orange-hover);
+
+  /* Teal - used for secondary actions, success states in forms */
+  --monarch-teal: #14b8a6;
+  --monarch-teal-light: rgba(20, 184, 166, 0.15);
+
+  /* Blue - used for info, links */
+  --monarch-blue: #3b82f6;
+
+  /* Tint - accent color for buttons (same as teal) */
+  --monarch-tint: #14b8a6;
+
+  /* Text alias */
+  --monarch-text: var(--monarch-text-dark);
+
+  /* Orange background for alerts/warnings */
+  --monarch-orange-bg: var(--monarch-orange-light);
+
+  /* Muted accent for subtle highlights */
+  --monarch-accent-muted: rgba(139, 92, 246, 0.5);
+
+  /* Status icon colors (may differ from text for contrast) */
+  --status-icon-positive: var(--monarch-success);
+  --status-icon-negative: var(--monarch-error);
+
+  /* Tool page header icon color */
+  --tool-header-icon: var(--monarch-orange);
+
+  /* Logo font family */
+  --font-logo: 'Unbounded', sans-serif;
 }
 
 /* Dark Mode */
@@ -251,6 +339,72 @@
   /* App icon - warm tone matching dark palette */
   --app-icon-bg: #2d2b29;
   --app-icon-border: #444240;
+
+  /* Stash card overlay - same as light mode since overlays are always dark */
+  --overlay-bg: rgba(0, 0, 0, 0.85);
+  --overlay-distribute-bg: rgba(20, 120, 60, 0.92);
+  --overlay-hypothesize-bg: rgba(40, 10, 70, 0.95);
+  --overlay-text: rgba(255, 255, 255, 0.95);
+  --overlay-text-muted: rgba(255, 255, 255, 0.6);
+  --overlay-input-bg: rgba(255, 255, 255, 0.1);
+  --overlay-input-text: rgba(255, 255, 255, 0.95);
+  --overlay-divider: rgba(255, 255, 255, 0.2);
+  --overlay-btn-bg: rgba(255, 255, 255, 0.1);
+  --overlay-btn-text: rgba(255, 255, 255, 0.7);
+  --overlay-btn-bg-active-stash: rgba(34, 197, 94, 0.2);
+  --overlay-btn-bg-active-take: rgba(249, 115, 22, 0.2);
+  --overlay-btn-text-stash: #4ade80;
+  --overlay-btn-text-take: #fb923c;
+
+  /* Card badges and buttons (same as light mode - overlays are always dark) */
+  --card-badge-bg: rgba(0, 0, 0, 0.7);
+  --card-badge-text: rgba(255, 255, 255, 0.9);
+  --card-edit-btn-bg: rgba(0, 0, 0, 0.5);
+  --card-edit-btn-icon: #ffffff;
+
+  /* Distribute mode (green - brighter for dark mode) */
+  --distribute-btn-icon: #4ade80;
+  --distribute-input-bg: rgba(34, 197, 94, 0.2);
+  --distribute-input-border: rgba(34, 197, 94, 0.6);
+
+  /* Hypothesize mode (purple - brighter for dark mode) */
+  --hypothesize-btn-icon: #d8b4fe;
+  --hypothesize-input-bg: rgba(147, 51, 234, 0.2);
+  --hypothesize-input-border: rgba(147, 51, 234, 0.6);
+  --hypothesize-input-text: #c084fc;
+
+  /* Primary action color */
+  --monarch-primary: var(--monarch-orange);
+  --monarch-primary-hover: var(--monarch-orange-hover);
+
+  /* Teal - brighter for dark backgrounds */
+  --monarch-teal: #2dd4bf;
+  --monarch-teal-light: rgba(45, 212, 191, 0.2);
+
+  /* Blue */
+  --monarch-blue: #60a5fa;
+
+  /* Tint */
+  --monarch-tint: #2dd4bf;
+
+  /* Text alias */
+  --monarch-text: var(--monarch-text-dark);
+
+  /* Orange background */
+  --monarch-orange-bg: var(--monarch-orange-light);
+
+  /* Muted accent */
+  --monarch-accent-muted: rgba(167, 139, 250, 0.5);
+
+  /* Status icon colors */
+  --status-icon-positive: var(--monarch-success);
+  --status-icon-negative: var(--monarch-error);
+
+  /* Tool page header icon */
+  --tool-header-icon: var(--monarch-orange);
+
+  /* Logo font */
+  --font-logo: 'Unbounded', sans-serif;
 }
 
 html.dark {

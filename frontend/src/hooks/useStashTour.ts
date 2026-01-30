@@ -7,7 +7,7 @@
  *
  * Step triggers (progressive disclosure):
  * - Phase 1: Always shown (add-item, reports-tab)
- * - Phase 2: When items exist (progress-bar, budget-input, take-stash, edit-item, move-card, resize-card)
+ * - Phase 2: When items exist (progress-bar, budget-input, take-stash, edit-item, arrange-cards)
  * - Phase 3: When Monarch Goals enabled (monarch-goal-badge)
  * - Phase 4: Browser integration (sync-bookmarks) - desktop or browser configured
  * - Phase 5: Pending bookmarks (pending-bookmarks)
@@ -62,14 +62,7 @@ function evaluateTriggers(data: StashTourData | undefined): StashTourStepId[] {
 
     // Phase 2: When items exist (card interactions)
     ...(data.itemCount > 0
-      ? ([
-          'progress-bar',
-          'budget-input',
-          'take-stash',
-          'edit-item',
-          'move-card',
-          'resize-card',
-        ] as const)
+      ? (['progress-bar', 'budget-input', 'take-stash', 'edit-item', 'arrange-cards'] as const)
       : []),
 
     // Phase 3: When Monarch Goals enabled

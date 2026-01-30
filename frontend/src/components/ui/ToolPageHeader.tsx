@@ -60,7 +60,7 @@ export function ToolPageHeader({
             onClick={onSettingsClick}
             onMouseEnter={() => settingsRef.current?.startAnimation()}
             onMouseLeave={() => settingsRef.current?.stopAnimation()}
-            className="p-2 rounded-lg hover:bg-(--monarch-bg-hover) transition-colors shrink-0"
+            className="flex items-center justify-center p-2 rounded-lg hover:bg-(--monarch-bg-hover) transition-colors shrink-0"
             aria-label={`${title} settings`}
             title="Settings"
           >

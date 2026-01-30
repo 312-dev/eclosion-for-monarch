@@ -46,8 +46,8 @@ export function DebtAccountSelectorModal({
     if (!accounts) return [];
     return accounts
       .filter((account) => account.isEnabled && isDebtAccount(account.accountType))
-      .filter((account) => account.balance > 0) // Only show accounts with balances
-      .sort((a, b) => b.balance - a.balance); // Sort by balance descending
+      .filter((account) => account.balance !== 0) // Show accounts with any balance (debt is negative for credit cards)
+      .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance)); // Sort by debt size descending
   }, [accounts]);
 
   // Group accounts by category

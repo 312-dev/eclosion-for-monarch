@@ -20,6 +20,7 @@ import {
   BrowserSetupModal,
   StashReportsView,
   decodeHtmlEntities,
+  getBrowserName,
   AvailableFundsBar,
   useReportSettings,
   StashVsGoalsModal,
@@ -426,6 +427,7 @@ export function StashTab() {
           Stashes
         </button>
         <button
+          data-tour="stash-reports-tab"
           onClick={() => handleViewChange('reports')}
           className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-2 flex items-center gap-1.5 transition-colors"
           style={{
@@ -476,8 +478,8 @@ export function StashTab() {
             </div>
           </div>
 
-          {/* Import button - only shown when not configured and not in hypothesis/distribution mode */}
-          {!isBrowserConfigured && mode === null && (
+          {/* Sync/Import button - hidden during hypothesis/distribution mode */}
+          {mode === null && (
             <div className="flex justify-center mb-3">
               <button
                 data-tour="stash-sync-bookmarks"
@@ -488,8 +490,17 @@ export function StashTab() {
                   color: 'var(--monarch-text-dark)',
                 }}
               >
-                <Icons.Download size={16} />
-                Import Folder from Browser Bookmarks
+                {isBrowserConfigured ? (
+                  <>
+                    <Icons.Refresh size={16} className={isSyncing ? 'animate-spin' : ''} />
+                    Sync {getBrowserName(configData?.selectedBrowser ?? null)}
+                  </>
+                ) : (
+                  <>
+                    <Icons.Download size={16} />
+                    Import Folder from Browser Bookmarks
+                  </>
+                )}
               </button>
             </div>
           )}

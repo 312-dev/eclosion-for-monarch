@@ -6,7 +6,7 @@
  *
  * Steps are shown incrementally based on the user's data:
  * - Empty state: add-item, reports-tab
- * - Has items: progress-bar, budget-input, take-stash, edit-item, move-card, resize-card
+ * - Has items: progress-bar, budget-input, take-stash, edit-item, arrange-cards
  * - Has Monarch Goals: monarch-goal-badge
  * - Has browser configured: sync-bookmarks
  * - Has pending bookmarks: pending-bookmarks
@@ -23,8 +23,7 @@ export type StashTourStepId =
   | 'budget-input'
   | 'take-stash'
   | 'edit-item'
-  | 'move-card'
-  | 'resize-card'
+  | 'arrange-cards'
   // Phase 3: When Monarch Goals enabled
   | 'monarch-goal-badge'
   // Phase 4: Browser integration
@@ -178,15 +177,14 @@ export const STASH_TOUR_STEPS: TourStep[] = [
           Edit Items
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Double-click any card or click the pencil icon to edit item details like name, amount,
-          target date, or image.
+          Click the pencil icon to edit item details like name, amount, target date, or image.
         </p>
       </div>
     ),
     position: 'left',
   },
   {
-    id: 'move-card',
+    id: 'arrange-cards',
     selector: '[data-tour="stash-move-card"]',
     content: () => (
       <div>
@@ -197,37 +195,14 @@ export const STASH_TOUR_STEPS: TourStep[] = [
             color: 'var(--monarch-text-dark)',
           }}
         >
-          Rearrange Cards
+          Arrange Cards
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Drag cards by their image area to rearrange your stash. Put your most-wanted items front
-          and center.
+          Drag cards by their image area to rearrange. Drag the bottom-right corner to resize.
         </p>
       </div>
     ),
     position: 'right',
-  },
-  {
-    id: 'resize-card',
-    selector: '[data-tour="stash-resize-card"]',
-    content: () => (
-      <div>
-        <div
-          style={{
-            fontWeight: 600,
-            marginBottom: '8px',
-            color: 'var(--monarch-text-dark)',
-          }}
-        >
-          Resize Cards
-        </div>
-        <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Drag the bottom-right corner to resize cards. Make important items larger for emphasized
-          visibility.
-        </p>
-      </div>
-    ),
-    position: 'top',
   },
 
   // ====================
