@@ -572,7 +572,9 @@ async def update_rollover_balance():
     except (ValueError, TypeError):
         raise ValidationError("'amount' must be an integer")
 
-    logger.info(f"[Rollover API] Calling update_category_rollover_balance({category_id}, {amount_int})")
+    logger.info(
+        f"[Rollover API] Calling update_category_rollover_balance({category_id}, {amount_int})"
+    )
     result = await update_category_rollover_balance(category_id, amount_int)
     logger.info(f"[Rollover API] Result: {result}")
 
