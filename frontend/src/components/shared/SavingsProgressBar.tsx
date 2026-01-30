@@ -16,10 +16,10 @@ interface SavingsProgressBarProps {
   readonly targetAmount: number;
   /** Progress percentage (0-100) */
   readonly progressPercent: number;
-  /** Display status for color styling */
-  readonly displayStatus: ItemStatus;
-  /** Whether the item is enabled */
-  readonly isEnabled: boolean;
+  /** Display status for color styling (optional if progressColor is provided) */
+  readonly displayStatus?: ItemStatus;
+  /** Whether the item is enabled (defaults to true) */
+  readonly isEnabled?: boolean;
   /** Optional rollover amount from previous month (from Monarch) */
   readonly rolloverAmount?: number;
   /** Optional budgeted amount this month */
@@ -32,6 +32,8 @@ interface SavingsProgressBarProps {
   readonly goalType?: 'one_time' | 'debt' | 'savings_buffer';
   /** Available to spend (for one_time goals, helps detect if spending occurred) */
   readonly availableToSpend?: number;
+  /** Optional explicit progress color (overrides displayStatus-based color) */
+  readonly progressColor?: string;
 }
 
 export function SavingsProgressBar({
@@ -39,13 +41,14 @@ export function SavingsProgressBar({
   targetAmount,
   progressPercent,
   displayStatus,
-  isEnabled,
+  isEnabled = true,
   rolloverAmount = 0,
   budgetedThisMonth = 0,
   creditsThisMonth = 0,
   savedLabel = 'saved',
   goalType,
   availableToSpend,
+  progressColor,
 }: SavingsProgressBarProps) {
   // For savings_buffer goals:
   // - "saved" = total contributions (rollover + budgeted + credits)
@@ -94,7 +97,8 @@ export function SavingsProgressBar({
           className="h-1.5 rounded-full transition-all"
           style={{
             width: `${Math.min(progressPercent, 100)}%`,
-            backgroundColor: getStatusStyles(displayStatus, isEnabled).color,
+            backgroundColor:
+              progressColor ?? getStatusStyles(displayStatus ?? 'on_track', isEnabled).color,
           }}
         />
       </div>
@@ -173,7 +177,9 @@ export function SavingsProgressBar({
                     )}
                     {creditsThisMonth > 0 && (
                       <div className="flex justify-between">
-                        <span style={{ color: 'var(--monarch-text-muted)' }}>Credits this month</span>
+                        <span style={{ color: 'var(--monarch-text-muted)' }}>
+                          Credits this month
+                        </span>
                         <span style={{ color: 'var(--monarch-green)' }}>
                           +{formatCurrency(creditsThisMonth, { maximumFractionDigits: 0 })}
                         </span>
@@ -181,7 +187,9 @@ export function SavingsProgressBar({
                     )}
                     {budgetedThisMonth > 0 && (
                       <div className="flex justify-between">
-                        <span style={{ color: 'var(--monarch-text-muted)' }}>Budgeted this month</span>
+                        <span style={{ color: 'var(--monarch-text-muted)' }}>
+                          Budgeted this month
+                        </span>
                         <span style={{ color: 'var(--monarch-green)' }}>
                           +{formatCurrency(budgetedThisMonth, { maximumFractionDigits: 0 })}
                         </span>
@@ -214,7 +222,9 @@ export function SavingsProgressBar({
           )}
         </div>
         <span className="text-monarch-text-light">
-          {formatCurrency(Math.max(0, targetAmount - savedForDisplay), { maximumFractionDigits: 0 })}{' '}
+          {formatCurrency(Math.max(0, targetAmount - savedForDisplay), {
+            maximumFractionDigits: 0,
+          })}{' '}
           to go
         </span>
       </div>

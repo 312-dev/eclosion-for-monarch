@@ -17,6 +17,8 @@ interface UseAppTourParams {
   pendingCount: number;
   isBrowserConfigured: boolean;
   isDesktop: boolean;
+  hasMonarchGoalsEnabled: boolean;
+  monarchGoalCount: number;
 }
 
 export function useAppTour({
@@ -25,6 +27,8 @@ export function useAppTour({
   pendingCount,
   isBrowserConfigured,
   isDesktop,
+  hasMonarchGoalsEnabled,
+  monarchGoalCount,
 }: UseAppTourParams) {
   const [showTour, setShowTour] = useState(false);
   const location = useLocation();
@@ -70,6 +74,8 @@ export function useAppTour({
     pendingCount,
     isBrowserConfigured,
     isDesktop,
+    hasMonarchGoalsEnabled,
+    monarchGoalCount,
   });
 
   // Get the correct tour state based on current page

@@ -7,7 +7,7 @@ import { useIsRateLimited } from '../context/RateLimitContext';
 interface SyncButtonProps {
   onSync: () => void;
   isSyncing: boolean;
-  lastSync: string | null;
+  lastSync?: string | null;
   compact?: boolean;
   /** Whether sync is blocked (e.g., due to auth issues) */
   syncBlocked?: boolean;
@@ -51,7 +51,9 @@ export function SyncButton({
   syncBlocked = false,
   isFetching = false,
 }: SyncButtonProps) {
-  const [formattedTime, setFormattedTime] = useState(() => formatLastSync(lastSync));
+  // Normalize undefined to null for formatLastSync
+  const normalizedLastSync = lastSync ?? null;
+  const [formattedTime, setFormattedTime] = useState(() => formatLastSync(normalizedLastSync));
   const isRateLimited = useIsRateLimited();
 
   // Combined loading state: either syncing or fetching data
@@ -62,16 +64,16 @@ export function SyncButton({
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync derived state with prop
-    setFormattedTime(formatLastSync(lastSync));
+    setFormattedTime(formatLastSync(normalizedLastSync));
 
-    if (!lastSync) return;
+    if (!normalizedLastSync) return;
 
     const interval = setInterval(() => {
-      setFormattedTime(formatLastSync(lastSync));
+      setFormattedTime(formatLastSync(normalizedLastSync));
     }, UI.INTERVAL.SYNC_STATUS);
 
     return () => clearInterval(interval);
-  }, [lastSync]);
+  }, [normalizedLastSync]);
 
   // Determine the status text based on current state
   const getStatusText = () => {

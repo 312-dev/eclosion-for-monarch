@@ -43,6 +43,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowBigDownDash,
+  ArrowUpFromLine,
   Menu,
   Search,
   Filter,
@@ -178,6 +179,7 @@ export const TrendDownIcon = ChevronsDown;
 export const ArrowUpIcon = ArrowUp;
 export const ArrowDownIcon = ArrowDown;
 export const ArrowBigDownDashIcon = ArrowBigDownDash;
+export const ArrowUpFromLineIcon = ArrowUpFromLine;
 export const MenuIcon = Menu;
 export const SearchIcon = Search;
 export const FilterIcon = Filter;
@@ -577,6 +579,7 @@ export const Icons = {
   ArrowUp: ArrowUpIcon,
   ArrowDown: ArrowDownIcon,
   ArrowBigDownDash: ArrowBigDownDashIcon,
+  ArrowsUpFromLine: ArrowUpFromLineIcon,
 
   // UI
   Menu: MenuIcon,
@@ -681,6 +684,7 @@ export const Icons = {
   Banknote: BanknoteIcon,
   BanknoteArrowUp: BanknoteArrowUpIcon,
   BanknoteArrowDown: BanknoteArrowDownIcon,
+  MoneyBills: WalletIcon,
   TrendingUpDown: TrendingUpDownIcon,
 
   // Selection
