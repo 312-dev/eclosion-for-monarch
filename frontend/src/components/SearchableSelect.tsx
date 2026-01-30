@@ -166,8 +166,7 @@ export function SearchableSelect({
     let stateClass = 'hover:bg-(--monarch-bg-hover) text-(--monarch-text-dark)';
     if (opt.disabled) stateClass = 'opacity-50 cursor-not-allowed bg-(--monarch-bg-page)';
     else if (isSelected) stateClass = 'bg-(--monarch-orange)/10 text-(--monarch-orange)';
-    const activeClass =
-      isActive && !opt.disabled ? 'ring-2 ring-inset ring-(--monarch-text-muted)' : '';
+    const activeClass = isActive && !opt.disabled ? 'bg-(--monarch-bg-hover)' : '';
 
     return (
       <button

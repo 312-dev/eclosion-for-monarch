@@ -103,8 +103,8 @@ export function CategoryGroupDropdown({
           setIsOpen(false);
           break;
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpen/handleSelect are stable
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpen/handleSelect are stable
     [isOpen, groups, focusedIndex]
   );
 

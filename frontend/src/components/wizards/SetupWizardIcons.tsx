@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Icon component file with SVG definitions */
 /**
  * SetupWizard Icons
  *
