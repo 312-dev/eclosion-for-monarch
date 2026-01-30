@@ -20,3 +20,16 @@ scan:
 vulnerability:
   # Ignore vulnerabilities older than this (optional, commented out)
   # ignore-published-before: 2020-01-01
+
+  # Temporary ignores for base image CVEs pending Chainguard update
+  # These are in libcrypto3/libssl3 (OpenSSL) and require base image update
+  # TODO: Remove once Chainguard python image is updated to OpenSSL 3.6.1-r0+
+  ignore-unfixed: true
+
+  # CVE ignore list
+  ignored:
+    # OpenSSL CVEs in Chainguard base image - awaiting upstream fix
+    - id: CVE-2025-15467
+      statement: "Base image CVE - awaiting Chainguard update to OpenSSL 3.6.1-r0"
+    - id: CVE-2025-69419
+      statement: "Base image CVE - awaiting Chainguard update to OpenSSL 3.6.1-r0"
