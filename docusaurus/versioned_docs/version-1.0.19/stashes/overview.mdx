@@ -1,0 +1,159 @@
+---
+title: Overview
+description: Track and reach your savings goals with a visual dashboard in Eclosion.
+sidebar_position: 1
+---
+
+import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
+import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+import { Bookmark, Target, Grid, CheckCircle } from 'lucide-react';
+
+# Stashes
+
+Create a visual dashboard of savings goals for things you want. Set target amounts and dates, track your progress with status badges, and organize cards your way with drag and drop.
+
+<FeatureGrid>
+  <FeatureCard
+    icon={<Grid size={24} />}
+    title="Visual Dashboard"
+    description="Drag, drop, and resize cards to organize your goals"
+  />
+  <FeatureCard
+    icon={<CheckCircle size={24} />}
+    title="Progress Tracking"
+    description="See at a glance if you're funded, on track, or behind"
+  />
+  <FeatureCard
+    icon={<Target size={24} />}
+    title="Target Dates"
+    description="Set goal dates with automatic monthly target calculation"
+  />
+  <FeatureCard
+    icon={<Bookmark size={24} />}
+    title="Browser Sync"
+    description="Optionally import stashes from your bookmarks"
+  />
+</FeatureGrid>
+
+## How It Works
+
+Stashes represent savings goals for things you want, unlike recurring expenses which repeat on a schedule. Each stash has:
+
+- **Target amount**: How much you need to save
+- **Target date**: When you want to have the money ready
+- **Monthly target**: Calculated automatically based on your progress and timeline
+
+### Visual Cards
+
+Items display as resizable cards you can arrange in a grid. Each card shows:
+
+- Item name and image (favicon, emoji, or custom upload)
+- Progress bar and percentage
+- Current balance vs. target amount
+- Status badge (Funded, On Track, Behind, etc.)
+
+Drag cards to rearrange them, or resize by dragging the corners.
+
+## Starting a New Stash
+
+<WorkflowSteps
+  title="Creating a Stash"
+  steps={[
+    {
+      title: "Click Start a Stash",
+      description: "Click the Start a Stash button in the Stashes header to open the new stash form."
+    },
+    {
+      title: "Enter Details",
+      description: "Give your item a name, target amount, and target date. Optionally add a URL, emoji, or custom image."
+    },
+    {
+      title: "Link a Category",
+      description: "Choose an existing Monarch category or create a new one. This is where your savings will be tracked."
+    },
+    {
+      title: "Start Saving",
+      description: "Your item appears on the dashboard. Budget to your linked category and watch progress grow."
+    }
+  ]}
+/>
+
+## Browser Bookmark Sync
+
+Eclosion can sync with your browser's bookmarks to automatically detect stashes. This is useful for tracking products you've bookmarked while shopping online.
+
+### Supported Browsers
+
+- Firefox
+- Chrome
+- Edge
+- Safari
+
+### Setting Up Browser Sync
+
+1. Click the gear icon in the Stashes header
+2. Select your browser from the dropdown
+3. Choose which bookmark folders to monitor
+4. Save your settings
+
+Once configured, Eclosion checks your bookmarks during each sync. New bookmarks appear in the "Pending Review" section where you can:
+
+- **Create Target**: Convert the bookmark into a stash
+- **Skip**: Ignore the bookmark (it won't appear again)
+
+:::tip
+Create a dedicated "Wishlist" folder in your browser bookmarks. Point Eclosion at just that folder to avoid seeing unrelated bookmarks.
+:::
+
+## Managing Items
+
+Click any card to edit its details:
+
+- Update name, amount, or target date
+- Change the emoji or upload a custom image
+- View or modify the linked category
+
+### Archiving Completed Goals
+
+When you've saved enough for an item (or purchased it), you can archive it:
+
+1. Click the item card to open the edit modal
+2. Click "Archive" in the actions menu
+3. The item moves to the Archived section at the bottom
+
+Archived items are hidden by default but can be expanded to view your savings history.
+
+## Monthly Targets
+
+Like recurring expenses, Eclosion calculates how much you need to save each month to reach your goal by the target date.
+
+### The Calculation
+
+The remaining amount is spread across months until your target date:
+
+| Item | Target | Saved | Months Left | Monthly Target |
+|------|--------|-------|-------------|----------------|
+| New laptop | $1,500 | $500 | 5 months | $200/mo |
+| Vacation | $3,000 | $1,200 | 6 months | $300/mo |
+| Camera | $800 | $0 | 8 months | $100/mo |
+
+### Funded Items
+
+Once your balance reaches the target amount, the item shows as "Funded" and the monthly target drops to $0. The item remains visible until you archive it.
+
+:::note
+Stash targets use the same rounding rules as recurring expenses. Small targets show at least $1/month.
+:::
+
+## Status Badges
+
+Each item displays a status badge based on your progress:
+
+| Status | Meaning |
+|--------|---------|
+| **Funded** | You've saved enough for this item |
+| **Ahead** | You're budgeting more than the monthly target |
+| **On Track** | You're meeting the monthly target |
+| **Behind** | You're budgeting less than needed |
+
+Status is recalculated whenever your balance or budget changes.
