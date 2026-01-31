@@ -3,7 +3,7 @@
 import os
 import secrets
 
-import requests as http_requests
+import requests as http_requests  # type: ignore[import-untyped]
 from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request, send_from_directory
 from flask_cors import CORS

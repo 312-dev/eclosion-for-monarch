@@ -143,7 +143,7 @@ class TestEventRetrieval:
         security_service.log_event(event_type="LOGOUT", success=True)
         security_service.log_event(event_type="LOGIN_ATTEMPT", success=False)
 
-        events, total = security_service.get_events(limit=10, event_type="LOGIN_ATTEMPT")
+        events, total = security_service.get_events(limit=10, event_types=["LOGIN_ATTEMPT"])
         assert len(events) == 2
         assert total == 2  # Total should reflect filtered count
         assert all(e.event_type == "LOGIN_ATTEMPT" for e in events)
@@ -169,7 +169,7 @@ class TestEventRetrieval:
         security_service.log_event(event_type="LOGOUT", success=True)
 
         events, total = security_service.get_events(
-            limit=10, event_type="LOGIN_ATTEMPT", success=False
+            limit=10, event_types=["LOGIN_ATTEMPT"], success=False
         )
         assert len(events) == 1
         assert total == 1

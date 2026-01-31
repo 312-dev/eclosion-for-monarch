@@ -325,7 +325,7 @@ def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:
         ), 401
 
     # For page requests, redirect to remote unlock page
-    return redirect("/remote-unlock"), 302
+    return make_response(redirect("/remote-unlock")), 302
 
 
 def enforce_desktop_secret(services: "Services") -> tuple[Response, int] | None:
