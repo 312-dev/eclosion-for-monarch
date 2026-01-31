@@ -102,7 +102,18 @@ sleep 1
 # Start Flask backend
 echo -e "${YELLOW}Starting Flask backend on port $FLASK_PORT...${NC}"
 cd "$PROJECT_ROOT"
-STATE_DIR="$STATE_DIR" FLASK_DEBUG=1 PORT=$FLASK_PORT ECLOSION_DESKTOP=1 python api.py &
+
+# In dev mode, tunnel proxies to Vite for hot-reload
+# FRONTEND_PATH is kept as fallback but DEV_VITE_URL takes priority
+FRONTEND_DIST="$PROJECT_ROOT/frontend/dist"
+if [ -d "$FRONTEND_DIST" ]; then
+    FRONTEND_PATH="$FRONTEND_DIST"
+else
+    FRONTEND_PATH=""
+fi
+echo -e "${GREEN}Tunnel hot-reload enabled - proxying to Vite${NC}"
+
+STATE_DIR="$STATE_DIR" FLASK_DEBUG=1 PORT=$FLASK_PORT ECLOSION_DESKTOP=1 FRONTEND_PATH="$FRONTEND_PATH" DEV_VITE_URL="http://localhost:$VITE_PORT" python api.py &
 FLASK_PID=$!
 
 # Wait for Flask to be ready
@@ -116,7 +127,8 @@ echo -e " ${GREEN}ready${NC}"
 # Start Vite frontend
 echo -e "${YELLOW}Starting Vite frontend on port $VITE_PORT...${NC}"
 cd "$PROJECT_ROOT/frontend"
-npm run dev -- --port $VITE_PORT &
+# Enable tunnel mode for HMR if remote access will be used
+VITE_TUNNEL_MODE=true VITE_PORT=$VITE_PORT npm run dev -- --port $VITE_PORT &
 VITE_PID=$!
 
 # Wait for Vite to be ready
