@@ -274,11 +274,11 @@ jobs:
             LAST_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
 
-          echo "Generating notes from $LAST_TAG to $NEW_TAG"
+          echo "Generating notes from $LAST_TAG to HEAD (tag: $NEW_TAG)"
 
           npx tsx scripts/release-notes-updater/generate-notes.ts \
             --from "$LAST_TAG" \
-            --to "$NEW_TAG" \
+            --to HEAD \
             --repo-url "https://github.com/${{ github.repository }}" \
             --polish \
             > /tmp/release-notes.md
