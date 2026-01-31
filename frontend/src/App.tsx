@@ -92,12 +92,21 @@ function ScrollToTop() {
   return null;
 }
 
+export type LandingPageOption = 'dashboard' | 'recurring' | 'notes' | 'stashes';
+
+const LANDING_PAGE_PATHS: Record<LandingPageOption, string> = {
+  dashboard: '/dashboard',
+  recurring: '/recurring',
+  notes: '/notes',
+  stashes: '/stashes',
+};
+
 export function getLandingPage(): string {
-  const stored = localStorage.getItem(LANDING_PAGE_KEY);
-  return stored === 'recurring' ? '/recurring' : '/dashboard';
+  const stored = localStorage.getItem(LANDING_PAGE_KEY) as LandingPageOption | null;
+  return stored && LANDING_PAGE_PATHS[stored] ? LANDING_PAGE_PATHS[stored] : '/dashboard';
 }
 
-export function setLandingPage(page: 'dashboard' | 'recurring'): void {
+export function setLandingPage(page: LandingPageOption): void {
   localStorage.setItem(LANDING_PAGE_KEY, page);
 }
 
@@ -328,9 +337,32 @@ const appShellChildren: RouteObject[] = [
 ];
 
 /**
+ * Minimal layout for remote unlock page.
+ * Provides AuthProvider (required by UnlockPage) but skips auth state checks.
+ */
+function RemoteUnlockLayout() {
+  return (
+    <RateLimitProvider>
+      <DemoProvider>
+        <AuthProvider>
+          <Outlet />
+        </AuthProvider>
+      </DemoProvider>
+    </RateLimitProvider>
+  );
+}
+
+/**
  * Production routes (desktop and self-hosted web)
  */
 const productionRoutes: RouteObject[] = [
+  // Remote unlock page - has its own minimal layout with AuthProvider
+  // but skips auth state checks (remote mode handles its own auth via session)
+  {
+    path: '/remote-unlock',
+    element: <RemoteUnlockLayout />,
+    children: [{ index: true, element: <UnlockPage /> }],
+  },
   {
     element: <ProductionRootLayout />,
     children: [

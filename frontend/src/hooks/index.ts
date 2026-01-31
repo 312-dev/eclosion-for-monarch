@@ -126,3 +126,6 @@ export {
   createArrowKeyHandler,
   type ArrowKeyIncrementOptions,
 } from './useArrowKeyIncrement';
+
+// Tunnel status for remote access
+export { useTunnelStatus, type UseTunnelStatusReturn } from './useTunnelStatus';
