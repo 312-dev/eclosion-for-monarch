@@ -1,18 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { isDesktopMode } from '../../utils/apiBase';
-import { UI } from '../../constants';
 import { ElectronTitleBar } from '../ElectronTitleBar';
-import {
-  getCooldownSeconds,
-  validatePassphrase,
-  getLockoutState,
-  setLockoutState,
-  clearLockoutState,
-} from './PassphraseUtils';
+import { validatePassphrase, getLockoutState, clearLockoutState } from './PassphraseUtils';
 import { usePassphraseBiometric } from './usePassphraseBiometric';
 import { useRemoteUnlock } from './useRemoteUnlock';
 import { usePassphraseSubmit } from './usePassphraseSubmit';
+import { useCooldownTimer } from './useCooldownTimer';
 import { PassphraseHeader } from './PassphraseHeader';
 import {
   PasswordInput,
@@ -29,12 +23,7 @@ interface PassphrasePromptProps {
   onResetApp?: () => void;
   onFallbackRequest?: () => void;
   autoPromptBiometric?: boolean;
-  /**
-   * Remote mode: for users accessing via tunnel.
-   * - Hides biometric options (not available on remote device)
-   * - Hides reset app link (blocked for tunnel access)
-   * - Uses /auth/remote-unlock API with server-side lockout
-   */
+  /** Remote mode: for tunnel access - hides biometrics/reset, uses server-side lockout */
   remoteMode?: boolean;
 }
 
@@ -60,9 +49,8 @@ export function PassphrasePrompt({
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [requireBiometric, setRequireBiometric] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
-  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
-  const [tick, setTick] = useState(0);
   const [lockoutLoaded, setLockoutLoaded] = useState(false);
+  const { cooldownRemaining, isInCooldown, startCooldown, setCooldownUntil } = useCooldownTimer();
   const [requireBiometricLoaded, setRequireBiometricLoaded] = useState(false);
 
   // Remote unlock hook (only active when remoteMode is true)
@@ -78,13 +66,13 @@ export function PassphrasePrompt({
       setCooldownUntil(state.cooldownUntil);
       setLockoutLoaded(true);
     });
-  }, []);
+  }, [setCooldownUntil]);
 
   const clearCooldown = useCallback(() => {
     setFailedAttempts(0);
     setCooldownUntil(null);
     clearLockoutState();
-  }, []);
+  }, [setCooldownUntil]);
 
   const {
     biometric,
@@ -109,7 +97,6 @@ export function PassphrasePrompt({
   const requirements = useMemo(() => validatePassphrase(passphrase), [passphrase]);
   const allRequirementsMet = requirements.every((r) => r.met);
   const passwordsMatch = passphrase === confirmPassphrase;
-  const isInCooldown = cooldownRemaining > 0;
   const isValid =
     mode === 'unlock'
       ? passphrase.length > 0 && !isInCooldown && lockoutLoaded
@@ -138,36 +125,6 @@ export function PassphrasePrompt({
       onFallbackRequest();
     }
   }, [mode, requireBiometric, requireBiometricLoaded, onFallbackRequest]);
-
-  // Tick the countdown timer when in cooldown
-  useEffect(() => {
-    if (!cooldownUntil) return;
-
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
-      if (remaining <= 0) {
-        setCooldownUntil(null);
-      } else {
-        setTick((t) => t + 1);
-      }
-    }, UI.INTERVAL.COOLDOWN_TICK);
-
-    return () => clearInterval(interval);
-  }, [cooldownUntil]);
-
-  // Calculate cooldownRemaining from cooldownUntil (re-evaluated on tick)
-  const cooldownRemaining = useMemo(
-    () => (cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000)) : 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cooldownUntil, tick] // tick intentionally included to trigger recalculation each second
-  );
-
-  const startCooldown = useCallback((attempts: number) => {
-    const seconds = getCooldownSeconds(attempts);
-    const newCooldownUntil = seconds > 0 ? Date.now() + seconds * 1000 : null;
-    if (newCooldownUntil) setCooldownUntil(newCooldownUntil);
-    setLockoutState({ failedAttempts: attempts, cooldownUntil: newCooldownUntil });
-  }, []);
 
   const { handleSubmit } = usePassphraseSubmit({
     passphrase,
