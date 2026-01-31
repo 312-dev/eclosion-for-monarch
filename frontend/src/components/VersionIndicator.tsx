@@ -9,17 +9,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useUpdateCheck } from '../hooks/useUpdateCheck';
-import { useChangelogStatusQuery, useMarkChangelogReadMutation } from '../api/queries';
+import {
+  useChangelogStatusQuery,
+  useMarkChangelogReadMutation,
+  useVersionQuery,
+} from '../api/queries';
 import { Modal } from './ui/Modal';
 import { ChangelogDisplay } from './ChangelogDisplay';
 import { UI } from '../constants';
 import { Icons } from './icons';
-import { isDesktopMode } from '../utils/apiBase';
 
 export function VersionIndicator() {
   const { updateAvailable, clientVersion, checkForUpdate, isChecking } = useUpdateCheck();
 
   const { data: changelogStatus } = useChangelogStatusQuery();
+  const { data: versionInfo } = useVersionQuery();
   const markAsRead = useMarkChangelogReadMutation();
 
   const [showChangelog, setShowChangelog] = useState(false);
@@ -28,7 +32,9 @@ export function VersionIndicator() {
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasShownTooltipRef = useRef(false);
 
-  const isDesktop = isDesktopMode();
+  // Use backend's deployment_type instead of client-side detection
+  // This correctly handles tunnel access where window.electron is undefined
+  const isDesktop = versionInfo?.deployment_type === 'desktop';
 
   // Show "See what's new" tooltip on initial load if there are unread notes
   useEffect(() => {

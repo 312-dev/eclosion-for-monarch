@@ -4,7 +4,12 @@
  * Version info, changelog, releases, and update information.
  */
 
-import type { VersionInfo, VersionCheckResult, ChangelogStatusResult, MarkChangelogReadResult } from '../../types';
+import type {
+  VersionInfo,
+  VersionCheckResult,
+  ChangelogStatusResult,
+  MarkChangelogReadResult,
+} from '../../types';
 import { DEMO_VERSION, simulateDelay } from './demoState';
 
 export interface Release {
@@ -48,6 +53,7 @@ export async function getVersion(): Promise<VersionInfo> {
     is_beta: false,
     schema_version: '1.0',
     git_sha: 'demo',
+    deployment_type: 'local',
   };
 }
 

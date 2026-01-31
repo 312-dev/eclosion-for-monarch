@@ -27,6 +27,7 @@ export interface VersionInfo {
   is_beta: boolean;
   schema_version: string;
   git_sha: string;
+  deployment_type: 'desktop' | 'docker' | 'local';
 }
 
 export interface ChangelogResponse {

@@ -12,7 +12,6 @@ import { useState } from 'react';
 import { Download, RotateCcw, CheckCircle } from 'lucide-react';
 import { VersionBadge } from '../VersionBadge';
 import { useUpdate } from '../../context/UpdateContext';
-import { isDesktopMode } from '../../utils/apiBase';
 import type { VersionInfo } from '../../types';
 
 interface UpdatesSectionProps {
@@ -85,7 +84,10 @@ function DesktopUpdateAction() {
   // No update - show "Up to date" with check link
   return (
     <div className="flex flex-col items-end gap-0.5">
-      <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--monarch-success)' }}>
+      <span
+        className="flex items-center gap-1.5 text-sm"
+        style={{ color: 'var(--monarch-success)' }}
+      >
         <CheckCircle size={14} />
         Up to date
       </span>
@@ -130,7 +132,9 @@ function DesktopDownloadProgress() {
 }
 
 export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectionProps) {
-  const isDesktop = isDesktopMode();
+  // Use backend's deployment_type instead of client-side detection
+  // This correctly handles tunnel access where window.electron is undefined
+  const isDesktop = versionInfo?.deployment_type === 'desktop';
 
   return (
     <section className="mb-8">

@@ -187,11 +187,17 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
         {totalLogins > ITEMS_PER_PAGE && (
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
+              const button = e.currentTarget;
               if (visibleCount >= totalLogins) {
                 setVisibleCount(ITEMS_PER_PAGE);
               } else {
                 setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, totalLogins));
+                // Keep button visible after content expands
+                requestAnimationFrame(() => {
+                  button.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                });
               }
             }}
             className="flex items-center gap-1 text-xs hover:opacity-80"

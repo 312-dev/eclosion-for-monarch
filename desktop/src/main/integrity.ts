@@ -1,55 +1,35 @@
 /**
  * Backend Integrity Checker
  *
- * Verifies the backend binary hasn't been corrupted by differential updates.
- * If corruption is detected, downloads the correct binary from GitHub releases.
+ * Verifies the backend binary is valid and matches the expected app version.
+ * If corruption or version mismatch is detected, downloads the correct binary
+ * from GitHub releases.
  *
- * This is a safety net for users who received corrupted backends from
- * electron-updater's blockmap-based differential updates before we disabled them.
+ * Validation approach:
+ * 1. Run the backend with --version flag
+ * 2. Verify it executes successfully (not corrupted)
+ * 3. Verify the output matches the expected app version
+ *
+ * This is more reliable than size-based checks because it actually tests
+ * if the binary is executable and contains the correct version.
  */
 
-import fs from 'node:fs';
+import fs, { createWriteStream } from 'node:fs';
 import path from 'node:path';
 import https from 'node:https';
 import { URL } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { app, dialog, shell } from 'electron';
 import { debugLog as log } from './logger';
-import { createWriteStream } from 'node:fs';
+
+const execFileAsync = promisify(execFile);
 
 const LOG_PREFIX = '[Integrity]';
 
 function debugLog(msg: string): void {
   log(msg, LOG_PREFIX);
 }
-
-/**
- * Expected backend binary sizes by platform and architecture.
- * These are the correct sizes from official releases.
- * If the installed binary doesn't match, it's likely corrupted.
- *
- * Note: These sizes may change with new releases. We check against a minimum
- * threshold rather than exact match to allow for minor variations.
- */
-const EXPECTED_BACKEND_SIZES: Record<string, { min: number; max: number }> = {
-  // macOS ARM64 (M1/M2/M3)
-  'darwin-arm64': { min: 9060000, max: 9200000 },
-  // macOS Intel
-  'darwin-x64': { min: 9060000, max: 9200000 },
-  // Windows x64
-  'win32-x64': { min: 9000000, max: 10000000 },
-  // Linux x64
-  'linux-x64': { min: 9000000, max: 10000000 },
-  // Linux ARM64
-  'linux-arm64': { min: 9000000, max: 10000000 },
-};
-
-/**
- * Known corrupted backend sizes that should trigger repair.
- * These are specific sizes that we know are corrupted from differential updates.
- */
-const KNOWN_CORRUPTED_SIZES = [
-  9051648, // Corrupted macOS ARM64 backend from v1.0.6->v1.0.7 differential update
-];
 
 /**
  * Get the path to the backend executable based on platform.
@@ -65,18 +45,20 @@ function getBackendPath(): string {
 }
 
 /**
- * Get the platform key for looking up expected sizes.
- */
-function getPlatformKey(): string {
-  return `${process.platform}-${process.arch}`;
-}
-
-/**
- * Check if the backend binary is corrupted.
+ * Check if the backend binary is corrupted by running it with --version.
+ *
+ * This is more reliable than size-based checks because it:
+ * 1. Verifies the binary is actually executable (not corrupted)
+ * 2. Verifies the version matches the expected app version
+ *
  * Returns true if corruption is detected, false if OK.
  */
-export function isBackendCorrupted(): boolean {
+export async function isBackendCorrupted(): Promise<boolean> {
   const backendPath = getBackendPath();
+  const expectedVersion = app.getVersion();
+
+  debugLog(`Backend path: ${backendPath}`);
+  debugLog(`Expected version: ${expectedVersion}`);
 
   // Check if backend exists
   if (!fs.existsSync(backendPath)) {
@@ -84,33 +66,38 @@ export function isBackendCorrupted(): boolean {
     return false; // Not corrupted, just missing (will fail later with proper error)
   }
 
-  // Get file size
-  const stats = fs.statSync(backendPath);
-  const actualSize = stats.size;
-  const platformKey = getPlatformKey();
+  try {
+    // Run the backend with --version flag
+    // Pass APP_VERSION env var so backend knows expected version
+    const { stdout, stderr } = await execFileAsync(backendPath, ['--version'], {
+      timeout: 10000, // 10 second timeout
+      env: {
+        ...process.env,
+        APP_VERSION: expectedVersion,
+      },
+    });
 
-  debugLog(`Backend path: ${backendPath}`);
-  debugLog(`Backend size: ${actualSize} bytes`);
-  debugLog(`Platform: ${platformKey}`);
+    const backendVersion = stdout.trim();
+    debugLog(`Backend reported version: ${backendVersion}`);
 
-  // Check against known corrupted sizes first
-  if (KNOWN_CORRUPTED_SIZES.includes(actualSize)) {
-    debugLog(`CORRUPTED: Size ${actualSize} matches known corrupted size`);
-    return true;
-  }
+    if (stderr) {
+      debugLog(`Backend stderr: ${stderr}`);
+    }
 
-  // Check against expected size range
-  const expectedRange = EXPECTED_BACKEND_SIZES[platformKey];
-  if (expectedRange) {
-    if (actualSize < expectedRange.min) {
-      debugLog(`CORRUPTED: Size ${actualSize} is below minimum expected ${expectedRange.min}`);
+    // Check if version matches
+    if (backendVersion !== expectedVersion) {
+      debugLog(`CORRUPTED: Version mismatch - expected ${expectedVersion}, got ${backendVersion}`);
       return true;
     }
-    // We don't check max because larger is usually OK (new features)
-  }
 
-  debugLog('Backend integrity check passed');
-  return false;
+    debugLog('Backend integrity check passed - version verified');
+    return false;
+  } catch (error) {
+    // If the binary fails to execute, it's corrupted
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    debugLog(`CORRUPTED: Failed to execute backend - ${errorMessage}`);
+    return true;
+  }
 }
 
 /**
@@ -223,13 +210,9 @@ async function extractAndReplaceBackend(zipPath: string, backendDir: string): Pr
       throw new Error(`Backend not found in extracted zip at ${extractedBackend}`);
     }
 
-    // Verify the extracted backend size
+    // Log the extracted backend size for debugging
     const stats = fs.statSync(extractedBackend);
     debugLog(`Extracted backend size: ${stats.size} bytes`);
-
-    if (KNOWN_CORRUPTED_SIZES.includes(stats.size)) {
-      throw new Error('Downloaded backend is also corrupted - release may be bad');
-    }
 
     // Remove old backend directory and replace with new one
     // Use shell commands to avoid Electron's fs patching issues with .asar files
@@ -309,7 +292,7 @@ async function repairBackend(onStatus?: RepairStatusCallback): Promise<boolean> 
 
     onStatus?.('Verifying installation...', 90);
     // Verify the repair worked
-    if (isBackendCorrupted()) {
+    if (await isBackendCorrupted()) {
       throw new Error('Repair verification failed - backend still corrupted');
     }
 
@@ -345,7 +328,7 @@ async function repairBackend(onStatus?: RepairStatusCallback): Promise<boolean> 
 export async function checkAndRepairBackend(onStatus?: RepairStatusCallback): Promise<boolean> {
   debugLog('Checking backend integrity...');
 
-  if (!isBackendCorrupted()) {
+  if (!(await isBackendCorrupted())) {
     return true;
   }
 

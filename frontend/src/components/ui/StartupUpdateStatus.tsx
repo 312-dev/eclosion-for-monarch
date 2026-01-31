@@ -56,8 +56,14 @@ export function StartupUpdateStatus({ status, version, progress }: StartupUpdate
       {status === 'ready' && (
         <button
           onClick={() => globalThis.electron?.quitAndInstall()}
-          className="w-full mt-2 px-3 py-1.5 rounded text-sm font-medium transition-colors btn-press"
-          style={{ backgroundColor: 'var(--monarch-success)', color: 'white' }}
+          className="w-full mt-2 px-3 py-1.5 rounded text-sm font-medium transition-colors btn-press cursor-pointer"
+          style={
+            {
+              backgroundColor: 'var(--monarch-success)',
+              color: 'white',
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties
+          }
         >
           Restart & Update
         </button>

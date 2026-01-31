@@ -175,6 +175,14 @@ def get_version():
     channel = config.RELEASE_CHANNEL
     is_beta = "-beta" in version or "-rc" in version or "-alpha" in version or channel == "beta"
 
+    # Determine deployment type for frontend UI decisions
+    if config.is_desktop_environment():
+        deployment_type = "desktop"
+    elif config.is_container_environment():
+        deployment_type = "docker"
+    else:
+        deployment_type = "local"
+
     return jsonify(
         {
             "version": version,
@@ -183,6 +191,7 @@ def get_version():
             "schema_version": config.SCHEMA_VERSION,
             "build_time": config.BUILD_TIME,
             "git_sha": config.GIT_SHA,
+            "deployment_type": deployment_type,
         }
     )
 
