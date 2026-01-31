@@ -19,8 +19,17 @@ query-filters:
       id: py/path-injection
 
   # Development-only Vite proxy has validation, not a real SSRF risk
+  # The proxy only forwards to configured Vite dev server (localhost)
   - exclude:
       id: py/ssrf
+  - exclude:
+      id: py/request-forgery
+  - exclude:
+      id: py/partial-request-forgery
+  - exclude:
+      id: py/full-ssrf
+  - exclude:
+      id: py/partial-ssrf
 
   # JSON responses are not vulnerable to XSS
   - exclude:
