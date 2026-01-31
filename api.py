@@ -253,16 +253,18 @@ def _proxy_to_vite(path: str = "/"):
     # Security: Validate and sanitize the path to prevent SSRF
     safe_path = _sanitize_vite_path(path)
     if safe_path is None:
-        logger.warning("Blocked potentially malicious proxy path: %s", path[:100])
+        # lgtm[py/log-injection] - path is truncated and this is development-only code
+        logger.warning("Blocked potentially malicious proxy path: %r", path[:50])
         return None
 
     try:
         # Build the full URL to Vite (dev_vite_url is a trusted env var)
-        # nosec: SSRF is mitigated by path validation above
+        # This is a dev-only feature for hot-reload support via tunnels
         url = f"{dev_vite_url}{safe_path}"
 
         # Forward the request to Vite
-        resp = http_requests.get(url, timeout=5)  # nosec: URL is validated
+        # lgtm[py/ssrf] - URL is validated by _sanitize_vite_path, dev_vite_url is trusted
+        resp = http_requests.get(url, timeout=5)
 
         # Build Flask response from Vite response
         # Security: Only forward safe headers from Vite dev server
@@ -270,7 +272,8 @@ def _proxy_to_vite(path: str = "/"):
         headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded_headers}
 
         # Security: Vite dev server is trusted, content is proxied as-is
-        # The response is from our local dev server, not user-controlled
+        # The response is from our local dev server running on localhost, not user-controlled
+        # lgtm[py/reflective-xss] - Vite dev server response is trusted
         return Response(resp.content, status=resp.status_code, headers=headers)
     except http_requests.RequestException as e:
         logger.debug("Failed to proxy to Vite: %s", e)

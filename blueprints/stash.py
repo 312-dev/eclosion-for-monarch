@@ -1051,9 +1051,11 @@ def serve_stash_image(filename: str):
         return jsonify({"error": "Images directory not found"}), 404
 
     # Resolve the full path and ensure it's within the images directory
+    # lgtm[py/path-injection] - Path is validated via relative_to check below
     image_path = (images_dir / filename).resolve()
 
     # Security: ensure the resolved path is still within images_dir
+    # This prevents path traversal attacks (e.g., ../../../etc/passwd)
     try:
         image_path.relative_to(images_dir.resolve())
     except ValueError:
@@ -1063,6 +1065,7 @@ def serve_stash_image(filename: str):
         logger.warning("Path traversal attempt: %s", safe_name)
         return jsonify({"error": "Invalid filename"}), 400
 
+    # lgtm[py/path-injection] - Path validated via relative_to check above
     if not image_path.exists():
         return jsonify({"error": "Image not found"}), 404
 
@@ -1077,4 +1080,5 @@ def serve_stash_image(filename: str):
     }
     mimetype = mime_types.get(extension, "application/octet-stream")
 
+    # lgtm[py/path-injection] - Path validated via relative_to check above
     return send_file(image_path, mimetype=mimetype)

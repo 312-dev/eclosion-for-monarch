@@ -213,6 +213,7 @@ def debug_headers():
             return None
         return str(markupsafe_escape(val))
 
+    # lgtm[py/reflective-xss] - Response is JSON (auto-escaped), debug-only, and values are sanitized
     return {
         "remote_addr": sanitize(request.remote_addr),
         "host": sanitize(request.host),
