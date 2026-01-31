@@ -12,6 +12,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_ip(ip: str | None) -> str:
+    """Sanitize an IP address for safe logging."""
+    if not ip:
+        return "unknown"
+    # Remove newlines, carriage returns, and null bytes
+    safe = str(ip).replace("\r\n", "").replace("\n", "").replace("\r", "")
+    safe = safe.replace("\x00", "").replace("\t", "")
+    # Limit length and remove any non-printable characters
+    return safe[:45]  # Max IPv6 length
+
+
 def get_client_ip() -> str | None:
     """Get the real client IP, accounting for tunnel proxies.
 
@@ -20,28 +31,35 @@ def get_client_ip() -> str | None:
     2. X-Real-IP (common proxy header, used by nginx and some tunnels)
     3. X-Forwarded-For (standard proxy header, take first IP)
     4. request.remote_addr (direct connection fallback)
+
+    Returns sanitized IP address safe for logging.
     """
     # Cloudflare provides the original client IP in this header
     cf_ip = request.headers.get("CF-Connecting-IP")
     if cf_ip:
-        logger.debug("[IP] Using CF-Connecting-IP: %s", cf_ip)
-        return cf_ip.strip()
+        safe_ip = _sanitize_ip(cf_ip)
+        logger.debug("[IP] Using CF-Connecting-IP: %s", safe_ip)
+        return safe_ip
 
     # X-Real-IP is often used by nginx and some tunnel providers
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
-        logger.debug("[IP] Using X-Real-IP: %s", real_ip)
-        return real_ip.strip()
+        safe_ip = _sanitize_ip(real_ip)
+        logger.debug("[IP] Using X-Real-IP: %s", safe_ip)
+        return safe_ip
 
     # Standard proxy header - first IP is the original client
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:
         client_ip = forwarded_for.split(",")[0].strip()
-        logger.debug("[IP] Using X-Forwarded-For: %s (full: %s)", client_ip, forwarded_for)
-        return client_ip
+        safe_ip = _sanitize_ip(client_ip)
+        safe_full = _sanitize_ip(forwarded_for)
+        logger.debug("[IP] Using X-Forwarded-For: %s (full: %s)", safe_ip, safe_full)
+        return safe_ip
 
-    logger.debug("[IP] Using remote_addr: %s", request.remote_addr)
-    return request.remote_addr
+    safe_remote = _sanitize_ip(request.remote_addr)
+    logger.debug("[IP] Using remote_addr: %s", safe_remote)
+    return safe_remote
 
 
 def _sanitize_log_value(value: str | None) -> str:

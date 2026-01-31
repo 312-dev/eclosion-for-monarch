@@ -209,30 +209,71 @@ def after_request_handler(response):
 INDEX_HTML = "index.html"
 
 
+def _sanitize_vite_path(path: str) -> str | None:
+    """
+    Sanitize and validate a path for Vite proxy requests.
+
+    Security: Prevents SSRF by ensuring the path is a safe relative path
+    that only accesses the local Vite dev server.
+
+    Returns sanitized path or None if invalid.
+    """
+    from urllib.parse import unquote, urlparse
+
+    # Decode URL-encoded characters to catch encoded attacks
+    decoded = unquote(path)
+
+    # Block absolute URLs and protocol handlers
+    parsed = urlparse(decoded)
+    if parsed.scheme or parsed.netloc:
+        return None
+
+    # Block path traversal attempts
+    if ".." in decoded:
+        return None
+
+    # Block null bytes and other dangerous characters
+    if "\x00" in decoded or "\\" in decoded:
+        return None
+
+    # Ensure path starts with /
+    return path if path.startswith("/") else f"/{path}"
+
+
 def _proxy_to_vite(path: str = "/"):
     """
     Proxy a request to Vite dev server for hot-reload support.
 
     Used when DEV_VITE_URL is set (dev mode with tunnel).
+    Security: Only proxies to the configured Vite dev server (localhost).
     """
     if not dev_vite_url:
         return None
 
+    # Security: Validate and sanitize the path to prevent SSRF
+    safe_path = _sanitize_vite_path(path)
+    if safe_path is None:
+        logger.warning("Blocked potentially malicious proxy path: %s", path[:100])
+        return None
+
     try:
-        # Build the full URL to Vite
-        vite_path = path if path.startswith("/") else f"/{path}"
-        url = f"{dev_vite_url}{vite_path}"
+        # Build the full URL to Vite (dev_vite_url is a trusted env var)
+        # nosec: SSRF is mitigated by path validation above
+        url = f"{dev_vite_url}{safe_path}"
 
         # Forward the request to Vite
-        resp = http_requests.get(url, timeout=5)
+        resp = http_requests.get(url, timeout=5)  # nosec: URL is validated
 
         # Build Flask response from Vite response
+        # Security: Only forward safe headers from Vite dev server
         excluded_headers = ["content-encoding", "transfer-encoding", "connection"]
         headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded_headers}
 
+        # Security: Vite dev server is trusted, content is proxied as-is
+        # The response is from our local dev server, not user-controlled
         return Response(resp.content, status=resp.status_code, headers=headers)
     except http_requests.RequestException as e:
-        logger.debug(f"Failed to proxy to Vite: {e}")
+        logger.debug("Failed to proxy to Vite: %s", e)
         return None
 
 

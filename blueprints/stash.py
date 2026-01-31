@@ -574,11 +574,15 @@ async def update_rollover_balance():
     except (ValueError, TypeError):
         raise ValidationError("'amount' must be an integer")
 
+    # Security: Sanitize category_id for logging (remove newlines/control chars)
+    safe_cat_id = str(category_id).replace("\n", "").replace("\r", "")[:50]
     logger.info(
-        f"[Rollover API] Calling update_category_rollover_balance({category_id}, {amount_int})"
+        "[Rollover API] Calling update_category_rollover_balance(%s, %d)",
+        safe_cat_id,
+        amount_int,
     )
     result = await update_category_rollover_balance(category_id, amount_int)
-    logger.info(f"[Rollover API] Result: {result}")
+    logger.info("[Rollover API] Result received")
 
     # Check for errors in the response
     update_result = result.get("updateCategory", {})
@@ -1054,7 +1058,9 @@ def serve_stash_image(filename: str):
         image_path.relative_to(images_dir.resolve())
     except ValueError:
         # Path is outside images_dir (path traversal attempt)
-        logger.warning(f"Path traversal attempt: {filename}")
+        # Security: Sanitize filename for logging to prevent log injection
+        safe_name = str(filename).replace("\n", "").replace("\r", "")[:50]
+        logger.warning("Path traversal attempt: %s", safe_name)
         return jsonify({"error": "Invalid filename"}), 400
 
     if not image_path.exists():

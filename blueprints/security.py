@@ -199,16 +199,29 @@ def dismiss_security_alerts():
 @security_bp.route("/debug/headers", methods=["GET"])
 @api_handler(handle_mfa=False)
 def debug_headers():
-    """Debug endpoint to see all request headers (for diagnosing tunnel IP issues)."""
+    """Debug endpoint to see all request headers (for diagnosing tunnel IP issues).
+
+    Only enabled in debug mode for security reasons.
+    Response is JSON (not HTML) so XSS is not a concern.
+    """
+    if not config.DEBUG_MODE:
+        return {"error": "Debug endpoint disabled in production"}, 403
+
+    # Sanitize header values to prevent any potential injection attacks
+    def sanitize(val: str | None) -> str | None:
+        if val is None:
+            return None
+        return str(markupsafe_escape(val))
+
     return {
-        "remote_addr": request.remote_addr,
-        "host": request.host,
-        "headers": dict(request.headers.items()),
+        "remote_addr": sanitize(request.remote_addr),
+        "host": sanitize(request.host),
+        "headers": {k: sanitize(v) for k, v in request.headers.items()},
         "ip_related": {
-            "X-Forwarded-For": request.headers.get("X-Forwarded-For"),
-            "X-Real-IP": request.headers.get("X-Real-IP"),
-            "CF-Connecting-IP": request.headers.get("CF-Connecting-IP"),
-            "True-Client-IP": request.headers.get("True-Client-IP"),
-            "X-Client-IP": request.headers.get("X-Client-IP"),
+            "X-Forwarded-For": sanitize(request.headers.get("X-Forwarded-For")),
+            "X-Real-IP": sanitize(request.headers.get("X-Real-IP")),
+            "CF-Connecting-IP": sanitize(request.headers.get("CF-Connecting-IP")),
+            "True-Client-IP": sanitize(request.headers.get("True-Client-IP")),
+            "X-Client-IP": sanitize(request.headers.get("X-Client-IP")),
         },
     }
