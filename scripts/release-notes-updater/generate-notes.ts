@@ -208,10 +208,12 @@ async function main(): Promise<void> {
   const withAiSummary = args.includes('--with-ai-summary');
   const versionIndex = args.indexOf('--version');
   const version = versionIndex !== -1 ? args[versionIndex + 1] : toRef;
+  const contextIndex = args.indexOf('--context');
+  const context = contextIndex !== -1 ? args[contextIndex + 1] : undefined;
 
   if (!fromRef || !repoUrl) {
     console.error(
-      'Usage: npx tsx generate-notes.ts --from <ref> --to <ref> --repo-url <url> [--beta] [--polish] [--with-ai-summary] [--version <ver>]'
+      'Usage: npx tsx generate-notes.ts --from <ref> --to <ref> --repo-url <url> [--beta] [--polish] [--with-ai-summary] [--version <ver>] [--context <text>]'
     );
     process.exit(1);
   }
@@ -235,7 +237,7 @@ async function main(): Promise<void> {
   // Generate AI summary if requested
   if (withAiSummary) {
     console.error('Generating AI summary...');
-    const summary = await generateSummary(technicalNotes, version, isBeta);
+    const summary = await generateSummary(technicalNotes, version, isBeta, context);
     const finalNotes = buildUpdatedReleaseBody(summary, technicalNotes);
     console.log(finalNotes);
   } else {
