@@ -14,6 +14,7 @@ import { UpdateBanner } from '../UpdateBanner';
 import { DesktopUpdateBanner } from '../update';
 import { MonthTransitionBanner } from '../ui/MonthTransitionBanner';
 import { DistributionModeBanner } from '../stash/DistributionModeBanner';
+import { RemoteAccessIndicator } from '../RemoteAccessIndicator';
 
 interface AppHeaderProps {
   isDemo: boolean;
@@ -88,6 +89,7 @@ export function AppHeader({
             right: isWindowsElectron ? `${windowsControlsWidth}px` : '1rem',
           }}
         >
+          <RemoteAccessIndicator />
           <SyncButton onSync={onSync} isSyncing={isSyncing} isFetching={isFetching} compact />
           <HelpDropdown hasTour={hasTour} onStartTour={onStartTour} />
         </div>

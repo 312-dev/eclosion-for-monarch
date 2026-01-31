@@ -1,4 +1,3 @@
-/* eslint-disable max-lines -- Navigation with desktop/mobile layouts and all nav items */
 /**
  * Sidebar Navigation
  *
@@ -17,7 +16,6 @@ import {
   Wrench,
   User,
   Download,
-  Heart,
   Zap,
   Monitor,
   Shield,
@@ -25,14 +23,12 @@ import {
   FileText,
   AlertTriangle,
   RotateCcw,
+  Radio,
 } from 'lucide-react';
 import { RecurringIcon, NotesIcon, StashIcon } from '../wizards/WizardComponents';
-import { Tooltip } from '../ui/Tooltip';
 import { ToolSettingsModal, type ToolType } from '../ui/ToolSettingsModal';
-import { Icons } from '../icons';
 import { useDemo } from '../../context/DemoContext';
 import { useMediaQuery } from '../../hooks';
-import { getComingSoonFeatures } from '../../data/features';
 import { isDesktopMode } from '../../utils/apiBase';
 
 interface SettingsSection {
@@ -45,13 +41,13 @@ interface SettingsSection {
 }
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
+  { id: 'remote-access', label: 'Remote', icon: <Radio size={16} />, desktopOnly: true },
   { id: 'demo', label: 'Demo Mode', icon: <RotateCcw size={16} />, showInDemo: true },
   { id: 'appearance', label: 'Appearance', icon: <Paintbrush size={16} /> },
   { id: 'tool-settings', label: 'Tool Settings', icon: <Wrench size={16} /> },
   { id: 'account', label: 'Account', icon: <User size={16} /> },
   { id: 'updates', label: 'Updates', icon: <Download size={16} /> },
-  { id: 'credits', label: 'Credits', icon: <Heart size={16} /> },
-  { id: 'automation', label: 'Automation', icon: <Zap size={16} /> },
+  { id: 'syncing', label: 'Automation', icon: <Zap size={16} /> },
   { id: 'desktop', label: 'Desktop', icon: <Monitor size={16} />, desktopOnly: true },
   { id: 'security', label: 'Security', icon: <Shield size={16} />, webOnly: true },
   { id: 'data', label: 'Data', icon: <Database size={16} /> },
@@ -140,26 +136,6 @@ function NavItemLink({
   );
 }
 
-function ComingSoonNavItem({
-  label,
-  icon,
-  isMobile,
-}: Readonly<{ label: string; icon: React.ReactNode; isMobile: boolean }>) {
-  return (
-    <Tooltip content="Coming Soon" side={isMobile ? 'top' : 'right'} delayDuration={100}>
-      <span
-        className="sidebar-nav-item sidebar-nav-item-disabled"
-        aria-label={`${label} - Coming Soon`}
-      >
-        <span className="sidebar-nav-icon" aria-hidden="true">
-          {icon}
-        </span>
-        <span className="sidebar-nav-label">{label}</span>
-      </span>
-    </Tooltip>
-  );
-}
-
 export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) {
   const location = useLocation();
   const isDemo = useDemo();
@@ -168,7 +144,6 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const [showLockButton, setShowLockButton] = useState(!isDesktop);
   const [settingsModalTool, setSettingsModalTool] = useState<ToolType | null>(null);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
-  const comingSoonFeatures = getComingSoonFeatures();
   const prefix = isDemo ? '/demo' : '';
 
   // In desktop mode, only show lock button if biometric is required
@@ -257,18 +232,6 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
                     <NavItemLink item={item} onSettingsClick={handleSettingsClick} />
                   </li>
                 ))}
-                {comingSoonFeatures.map((feature) => {
-                  const IconComponent = Icons[feature.icon];
-                  return (
-                    <li key={feature.id}>
-                      <ComingSoonNavItem
-                        label={feature.name}
-                        icon={<IconComponent size={20} />}
-                        isMobile={isMobile}
-                      />
-                    </li>
-                  );
-                })}
               </ul>
             </div>
           </div>

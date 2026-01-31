@@ -24,20 +24,12 @@ interface SettingRowProps {
   readonly comingSoon?: boolean;
 }
 
-function SettingRow({
-  label,
-  description,
-  enabled,
-  color,
-  comingSoon,
-}: SettingRowProps) {
+function SettingRow({ label, description, enabled, color, comingSoon }: SettingRowProps) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-(--monarch-border-light) last:border-0">
       <div className="flex-1 pr-4">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-(--monarch-text-dark) text-sm">
-            {label}
-          </span>
+          <span className="font-medium text-(--monarch-text-dark) text-sm">{label}</span>
           {comingSoon && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-(--monarch-border-light) text-(--monarch-text-muted) whitespace-nowrap">
               Coming Soon
@@ -70,10 +62,7 @@ const FEATURE_COLORS: Record<string, string> = {
   leaderboard: '#3B82F6',
 };
 
-export function MockupSettingsPanel({
-  scale = 0.4,
-  className = '',
-}: MockupSettingsPanelProps) {
+export function MockupSettingsPanel({ scale = 0.4, className = '' }: MockupSettingsPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [effectiveScale, setEffectiveScale] = useState(scale);
 
@@ -133,9 +122,7 @@ export function MockupSettingsPanel({
             }}
           >
             <div className="p-5 bg-(--monarch-bg-page)">
-              <h3 className="text-base font-semibold text-(--monarch-text-dark) mb-4">
-                Features
-              </h3>
+              <h3 className="text-base font-semibold text-(--monarch-text-dark) mb-4">Features</h3>
               <div className="bg-(--monarch-bg-card) rounded-xl p-4 border border-(--monarch-border-light)">
                 {FEATURES.map((feature) => {
                   const isAvailable = feature.status === 'available';
@@ -145,7 +132,7 @@ export function MockupSettingsPanel({
                       label={feature.name}
                       description={feature.tagline}
                       enabled={isAvailable}
-                      color={FEATURE_COLORS[feature.id] ?? 'var(--monarch-teal)'}
+                      color={FEATURE_COLORS[feature.id] ?? 'var(--monarch-orange)'}
                       comingSoon={!isAvailable}
                     />
                   );

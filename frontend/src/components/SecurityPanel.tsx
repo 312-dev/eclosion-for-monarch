@@ -34,11 +34,19 @@ function formatRelativeTime(timestamp: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function getEventLabel(event: SecurityEvent): string {
+  const isRemote = event.event_type === 'REMOTE_UNLOCK';
+  if (event.success) {
+    return isRemote ? 'Remote sign-in' : 'Signed in';
+  }
+  return isRemote ? 'Failed remote sign-in' : 'Failed sign-in attempt';
+}
+
 function LoginEvent({ event }: { event: SecurityEvent }) {
   const location = [event.city, event.country].filter(Boolean).join(', ') || 'Unknown location';
 
   return (
-    <div className="flex items-center justify-between py-2">
+    <div className="flex items-center justify-between py-1.5">
       <div className="flex items-center gap-3">
         <div
           className="w-2 h-2 rounded-full"
@@ -50,7 +58,7 @@ function LoginEvent({ event }: { event: SecurityEvent }) {
         />
         <div>
           <div className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-            {event.success ? 'Signed in' : 'Failed sign-in attempt'}
+            {getEventLabel(event)}
           </div>
           <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
             {location}
@@ -64,15 +72,17 @@ function LoginEvent({ event }: { event: SecurityEvent }) {
   );
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function SecurityPanel({ className = '' }: SecurityPanelProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const toast = useToast();
 
-  // Only fetch login attempts
+  // Fetch login attempts (both regular and remote)
   const { data, isLoading } = useSecurityEventsQuery({
-    limit: expanded ? 20 : 5,
+    limit: visibleCount,
     offset: 0,
-    eventType: 'LOGIN_ATTEMPT',
+    eventTypes: ['LOGIN_ATTEMPT', 'REMOTE_UNLOCK'],
   });
 
   // Fetch alerts (failed logins since last successful login)
@@ -163,7 +173,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       )}
 
       {/* Login list */}
-      <div className="divide-y" style={{ borderColor: 'var(--monarch-border)' }}>
+      <div className="space-y-0.5">
         {events.map((event) => (
           <LoginEvent key={event.id} event={event} />
         ))}
@@ -174,15 +184,30 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
         className="flex items-center justify-between mt-3 pt-3 border-t"
         style={{ borderColor: 'var(--monarch-border)' }}
       >
-        {totalLogins > 5 && (
+        {totalLogins > ITEMS_PER_PAGE && (
           <button
             type="button"
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => {
+              if (visibleCount >= totalLogins) {
+                setVisibleCount(ITEMS_PER_PAGE);
+              } else {
+                setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, totalLogins));
+              }
+            }}
             className="flex items-center gap-1 text-xs hover:opacity-80"
             style={{ color: 'var(--monarch-text-muted)' }}
           >
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {expanded ? 'Show less' : `Show more (${totalLogins} total)`}
+            {visibleCount >= totalLogins ? (
+              <>
+                <ChevronUp size={14} />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown size={14} />
+                Show more ({totalLogins - visibleCount} remaining)
+              </>
+            )}
           </button>
         )}
         <button
