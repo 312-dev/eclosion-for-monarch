@@ -1,11 +1,20 @@
 /**
  * Unlock Page
  *
- * Orchestrates the credential unlock flow:
+ * Unified unlock page for both local and remote access.
+ *
+ * Local mode (default):
  * 1. Passphrase/biometric entry -> decrypt + validate
  * 2. If biometric fails repeatedly -> fallback to email/password
  * 3. If Monarch credentials invalid -> credential update form
  * 4. If passphrase forgotten -> reset app modal
+ *
+ * Remote mode (accessed via tunnel at /remote-unlock):
+ * - Simplified passphrase-only entry
+ * - No biometric (not available on remote device)
+ * - No credential update (desktop already has valid session)
+ * - No reset app (blocked for security)
+ * - Server-side lockout enforcement
  */
 
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -26,19 +35,24 @@ export function UnlockPage() {
   const { authenticated, needsUnlock, lockReason, setAuthenticated, setNeedsUnlock } = useAuth();
   const biometric = useBiometric();
 
-  // Stage management
+  // Detect remote mode from URL path
+  const remoteMode = location.pathname === '/remote-unlock';
+
+  // Stage management (only used in local mode)
   const [stage, setStage] = useState<UnlockStage>('passphrase');
   // Store passphrase temporarily for re-encryption when updating credentials
   const [storedPassphrase, setStoredPassphrase] = useState<string | null>(null);
   // Reset modal visibility
   const [showResetModal, setShowResetModal] = useState(false);
 
-  // Get the intended destination
-  const from = (location.state as { from?: Location })?.from?.pathname || '/';
+  // Get the intended destination (local mode uses from state, remote mode goes to /recurring)
+  const from = remoteMode
+    ? '/recurring'
+    : (location.state as { from?: Location })?.from?.pathname || '/';
 
-  // Set compact window size on mount and when stage changes
+  // Set compact window size on mount and when stage changes (local mode only)
   useEffect(() => {
-    if (!isDesktopMode()) return;
+    if (!isDesktopMode() || remoteMode) return;
 
     // Height varies by stage:
     // - passphrase: 600px (Touch ID button + fallback link)
@@ -50,23 +64,31 @@ export function UnlockPage() {
     globalThis.electron?.windowMode?.setCompactSize(height).catch(() => {
       // Ignore errors - window sizing is a UX enhancement
     });
-  }, [stage]);
+  }, [stage, remoteMode]);
 
-  // Set page title (no user name on unlock page)
-  usePageTitle('Unlock');
+  // Set page title
+  usePageTitle(remoteMode ? 'Remote Access' : 'Unlock');
 
-  // Redirect if already authenticated or doesn't need unlock
+  // Redirect if already authenticated or doesn't need unlock (local mode only)
+  // Remote mode handles its own auth via session['remote_unlocked']
   useEffect(() => {
+    if (remoteMode) return;
+
     if (authenticated === true) {
       navigate(from, { replace: true });
     } else if (authenticated === false && !needsUnlock) {
       navigate('/login', { replace: true });
     }
-  }, [authenticated, needsUnlock, navigate, from]);
+  }, [authenticated, needsUnlock, navigate, from, remoteMode]);
 
   // Handle successful unlock (passphrase correct + Monarch validated)
   const handleUnlockSuccess = () => {
     setStoredPassphrase(null); // Clear from memory
+    if (remoteMode) {
+      // For remote mode, mark as authenticated in frontend state
+      // (server already set session['remote_unlocked'] = true)
+      setAuthenticated(true);
+    }
     navigate(from, { replace: true });
   };
 
@@ -111,8 +133,8 @@ export function UnlockPage() {
     setStage('passphrase');
   };
 
-  // Render credential update form when Monarch credentials are invalid
-  if (stage === 'credential_update' && storedPassphrase) {
+  // Render credential update form when Monarch credentials are invalid (local mode only)
+  if (!remoteMode && stage === 'credential_update' && storedPassphrase) {
     return (
       <CredentialUpdateForm
         passphrase={storedPassphrase}
@@ -122,8 +144,8 @@ export function UnlockPage() {
     );
   }
 
-  // Render fallback auth form when Touch ID fails
-  if (stage === 'fallback' && isDesktopMode()) {
+  // Render fallback auth form when Touch ID fails (local mode only)
+  if (!remoteMode && stage === 'fallback' && isDesktopMode()) {
     return (
       <div
         className="min-h-screen flex flex-col"
@@ -143,28 +165,38 @@ export function UnlockPage() {
     );
   }
 
-  // Auto-prompt biometric unless this was a manual lock
+  // Auto-prompt biometric unless this was a manual lock (local mode only)
   // Manual lock = user clicked lock button, they should click Touch ID button to unlock
   // Other cases (app startup, system lock, idle) = auto-prompt for convenience
-  const autoPromptBiometric = lockReason !== 'manual';
+  const autoPromptBiometric = !remoteMode && lockReason !== 'manual';
 
   // Default: render passphrase prompt
+  // Use conditional spreading to avoid passing undefined for optional props
+  const localModeProps = remoteMode
+    ? {}
+    : {
+        onCredentialUpdateNeeded: handleCredentialUpdateNeeded,
+        onResetApp: handleResetAppClick,
+        onFallbackRequest: handleFallbackRequest,
+      };
+
   return (
     <>
       <PassphrasePrompt
         mode="unlock"
         onSuccess={handleUnlockSuccess}
-        onCredentialUpdateNeeded={handleCredentialUpdateNeeded}
-        onResetApp={handleResetAppClick}
-        onFallbackRequest={handleFallbackRequest}
         autoPromptBiometric={autoPromptBiometric}
+        remoteMode={remoteMode}
+        {...localModeProps}
       />
 
-      <ResetAppModal
-        isOpen={showResetModal}
-        onClose={() => setShowResetModal(false)}
-        onReset={handleResetComplete}
-      />
+      {!remoteMode && (
+        <ResetAppModal
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onReset={handleResetComplete}
+        />
+      )}
     </>
   );
 }
