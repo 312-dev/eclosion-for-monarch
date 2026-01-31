@@ -8,10 +8,8 @@ import { useState } from 'react';
 import { Sun, Moon, Monitor, Home } from 'lucide-react';
 import { SearchableSelect } from '../SearchableSelect';
 import { useTheme, type Theme } from '../../context/ThemeContext';
-import { getLandingPage, setLandingPage } from '../../App';
-import { RecurringIcon } from '../wizards/WizardComponents';
-
-type LandingPage = 'dashboard' | 'recurring';
+import { getLandingPage, setLandingPage, type LandingPageOption } from '../../App';
+import { RecurringIcon, NotesIcon, StashIcon } from '../wizards/WizardComponents';
 
 const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: 'light', label: 'Light', icon: <Sun size={16} /> },
@@ -19,19 +17,28 @@ const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: 'system', label: 'System', icon: <Monitor size={16} /> },
 ];
 
-const landingPageOptions: { value: LandingPage; label: string; icon: React.ReactNode }[] = [
+const landingPageOptions: { value: LandingPageOption; label: string; icon: React.ReactNode }[] = [
   { value: 'dashboard', label: 'Dashboard', icon: <Home size={16} /> },
+  { value: 'notes', label: 'Notes', icon: <NotesIcon size={16} /> },
   { value: 'recurring', label: 'Recurring', icon: <RecurringIcon size={16} /> },
+  { value: 'stashes', label: 'Stashes', icon: <StashIcon size={16} /> },
 ];
+
+const PATH_TO_OPTION: Record<string, LandingPageOption> = {
+  '/dashboard': 'dashboard',
+  '/notes': 'notes',
+  '/recurring': 'recurring',
+  '/stashes': 'stashes',
+};
 
 export function AppearanceSettings() {
   const { theme, setTheme } = useTheme();
-  const [landingPage, setLandingPageState] = useState<LandingPage>(() => {
+  const [landingPage, setLandingPageState] = useState<LandingPageOption>(() => {
     const stored = getLandingPage();
-    return stored === '/recurring' ? 'recurring' : 'dashboard';
+    return PATH_TO_OPTION[stored] ?? 'dashboard';
   });
 
-  const handleLandingPageChange = (page: LandingPage) => {
+  const handleLandingPageChange = (page: LandingPageOption) => {
     setLandingPageState(page);
     setLandingPage(page);
   };
@@ -110,7 +117,7 @@ export function AppearanceSettings() {
 
             <SearchableSelect
               value={landingPage}
-              onChange={(val) => handleLandingPageChange(val as LandingPage)}
+              onChange={(val) => handleLandingPageChange(val as LandingPageOption)}
               options={landingPageOptions.map((option) => ({
                 value: option.value,
                 label: option.label,

@@ -221,9 +221,9 @@ export function HiddenCategoriesModal({
                           }
                         >
                           {isGroupHidden ? (
-                            <Eye size={16} />
+                            <EyeOff size={16} />
                           ) : (
-                            <EyeOff size={16} style={{ color: 'var(--monarch-text-muted)' }} />
+                            <Eye size={16} style={{ color: 'var(--monarch-text-muted)' }} />
                           )}
                         </button>
                       </div>
@@ -272,9 +272,9 @@ export function HiddenCategoriesModal({
                                   }
                                 >
                                   {isCategoryHidden && !isGroupHidden ? (
-                                    <Eye size={14} />
+                                    <EyeOff size={14} />
                                   ) : (
-                                    <EyeOff
+                                    <Eye
                                       size={14}
                                       style={{
                                         color: 'var(--monarch-text-muted)',

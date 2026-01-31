@@ -7,22 +7,17 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ResetAppModal } from '../ResetAppModal';
-import { UninstallModal } from '../UninstallModal';
-import { ImportSettingsModal } from '../ImportSettingsModal';
-import { UpdateModal } from '../UpdateModal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import type { DashboardData, AutoSyncStatus, VersionInfo } from '../../types';
 import { useDemo } from '../../context/DemoContext';
-import { usePageTitle, useApiClient } from '../../hooks';
+import { usePageTitle, useApiClient, useTunnelStatus } from '../../hooks';
 import { isDesktopMode } from '../../utils/apiBase';
 import { UI } from '../../constants';
 import * as api from '../../api/client';
 import {
   AppearanceSettings,
   RecurringToolSettings,
-  RecurringResetModal,
   NotesToolCard,
   StashToolSettings,
   SyncingSection,
@@ -34,11 +29,11 @@ import {
   DemoModeSection,
   DataManagementSection,
   DangerZoneSection,
-  CreditsSection,
   DeveloperSection,
   SettingsHeader,
+  RemoteAccessSection,
+  SettingsModals,
 } from '../settings';
-import { BrowserBookmarksSetupWizard } from '../wizards/stash/BrowserBookmarksSetupWizard';
 import {
   useUpdateStashConfigMutation,
   useClearUnconvertedBookmarksMutation,
@@ -59,9 +54,12 @@ export function SettingsTab() {
   const toast = useToast();
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
+  const { status: tunnelStatus } = useTunnelStatus();
+  const isRemoteActive = isDesktop && tunnelStatus?.active;
   const recurringSettingsRef = useRef<HTMLDivElement>(null);
   const notesSettingsRef = useRef<HTMLDivElement>(null);
   const stashSettingsRef = useRef<HTMLDivElement>(null);
+  const remoteAccessRef = useRef<HTMLDivElement>(null);
   const client = useApiClient();
   const updateStashConfig = useUpdateStashConfigMutation();
   const clearUnconvertedBookmarks = useClearUnconvertedBookmarksMutation();
@@ -74,6 +72,7 @@ export function SettingsTab() {
     if (initialHash === '#stash') return 'stash';
     return null;
   }, [initialHash]);
+  const scrollToRemoteAccess = initialHash === '#remote-access';
 
   usePageTitle('Settings', dashboardData?.config.user_first_name);
 
@@ -96,6 +95,15 @@ export function SettingsTab() {
       }, UI.SCROLL.AFTER_MOUNT);
     }
   }, [expandedTool]);
+
+  // Handle scrolling to remote access section when navigating with #remote-access hash
+  useEffect(() => {
+    if (scrollToRemoteAccess && isDesktop) {
+      setTimeout(() => {
+        remoteAccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, UI.SCROLL.AFTER_MOUNT);
+    }
+  }, [scrollToRemoteAccess, isDesktop]);
 
   const fetchVersionInfo = async () => {
     try {
@@ -175,6 +183,11 @@ export function SettingsTab() {
     <div className="settings-page" data-testid="settings-content">
       <div className="settings-content tab-content-enter">
         <SettingsHeader />
+        {isDesktop && (
+          <div id="remote-access" ref={remoteAccessRef}>
+            <RemoteAccessSection />
+          </div>
+        )}
         {isDemo && (
           <div id="demo">
             <DemoModeSection />
@@ -223,9 +236,6 @@ export function SettingsTab() {
             onShowUpdateModal={() => setShowUpdateModal(true)}
           />
         </div>
-        <div id="credits">
-          <CreditsSection />
-        </div>
         <div id="syncing">
           <SyncingSection
             status={autoSyncStatus}
@@ -234,7 +244,7 @@ export function SettingsTab() {
             onRefresh={fetchAutoSyncStatus}
           />
         </div>
-        {!isDesktop && (
+        {(!isDesktop || isRemoteActive) && (
           <div id="security">
             <SecuritySection />
           </div>
@@ -243,14 +253,14 @@ export function SettingsTab() {
           <DataManagementSection onShowImportModal={() => setShowImportModal(true)} />
         </div>
         {isDesktop && (
-          <div id="logs">
-            <LogViewerSection />
-          </div>
-        )}
-        {isDesktop && (
-          <div id="developer">
-            <DeveloperSection />
-          </div>
+          <>
+            <div id="logs">
+              <LogViewerSection />
+            </div>
+            <div id="developer">
+              <DeveloperSection />
+            </div>
+          </>
         )}
         <div id="danger">
           <DangerZoneSection
@@ -259,34 +269,26 @@ export function SettingsTab() {
           />
         </div>
       </div>
-      <ResetAppModal
-        isOpen={showResetModal}
-        onClose={() => setShowResetModal(false)}
+      <SettingsModals
+        showResetModal={showResetModal}
+        showUninstallModal={showUninstallModal}
+        showImportModal={showImportModal}
+        showUpdateModal={showUpdateModal}
+        showRecurringResetModal={showRecurringResetModal}
+        showBookmarkSetupModal={showBookmarkSetupModal}
+        totalCategories={totalCategories}
+        totalItems={totalItems}
+        onCloseResetModal={() => setShowResetModal(false)}
+        onCloseUninstallModal={() => setShowUninstallModal(false)}
+        onCloseImportModal={() => setShowImportModal(false)}
+        onCloseUpdateModal={() => setShowUpdateModal(false)}
+        onCloseRecurringResetModal={() => setShowRecurringResetModal(false)}
+        onCloseBookmarkSetupModal={() => setShowBookmarkSetupModal(false)}
         onReset={() => {
           setShowResetModal(false);
           logout();
         }}
       />
-      <UninstallModal isOpen={showUninstallModal} onClose={() => setShowUninstallModal(false)} />
-      <UpdateModal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)} />
-      <ImportSettingsModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
-      <RecurringResetModal
-        isOpen={showRecurringResetModal}
-        onClose={() => setShowRecurringResetModal(false)}
-        totalCategories={totalCategories}
-        totalItems={totalItems}
-      />
-      {showBookmarkSetupModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
-        >
-          <BrowserBookmarksSetupWizard
-            onComplete={() => setShowBookmarkSetupModal(false)}
-            onCancel={() => setShowBookmarkSetupModal(false)}
-          />
-        </div>
-      )}
     </div>
   );
 }
