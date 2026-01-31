@@ -251,6 +251,34 @@ jobs:
       - name: Pull latest (after version commit)
         run: git pull origin main
 
+      - name: Clean up orphan tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for orphan stable tags (tags without corresponding releases)..."
+
+          # Get all stable-looking tags (non-beta semver)
+          ALL_STABLE_TAGS=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | grep -v beta || true)
+
+          # Get all tags that have actual GitHub releases
+          RELEASED_TAGS=$(gh release list --limit 100 --json tagName --jq '.[].tagName')
+
+          ORPHAN_COUNT=0
+          for tag in $ALL_STABLE_TAGS; do
+            if ! echo "$RELEASED_TAGS" | grep -q "^${tag}$"; then
+              echo "Deleting orphan tag: $tag"
+              git push origin --delete "$tag" 2>/dev/null || true
+              git tag -d "$tag" 2>/dev/null || true
+              ORPHAN_COUNT=$((ORPHAN_COUNT + 1))
+            fi
+          done
+
+          if [ "$ORPHAN_COUNT" -gt 0 ]; then
+            echo "Cleaned up $ORPHAN_COUNT orphan tag(s)"
+          else
+            echo "No orphan tags found"
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
         with:
@@ -265,9 +293,10 @@ jobs:
       - name: Generate release notes
         env:
           MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Find last stable tag
-          LAST_TAG=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -v beta | head -1)
+          # Use gh release to find actual published stable releases (not orphan tags)
+          LAST_TAG=$(gh release list --exclude-pre-releases --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName')
           NEW_TAG="${{ needs.calculate-version.outputs.tag }}"
 
           if [ -z "$LAST_TAG" ]; then
@@ -276,6 +305,7 @@ jobs:
 
           echo "Generating notes from $LAST_TAG to HEAD (tag: $NEW_TAG)"
 
+          # Generate technical notes only (AI summary added after pipeline succeeds)
           npx tsx scripts/release-notes-updater/generate-notes.ts \
             --from "$LAST_TAG" \
             --to HEAD \
@@ -332,9 +362,52 @@ jobs:
   # ===========================================================================
   # FINALIZE
   # ===========================================================================
+  # Add AI summary to draft release (can be reviewed before publishing)
+  add-ai-summary:
+    name: Add AI Summary
+    needs: [calculate-version, release-pipeline]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/release-notes-updater/package-lock.json
+
+      - name: Install dependencies
+        working-directory: scripts/release-notes-updater
+        run: npm ci
+
+      - name: Add AI summary to release
+        working-directory: scripts/release-notes-updater
+        env:
+          MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.calculate-version.outputs.tag }}"
+          CONTEXT_FLAG=""
+          if [ -n "${{ inputs.release_context }}" ]; then
+            CONTEXT_FLAG="--context \"${{ inputs.release_context }}\""
+          fi
+
+          echo "Adding AI summary to draft release $TAG..."
+          npx tsx index.ts --tag "$TAG" $CONTEXT_FLAG
+
+          echo "### AI Summary Added" >> $GITHUB_STEP_SUMMARY
+          echo "Added user-friendly summary to draft release **$TAG**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[Review Draft Release](https://github.com/${{ github.repository }}/releases/tag/$TAG)" >> $GITHUB_STEP_SUMMARY
+
   publish-release:
     name: Publish Release
-    needs: [calculate-version, release-pipeline]
+    needs: [calculate-version, add-ai-summary]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
