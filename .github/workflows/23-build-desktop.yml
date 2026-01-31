@@ -283,14 +283,13 @@ jobs:
             npx electron-builder --mac --${{ matrix.arch }} --publish never
           fi
 
-      - name: Add blockMapSize to mac yml
+      - name: Fix manifest and add blockMapSize to mac yml
         working-directory: desktop
         run: |
-          # Add blockMapSize to manifest yml for differential updates
-          # This enables electron-updater to download only changed blocks
+          # Fix manifest URLs and add blockMapSize for differential updates
           # Handles both latest-mac.yml (stable) and beta-mac.yml (beta)
           # Using heredoc with single quotes to prevent bash variable expansion
-          node << 'BLOCKMAP_SCRIPT'
+          node << 'MANIFEST_SCRIPT'
             const fs = require('fs');
             const path = require('path');
 
@@ -304,6 +303,19 @@ jobs:
             console.log('Found manifest: ' + ymlPath);
 
             let yml = fs.readFileSync(ymlPath, 'utf8');
+
+            // FIX: electron-builder generates filenames with dots (Eclosion.Beta-)
+            // but the manifest uses dashes (Eclosion-Beta-). Fix the manifest
+            // to match the actual filenames for auto-update to work.
+            if (ymlPath.includes('beta')) {
+              const originalYml = yml;
+              yml = yml.replace(/Eclosion-Beta-/g, 'Eclosion.Beta-');
+              if (yml !== originalYml) {
+                console.log('Fixed manifest URLs: Eclosion-Beta- → Eclosion.Beta-');
+              }
+            }
+
+            // Add blockMapSize for differential updates
             const blockmaps = fs.readdirSync('release').filter(f => f.endsWith('.blockmap'));
 
             for (const blockmap of blockmaps) {
@@ -324,7 +336,7 @@ jobs:
             fs.writeFileSync(ymlPath, yml);
             console.log('\nUpdated ' + path.basename(ymlPath) + ':');
             console.log(fs.readFileSync(ymlPath, 'utf8'));
-          BLOCKMAP_SCRIPT
+          MANIFEST_SCRIPT
 
       - name: Validate backend binary
         run: |
@@ -452,11 +464,11 @@ jobs:
             npx electron-builder --win --publish never
           }
 
-      - name: Add blockMapSize to windows yml
+      - name: Fix manifest and add blockMapSize to windows yml
         working-directory: desktop
         shell: pwsh
         run: |
-          # Add blockMapSize to manifest yml for differential updates
+          # Fix manifest URLs and add blockMapSize for differential updates
           # Handles both latest.yml (stable) and beta.yml (beta)
           $candidates = @("release/latest.yml", "release/beta.yml")
           $ymlPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -467,6 +479,18 @@ jobs:
           Write-Host "Found manifest: $ymlPath"
 
           $yml = Get-Content $ymlPath -Raw
+
+          # FIX: electron-builder generates filenames with dots (Eclosion.Beta-)
+          # but the manifest uses dashes (Eclosion-Beta-). Fix the manifest
+          # to match the actual filenames for auto-update to work.
+          if ($ymlPath -like "*beta*") {
+            $originalYml = $yml
+            $yml = $yml -replace "Eclosion-Beta-", "Eclosion.Beta-"
+            if ($yml -ne $originalYml) {
+              Write-Host "Fixed manifest URLs: Eclosion-Beta- -> Eclosion.Beta-"
+            }
+          }
+
           $blockmaps = Get-ChildItem -Path "release" -Filter "*.blockmap"
 
           foreach ($blockmap in $blockmaps) {
@@ -608,13 +632,13 @@ jobs:
             npx electron-builder --linux --${{ matrix.arch }} --publish never
           fi
 
-      - name: Add blockMapSize to linux yml
+      - name: Fix manifest and add blockMapSize to linux yml
         working-directory: desktop
         run: |
-          # Add blockMapSize to manifest yml for differential updates
+          # Fix manifest URLs and add blockMapSize for differential updates
           # Handles both latest-linux.yml (stable) and beta-linux.yml (beta)
           # Using heredoc with single quotes to prevent bash variable expansion
-          node << 'BLOCKMAP_SCRIPT'
+          node << 'MANIFEST_SCRIPT'
             const fs = require('fs');
             const path = require('path');
 
@@ -628,6 +652,19 @@ jobs:
             console.log('Found manifest: ' + ymlPath);
 
             let yml = fs.readFileSync(ymlPath, 'utf8');
+
+            // FIX: electron-builder generates filenames with dots (Eclosion.Beta-)
+            // but the manifest uses dashes (Eclosion-Beta-). Fix the manifest
+            // to match the actual filenames for auto-update to work.
+            if (ymlPath.includes('beta')) {
+              const originalYml = yml;
+              yml = yml.replace(/Eclosion-Beta-/g, 'Eclosion.Beta-');
+              if (yml !== originalYml) {
+                console.log('Fixed manifest URLs: Eclosion-Beta- → Eclosion.Beta-');
+              }
+            }
+
+            // Add blockMapSize for differential updates
             const blockmaps = fs.readdirSync('release').filter(f => f.endsWith('.blockmap'));
 
             for (const blockmap of blockmaps) {
@@ -648,7 +685,7 @@ jobs:
             fs.writeFileSync(ymlPath, yml);
             console.log('\nUpdated ' + path.basename(ymlPath) + ':');
             console.log(fs.readFileSync(ymlPath, 'utf8'));
-          BLOCKMAP_SCRIPT
+          MANIFEST_SCRIPT
 
       - name: Check binary sizes
         run: |
