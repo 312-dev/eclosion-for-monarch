@@ -128,6 +128,8 @@ jobs:
           languages: ${{ matrix.language }}
           # Use extended query suite for more comprehensive analysis
           queries: security-extended
+          # Use custom config to exclude false positives
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4

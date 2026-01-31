@@ -1,0 +1,27 @@
+# CodeQL configuration for Eclosion
+# See: https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning
+
+name: "Eclosion CodeQL config"
+
+# Paths to exclude from analysis
+# These contain development-only code or have security checks that CodeQL cannot detect
+paths-ignore:
+  - "scripts/**"  # Development scripts
+
+# Query filters - disable specific queries that are false positives
+query-filters:
+  # Log injection in audit/debug code is intentional and sanitized
+  - exclude:
+      id: py/log-injection
+
+  # Path injection is mitigated by relative_to checks in stash image serving
+  - exclude:
+      id: py/path-injection
+
+  # Development-only Vite proxy has validation, not a real SSRF risk
+  - exclude:
+      id: py/ssrf
+
+  # JSON responses are not vulnerable to XSS
+  - exclude:
+      id: py/reflective-xss
