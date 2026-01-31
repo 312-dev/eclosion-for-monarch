@@ -256,7 +256,7 @@ def enforce_instance_secret(services: "Services") -> tuple[Response, int] | None
     """
     from core.audit import audit_log  # Local import to avoid circular dependency
 
-    if not config.INSTANCE_SECRET or request.endpoint == "_HEALTH_CHECK_ENDPOINT":
+    if not config.INSTANCE_SECRET or request.endpoint == _HEALTH_CHECK_ENDPOINT:
         return None
     if check_instance_secret():
         return None
@@ -286,7 +286,7 @@ def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:
         return None
 
     # Skip for health check endpoint
-    if request.endpoint == "_HEALTH_CHECK_ENDPOINT":
+    if request.endpoint == _HEALTH_CHECK_ENDPOINT:
         return None
 
     # Skip for the remote unlock endpoint/page itself
@@ -350,7 +350,7 @@ def enforce_desktop_secret(services: "Services") -> tuple[Response, int] | None:
         return None
 
     # Allow health check without secret (needed for backend startup)
-    if request.endpoint == "_HEALTH_CHECK_ENDPOINT":
+    if request.endpoint == _HEALTH_CHECK_ENDPOINT:
         return None
 
     # Skip for tunnel (remote access) requests - they use session auth instead
