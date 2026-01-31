@@ -49,6 +49,7 @@ export interface SecurityAlertEvent {
 
 export type SecurityEventType =
   | 'LOGIN_ATTEMPT'
+  | 'REMOTE_UNLOCK'
   | 'UNLOCK_ATTEMPT'
   | 'UNLOCK_AND_VALIDATE'
   | 'SESSION_LOCK'
@@ -62,5 +63,6 @@ export interface SecurityEventsQueryOptions {
   limit?: number | undefined;
   offset?: number | undefined;
   eventType?: string | undefined;
+  eventTypes?: string[] | undefined;
   success?: boolean | undefined;
 }

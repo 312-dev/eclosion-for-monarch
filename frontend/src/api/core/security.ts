@@ -23,7 +23,12 @@ export async function getSecurityEvents(
   const params = new URLSearchParams();
   if (options?.limit) params.set('limit', String(options.limit));
   if (options?.offset) params.set('offset', String(options.offset));
-  if (options?.eventType) params.set('event_type', options.eventType);
+  // Support both single eventType and array of eventTypes
+  if (options?.eventTypes?.length) {
+    params.set('event_types', options.eventTypes.join(','));
+  } else if (options?.eventType) {
+    params.set('event_type', options.eventType);
+  }
   if (options?.success !== undefined) params.set('success', String(options.success));
 
   const query = params.toString();

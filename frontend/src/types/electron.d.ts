@@ -544,6 +544,9 @@ export interface ElectronAPI {
   // Openverse (image search credentials)
   openverse: OpenverseAPI;
 
+  // Remote Access (Tunnel)
+  tunnel: TunnelAPI;
+
   // Loading Screen Signal
   /** Signal to main process that the loading screen is visible and rendered */
   signalLoadingReady: () => void;
@@ -641,6 +644,33 @@ export interface OpenverseAPI {
   storeCredentials: (credentials: OpenverseCredentials) => Promise<boolean>;
   /** Clear stored Openverse credentials */
   clearCredentials: () => Promise<void>;
+}
+
+// Remote Access (Tunnel) Types
+
+/** Result of starting a tunnel */
+export interface TunnelStartResult {
+  success: boolean;
+  url?: string;
+  error?: string;
+}
+
+/** Tunnel status */
+export interface TunnelStatus {
+  active: boolean;
+  url: string | null;
+  /** Whether remote access is enabled (user turned it on, should auto-start) */
+  enabled: boolean;
+}
+
+/** Remote Access Tunnel API for exposing the app to the internet */
+export interface TunnelAPI {
+  /** Start a tunnel to expose the backend for remote access */
+  start: () => Promise<TunnelStartResult>;
+  /** Stop the active tunnel */
+  stop: () => Promise<{ success: boolean }>;
+  /** Get the current tunnel status */
+  getStatus: () => Promise<TunnelStatus>;
 }
 
 // Bookmark Sync Types (import from bookmarks.ts for implementation, inline here for .d.ts)

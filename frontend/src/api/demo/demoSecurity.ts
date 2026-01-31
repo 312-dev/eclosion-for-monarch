@@ -44,7 +44,10 @@ export async function getSecurityEvents(
 
   let events = [...DEMO_SECURITY_EVENTS];
 
-  if (options?.eventType) {
+  // Support both single eventType and array of eventTypes
+  if (options?.eventTypes?.length) {
+    events = events.filter((e) => options.eventTypes!.includes(e.event_type));
+  } else if (options?.eventType) {
     events = events.filter((e) => e.event_type === options.eventType);
   }
   if (options?.success !== undefined) {
@@ -108,22 +111,31 @@ export async function exportSecurityEvents(): Promise<Blob> {
 
 /**
  * Get security alerts (failed logins since last successful login).
+ * Includes both LOGIN_ATTEMPT and REMOTE_UNLOCK events.
  */
 export async function getSecurityAlerts(): Promise<SecurityAlertsResponse> {
   await simulateDelay(50);
 
-  // Find the most recent successful login
-  const loginAttempts = DEMO_SECURITY_EVENTS.filter((e) => e.event_type === 'LOGIN_ATTEMPT').sort(
+  // Authentication event types that count as logins
+  const authEventTypes = new Set([
+    'LOGIN_ATTEMPT',
+    'REMOTE_UNLOCK',
+    'UNLOCK_ATTEMPT',
+    'UNLOCK_AND_VALIDATE',
+  ]);
+
+  // Find all authentication events, sorted by time
+  const authEvents = DEMO_SECURITY_EVENTS.filter((e) => authEventTypes.has(e.event_type)).sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
-  const lastSuccessfulLogin = loginAttempts.find((e) => e.success);
+  const lastSuccessfulLogin = authEvents.find((e) => e.success);
   const lastSuccessTime = lastSuccessfulLogin
     ? new Date(lastSuccessfulLogin.timestamp).getTime()
     : 0;
 
-  // Find failed logins that happened after the last successful login
-  const failedSinceLastSuccess = loginAttempts.filter(
+  // Find failed auth attempts that happened after the last successful login
+  const failedSinceLastSuccess = authEvents.filter(
     (e) => !e.success && new Date(e.timestamp).getTime() > lastSuccessTime
   );
 

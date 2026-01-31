@@ -134,3 +134,50 @@ export async function desktopLogin(
     }),
   });
 }
+
+/**
+ * Save for remote result.
+ */
+export interface SaveForRemoteResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Save current session credentials encrypted with a passphrase for remote access.
+ * Called when desktop user enables remote access for the first time.
+ *
+ * @param passphrase - User's encryption passphrase for remote access
+ * @param notesKey - Desktop's notes encryption key (ensures tunnel users can decrypt notes)
+ */
+export async function saveForRemote(
+  passphrase: string,
+  notesKey?: string
+): Promise<SaveForRemoteResult> {
+  return fetchApi<SaveForRemoteResult>('/auth/save-for-remote', {
+    method: 'POST',
+    body: JSON.stringify({ passphrase, notes_key: notesKey }),
+  });
+}
+
+/**
+ * Remote unlock result - includes lockout handling.
+ */
+export interface RemoteUnlockResult {
+  success: boolean;
+  error?: string;
+  locked_out?: boolean;
+  retry_after?: number;
+}
+
+/**
+ * Unlock remote access with the desktop passphrase.
+ * Used by remote users (accessing via tunnel) to authenticate.
+ */
+export async function remoteUnlock(passphrase: string): Promise<RemoteUnlockResult> {
+  return fetchApi<RemoteUnlockResult>('/auth/remote-unlock', {
+    method: 'POST',
+    body: JSON.stringify({ passphrase }),
+  });
+}

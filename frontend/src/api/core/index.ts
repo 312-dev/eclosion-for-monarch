@@ -20,8 +20,10 @@ export {
   logout,
   reauthenticate,
   desktopLogin,
+  remoteUnlock,
   type ReauthResult,
   type DesktopLoginResult,
+  type RemoteUnlockResult,
 } from './auth';
 
 // Security
