@@ -755,31 +755,28 @@ jobs:
           retention-days: 30
 
   # =========================================================================
-  # Upload to GitHub Release
+  # Merge Mac yml files (always runs after Mac packages complete)
   # =========================================================================
-  upload-release:
-    if: inputs.upload_to_release
-    needs: [package-mac, package-win, package-linux]
+  merge-mac-yml:
+    needs: [package-mac]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - name: Download all artifacts
+      - name: Download mac artifacts
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          pattern: eclosion-*
+          pattern: eclosion-macos-*
           path: artifacts
           merge-multiple: true
-
-      - name: List artifacts
-        run: |
-          echo "Artifacts to upload:"
-          find artifacts -type f -exec ls -lh {} \;
 
       - name: Merge Mac yml files from different architectures
         run: |
           # Merge architecture-specific mac yml files into a single latest-mac.yml (or beta-mac.yml)
           # This allows electron-updater to pick the right architecture based on process.arch
           cd artifacts
+
+          echo "Files before merge:"
+          ls -la
 
           # Check for stable (latest-mac-*.yml) or beta (beta-mac-*.yml) files
           for prefix in latest beta; do
@@ -791,9 +788,8 @@ jobs:
               echo "Merging $ARM64_YML and $X64_YML into $OUTPUT_YML"
 
               # Use node to properly merge the YAML files
-              node << MERGE_SCRIPT
+              ARM64_YML="$ARM64_YML" X64_YML="$X64_YML" OUTPUT_YML="$OUTPUT_YML" node << 'MERGE_SCRIPT'
                 const fs = require('fs');
-                const yaml = require('yaml');
 
                 // Simple YAML parser (electron-builder uses simple format)
                 function parseSimpleYaml(content) {
@@ -824,8 +820,8 @@ jobs:
                   return result;
                 }
 
-                const arm64 = parseSimpleYaml(fs.readFileSync('${ARM64_YML}', 'utf8'));
-                const x64 = parseSimpleYaml(fs.readFileSync('${X64_YML}', 'utf8'));
+                const arm64 = parseSimpleYaml(fs.readFileSync(process.env.ARM64_YML, 'utf8'));
+                const x64 = parseSimpleYaml(fs.readFileSync(process.env.X64_YML, 'utf8'));
 
                 // Merge files arrays - x64 FIRST because electron-updater falls back to first file
                 // when it can't find process.arch in the filename. ARM64 files contain "arm64" in
@@ -834,7 +830,7 @@ jobs:
                 const merged = {
                   version: x64.version,
                   files: [...x64.files, ...arm64.files],
-                  path: x64.path,  // Default to x64 (fallback for when arch not in filename)
+                  path: x64.path,
                   sha512: x64.sha512,
                   releaseDate: x64.releaseDate
                 };
@@ -854,8 +850,8 @@ jobs:
                 output += 'sha512: ' + merged.sha512 + '\n';
                 output += 'releaseDate: ' + merged.releaseDate + '\n';
 
-                fs.writeFileSync('${OUTPUT_YML}', output);
-                console.log('Merged ${OUTPUT_YML}:');
+                fs.writeFileSync(process.env.OUTPUT_YML, output);
+                console.log('Merged ' + process.env.OUTPUT_YML + ':');
                 console.log(output);
           MERGE_SCRIPT
 
@@ -871,8 +867,52 @@ jobs:
             fi
           done
 
-          echo "Final mac yml files:"
-          ls -la *-mac.yml 2>/dev/null || echo "No mac yml files"
+          echo ""
+          echo "Files after merge:"
+          ls -la
+
+          echo ""
+          echo "Final mac yml content:"
+          for yml in *-mac.yml; do
+            if [ -f "$yml" ]; then
+              echo "=== $yml ==="
+              cat "$yml"
+            fi
+          done
+
+      - name: Re-upload merged mac artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: eclosion-macos-merged
+          path: artifacts/*
+          retention-days: 30
+
+  # =========================================================================
+  # Upload to GitHub Release
+  # =========================================================================
+  upload-release:
+    if: inputs.upload_to_release
+    needs: [merge-mac-yml, package-win, package-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: eclosion-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: |
+          echo "Artifacts to upload:"
+          find artifacts -type f -exec ls -lh {} \;
+
+          # Clean up arch-specific yml files since we have the merged one from merge-mac-yml job
+          echo "Removing arch-specific yml files (merged version is in eclosion-macos-merged)..."
+          rm -f artifacts/*-mac-arm64.yml artifacts/*-mac-x64.yml 2>/dev/null || true
+          echo "Files after cleanup:"
+          ls -la artifacts/*-mac.yml 2>/dev/null || echo "No mac yml files"
 
       - name: Combine checksums
         run: |
@@ -908,7 +948,7 @@ jobs:
   # Summary
   # =========================================================================
   summary:
-    needs: [package-mac, package-win, package-linux]
+    needs: [merge-mac-yml, package-win, package-linux]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -919,7 +959,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Platform | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS (ARM64 + x64) | ${{ needs.package-mac.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS (ARM64 + x64) | ${{ needs.merge-mac-yml.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Windows (x64) | ${{ needs.package-win.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Linux (x64 + ARM64) | ${{ needs.package-linux.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
