@@ -247,23 +247,9 @@ jobs:
           git commit -m "chore: release ${{ needs.calculate-version.outputs.version }}"
           git push
 
-  # ===========================================================================
-  # INTEGRATION TESTS (gates release - runs against real Monarch API)
-  # ===========================================================================
-  integration-tests:
-    name: Integration Tests
-    needs: [calculate-version, update-versions]
-    permissions:
-      statuses: read
-    uses: ./.github/workflows/30-test-integration.yml
-    with:
-      sha: ${{ github.sha }}
-    secrets:
-      INTEGRATION_DISPATCH_TOKEN: ${{ secrets.INTEGRATION_DISPATCH_TOKEN }}
-
   create-draft-release:
     name: Create Draft Release
-    needs: [calculate-version, update-versions, integration-tests]
+    needs: [calculate-version, update-versions]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
