@@ -67,6 +67,9 @@ mac:
   entitlements: entitlements.mac.plist
   entitlementsInherit: entitlements.mac.plist
   darkModeSupport: true
+  # Skip arch check for backend directories - they are intentionally different per-arch
+  # This tells @electron/universal to NOT try to merge these files with lipo
+  singleArchFiles: "**/backend-*/**"
   # afterPack.js pre-signs backend with --no-strict (required for PyInstaller)
   # signIgnore prevents electron-builder from re-signing and breaking those signatures
   # NOTE: These are regex patterns, not glob patterns
