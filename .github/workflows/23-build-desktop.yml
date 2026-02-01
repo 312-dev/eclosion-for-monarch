@@ -827,13 +827,16 @@ jobs:
                 const arm64 = parseSimpleYaml(fs.readFileSync('${ARM64_YML}', 'utf8'));
                 const x64 = parseSimpleYaml(fs.readFileSync('${X64_YML}', 'utf8'));
 
-                // Merge files arrays - ARM64 first so it's preferred on Apple Silicon
+                // Merge files arrays - x64 FIRST because electron-updater falls back to first file
+                // when it can't find process.arch in the filename. ARM64 files contain "arm64" in
+                // the name so they'll be matched explicitly. x64 files don't have "x64" in the name
+                // (they're just "-mac.zip"), so they need to be the fallback (first in list).
                 const merged = {
-                  version: arm64.version,
-                  files: [...arm64.files, ...x64.files],
-                  path: arm64.path,  // Default to ARM64
-                  sha512: arm64.sha512,
-                  releaseDate: arm64.releaseDate
+                  version: x64.version,
+                  files: [...x64.files, ...arm64.files],
+                  path: x64.path,  // Default to x64 (fallback for when arch not in filename)
+                  sha512: x64.sha512,
+                  releaseDate: x64.releaseDate
                 };
 
                 // Generate merged YAML
