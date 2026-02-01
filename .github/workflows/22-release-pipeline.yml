@@ -524,13 +524,14 @@ jobs:
   # Deploy to Cloudflare Pages
   # Runs AFTER desktop and docker publishing to ensure all artifacts succeed before going live
   # For production releases, also waits for docs version to be created
+  # Beta releases skip environment protection (no review required)
   deploy-cloudflare:
     name: "Stage 4: Deploy Cloudflare"
     needs: [validate-builds, build-frontend, publish-docker, publish-desktop, create-docs-version]
     if: always() && needs.validate-builds.result == 'success' && needs.build-frontend.result == 'success' && (needs.publish-docker.result == 'success' || needs.publish-docker.result == 'skipped') && needs.publish-desktop.result == 'success' && (needs.create-docs-version.result == 'success' || needs.create-docs-version.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ inputs.release_type }}
+    environment: ${{ inputs.release_type == 'production' && 'production' || '' }}
     permissions:
       contents: read
       deployments: write
