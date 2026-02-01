@@ -286,6 +286,8 @@ jobs:
   validate-builds:
     name: "Stage 3: Validate All Builds"
     needs: [build-frontend, build-desktop, build-docker, generate-screenshots]
+    # Always run this job so we can validate which builds succeeded/were skipped
+    if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
