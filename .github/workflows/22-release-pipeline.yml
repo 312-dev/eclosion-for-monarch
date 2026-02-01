@@ -44,6 +44,11 @@ on:
         required: false
         type: boolean
         default: false
+      skip_codeql:
+        description: 'Skip CodeQL scan (code was already scanned on merge to main)'
+        required: false
+        type: boolean
+        default: false
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: true
@@ -83,8 +88,8 @@ jobs:
     with:
       severity: high
       skip_dast: true
-      # Skip CodeQL for beta releases - code was already scanned on merge to main
-      skip_codeql: ${{ inputs.release_type == 'beta' }}
+      # Skip CodeQL - code was already scanned on merge to main
+      skip_codeql: ${{ inputs.skip_codeql }}
     permissions:
       security-events: write
       contents: read

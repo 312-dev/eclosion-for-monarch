@@ -291,6 +291,7 @@ jobs:
       tag: ${{ needs.calculate-version.outputs.tag }}
       skip_docker: true
       skip_screenshots: true
+      skip_codeql: true
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

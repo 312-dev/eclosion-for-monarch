@@ -69,7 +69,7 @@ jobs:
   verify-ci:
     name: Verify CI Passed
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       actions: read
     steps:
@@ -80,36 +80,51 @@ jobs:
           SHA="${{ github.sha }}"
           echo "Checking CI workflow status for commit: $SHA"
 
-          # Get the most recent CI workflow run for this commit
-          RUN_INFO=$(gh api "repos/${{ github.repository }}/actions/workflows/01-ci.yml/runs?head_sha=$SHA&per_page=1" --jq '.workflow_runs[0] | {status: .status, conclusion: .conclusion, id: .id}' 2>/dev/null || echo "{}")
+          MAX_WAIT=600  # 10 minutes
+          POLL_INTERVAL=30
+          WAITED=0
 
-          STATUS=$(echo "$RUN_INFO" | jq -r '.status // "not_found"')
-          CONCLUSION=$(echo "$RUN_INFO" | jq -r '.conclusion // "null"')
-          RUN_ID=$(echo "$RUN_INFO" | jq -r '.id // "null"')
+          while true; do
+            # Get the most recent CI workflow run for this commit
+            RUN_INFO=$(gh api "repos/${{ github.repository }}/actions/workflows/01-ci.yml/runs?head_sha=$SHA&per_page=1" --jq '.workflow_runs[0] | {status: .status, conclusion: .conclusion, id: .id}' 2>/dev/null || echo "{}")
 
-          echo "Run ID: $RUN_ID, Status: $STATUS, Conclusion: $CONCLUSION"
+            STATUS=$(echo "$RUN_INFO" | jq -r '.status // "not_found"')
+            CONCLUSION=$(echo "$RUN_INFO" | jq -r '.conclusion // "null"')
+            RUN_ID=$(echo "$RUN_INFO" | jq -r '.id // "null"')
 
-          if [ "$STATUS" = "completed" ] && [ "$CONCLUSION" = "success" ]; then
-            echo "✅ CI passed for this commit"
-            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-            echo "✅ CI workflow **success** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
-            echo "Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
-          elif [ "$STATUS" = "completed" ] && [ "$CONCLUSION" != "success" ]; then
-            echo "::error::CI workflow failed for this commit (conclusion: $CONCLUSION). Fix CI before creating a release."
-            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-            echo "❌ CI workflow **$CONCLUSION** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          elif [ "$STATUS" = "in_progress" ] || [ "$STATUS" = "queued" ]; then
-            echo "::error::CI is still running for this commit. Wait for CI to complete before creating a release."
-            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-            echo "⏳ CI workflow **$STATUS** - CI is still running" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          else
-            echo "::error::No CI workflow run found for this commit. Ensure CI has run on main before creating a release."
-            echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-            echo "❌ CI workflow **not found** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+            echo "Run ID: $RUN_ID, Status: $STATUS, Conclusion: $CONCLUSION"
+
+            if [ "$STATUS" = "completed" ] && [ "$CONCLUSION" = "success" ]; then
+              echo "✅ CI passed for this commit"
+              echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+              echo "✅ CI workflow **success** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
+              echo "Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
+              if [ $WAITED -gt 0 ]; then
+                echo "Waited ${WAITED}s for CI to complete" >> $GITHUB_STEP_SUMMARY
+              fi
+              exit 0
+            elif [ "$STATUS" = "completed" ] && [ "$CONCLUSION" != "success" ]; then
+              echo "::error::CI workflow failed for this commit (conclusion: $CONCLUSION). Fix CI before creating a release."
+              echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+              echo "❌ CI workflow **$CONCLUSION** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            elif [ "$STATUS" = "in_progress" ] || [ "$STATUS" = "queued" ]; then
+              if [ $WAITED -ge $MAX_WAIT ]; then
+                echo "::error::CI is still running after waiting ${MAX_WAIT}s. Aborting release."
+                echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+                echo "⏳ CI workflow **$STATUS** - timed out after ${MAX_WAIT}s" >> $GITHUB_STEP_SUMMARY
+                exit 1
+              fi
+              echo "⏳ CI is $STATUS, waiting ${POLL_INTERVAL}s... (${WAITED}s/${MAX_WAIT}s)"
+              sleep $POLL_INTERVAL
+              WAITED=$((WAITED + POLL_INTERVAL))
+            else
+              echo "::error::No CI workflow run found for this commit. Ensure CI has run on main before creating a release."
+              echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
+              echo "❌ CI workflow **not found** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+          done
 
   calculate-version:
     name: Calculate Version
@@ -348,6 +363,8 @@ jobs:
       release_type: production
       version: ${{ needs.calculate-version.outputs.version }}
       tag: ${{ needs.calculate-version.outputs.tag }}
+      # Skip CodeQL - code was already scanned on merge to main
+      skip_codeql: true
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
