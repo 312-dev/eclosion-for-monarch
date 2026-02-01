@@ -321,11 +321,13 @@ jobs:
           echo "All desktop build components verified." >> $GITHUB_STEP_SUMMARY
 
   # Integration tests (runs against real Monarch API)
-  # Only runs on push to main, not on PRs (security: credentials not exposed to forks)
+  # Only runs on push to main when backend code changes
+  # Security: credentials not exposed to forks (PRs can't trigger this)
   integration-tests:
     name: Integration Tests
-    # Only run on push to main (not PRs or workflow_dispatch)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: changes
+    # Only run on push to main when backend code changed
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.backend == 'true'
     permissions:
       statuses: read
     uses: ./.github/workflows/30-test-integration.yml
