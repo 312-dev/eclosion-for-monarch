@@ -66,58 +66,65 @@ jobs:
     permissions:
       actions: read
     steps:
-      - name: Check CI workflow status for commit
+      - name: Check CI and Security workflow status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SHA="${{ github.sha }}"
-          echo "Checking CI workflow status for commit: $SHA"
-
+          REPO="${{ github.repository }}"
           MAX_WAIT=600  # 10 minutes
           POLL_INTERVAL=30
-          WAITED=0
 
-          while true; do
-            # Get the most recent CI workflow run for this commit
-            RUN_INFO=$(gh api "repos/${{ github.repository }}/actions/workflows/01-ci.yml/runs?head_sha=$SHA&per_page=1" --jq '.workflow_runs[0] | {status: .status, conclusion: .conclusion, id: .id}' 2>/dev/null || echo "{}")
+          # Function to check a workflow's status
+          check_workflow() {
+            local workflow_file=$1
+            local workflow_name=$2
+            local waited=0
 
-            STATUS=$(echo "$RUN_INFO" | jq -r '.status // "not_found"')
-            CONCLUSION=$(echo "$RUN_INFO" | jq -r '.conclusion // "null"')
-            RUN_ID=$(echo "$RUN_INFO" | jq -r '.id // "null"')
+            echo "Checking $workflow_name status for commit: $SHA"
 
-            echo "Run ID: $RUN_ID, Status: $STATUS, Conclusion: $CONCLUSION"
+            while true; do
+              RUN_INFO=$(gh api "repos/$REPO/actions/workflows/$workflow_file/runs?head_sha=$SHA&per_page=1" --jq '.workflow_runs[0] | {status: .status, conclusion: .conclusion, id: .id}' 2>/dev/null || echo "{}")
 
-            if [ "$STATUS" = "completed" ] && [ "$CONCLUSION" = "success" ]; then
-              echo "✅ CI passed for this commit"
-              echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-              echo "✅ CI workflow **success** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
-              echo "Run ID: $RUN_ID" >> $GITHUB_STEP_SUMMARY
-              if [ $WAITED -gt 0 ]; then
-                echo "Waited ${WAITED}s for CI to complete" >> $GITHUB_STEP_SUMMARY
+              STATUS=$(echo "$RUN_INFO" | jq -r '.status // "not_found"')
+              CONCLUSION=$(echo "$RUN_INFO" | jq -r '.conclusion // "null"')
+              RUN_ID=$(echo "$RUN_INFO" | jq -r '.id // "null"')
+
+              echo "[$workflow_name] Run ID: $RUN_ID, Status: $STATUS, Conclusion: $CONCLUSION"
+
+              if [ "$STATUS" = "completed" ] && [ "$CONCLUSION" = "success" ]; then
+                echo "✅ $workflow_name passed"
+                echo "✅ $workflow_name **success** for \`$SHA\` (Run ID: $RUN_ID)" >> $GITHUB_STEP_SUMMARY
+                return 0
+              elif [ "$STATUS" = "completed" ] && [ "$CONCLUSION" != "success" ]; then
+                echo "::error::$workflow_name failed (conclusion: $CONCLUSION). Fix before creating a release."
+                echo "❌ $workflow_name **$CONCLUSION** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
+                return 1
+              elif [ "$STATUS" = "in_progress" ] || [ "$STATUS" = "queued" ]; then
+                if [ $waited -ge $MAX_WAIT ]; then
+                  echo "::error::$workflow_name still running after ${MAX_WAIT}s. Aborting release."
+                  echo "⏳ $workflow_name **$STATUS** - timed out after ${MAX_WAIT}s" >> $GITHUB_STEP_SUMMARY
+                  return 1
+                fi
+                echo "⏳ $workflow_name is $STATUS, waiting ${POLL_INTERVAL}s... (${waited}s/${MAX_WAIT}s)"
+                sleep $POLL_INTERVAL
+                waited=$((waited + POLL_INTERVAL))
+              else
+                echo "::error::No $workflow_name run found for this commit."
+                echo "❌ $workflow_name **not found** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
+                return 1
               fi
-              exit 0
-            elif [ "$STATUS" = "completed" ] && [ "$CONCLUSION" != "success" ]; then
-              echo "::error::CI workflow failed for this commit (conclusion: $CONCLUSION). Fix CI before creating a release."
-              echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-              echo "❌ CI workflow **$CONCLUSION** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
-              exit 1
-            elif [ "$STATUS" = "in_progress" ] || [ "$STATUS" = "queued" ]; then
-              if [ $WAITED -ge $MAX_WAIT ]; then
-                echo "::error::CI is still running after waiting ${MAX_WAIT}s. Aborting release."
-                echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-                echo "⏳ CI workflow **$STATUS** - timed out after ${MAX_WAIT}s" >> $GITHUB_STEP_SUMMARY
-                exit 1
-              fi
-              echo "⏳ CI is $STATUS, waiting ${POLL_INTERVAL}s... (${WAITED}s/${MAX_WAIT}s)"
-              sleep $POLL_INTERVAL
-              WAITED=$((WAITED + POLL_INTERVAL))
-            else
-              echo "::error::No CI workflow run found for this commit. Ensure CI has run on main before creating a release."
-              echo "### CI Verification" >> $GITHUB_STEP_SUMMARY
-              echo "❌ CI workflow **not found** for \`$SHA\`" >> $GITHUB_STEP_SUMMARY
-              exit 1
-            fi
-          done
+            done
+          }
+
+          echo "### Workflow Verification" >> $GITHUB_STEP_SUMMARY
+
+          # Check both workflows
+          check_workflow "01-ci.yml" "CI" || exit 1
+          check_workflow "10-security.yml" "Security" || exit 1
+
+          echo ""
+          echo "✅ All required workflows passed!"
 
   calculate-version:
     name: Calculate Version
