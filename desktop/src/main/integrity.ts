@@ -33,12 +33,26 @@ function debugLog(msg: string): void {
 }
 
 /**
- * Get the path to the backend executable based on platform.
+ * Get the path to the backend executable based on platform and architecture.
+ *
+ * On macOS, the app is a universal binary containing backends for both ARM64 and x64.
+ * We select the appropriate backend at runtime based on process.arch.
+ *
+ * Directory structure:
+ * - macOS: resources/backend-arm64/ and resources/backend-x64/
+ * - Windows/Linux: resources/backend/
  */
 function getBackendPath(): string {
   const resourcesPath = process.resourcesPath || app.getAppPath();
-  const backendDir = path.join(resourcesPath, 'backend');
 
+  if (process.platform === 'darwin') {
+    // macOS universal binary: select architecture-specific backend
+    const archDir = process.arch === 'arm64' ? 'backend-arm64' : 'backend-x64';
+    return path.join(resourcesPath, archDir, 'eclosion-backend');
+  }
+
+  // Windows and Linux: single architecture backend
+  const backendDir = path.join(resourcesPath, 'backend');
   if (process.platform === 'win32') {
     return path.join(backendDir, 'eclosion-backend.exe');
   }
@@ -152,16 +166,18 @@ export async function isBackendCorrupted(): Promise<boolean> {
 
 /**
  * Get the download URL for the correct backend from GitHub releases.
+ *
+ * macOS builds are universal binaries (single zip for both ARM64 and x64).
  */
 function getBackendDownloadUrl(): string {
   const version = app.getVersion();
   const platform = process.platform;
-  const arch = process.arch;
 
   // Determine the zip filename based on platform
+  // macOS uses universal binary (no arch suffix)
   let zipName: string;
   if (platform === 'darwin') {
-    zipName = arch === 'arm64' ? `Eclosion-${version}-arm64-mac.zip` : `Eclosion-${version}-mac.zip`;
+    zipName = `Eclosion-${version}-mac.zip`;
   } else if (platform === 'win32') {
     zipName = `Eclosion.Setup.${version}.exe`;
   } else {
@@ -231,6 +247,9 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
  * Extract and replace the entire backend directory from downloaded zip (macOS only).
  * We replace the whole directory because differential updates can corrupt
  * any file in the backend folder, not just the main executable.
+ *
+ * For universal binaries, the downloaded zip contains both backend-arm64 and backend-x64.
+ * We extract the one matching the current architecture.
  */
 async function extractAndReplaceBackend(zipPath: string, backendDir: string): Promise<void> {
   const { exec } = await import('node:child_process');
@@ -245,14 +264,18 @@ async function extractAndReplaceBackend(zipPath: string, backendDir: string): Pr
     debugLog(`Extracting ${zipPath} to ${tempDir}`);
     await execAsync(`unzip -q "${zipPath}" -d "${tempDir}"`);
 
-    // Find the backend directory in the extracted app
-    const extractedBackendDir = path.join(
-      tempDir,
-      'Eclosion.app',
-      'Contents',
-      'Resources',
-      'backend'
-    );
+    // Determine the backend directory name based on architecture
+    // Universal builds have backend-arm64 and backend-x64
+    // Older builds have a single 'backend' directory
+    const archDirName = process.arch === 'arm64' ? 'backend-arm64' : 'backend-x64';
+    const resourcesBase = path.join(tempDir, 'Eclosion.app', 'Contents', 'Resources');
+
+    // Try architecture-specific directory first (universal build)
+    let extractedBackendDir = path.join(resourcesBase, archDirName);
+    if (!fs.existsSync(extractedBackendDir)) {
+      // Fall back to single 'backend' directory (older non-universal build)
+      extractedBackendDir = path.join(resourcesBase, 'backend');
+    }
 
     const extractedBackend = path.join(extractedBackendDir, 'eclosion-backend');
 

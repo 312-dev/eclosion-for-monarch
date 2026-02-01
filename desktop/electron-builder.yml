@@ -13,13 +13,15 @@ files:
   - "!node_modules/**/*"
 
 # Extra resources (not in asar)
+# Note: macOS uses architecture-specific backend directories (set up by CI)
+# Windows/Linux use a single 'backend' directory
 extraResources:
   # Frontend build
   - from: ../frontend/dist
     to: frontend
     filter:
       - "**/*"
-  # Python backend executable
+  # Python backend executable (Windows/Linux only - macOS uses arch-specific dirs)
   - from: pyinstaller/dist/eclosion-backend
     to: backend
     filter:
@@ -50,8 +52,10 @@ afterPack: afterPack.js
 mac:
   category: public.app-category.finance
   target:
-    - dmg
-    - zip
+    - target: dmg
+      arch: universal
+    - target: zip
+      arch: universal
   icon: assets/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
@@ -64,6 +68,25 @@ mac:
   signIgnore:
     - ".*backend.*"
     - ".*Python\\.framework.*"
+  # macOS universal binary includes both ARM64 and x64 backends
+  # The app selects the correct one at runtime based on process.arch
+  extraResources:
+    - from: ../frontend/dist
+      to: frontend
+      filter:
+        - "**/*"
+    - from: pyinstaller/dist/backend-arm64
+      to: backend-arm64
+      filter:
+        - "**/*"
+    - from: pyinstaller/dist/backend-x64
+      to: backend-x64
+      filter:
+        - "**/*"
+    - from: assets/tray
+      to: assets/tray
+      filter:
+        - "**/*"
 
 # macOS code signing
 afterSign: notarize.js

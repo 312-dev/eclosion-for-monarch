@@ -189,12 +189,26 @@ export class BackendManager extends EventEmitter {
   }
 
   /**
-   * Get the path to the backend executable based on platform.
+   * Get the path to the backend executable based on platform and architecture.
+   *
+   * On macOS, the app is a universal binary containing backends for both ARM64 and x64.
+   * We select the appropriate backend at runtime based on process.arch.
+   *
+   * Directory structure:
+   * - macOS: resources/backend-arm64/ and resources/backend-x64/
+   * - Windows/Linux: resources/backend/
    */
   private getBackendPath(): string {
     const resourcesPath = process.resourcesPath || app.getAppPath();
-    const backendDir = path.join(resourcesPath, 'backend');
 
+    if (process.platform === 'darwin') {
+      // macOS universal binary: select architecture-specific backend
+      const archDir = process.arch === 'arm64' ? 'backend-arm64' : 'backend-x64';
+      return path.join(resourcesPath, archDir, 'eclosion-backend');
+    }
+
+    // Windows and Linux: single architecture backend
+    const backendDir = path.join(resourcesPath, 'backend');
     if (process.platform === 'win32') {
       return path.join(backendDir, 'eclosion-backend.exe');
     }
