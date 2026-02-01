@@ -1,26 +1,36 @@
 /**
  * afterPack Hook - macOS Code Signing for PyInstaller Backend
  *
- * Signs PyInstaller backend binaries BEFORE electron-builder signs the app.
- * This is necessary because PyInstaller creates a non-standard Python.framework
- * that requires special handling for Apple notarization.
+ * This hook runs AFTER electron-builder packs the app but BEFORE signing.
+ * It handles two critical tasks for macOS universal binary builds:
  *
- * ## The Problem
+ * ## Task 1: Architecture-Specific Backend Isolation
  *
- * PyInstaller creates Python.framework with:
+ * When building universal binaries, electron-builder:
+ * 1. Builds arm64 app (with both backend-arm64 and backend-x64 from extraResources)
+ * 2. Builds x64 app (with both backend-arm64 and backend-x64 from extraResources)
+ * 3. Merges using lipo
+ *
+ * The problem: lipo tries to merge identical files from both builds, causing
+ * "same architectures" errors. Solution: remove the non-matching backend from
+ * each single-arch build. The universal merge then just copies each directory.
+ *
+ * - arm64 build: remove backend-x64 (will come from x64 build during merge)
+ * - x64 build: remove backend-arm64 (will come from arm64 build during merge)
+ *
+ * ## Task 2: PyInstaller Code Signing
+ *
+ * PyInstaller creates Python.framework with issues for notarization:
  * 1. COPIES instead of symlinks (breaks standard framework structure)
  * 2. Pre-existing signatures WITHOUT secure timestamps (Apple rejects these)
  * 3. An "ambiguous bundle format" that confuses codesign
  *
- * ## The Solution
- *
+ * Solution:
  * 1. Sign all .so and .dylib files in _internal (excluding Python.framework)
  * 2. For Python.framework:
  *    a. Remove _CodeSignature directory (stale metadata without timestamps)
  *    b. Sign the real binary at Versions/X.Y/Python with --no-strict
- *    c. Replace copies with proper symlinks:
- *       - Python.framework/Python -> Versions/Current/Python
- *       - Python.framework/Versions/Current -> X.Y (e.g., 3.12)
+ *    c. Replace copies with proper symlinks
  *    d. Skip bundle signing (codesign can't handle PyInstaller's format)
  * 3. Sign the main eclosion-backend executable
  *
@@ -310,7 +320,7 @@ async function signBackendDirectory(backendDir, identity, entitlementsPath) {
 }
 
 exports.default = async function (context) {
-  const { electronPlatformName, appOutDir } = context;
+  const { electronPlatformName, appOutDir, arch } = context;
 
   // Only needed for macOS
   if (electronPlatformName !== 'darwin') {
@@ -327,6 +337,25 @@ exports.default = async function (context) {
   const backendArm64 = path.join(resourcesDir, 'backend-arm64');
   const backendX64 = path.join(resourcesDir, 'backend-x64');
   const backendSingle = path.join(resourcesDir, 'backend');
+
+  // electron-builder arch values: 0 = x64, 1 = ia32, 3 = arm64, 4 = universal
+  // When building universal, electron-builder first builds x64, then arm64, then merges.
+  // We need to remove the "wrong" backend directory from each single-arch build
+  // so that the universal merge just copies each backend without lipo conflicts.
+  const archName = arch === 3 ? 'arm64' : arch === 0 ? 'x64' : null;
+
+  if (archName) {
+    console.log(`Architecture: ${archName} (arch=${arch})`);
+
+    // Remove the backend directory that doesn't match this architecture
+    if (archName === 'arm64' && fs.existsSync(backendX64)) {
+      console.log('  Removing backend-x64 from arm64 build (will be added from x64 build during merge)');
+      fs.rmSync(backendX64, { recursive: true, force: true });
+    } else if (archName === 'x64' && fs.existsSync(backendArm64)) {
+      console.log('  Removing backend-arm64 from x64 build (will be added from arm64 build during merge)');
+      fs.rmSync(backendArm64, { recursive: true, force: true });
+    }
+  }
 
   const backendDirs = [];
   if (fs.existsSync(backendArm64)) backendDirs.push(backendArm64);
