@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eclosion"
-version = "1.0.25"
+version = "1.0.26"
 description = "Eclosion for Monarch - Your budgeting, evolved"
 readme = "README.md"
 license = { text = "MIT" }
