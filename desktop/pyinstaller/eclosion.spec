@@ -5,10 +5,17 @@ Bundles the Flask application and all dependencies into a single executable.
 """
 import sys
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_data_files
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 # Project root (parent of desktop/)
 project_root = Path(SPECPATH).parent.parent
+
+# Collect all submodules for packages that PyInstaller might miss
+hidden_imports_from_submodules = []
+hidden_imports_from_submodules += collect_submodules('flask')
+hidden_imports_from_submodules += collect_submodules('werkzeug')
+hidden_imports_from_submodules += collect_submodules('sqlalchemy')
+hidden_imports_from_submodules += collect_submodules('monarchmoney')
 
 # Collect data files
 datas = [
@@ -33,9 +40,50 @@ a = Analysis(
     hiddenimports=[
         # Flask and extensions
         'flask',
+        'flask.app',
+        'flask.blueprints',
+        'flask.config',
+        'flask.ctx',
+        'flask.globals',
+        'flask.helpers',
+        'flask.json',
+        'flask.logging',
+        'flask.sessions',
+        'flask.signals',
+        'flask.templating',
+        'flask.wrappers',
         'flask_cors',
         'flask_limiter',
         'flask_limiter.util',
+
+        # Werkzeug (Flask's underlying WSGI toolkit)
+        'werkzeug',
+        'werkzeug.datastructures',
+        'werkzeug.debug',
+        'werkzeug.exceptions',
+        'werkzeug.formparser',
+        'werkzeug.http',
+        'werkzeug.local',
+        'werkzeug.routing',
+        'werkzeug.security',
+        'werkzeug.serving',
+        'werkzeug.test',
+        'werkzeug.urls',
+        'werkzeug.utils',
+        'werkzeug.wrappers',
+        'werkzeug.wsgi',
+
+        # SQLAlchemy (database ORM)
+        'sqlalchemy',
+        'sqlalchemy.orm',
+        'sqlalchemy.ext.asyncio',
+        'sqlalchemy.dialects.sqlite',
+        'sqlalchemy.pool',
+        'sqlalchemy.engine',
+
+        # Monarch Money client
+        'monarchmoney',
+        'monarchmoney.monarchmoney',
 
         # APScheduler
         'apscheduler',
@@ -81,7 +129,7 @@ a = Analysis(
         'dataclasses',
         'email.mime.text',
         'email.mime.multipart',
-    ],
+    ] + hidden_imports_from_submodules,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[str(Path(SPECPATH) / 'hook-ssl-certs.py')],
