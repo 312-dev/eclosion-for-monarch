@@ -68,6 +68,9 @@ mac:
   signIgnore:
     - ".*backend.*"
     - ".*Python\\.framework.*"
+  # Prevent lipo from trying to merge backend directories into fat binaries
+  # These are intentionally architecture-specific - the app selects the right one at runtime
+  singleArchFiles: Contents/Resources/backend-*/**
   # macOS universal binary includes both ARM64 and x64 backends
   # The app selects the correct one at runtime based on process.arch
   extraResources:
