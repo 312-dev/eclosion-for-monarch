@@ -1,0 +1,192 @@
+# Local Release (Self-Hosted Runner)
+#
+# Emergency release workflow for when GitHub-hosted runners are unavailable.
+# Runs entirely on a self-hosted macOS runner, building only macOS ARM64.
+#
+# Prerequisites:
+#   1. Self-hosted runner registered and running (~/actions-runner/run.sh)
+#   2. Node.js 20+ installed
+#   3. Python 3.12 installed
+#
+# Limitations:
+#   - Only builds macOS ARM64 (no Windows, Linux, or macOS x64)
+#   - No code signing (unsigned build)
+#   - No Docker image
+#   - No Cloudflare deployment
+
+name: "29 Release: Local"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+      release_context:
+        description: "Optional context for AI summary"
+        required: false
+        type: string
+      compare_from:
+        description: "Optional commit/tag to compare from"
+        required: false
+        type: string
+
+concurrency:
+  group: release-local
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release (macOS ARM64)
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        run: |
+          # Use system Node.js (assumes nvm or similar)
+          node --version
+          npm --version
+
+      - name: Setup Python
+        run: |
+          python3 --version
+          pip3 --version
+
+      - name: Calculate version
+        id: version
+        run: |
+          CURRENT=$(node -p "require('./frontend/package.json').version")
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case "${{ inputs.bump }}" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${VERSION}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Bumping $CURRENT -> $VERSION ($TAG)"
+
+      - name: Update version files
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Update all package.json files
+          for file in frontend/package.json desktop/package.json docusaurus/package.json; do
+            jq --arg v "$VERSION" '.version = $v' "$file" > tmp.json && mv tmp.json "$file"
+            echo "Updated $file to $VERSION"
+          done
+
+          # Update pyproject.toml
+          sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          echo "Updated pyproject.toml to $VERSION"
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          VITE_DESKTOP_BUILD=true VITE_APP_VERSION=${{ steps.version.outputs.version }} npm run build
+
+      - name: Build Python backend
+        run: |
+          pip3 install --require-hashes -r requirements/build.txt
+          pip3 install --require-hashes -r requirements/base.txt
+          pip3 install --no-deps -r requirements/vcs.txt
+          echo "${{ steps.version.outputs.version }}" > version.txt
+          cd desktop && node scripts/build-backend.js
+
+      - name: Build Electron app
+        working-directory: desktop
+        env:
+          ECLOSION_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_CHANNEL: stable
+        run: |
+          npm ci
+          jq --arg v "${{ steps.version.outputs.version }}" '.version = $v' package.json > tmp.json && mv tmp.json package.json
+          npm run build:main
+          npx electron-builder --mac --arm64 --publish never
+
+      - name: List built artifacts
+        run: |
+          echo "Built artifacts:"
+          ls -lh desktop/release/
+
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "${{ inputs.compare_from }}" ]; then
+            LAST_TAG="${{ inputs.compare_from }}"
+          else
+            LAST_TAG=$(gh release list --exclude-pre-releases --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -z "$LAST_TAG" ]; then
+              LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+            fi
+          fi
+
+          echo "Generating notes from $LAST_TAG to HEAD"
+
+          # Generate simple changelog
+          echo "## What's Changed" > /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          git log --pretty=format:"- %s" "$LAST_TAG"..HEAD >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "" >> /tmp/release-notes.md
+          echo "---" >> /tmp/release-notes.md
+          echo "*Built locally on self-hosted runner (macOS ARM64 only)*" >> /tmp/release-notes.md
+
+          cat /tmp/release-notes.md
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/package.json desktop/package.json docusaurus/package.json pyproject.toml
+          git commit -m "chore: release ${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Create tag and release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+
+          # Create and push tag
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          # Create GitHub release
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file /tmp/release-notes.md \
+            desktop/release/*.dmg \
+            desktop/release/*.zip \
+            desktop/release/*.blockmap \
+            desktop/release/*-mac*.yml
+
+          echo "## Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** $TAG" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Note:** This is a macOS ARM64-only release built on self-hosted runner." >> $GITHUB_STEP_SUMMARY
+          echo "Windows and Linux builds will need to be added when GitHub runners are available." >> $GITHUB_STEP_SUMMARY
