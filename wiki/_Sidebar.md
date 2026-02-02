@@ -1,9 +1,9 @@
 ### Getting Started
 
 * [[Introduction]]
-* [[Security]]
+* [Security](https://github.com/312-dev/eclosion/blob/main/SECURITY.md)
 * [[Changelog]]
-* [[Contributing]]
+* [Contributing](https://github.com/312-dev/eclosion/blob/main/CONTRIBUTING.md)
 * [[Adding Features|Adding-Features]]
 
 ### Desktop App

@@ -94,7 +94,7 @@ def init_db() -> None:
 
     # Get the alembic.ini path (relative to project root)
     project_root = Path(__file__).parent.parent.parent
-    alembic_ini = project_root / "alembic.ini"
+    alembic_ini = project_root / "config" / "alembic.ini"
 
     if alembic_ini.exists():
         # Development mode: use Alembic

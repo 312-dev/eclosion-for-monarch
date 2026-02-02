@@ -90,7 +90,7 @@ jobs:
               - '**.tsx'
               - '**.js'
               - '**/package*.json'
-              - '**/requirements*.txt'
+              - 'requirements/**'
               - 'Dockerfile'
               - 'docker-compose.yml'
               # Note: .github/** removed - workflow YAML isn't scanned by CodeQL
@@ -216,7 +216,7 @@ jobs:
 
       - name: Run pip-audit
         # --strict fails on any vulnerability, --desc shows descriptions
-        run: pip-audit --strict --desc -r requirements.txt
+        run: pip-audit --strict --desc -r requirements/base.txt
 
   # ============================================================================
   # Container Scanning with Trivy
@@ -266,7 +266,7 @@ jobs:
           exit-code: "1"
           severity: ${{ steps.severity.outputs.trivy_severity }}
           ignore-unfixed: true
-          trivy-config: trivy.yaml
+          trivy-config: config/trivy.yaml
 
       - name: Run Trivy and upload SARIF
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # 0.33.1
@@ -276,7 +276,7 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: ${{ steps.severity.outputs.trivy_severity }}
-          trivy-config: trivy.yaml
+          trivy-config: config/trivy.yaml
 
       - name: Upload Trivy SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4
