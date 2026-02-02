@@ -93,7 +93,8 @@ jobs:
               - '**/requirements*.txt'
               - 'Dockerfile'
               - 'docker-compose.yml'
-              - '.github/**'
+              # Note: .github/** removed - workflow YAML isn't scanned by CodeQL
+              # and triggers unnecessary runs on every workflow change
 
       - name: Determine if scans should run
         id: result
