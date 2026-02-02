@@ -68,9 +68,11 @@ jobs:
   # =========================================================================
   # Build Backend - Windows
   # =========================================================================
+  # NOTE: Windows builds always use GitHub runners (no Namespace Windows support)
+  # PyInstaller cannot cross-compile - it must build on the target OS
   build-backend-win:
     if: inputs.platform == 'windows'
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && 'namespace-profile-windows-2022-x64-4x16' || 'windows-latest' }}
+    runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -104,7 +106,7 @@ jobs:
   # =========================================================================
   build-backend-mac:
     if: inputs.platform == 'macos-arm64' || inputs.platform == 'macos-x64'
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'namespace-profile-macos-sonoma-arm64' || 'namespace-profile-macos-sonoma-x64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-13-xlarge') }}
+    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'namespace-profile-macos-sonoma-arm64' || 'namespace-profile-macos-sonoma-arm64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-13-xlarge') }}
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -170,10 +172,11 @@ jobs:
   # =========================================================================
   # Package - Windows
   # =========================================================================
+  # NOTE: Windows packaging always uses GitHub runners (no Namespace Windows support)
   package-win:
     if: inputs.platform == 'windows'
     needs: [build-frontend, build-backend-win]
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && 'namespace-profile-windows-2022-x64-4x16' || 'windows-latest' }}
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -248,7 +251,7 @@ jobs:
   package-mac:
     if: inputs.platform == 'macos-arm64' || inputs.platform == 'macos-x64'
     needs: [build-frontend, build-backend-mac]
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'namespace-profile-macos-sonoma-arm64' || 'namespace-profile-macos-sonoma-x64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-13-xlarge') }}
+    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'namespace-profile-macos-sonoma-arm64' || 'namespace-profile-macos-sonoma-arm64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-13-xlarge') }}
     timeout-minutes: 30
     steps:
       - name: Checkout

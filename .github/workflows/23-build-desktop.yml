@@ -88,7 +88,7 @@ jobs:
             namespace_runner: namespace-profile-macos-sonoma-arm64
           - arch: x64
             github_runner: macos-13-xlarge
-            namespace_runner: namespace-profile-macos-sonoma-x64
+            namespace_runner: namespace-profile-macos-sonoma-arm64
     runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && matrix.namespace_runner || matrix.github_runner }}
     timeout-minutes: 20
     steps:
@@ -124,8 +124,10 @@ jobs:
   # =========================================================================
   # Build Python Backend for Windows
   # =========================================================================
+  # NOTE: Windows builds always use GitHub runners (no Namespace Windows support)
+  # PyInstaller cannot cross-compile - it must build on the target OS
   build-backend-win:
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && 'namespace-profile-windows-2022-x64-4x16' || 'windows-latest' }}
+    runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -219,7 +221,7 @@ jobs:
           - arch: x64
             backend_artifact: backend-mac-x64
             github_runner: macos-13-xlarge
-            namespace_runner: namespace-profile-macos-sonoma-x64
+            namespace_runner: namespace-profile-macos-sonoma-arm64
     runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && matrix.namespace_runner || matrix.github_runner }}
     # Notarization alone can take 15-30 minutes waiting for Apple's servers
     timeout-minutes: 60
@@ -433,9 +435,10 @@ jobs:
   # =========================================================================
   # Package for Windows
   # =========================================================================
+  # NOTE: Windows packaging always uses GitHub runners (no Namespace Windows support)
   package-win:
     needs: [build-frontend, build-backend-win]
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && 'namespace-profile-windows-2022-x64-4x16' || 'windows-latest' }}
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
