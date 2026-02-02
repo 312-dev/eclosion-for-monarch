@@ -20,7 +20,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Current schema version - bump when adding migrations
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 13
 
 
 def column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
@@ -280,6 +280,30 @@ def migrate_v11_stash_hypotheses_extended(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def migrate_v12_wishlist_custom_image_path(conn: sqlite3.Connection) -> None:
+    """
+    Migration v12: Add custom_image_path column to wishlist_items.
+
+    Stores user-uploaded images or Openverse URLs for stash item cards.
+    """
+    if not column_exists(conn, "wishlist_items", "custom_image_path"):
+        cursor = conn.cursor()
+        cursor.execute("ALTER TABLE wishlist_items ADD COLUMN custom_image_path TEXT")
+        conn.commit()
+
+
+def migrate_v13_wishlist_config_folder_names(conn: sqlite3.Connection) -> None:
+    """
+    Migration v13: Add selected_folder_names column to wishlist_config.
+
+    Stores JSON array of folder names for filtering stash items.
+    """
+    if not column_exists(conn, "wishlist_config", "selected_folder_names"):
+        cursor = conn.cursor()
+        cursor.execute("ALTER TABLE wishlist_config ADD COLUMN selected_folder_names TEXT")
+        conn.commit()
+
+
 # Migration definitions
 # Each migration runs only if current DB version < migration version
 # "sql" can be a string (executed as script) or a callable (called with conn)
@@ -383,6 +407,20 @@ MIGRATIONS = [
         "version": 11,
         "description": "Add extended fields to stash_hypotheses",
         "sql": migrate_v11_stash_hypotheses_extended,
+    },
+    # Version 12: Add custom_image_path to wishlist_items
+    # Stores user-uploaded images or Openverse URLs for stash cards
+    {
+        "version": 12,
+        "description": "Add custom_image_path to wishlist_items",
+        "sql": migrate_v12_wishlist_custom_image_path,
+    },
+    # Version 13: Add selected_folder_names to wishlist_config
+    # Stores folder filter settings for stash view
+    {
+        "version": 13,
+        "description": "Add selected_folder_names to wishlist_config",
+        "sql": migrate_v13_wishlist_config_folder_names,
     },
 ]
 

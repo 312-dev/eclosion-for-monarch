@@ -37,6 +37,10 @@ on:
         description: "Optional context to guide AI summary (e.g., 'Focus on the new Windows experience' or 'This is a bug fix release')"
         required: false
         type: string
+      compare_from:
+        description: "Optional commit/tag to compare from instead of last stable release (e.g., 'd6aae03' or 'v1.0.0')"
+        required: false
+        type: string
 
 # Only one stable release at a time - cancel any in-progress run
 concurrency:
@@ -309,13 +313,18 @@ jobs:
           MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Use gh release to find actual published stable releases (not orphan tags)
-          LAST_TAG=$(gh release list --exclude-pre-releases --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName')
-          NEW_TAG="${{ needs.calculate-version.outputs.tag }}"
-
-          if [ -z "$LAST_TAG" ]; then
-            LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+          # Use manual compare_from if provided, otherwise find last stable release
+          if [ -n "${{ inputs.compare_from }}" ]; then
+            LAST_TAG="${{ inputs.compare_from }}"
+            echo "Using manual compare_from: $LAST_TAG"
+          else
+            # Use gh release to find actual published stable releases (not orphan tags)
+            LAST_TAG=$(gh release list --exclude-pre-releases --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -z "$LAST_TAG" ]; then
+              LAST_TAG=$(git rev-list --max-parents=0 HEAD)
+            fi
           fi
+          NEW_TAG="${{ needs.calculate-version.outputs.tag }}"
 
           echo "Generating notes from $LAST_TAG to HEAD (tag: $NEW_TAG)"
 
