@@ -33,6 +33,8 @@ export interface TooltipProps {
   readonly delayDuration?: number;
   /** Whether the tooltip is disabled */
   readonly disabled?: boolean;
+  /** Additional className for the trigger wrapper span */
+  readonly triggerClassName?: string;
 }
 
 /** Get slide offset based on tooltip side */
@@ -56,6 +58,7 @@ export function Tooltip({
   align = 'center',
   delayDuration = 300,
   disabled = false,
+  triggerClassName,
 }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isTouchDevice = useMediaQuery(breakpoints.isTouchDevice);
@@ -115,7 +118,10 @@ export function Tooltip({
       onOpenChange={handleOpenChange}
     >
       <RadixTooltip.Trigger asChild>
-        <span ref={triggerRef as React.RefObject<HTMLSpanElement>} className="inline-flex">
+        <span
+          ref={triggerRef as React.RefObject<HTMLSpanElement>}
+          className={`inline-flex ${triggerClassName ?? ''}`}
+        >
           {children}
         </span>
       </RadixTooltip.Trigger>

@@ -37,6 +37,36 @@ export { EmptyState, EmptyStateIcon, type EmptyStateProps } from './EmptyState';
 export { StatusBadge, type StatusBadgeProps } from './StatusBadge';
 export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 
+// Skeleton components - primitives
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonHeading,
+  SkeletonCircle,
+  SkeletonButton,
+  SkeletonCard,
+} from './Skeleton';
+
+// Skeleton components - layouts
+export {
+  SkeletonToolHeader,
+  SkeletonTabs,
+  SkeletonStashCard,
+  SkeletonStashGrid,
+  SkeletonRecurringRow,
+  SkeletonRecurringList,
+  SkeletonRollupZone,
+  SkeletonReadyToAssign,
+  SkeletonCategoryGroup,
+  SkeletonNotesTab,
+  SkeletonMonthSelector,
+  SkeletonSummaryCards,
+  SkeletonChart,
+  SkeletonModalContent,
+  SkeletonAccountList,
+  SkeletonAppShell,
+} from './SkeletonLayouts';
+
 // Form components
 export { CurrencyInput, type CurrencyInputProps } from './CurrencyInput';
 

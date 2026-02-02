@@ -23,12 +23,15 @@ import {
   ChevronsDown,
   Check,
   X,
+  CircleX,
+  CircleSlash,
   Plus,
   Minus,
   CircleMinus,
   Pencil,
   PencilOff,
   Trash2,
+  Delete,
   ExternalLink,
   Link,
   ListTree,
@@ -130,6 +133,8 @@ import {
   BadgeDollarSign,
   HandCoins,
   CircleFadingPlus,
+  MapPinCheckInside,
+  MapPinXInside,
 } from 'lucide-react';
 import type { SVGProps } from 'react';
 
@@ -156,12 +161,15 @@ export const ChevronLeftIcon = ChevronLeft;
 export const CheckIcon = Check;
 export const CheckSimpleIcon = Check;
 export const XIcon = X;
+export const CircleXIcon = CircleX;
+export const CircleSlashIcon = CircleSlash;
 export const PlusIcon = Plus;
 export const MinusIcon = Minus;
 export const CircleMinusIcon = CircleMinus;
 export const EditIcon = Pencil;
 export const EditOffIcon = PencilOff;
 export const TrashIcon = Trash2;
+export const DeleteIcon = Delete;
 export const ExternalLinkIcon = ExternalLink;
 export const LinkIcon = Link;
 export const ListTreeIcon = ListTree;
@@ -246,6 +254,8 @@ export const CloudSunIcon = CloudSun;
 export const RainbowIcon = Rainbow;
 export const SmileIcon = Smile;
 export const TargetIcon = Target;
+export const MapPinCheckInsideIcon = MapPinCheckInside;
+export const MapPinXInsideIcon = MapPinXInside;
 export const SplitIcon = Split;
 export const AwardIcon = Award;
 export const PiggyBankIcon = PiggyBank;
@@ -553,12 +563,15 @@ export const Icons = {
   CheckSimple: CheckSimpleIcon,
   CheckFilled: CheckFilledIcon,
   X: XIcon,
+  CircleX: CircleXIcon,
+  CircleSlash: CircleSlashIcon,
   Plus: PlusIcon,
   Minus: MinusIcon,
   CircleMinus: CircleMinusIcon,
   Edit: EditIcon,
   EditOff: EditOffIcon,
   Trash: TrashIcon,
+  Delete: DeleteIcon,
   ExternalLink: ExternalLinkIcon,
   Link: LinkIcon,
   ListTree: ListTreeIcon,
@@ -675,6 +688,8 @@ export const Icons = {
 
   // Goals
   Target: TargetIcon,
+  MapPinCheckInside: MapPinCheckInsideIcon,
+  MapPinXInside: MapPinXInsideIcon,
 
   // Finance
   Split: SplitIcon,

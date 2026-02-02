@@ -17,6 +17,7 @@ import { createPortal } from 'react-dom';
 import { CloseButton } from './CloseButton';
 import { useScrollLock } from '../../hooks/useScrollLock';
 import { useModalStack } from '../../hooks/useModalStack';
+import { useModalScrollbar } from '../../hooks/useModalScrollbar';
 import { Z_INDEX } from '../../constants';
 import { motion, AnimatePresence, fadeVariants, scaleVariants } from '../motion';
 
@@ -198,6 +199,14 @@ export function Modal({
   // Prevent body scroll when modal is open
   useScrollLock(isOpen);
 
+  // Custom scrollbar for modal body (always visible on macOS)
+  const {
+    contentRef: scrollContentRef,
+    thumbRef,
+    trackRef,
+    hasOverflow,
+  } = useModalScrollbar(isOpen);
+
   // Track where pointerdown started to prevent closing when dragging from inside modal to backdrop
   const mouseDownTargetRef = useRef<EventTarget | null>(null);
 
@@ -302,14 +311,24 @@ export function Modal({
 
             {/* Body - wrapped in context provider for footer portal */}
             <ModalFooterContext.Provider value={footerContainer}>
-              <div
-                className="modal-body-scroll p-4 flex-1 min-h-0 overflow-y-auto"
-                style={{
-                  boxShadow:
-                    'inset 0 8px 8px -8px rgba(0,0,0,0.15), inset 0 -8px 8px -8px rgba(0,0,0,0.15)',
-                }}
-              >
-                {children}
+              <div className="relative flex-1 min-h-0 flex flex-col">
+                {/* Custom scrollbar - always visible when content overflows */}
+                {hasOverflow && (
+                  <div ref={trackRef} className="modal-scrollbar-track" aria-hidden="true">
+                    <div ref={thumbRef} className="modal-scrollbar-thumb" />
+                  </div>
+                )}
+                {/* Scrollable content */}
+                <div
+                  ref={scrollContentRef}
+                  className="p-4 flex-1 min-h-0 overflow-y-auto scrollbar-none"
+                  style={{
+                    boxShadow:
+                      'inset 0 8px 8px -8px rgba(0,0,0,0.15), inset 0 -8px 8px -8px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  {children}
+                </div>
               </div>
             </ModalFooterContext.Provider>
 

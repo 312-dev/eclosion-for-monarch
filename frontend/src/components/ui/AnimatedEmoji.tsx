@@ -2,12 +2,12 @@
  * AnimatedEmoji - Displays animated Telegram emojis on hover
  *
  * Shows a static emoji character by default, and plays the animated
- * version (webp) when isAnimating is true. The animated image uses
- * browser lazy loading and is always kept in DOM once rendered to
- * avoid reload flicker on subsequent hovers.
+ * version (webp) when isAnimating is true. The animated image is only
+ * rendered while animating, which restarts the animation from frame 1
+ * on each hover. Browser caching ensures subsequent hovers are instant.
  */
 
-import { memo, useState } from 'react';
+import { memo, useState, useMemo, useEffect } from 'react';
 import { getAnimatedEmojiUrl, hasAnimatedEmoji } from '../../data/animatedEmojiMap';
 
 interface AnimatedEmojiProps {
@@ -30,6 +30,16 @@ export const AnimatedEmoji = memo(function AnimatedEmoji({
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  // Generate a unique cache-buster when animation starts to restart from frame 1
+  // useMemo ensures we get a new timestamp only when isAnimating changes to true
+  // eslint-disable-next-line react-hooks/purity -- Intentionally impure to bust browser cache
+  const cacheBuster = useMemo(() => (isAnimating ? Date.now() : 0), [isAnimating]);
+
+  // Reset imageLoaded when emoji or cacheBuster changes so we don't flash stale state
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [emoji, cacheBuster]);
+
   const animatedUrl = getAnimatedEmojiUrl(emoji);
   const canAnimate = hasAnimatedEmoji(emoji) && !imageError && animatedUrl;
 
@@ -46,42 +56,39 @@ export const AnimatedEmoji = memo(function AnimatedEmoji({
     );
   }
 
-  // Show animated version when animating and image is loaded
-  const showAnimated = isAnimating && imageLoaded;
-
   return (
     <span
       className={`inline-flex items-center justify-center relative ${className}`}
       style={{ width: size, height: size }}
     >
-      {/* Static emoji - shown when not animating or image not loaded */}
+      {/* Static emoji - shown until animated image loads */}
       <span
         className="transition-opacity duration-150"
         style={{
           fontSize: size * 0.85,
           lineHeight: 1,
-          opacity: showAnimated ? 0 : 1,
+          opacity: isAnimating && imageLoaded ? 0 : 1,
         }}
         aria-hidden="true"
       >
         {emoji}
       </span>
 
-      {/* Animated emoji - always rendered, uses browser lazy loading */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onLoad/onError are lifecycle events, not interactive */}
-      <img
-        src={animatedUrl}
-        alt=""
-        loading="lazy"
-        className="absolute inset-0 transition-opacity duration-150"
-        style={{
-          width: size,
-          height: size,
-          opacity: showAnimated ? 1 : 0,
-        }}
-        onLoad={() => setImageLoaded(true)}
-        onError={() => setImageError(true)}
-      />
+      {/* Animated emoji - cache-busted URL restarts animation from frame 1 each hover */}
+      {isAnimating && (
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onLoad/onError are lifecycle events, not interactive
+        <img
+          src={`${animatedUrl}?v=${cacheBuster}`}
+          alt=""
+          className="absolute inset-0"
+          style={{
+            width: size,
+            height: size,
+          }}
+          onLoad={() => setImageLoaded(true)}
+          onError={() => setImageError(true)}
+        />
+      )}
     </span>
   );
 });
