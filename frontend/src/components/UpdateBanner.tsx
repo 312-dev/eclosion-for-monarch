@@ -3,11 +3,27 @@ import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { Modal } from './ui/Modal';
 import { ChangelogDisplay } from './ChangelogDisplay';
 import { SyncIcon } from './icons';
+import { isDesktopMode } from '../utils/apiBase';
 
+/**
+ * UpdateBanner - Shows update notification for web deployments only.
+ *
+ * Desktop apps use electron-updater and have their own update flow:
+ * - Boot-time: Updates download as part of loading screen, then auto-restart
+ * - Runtime: RuntimeUpdateModal shows when update is ready
+ *
+ * This banner is for web (Docker/local) deployments where the user needs to
+ * manually pull a new version.
+ */
 export function UpdateBanner() {
   const { updateAvailable, serverVersion, updateType, dismissed, dismissUpdate } = useUpdateCheck();
 
   const [showChangelog, setShowChangelog] = useState(false);
+
+  // Desktop uses electron-updater, not this web-based version check
+  if (isDesktopMode()) {
+    return null;
+  }
 
   if (!updateAvailable || dismissed) {
     return null;

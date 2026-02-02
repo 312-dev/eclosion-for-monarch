@@ -20,18 +20,11 @@ interface UpdatesSectionProps {
 }
 
 /**
- * Desktop update action - shows status and Quit & Relaunch button.
+ * Desktop update action - shows status (RuntimeUpdateModal handles restart).
  */
 function DesktopUpdateAction() {
-  const {
-    updateAvailable,
-    updateDownloaded,
-    updateInfo,
-    downloadProgress,
-    quitAndInstall,
-    checkForUpdates,
-  } = useUpdate();
-  const [isRestarting, setIsRestarting] = useState(false);
+  const { updateAvailable, updateDownloaded, updateInfo, downloadProgress, checkForUpdates } =
+    useUpdate();
   const [isChecking, setIsChecking] = useState(false);
 
   const handleCheckForUpdates = async () => {
@@ -41,30 +34,16 @@ function DesktopUpdateAction() {
     setTimeout(() => setIsChecking(false), 1500);
   };
 
-  const handleQuitAndRelaunch = () => {
-    setIsRestarting(true);
-    setTimeout(() => {
-      quitAndInstall();
-    }, 200);
-  };
-
-  // Update downloaded - show restart button
+  // Update downloaded - show status (RuntimeUpdateModal handles the restart)
   if (updateDownloaded) {
     return (
-      <button
-        type="button"
-        onClick={handleQuitAndRelaunch}
-        disabled={isRestarting}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-70"
-        style={{
-          backgroundColor: 'var(--monarch-success)',
-          color: 'white',
-        }}
-        aria-label={isRestarting ? 'Restarting application' : 'Quit and relaunch to install update'}
+      <span
+        className="flex items-center gap-1.5 text-sm"
+        style={{ color: 'var(--monarch-success)' }}
       >
-        <RotateCcw size={14} className={isRestarting ? 'animate-spin' : ''} />
-        {isRestarting ? 'Restarting...' : 'Quit & Relaunch'}
-      </button>
+        <RotateCcw size={14} />
+        Restart required
+      </span>
     );
   }
 

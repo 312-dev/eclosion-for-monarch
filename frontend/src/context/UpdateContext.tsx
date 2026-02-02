@@ -31,6 +31,8 @@ interface UpdateState {
   channel: 'stable' | 'beta';
   /** Whether running in desktop mode */
   isDesktop: boolean;
+  /** Whether the app is still in boot phase (loading screen showing) */
+  isBootPhase: boolean;
 }
 
 interface UpdateContextValue extends UpdateState {
@@ -38,6 +40,8 @@ interface UpdateContextValue extends UpdateState {
   checkForUpdates: () => Promise<void>;
   /** Quit the app and install the downloaded update */
   quitAndInstall: () => void;
+  /** Signal that boot is complete (loading screen has finished) */
+  setBootComplete: () => void;
 }
 
 const UpdateContext = createContext<UpdateContextValue | null>(null);
@@ -60,6 +64,7 @@ export function UpdateProvider({ children }: UpdateProviderProps) {
     currentVersion: '',
     channel: 'stable',
     isDesktop,
+    isBootPhase: isDesktop, // Start in boot phase for desktop, false for web
   }));
 
   // Initialize and listen for update events
@@ -137,10 +142,15 @@ export function UpdateProvider({ children }: UpdateProviderProps) {
     }
   }, [state.updateDownloaded]);
 
+  const setBootComplete = useCallback(() => {
+    setState((prev) => ({ ...prev, isBootPhase: false }));
+  }, []);
+
   const value: UpdateContextValue = {
     ...state,
     checkForUpdates,
     quitAndInstall,
+    setBootComplete,
   };
 
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;

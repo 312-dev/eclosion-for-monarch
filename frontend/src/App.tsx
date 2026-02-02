@@ -52,7 +52,8 @@ import { useElectronNavigation } from './hooks/useElectronNavigation';
 import { BetaBanner } from './components/ui/BetaBanner';
 import { MfaReauthPrompt } from './components/MfaReauthPrompt';
 import { SessionExpiredOverlay } from './components/SessionExpiredOverlay';
-import { UpdateProvider } from './context/UpdateContext';
+import { UpdateProvider, useUpdate } from './context/UpdateContext';
+import { RuntimeUpdateModal } from './components/update/RuntimeUpdateModal';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
 
@@ -146,6 +147,26 @@ const queryClient = new QueryClient({
 });
 
 /**
+ * Signals that boot is complete and renders runtime update modal.
+ * Must be rendered inside UpdateProvider.
+ */
+function BootCompleteAndUpdateModal({ children }: { readonly children: React.ReactNode }) {
+  const { setBootComplete } = useUpdate();
+
+  // Signal boot complete on mount (by the time this renders, loading screen is done)
+  useEffect(() => {
+    setBootComplete();
+  }, [setBootComplete]);
+
+  return (
+    <>
+      {children}
+      <RuntimeUpdateModal />
+    </>
+  );
+}
+
+/**
  * Root layout that provides context needed by all routes.
  * Contains providers that need router context.
  */
@@ -162,7 +183,9 @@ function RootLayout() {
           <MonthTransitionProvider>
             <UpdateProvider>
               <DistributionModeProvider>
-                <Outlet />
+                <BootCompleteAndUpdateModal>
+                  <Outlet />
+                </BootCompleteAndUpdateModal>
               </DistributionModeProvider>
             </UpdateProvider>
           </MonthTransitionProvider>
@@ -188,9 +211,11 @@ function ProductionRootLayout() {
           <MonthTransitionProvider>
             <UpdateProvider>
               <DistributionModeProvider>
-                <AuthProvider>
-                  <ProductionAuthWrapper />
-                </AuthProvider>
+                <BootCompleteAndUpdateModal>
+                  <AuthProvider>
+                    <ProductionAuthWrapper />
+                  </AuthProvider>
+                </BootCompleteAndUpdateModal>
               </DistributionModeProvider>
             </UpdateProvider>
           </MonthTransitionProvider>

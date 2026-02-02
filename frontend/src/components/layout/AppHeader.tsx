@@ -11,7 +11,6 @@ import { AppIcon } from '../wizards/WizardComponents';
 import { RateLimitBanner } from '../ui/RateLimitBanner';
 import { OfflineIndicator } from '../OfflineIndicator';
 import { UpdateBanner } from '../UpdateBanner';
-import { DesktopUpdateBanner } from '../update';
 import { MonthTransitionBanner } from '../ui/MonthTransitionBanner';
 import { DistributionModeBanner } from '../stash/DistributionModeBanner';
 import { RemoteAccessIndicator } from '../RemoteAccessIndicator';
@@ -110,7 +109,6 @@ export function AppHeader({
       <RateLimitBanner />
       <OfflineIndicator />
       <UpdateBanner />
-      <DesktopUpdateBanner />
       <MonthTransitionBanner />
       <DistributionModeBanner />
     </header>

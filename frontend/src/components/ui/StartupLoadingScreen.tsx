@@ -4,9 +4,8 @@
  * Displays a loading screen while waiting for the backend to start.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { LoadingSpinner } from './LoadingSpinner';
-import { StartupUpdateStatus } from './StartupUpdateStatus';
 import { AppIcon } from '../wizards/SetupWizardIcons';
 import {
   STARTUP_THRESHOLDS,
@@ -36,23 +35,40 @@ export function StartupLoadingScreen({
   const [messageRotationCount, setMessageRotationCount] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
-  // Update status
-  const [updateStatus, setUpdateStatus] = useState<'none' | 'available' | 'downloading' | 'ready'>(
-    'none'
-  );
+  // Update phase: integrates update download into the main boot flow
+  // 'none' = normal boot, 'downloading' = downloading update, 'installing' = about to restart
+  const [updatePhase, setUpdatePhase] = useState<'none' | 'downloading' | 'installing'>('none');
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [updateDownloadProgress, setUpdateDownloadProgress] = useState(0);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState<boolean | null>(null);
+
+  // Track if we've already triggered install to prevent double-calls
+  const hasTriggeredInstall = useRef(false);
+
+  // Timeout state - defined early since it's used in multiple places
+  const isTimedOut = elapsedSeconds >= STARTUP_THRESHOLDS.TIMEOUT;
 
   // Derive fading state and final progress from isConnected
   const isFadingOut = isConnected;
-  // Use custom progress during migration, otherwise use animated progress
+  // Use update download progress when downloading, otherwise normal progress
   const getProgress = (): number => {
     if (isConnected) return 100;
+    if (updatePhase === 'installing') return 100;
+    if (updatePhase === 'downloading') return updateDownloadProgress;
     if (customStatus) return customStatus.progress;
     return animatedProgress;
   };
   const progress = getProgress();
+
+  // Get status text based on current phase
+  const getStatusMessage = (): string => {
+    if (updatePhase === 'installing') return 'Installing update...';
+    if (updatePhase === 'downloading') {
+      return updateVersion ? `Downloading update v${updateVersion}...` : 'Downloading update...';
+    }
+    if (customStatus) return customStatus.message;
+    return getStatusText(elapsedSeconds, isTimedOut);
+  };
 
   // Set a smaller compact window size for the loading screen (desktop only)
   useEffect(() => {
@@ -113,34 +129,53 @@ export function StartupLoadingScreen({
       });
   }, []);
 
+  // Auto-restart when update is downloaded
+  const triggerInstall = useCallback(() => {
+    if (hasTriggeredInstall.current) return;
+    hasTriggeredInstall.current = true;
+
+    setUpdatePhase('installing');
+    // Brief delay to show "Installing update..." message before restart
+    setTimeout(() => {
+      globalThis.electron?.quitAndInstall();
+    }, 1000);
+  }, []);
+
   // Listen for update events from Electron (only if auto-update is enabled)
   useEffect(() => {
     if (!globalThis.electron || autoUpdateEnabled === null || !autoUpdateEnabled) return;
 
     const unsubAvailable = globalThis.electron.onUpdateAvailable((info: UpdateInfo) => {
-      setUpdateStatus('downloading');
+      setUpdatePhase('downloading');
       setUpdateVersion(info.version);
     });
 
     const unsubProgress = globalThis.electron.onUpdateProgress((progress: UpdateProgress) => {
-      setUpdateStatus('downloading');
-      setDownloadProgress(Math.round(progress.percent));
+      setUpdatePhase('downloading');
+      setUpdateDownloadProgress(Math.round(progress.percent));
     });
 
     const unsubDownloaded = globalThis.electron.onUpdateDownloaded((info: UpdateInfo) => {
-      setUpdateStatus('ready');
       setUpdateVersion(info.version);
-      setDownloadProgress(100);
+      setUpdateDownloadProgress(100);
+      // Auto-restart to install the update
+      triggerInstall();
     });
 
-    // Check initial status
+    const unsubError = globalThis.electron.onUpdateError(() => {
+      // On error, fall back to normal boot flow
+      setUpdatePhase('none');
+      setUpdateDownloadProgress(0);
+    });
+
+    // Check initial status - if update already downloaded, install it
     globalThis.electron.getUpdateStatus().then((status) => {
       if (status.updateDownloaded && status.updateInfo) {
-        setUpdateStatus('ready');
         setUpdateVersion(status.updateInfo.version);
-        setDownloadProgress(100);
+        setUpdateDownloadProgress(100);
+        triggerInstall();
       } else if (status.updateAvailable && status.updateInfo) {
-        setUpdateStatus('downloading');
+        setUpdatePhase('downloading');
         setUpdateVersion(status.updateInfo.version);
       }
     });
@@ -149,8 +184,9 @@ export function StartupLoadingScreen({
       unsubAvailable();
       unsubProgress();
       unsubDownloaded();
+      unsubError();
     };
-  }, [autoUpdateEnabled]);
+  }, [autoUpdateEnabled, triggerInstall]);
 
   // Animate progress bar (only when not connected)
   useEffect(() => {
@@ -176,9 +212,6 @@ export function StartupLoadingScreen({
 
     return () => clearInterval(progressTimer);
   }, [elapsedSeconds, isConnected]);
-
-  // Timeout state
-  const isTimedOut = elapsedSeconds >= STARTUP_THRESHOLDS.TIMEOUT;
 
   return (
     <div
@@ -234,7 +267,7 @@ export function StartupLoadingScreen({
 
         {/* Status text */}
         <p className="text-sm font-medium" style={{ color: 'var(--monarch-text-muted)' }}>
-          {customStatus ? customStatus.message : getStatusText(elapsedSeconds, isTimedOut)}
+          {getStatusMessage()}
         </p>
 
         {/* Progress bar */}
@@ -258,8 +291,8 @@ export function StartupLoadingScreen({
           )}
         </div>
 
-        {/* Rotating message - only show when not in custom status mode */}
-        {!customStatus && (
+        {/* Rotating message - only show when not in custom status mode or update phase */}
+        {!customStatus && updatePhase === 'none' && (
           <div className="min-h-12 flex items-center justify-center" key={currentMessage}>
             <p className="text-sm animate-fade-in" style={{ color: 'var(--monarch-text-muted)' }}>
               {isTimedOut ? TIMEOUT_ERROR_MESSAGE : currentMessage}
@@ -267,18 +300,12 @@ export function StartupLoadingScreen({
           </div>
         )}
 
-        {/* Elapsed time (shown after 30 seconds) */}
-        {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && (
+        {/* Elapsed time (shown after 30 seconds, but not during update) */}
+        {elapsedSeconds >= STARTUP_THRESHOLDS.ACKNOWLEDGE_DELAY && updatePhase === 'none' && (
           <p className="text-xs animate-fade-in" style={{ color: 'var(--monarch-text-light)' }}>
             Waiting for {elapsedSeconds} seconds...
           </p>
         )}
-
-        <StartupUpdateStatus
-          status={updateStatus}
-          version={updateVersion}
-          progress={downloadProgress}
-        />
 
         {/* Timeout action */}
         {isTimedOut && (
