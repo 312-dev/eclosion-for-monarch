@@ -358,6 +358,8 @@ jobs:
   publish-desktop:
     name: "Stage 3: Publish Desktop"
     needs: [validate-builds]
+    # Run if validate-builds succeeded (even if upstream jobs were skipped)
+    if: always() && needs.validate-builds.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -370,6 +372,104 @@ jobs:
           pattern: eclosion-*
           path: artifacts
           merge-multiple: true
+
+      - name: Merge Mac yml files from different architectures
+        run: |
+          # Merge architecture-specific mac yml files into a single latest-mac.yml (or beta-mac.yml)
+          # This allows electron-updater to pick the right architecture based on process.arch
+          cd artifacts
+
+          # Check for stable (latest-mac-*.yml) or beta (beta-mac-*.yml) files
+          for prefix in latest beta; do
+            ARM64_YML="${prefix}-mac-arm64.yml"
+            X64_YML="${prefix}-mac-x64.yml"
+            OUTPUT_YML="${prefix}-mac.yml"
+
+            if [ -f "$ARM64_YML" ] && [ -f "$X64_YML" ]; then
+              echo "Merging $ARM64_YML and $X64_YML into $OUTPUT_YML"
+
+              # Use node to properly merge the YAML files
+              node << MERGE_SCRIPT
+                const fs = require('fs');
+
+                // Simple YAML parser (electron-builder uses simple format)
+                function parseSimpleYaml(content) {
+                  const result = { files: [] };
+                  let currentFile = null;
+
+                  for (const line of content.split('\n')) {
+                    if (line.startsWith('version:')) {
+                      result.version = line.split(':')[1].trim();
+                    } else if (line.startsWith('releaseDate:')) {
+                      result.releaseDate = line.split('releaseDate:')[1].trim();
+                    } else if (line.startsWith('path:')) {
+                      result.path = line.split(':')[1].trim();
+                    } else if (line.startsWith('sha512:') && !currentFile) {
+                      result.sha512 = line.split(':')[1].trim();
+                    } else if (line.match(/^  - url:/)) {
+                      if (currentFile) result.files.push(currentFile);
+                      currentFile = { url: line.split('url:')[1].trim() };
+                    } else if (currentFile && line.match(/^\s+sha512:/)) {
+                      currentFile.sha512 = line.split(':')[1].trim();
+                    } else if (currentFile && line.match(/^\s+size:/)) {
+                      currentFile.size = parseInt(line.split(':')[1].trim());
+                    } else if (currentFile && line.match(/^\s+blockMapSize:/)) {
+                      currentFile.blockMapSize = parseInt(line.split(':')[1].trim());
+                    }
+                  }
+                  if (currentFile) result.files.push(currentFile);
+                  return result;
+                }
+
+                const arm64 = parseSimpleYaml(fs.readFileSync('${ARM64_YML}', 'utf8'));
+                const x64 = parseSimpleYaml(fs.readFileSync('${X64_YML}', 'utf8'));
+
+                // Merge files arrays - x64 FIRST because electron-updater falls back to first file
+                // when it can't find process.arch in the filename. ARM64 files contain "arm64" in
+                // the name so they'll be matched explicitly. x64 files don't have "x64" in the name
+                // (they're just "-mac.zip"), so they need to be the fallback (first in list).
+                const merged = {
+                  version: x64.version,
+                  files: [...x64.files, ...arm64.files],
+                  path: x64.path,  // Default to x64 (fallback for when arch not in filename)
+                  sha512: x64.sha512,
+                  releaseDate: x64.releaseDate
+                };
+
+                // Generate merged YAML
+                let output = 'version: ' + merged.version + '\n';
+                output += 'files:\n';
+                for (const file of merged.files) {
+                  output += '  - url: ' + file.url + '\n';
+                  output += '    sha512: ' + file.sha512 + '\n';
+                  output += '    size: ' + file.size + '\n';
+                  if (file.blockMapSize) {
+                    output += '    blockMapSize: ' + file.blockMapSize + '\n';
+                  }
+                }
+                output += 'path: ' + merged.path + '\n';
+                output += 'sha512: ' + merged.sha512 + '\n';
+                output += 'releaseDate: ' + merged.releaseDate + '\n';
+
+                fs.writeFileSync('${OUTPUT_YML}', output);
+                console.log('Merged ${OUTPUT_YML}:');
+                console.log(output);
+          MERGE_SCRIPT
+
+              # Remove the architecture-specific files
+              rm "$ARM64_YML" "$X64_YML"
+              echo "Removed architecture-specific yml files"
+            elif [ -f "$ARM64_YML" ]; then
+              echo "Only $ARM64_YML found, renaming to $OUTPUT_YML"
+              mv "$ARM64_YML" "$OUTPUT_YML"
+            elif [ -f "$X64_YML" ]; then
+              echo "Only $X64_YML found, renaming to $OUTPUT_YML"
+              mv "$X64_YML" "$OUTPUT_YML"
+            fi
+          done
+
+          echo "Final mac yml files:"
+          ls -la *-mac.yml 2>/dev/null || echo "No mac yml files"
 
       - name: Download screenshot artifacts
         if: ${{ !inputs.skip_screenshots }}
