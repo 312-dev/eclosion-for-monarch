@@ -21,12 +21,23 @@ import { STASH_TOUR_STEPS, type StashTourStepId } from '../components/layout/sta
 // localStorage key for tour state
 export const STASH_TOUR_STATE_KEY = 'eclosion-stash-tour';
 
+// localStorage key for intro modal state (Stashes vs Monarch Goals)
+export const STASH_INTRO_STATE_KEY = 'eclosion-stash-intro';
+
 interface TourState {
   hasSeenTour: boolean;
 }
 
+interface IntroState {
+  hasSeenIntro: boolean;
+}
+
 const INITIAL_TOUR_STATE: TourState = {
   hasSeenTour: false,
+};
+
+const INITIAL_INTRO_STATE: IntroState = {
+  hasSeenIntro: false,
 };
 
 /** Data needed to evaluate which tour steps should be shown */
@@ -97,6 +108,12 @@ export interface UseStashTourReturn {
   resetTour: () => void;
   /** Whether there are any steps available to show */
   hasTourSteps: boolean;
+  /** Whether user has seen the intro modal (Stashes vs Monarch Goals) */
+  hasSeenIntro: boolean;
+  /** Mark the intro modal as seen */
+  markIntroSeen: () => void;
+  /** Reset intro state (for replay functionality) */
+  resetIntro: () => void;
 }
 
 /**
@@ -109,6 +126,11 @@ export function useStashTour(data: StashTourData | undefined): UseStashTourRetur
   const [tourState, setTourState] = useLocalStorage<TourState>(
     STASH_TOUR_STATE_KEY,
     INITIAL_TOUR_STATE
+  );
+
+  const [introState, setIntroState] = useLocalStorage<IntroState>(
+    STASH_INTRO_STATE_KEY,
+    INITIAL_INTRO_STATE
   );
 
   // Evaluate which steps should be shown based on current data
@@ -127,11 +149,22 @@ export function useStashTour(data: StashTourData | undefined): UseStashTourRetur
     setTourState(INITIAL_TOUR_STATE);
   }, [setTourState]);
 
+  const markIntroSeen = useCallback(() => {
+    setIntroState({ hasSeenIntro: true });
+  }, [setIntroState]);
+
+  const resetIntro = useCallback(() => {
+    setIntroState(INITIAL_INTRO_STATE);
+  }, [setIntroState]);
+
   return {
     steps,
     hasSeenTour: tourState.hasSeenTour,
     markAsSeen,
     resetTour,
     hasTourSteps: steps.length > 0,
+    hasSeenIntro: introState.hasSeenIntro,
+    markIntroSeen,
+    resetIntro,
   };
 }

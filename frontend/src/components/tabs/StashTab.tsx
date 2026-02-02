@@ -8,7 +8,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useBlocker } from 'react-router-dom';
 import { ExternalLink, Target } from 'lucide-react';
-import { usePageTitle, useBookmarks, useStashSync } from '../../hooks';
+import { usePageTitle, useBookmarks, useStashSync, useLocalStorage } from '../../hooks';
+import { STASH_INTRO_STATE_KEY } from '../../hooks/useStashTour';
 import { PageLoadingSpinner } from '../ui/LoadingSpinner';
 import { FolderSyncIcon, type FolderSyncIconHandle } from '../ui/FolderSyncIcon';
 import {
@@ -249,6 +250,30 @@ export function StashTab() {
   const [showExplainerModal, setShowExplainerModal] = useState(false);
   const [allocatingItemId, setAllocatingItemId] = useState<string | null>(null);
   const pendingSectionRef = useRef<HTMLDivElement>(null);
+
+  // Track whether user has seen the intro modal (Stashes vs Monarch Goals)
+  const [introState, setIntroState] = useLocalStorage<{ hasSeenIntro: boolean }>(
+    STASH_INTRO_STATE_KEY,
+    { hasSeenIntro: false }
+  );
+
+  // Auto-open intro modal on first visit (before guided tour starts)
+  const introShownRef = useRef(false);
+  useEffect(() => {
+    // Only show once per session and only if not seen before
+    if (!introState.hasSeenIntro && !introShownRef.current && !configLoading && !isLoading) {
+      introShownRef.current = true;
+      setShowExplainerModal(true);
+    }
+  }, [introState.hasSeenIntro, configLoading, isLoading]);
+
+  // Handle intro modal close - mark as seen to trigger guided tour
+  const handleExplainerModalClose = useCallback(() => {
+    setShowExplainerModal(false);
+    if (!introState.hasSeenIntro) {
+      setIntroState({ hasSeenIntro: true });
+    }
+  }, [introState.hasSeenIntro, setIntroState]);
 
   const isBrowserConfigured =
     !!configData?.selectedBrowser && (configData?.selectedFolderIds?.length ?? 0) > 0;
@@ -611,7 +636,7 @@ export function StashTab() {
         onClose={() => setShowSettingsModal(false)}
         tool="stash"
       />
-      <StashVsGoalsModal isOpen={showExplainerModal} onClose={() => setShowExplainerModal(false)} />
+      <StashVsGoalsModal isOpen={showExplainerModal} onClose={handleExplainerModalClose} />
 
       {/* Scenario Sidebar Panel - for hypothesize mode */}
       <ScenarioSidebarPanel />

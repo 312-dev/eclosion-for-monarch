@@ -5,7 +5,7 @@
  * Determines which tour to show based on current page.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDemo } from '../context/DemoContext';
 import { useRecurringTour, useNotesTour, useStashTour } from './';
@@ -73,6 +73,8 @@ export function useAppTour({
     hasSeenTour: hasSeenStashTour,
     markAsSeen: markStashTourSeen,
     hasTourSteps: hasStashTourSteps,
+    hasSeenIntro: hasSeenStashIntro,
+    markIntroSeen: markStashIntroSeen,
   } = useStashTour({
     itemCount: stashItemCount,
     pendingCount,
@@ -82,13 +84,19 @@ export function useAppTour({
     monarchGoalCount,
   });
 
+  // Track whether intro modal just closed (to trigger tour start)
+  const [introJustClosed, setIntroJustClosed] = useState(false);
+
   // Get the correct tour state based on current page
   // On tunnel sites, treat all tours as already seen (skip help tips for remote users)
   const getTourConfig = () => {
     if (isStashPage)
       return {
         steps: stashTourSteps,
-        seen: IS_TUNNEL_SITE || hasSeenStashTour,
+        // For stash page, tour is considered "seen" if either:
+        // 1. User has seen the tour, OR
+        // 2. User hasn't seen the intro yet (intro must come first)
+        seen: IS_TUNNEL_SITE || hasSeenStashTour || !hasSeenStashIntro,
         hasSteps: hasStashTourSteps,
       };
     if (isNotesPage)
@@ -110,11 +118,48 @@ export function useAppTour({
     hasSteps: hasCurrentTourSteps,
   } = getTourConfig();
 
+  // Determine if intro modal should show on stash page (first visit, intro not seen)
+  const shouldShowStashIntro = isStashPage && !IS_TUNNEL_SITE && !hasSeenStashIntro;
+
+  // Handle intro modal close - mark as seen and trigger tour start
+  const handleStashIntroClose = useCallback(() => {
+    markStashIntroSeen();
+    // Signal that intro just closed so tour can start
+    setIntroJustClosed(true);
+  }, [markStashIntroSeen]);
+
   // Auto-start tour on first visit to a page with a tour
+  // For stash page, this also handles starting after intro modal closes
   useEffect(() => {
     // Don't start recurring tour if setup wizard is still showing
     if (isRecurringPage && !isRecurringConfigured) return;
 
+    // For stash page: start tour when intro just closed
+    if (isStashPage && introJustClosed && !hasSeenStashTour && hasStashTourSteps) {
+      const firstStepSelector = stashTourSteps[0]?.selector;
+      if (!firstStepSelector) return;
+
+      // Poll for the target element to exist before starting tour
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait
+      const pollInterval = 100;
+
+      const checkElement = () => {
+        attempts++;
+        const element = document.querySelector(firstStepSelector);
+        if (element) {
+          setShowTour(true);
+          setIntroJustClosed(false);
+        } else if (attempts < maxAttempts) {
+          timerId = setTimeout(checkElement, pollInterval);
+        }
+      };
+
+      let timerId = setTimeout(checkElement, pollInterval);
+      return () => clearTimeout(timerId);
+    }
+
+    // For other pages (or stash page if intro already seen): normal auto-start
     if (hasTour && hasCurrentTourSteps && !hasSeenCurrentTour) {
       // Get the first step's selector to wait for it to exist
       const firstStepSelector = currentTourSteps[0]?.selector;
@@ -147,6 +192,10 @@ export function useAppTour({
     isStashPage,
     isRecurringConfigured,
     currentTourSteps,
+    introJustClosed,
+    hasSeenStashTour,
+    hasStashTourSteps,
+    stashTourSteps,
   ]);
 
   // Handle tour close - mark as seen
@@ -176,5 +225,8 @@ export function useAppTour({
     hasTour,
     handleTourClose,
     pathPrefix,
+    // Stash intro modal state (Stashes vs Monarch Goals shown on first visit)
+    shouldShowStashIntro,
+    handleStashIntroClose,
   };
 }
