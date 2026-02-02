@@ -52,7 +52,7 @@ jobs:
               - 'services/**'
               - 'state/**'
               - 'tests/**'
-              - 'requirements*.txt'
+              - 'requirements/**'
               - 'pyproject.toml'
               - 'Dockerfile'
             desktop:
@@ -123,9 +123,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --require-hashes -r requirements-build.txt
-          pip install --require-hashes -r requirements-dev.txt
-          pip install --no-deps -r requirements-vcs.txt
+          pip install --require-hashes -r requirements/build.txt
+          pip install --require-hashes -r requirements/dev.txt
+          pip install --no-deps -r requirements/vcs.txt
 
       - name: Lint with Ruff
         run: ruff check .
@@ -265,9 +265,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --require-hashes -r requirements-build.txt
-          pip install --require-hashes -r requirements.txt
-          pip install --no-deps -r requirements-vcs.txt
+          pip install --require-hashes -r requirements/build.txt
+          pip install --require-hashes -r requirements/base.txt
+          pip install --no-deps -r requirements/vcs.txt
 
       - name: Install frontend dependencies
         working-directory: frontend

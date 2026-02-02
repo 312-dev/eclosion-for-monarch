@@ -101,9 +101,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --require-hashes -r requirements-build.txt
-          pip install --require-hashes -r requirements.txt
-          pip install --no-deps -r requirements-vcs.txt
+          pip install --require-hashes -r requirements/build.txt
+          pip install --require-hashes -r requirements/base.txt
+          pip install --no-deps -r requirements/vcs.txt
 
       - name: Write version.txt for backend
         run: echo "${{ inputs.version }}" > version.txt
@@ -137,9 +137,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --require-hashes -r requirements-build.txt
-          pip install --require-hashes -r requirements.txt
-          pip install --no-deps -r requirements-vcs.txt
+          pip install --require-hashes -r requirements/build.txt
+          pip install --require-hashes -r requirements/base.txt
+          pip install --no-deps -r requirements/vcs.txt
 
       - name: Write version.txt for backend
         run: echo "${{ inputs.version }}" > version.txt
@@ -181,9 +181,9 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install --require-hashes -r requirements-build.txt
-          pip install --require-hashes -r requirements.txt
-          pip install --no-deps -r requirements-vcs.txt
+          pip install --require-hashes -r requirements/build.txt
+          pip install --require-hashes -r requirements/base.txt
+          pip install --no-deps -r requirements/vcs.txt
 
       - name: Write version.txt for backend
         run: echo "${{ inputs.version }}" > version.txt

@@ -25,7 +25,7 @@ on:
       - "core/**"
       - "services/**"
       - "state/**"
-      - "requirements*.txt"
+      - "requirements/**"
       - ".github/workflows/04-build-docker.yml"
 
   workflow_dispatch:

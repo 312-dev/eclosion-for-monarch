@@ -32,7 +32,7 @@ FROM cgr.dev/chainguard/python:latest-dev@sha256:acc653950174f718ca4f3fd65161cd4
 WORKDIR /app
 
 # Copy requirements (PyPI packages with hashes + VCS packages)
-COPY requirements.txt requirements-vcs.txt ./
+COPY requirements/base.txt requirements/vcs.txt ./requirements/
 
 # Install Python dependencies to a virtual environment
 # This allows us to copy just the installed packages to the runtime image
@@ -40,8 +40,8 @@ COPY requirements.txt requirements-vcs.txt ./
 # VCS packages (monarchmoney) are installed separately without hash verification
 RUN python -m venv /app/venv && \
     /app/venv/bin/pip install --no-cache-dir --upgrade pip && \
-    /app/venv/bin/pip install --no-cache-dir --require-hashes -r requirements.txt && \
-    /app/venv/bin/pip install --no-cache-dir --no-deps -r requirements-vcs.txt
+    /app/venv/bin/pip install --no-cache-dir --require-hashes -r requirements/base.txt && \
+    /app/venv/bin/pip install --no-cache-dir --no-deps -r requirements/vcs.txt
 
 # Stage 3: Runtime with minimal Chainguard image
 # This image has 0-5 CVEs typically vs 800+ in python:3.12-slim
