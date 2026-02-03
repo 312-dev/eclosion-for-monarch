@@ -106,7 +106,7 @@ jobs:
   # =========================================================================
   build-backend-mac:
     if: inputs.platform == 'macos-arm64' || inputs.platform == 'macos-x64'
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'macos-sonoma-arm64' || 'macos-sonoma-arm64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-13') }}
+    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'macos-sonoma-arm64' || 'macos-sonoma-arm64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-15-intel') }}
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -251,7 +251,7 @@ jobs:
   package-mac:
     if: inputs.platform == 'macos-arm64' || inputs.platform == 'macos-x64'
     needs: [build-frontend, build-backend-mac]
-    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'macos-sonoma-arm64' || 'macos-sonoma-arm64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-13') }}
+    runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && (inputs.platform == 'macos-arm64' && 'macos-sonoma-arm64' || 'macos-sonoma-arm64') || (inputs.platform == 'macos-arm64' && 'macos-15' || 'macos-15-intel') }}
     timeout-minutes: 30
     steps:
       - name: Checkout

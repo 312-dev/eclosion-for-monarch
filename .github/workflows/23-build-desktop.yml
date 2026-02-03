@@ -87,7 +87,7 @@ jobs:
             github_runner: macos-15
             namespace_runner: macos-sonoma-arm64
           - arch: x64
-            github_runner: macos-13
+            github_runner: macos-15-intel
             namespace_runner: macos-sonoma-arm64
     runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && matrix.namespace_runner || matrix.github_runner }}
     timeout-minutes: 20
@@ -220,7 +220,7 @@ jobs:
             namespace_runner: macos-sonoma-arm64
           - arch: x64
             backend_artifact: backend-mac-x64
-            github_runner: macos-13
+            github_runner: macos-15-intel
             namespace_runner: macos-sonoma-arm64
     runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && matrix.namespace_runner || matrix.github_runner }}
     # Notarization alone can take 15-30 minutes waiting for Apple's servers
