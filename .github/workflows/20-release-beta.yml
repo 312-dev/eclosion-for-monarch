@@ -336,7 +336,9 @@ jobs:
           echo "- [beta.eclosion.app](https://beta.eclosion.app)" >> $GITHUB_STEP_SUMMARY
           echo "- Docker: \`ghcr.io/${{ github.repository }}:${{ needs.calculate-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
 
-  # Cleanup draft release if pipeline fails
+  # Graduated cleanup: preserve draft release when desktop artifacts are already
+  # published (the expensive ~18min build). Only do full cleanup for early failures.
+  # When preserved, use "Re-run failed jobs" to retry only the failed stages.
   cleanup-on-failure:
     name: Cleanup Failed Release
     needs: [calculate-version, release-pipeline]
@@ -346,17 +348,38 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Delete draft release
+      - name: Determine cleanup strategy
+        id: strategy
+        run: |
+          DESKTOP="${{ needs.release-pipeline.outputs.publish_desktop_result }}"
+          echo "publish-desktop result: '$DESKTOP'"
+
+          if [[ "$DESKTOP" == "success" ]]; then
+            echo "strategy=preserve" >> $GITHUB_OUTPUT
+          else
+            echo "strategy=full-cleanup" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "Full cleanup: delete draft release and tag"
+        if: steps.strategy.outputs.strategy == 'full-cleanup'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
           TAG="${{ needs.calculate-version.outputs.tag }}"
-          echo "Pipeline failed - cleaning up draft release $TAG"
-
-          # Delete the release (this also deletes the tag)
+          echo "Pipeline failed before desktop publish - full cleanup of $TAG"
           gh release delete "$TAG" --yes --cleanup-tag || true
 
-          echo "### Release Failed" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Failed (Full Cleanup)" >> $GITHUB_STEP_SUMMARY
           echo "Draft release $TAG has been deleted." >> $GITHUB_STEP_SUMMARY
           echo "Check the workflow logs for failure details." >> $GITHUB_STEP_SUMMARY
+
+      - name: "Preserve release: desktop artifacts already published"
+        if: steps.strategy.outputs.strategy == 'preserve'
+        run: |
+          TAG="${{ needs.calculate-version.outputs.tag }}"
+          echo "### Release Partially Failed (Draft Preserved)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Draft release **$TAG** has been preserved with desktop artifacts." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next steps:** Use **Re-run failed jobs** to retry only the failed stages." >> $GITHUB_STEP_SUMMARY

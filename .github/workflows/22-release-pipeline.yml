@@ -3,11 +3,11 @@
 # Unified release orchestrator that handles the complete release process
 # for both beta and production releases. Ensures strict stage gating:
 #
-#   Build All → Validate → Publish → Finalize
+#   Build All → Validate → Publish → Report Status
 #
 # Security scanning happens on merge to main (CI workflow), not at release time.
-# Nothing is published unless ALL builds succeed. Nothing is finalized
-# unless ALL publishing steps succeed.
+# Nothing is published unless ALL builds succeed. Stage results are always
+# propagated to callers via outputs so they can make graduated cleanup decisions.
 #
 # Usage:
 #   - Called by 20-release-beta.yml for beta releases
@@ -40,6 +40,19 @@ on:
         required: false
         type: boolean
         default: false
+    outputs:
+      publish_desktop_result:
+        description: 'Result of publish-desktop job'
+        value: ${{ jobs.report-status.outputs.publish_desktop_result }}
+      deploy_cloudflare_result:
+        description: 'Result of deploy-cloudflare job'
+        value: ${{ jobs.report-status.outputs.deploy_cloudflare_result }}
+      publish_docker_result:
+        description: 'Result of publish-docker job'
+        value: ${{ jobs.report-status.outputs.publish_docker_result }}
+      create_docs_version_result:
+        description: 'Result of create-docs-version job'
+        value: ${{ jobs.report-status.outputs.create_docs_version_result }}
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: true
@@ -681,28 +694,69 @@ jobs:
           fi
 
   # ===========================================================================
-  # STAGE 4: FINALIZE
-  # Only runs after ALL publishing steps succeed
+  # STAGE 4: REPORT STATUS
+  # Always runs to propagate per-stage results to callers
   # ===========================================================================
-  finalize:
-    name: "Stage 4: Finalize Release"
+  report-status:
+    name: "Stage 4: Report Status"
     needs: [publish-docker, publish-desktop, deploy-cloudflare, create-docs-version]
-    if: always() && (needs.publish-docker.result == 'success' || needs.publish-docker.result == 'skipped') && needs.publish-desktop.result == 'success' && needs.deploy-cloudflare.result == 'success' && (needs.create-docs-version.result == 'success' || needs.create-docs-version.result == 'skipped')
+    if: always()
     runs-on: ${{ vars.RUNNER_PROVIDER == 'namespace' && 'ubuntu-2204-x64-4x16' || 'ubuntu-latest' }}
     timeout-minutes: 5
+    outputs:
+      publish_desktop_result: ${{ needs.publish-desktop.result }}
+      deploy_cloudflare_result: ${{ needs.deploy-cloudflare.result }}
+      publish_docker_result: ${{ needs.publish-docker.result }}
+      create_docs_version_result: ${{ needs.create-docs-version.result }}
     steps:
       - name: Release Summary
         run: |
-          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          DESKTOP="${{ needs.publish-desktop.result }}"
+          CLOUDFLARE="${{ needs.deploy-cloudflare.result }}"
+          DOCKER="${{ needs.publish-docker.result }}"
+          DOCS="${{ needs.create-docs-version.result }}"
+
+          # Determine if all required stages passed
+          ALL_PASSED=true
+          if [[ "$DESKTOP" != "success" ]]; then ALL_PASSED=false; fi
+          if [[ "$CLOUDFLARE" != "success" ]]; then ALL_PASSED=false; fi
+          if [[ "$DOCKER" != "success" && "$DOCKER" != "skipped" ]]; then ALL_PASSED=false; fi
+          if [[ "$DOCS" != "success" && "$DOCS" != "skipped" ]]; then ALL_PASSED=false; fi
+
+          # Build status icon helper
+          icon() {
+            case "$1" in
+              success) echo "✅" ;;
+              skipped) echo "⏭️" ;;
+              *) echo "❌" ;;
+            esac
+          }
+
+          if [[ "$ALL_PASSED" == "true" ]]; then
+            echo "## Release Complete!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Release Partially Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Tip:** Use **Re-run failed jobs** to retry only the failed stages." >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "**Type:** ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
           echo "**Tag:** ${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Published Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Docker image" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Desktop apps (macOS, Windows, Linux)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Web deployment" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ inputs.release_type }}" == "production" ]]; then
-            echo "- ✅ Documentation version" >> $GITHUB_STEP_SUMMARY
+          echo "### Stage 3 Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Desktop | $(icon "$DESKTOP") $DESKTOP |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cloudflare | $(icon "$CLOUDFLARE") $CLOUDFLARE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | $(icon "$DOCKER") $DOCKER |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docs Version | $(icon "$DOCS") $DOCS |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail this job if any required stage failed, so the caller sees failure
+          if [[ "$ALL_PASSED" != "true" ]]; then
+            echo ""
+            echo "::error::One or more publish stages failed. See summary above."
+            exit 1
           fi
