@@ -3,6 +3,7 @@
  *
  * Provides shared access to the current tunnel status for remote access.
  * Polls the tunnel status periodically to keep the UI up to date.
+ * Supports named tunnels with claimed *.eclosion.me subdomains.
  */
 
 import { useState, useEffect, useCallback } from 'react';

@@ -6,6 +6,7 @@
 # Workers:
 #   - eclosion-updates (workers/) — Reddit updates feed for eclosion.app
 #   - eclosion-tunnel-provisioner (workers/tunnel-provisioner/) — Named tunnel provisioning for eclosion.me
+#   - eclosion-tunnel-gate (workers/tunnel-gate/) — Edge-enforced OTP gate for *.eclosion.me
 #
 # Triggers:
 #   - Push to main when worker files change
@@ -31,6 +32,7 @@ jobs:
     outputs:
       updates-proxy: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.updates-proxy }}
       tunnel-provisioner: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.tunnel-provisioner }}
+      tunnel-gate: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.tunnel-gate }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -46,6 +48,8 @@ jobs:
               - 'workers/updates-proxy.ts'
             tunnel-provisioner:
               - 'workers/tunnel-provisioner/**'
+            tunnel-gate:
+              - 'workers/tunnel-gate/**'
 
   deploy-updates-proxy:
     needs: changes
@@ -109,3 +113,37 @@ jobs:
           echo "### Tunnel Provisioner Deployed" >> $GITHUB_STEP_SUMMARY
           echo "- **Worker:** eclosion-tunnel-provisioner" >> $GITHUB_STEP_SUMMARY
           echo "- **Domain:** tunnel-api.eclosion.me" >> $GITHUB_STEP_SUMMARY
+
+  deploy-tunnel-gate:
+    needs: changes
+    if: needs.changes.outputs.tunnel-gate == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: workers/tunnel-gate
+        run: npm ci
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/tunnel-gate
+          command: deploy
+
+      - name: Summary
+        run: |
+          echo "### Tunnel Gate Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker:** eclosion-tunnel-gate" >> $GITHUB_STEP_SUMMARY
+          echo "- **Route:** *.eclosion.me/*" >> $GITHUB_STEP_SUMMARY

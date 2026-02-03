@@ -1,0 +1,15 @@
+name = "eclosion-tunnel-provisioner"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+CLOUDFLARE_ZONE_ID = "862ca1c849605ffbc0de65e0591b5073"  # eclosion.me zone
+
+# Secrets (set via `wrangler secret put`):
+# CLOUDFLARE_ACCOUNT_ID - Cloudflare account ID
+# CLOUDFLARE_API_TOKEN  - Scoped to Tunnel + DNS management for eclosion.me
+# RESEND_API_KEY        - Resend API key for OTP verification emails (sender: security@eclosion.me)
+
+[[kv_namespaces]]
+binding = "TUNNELS"
+id = "a337b013a6e04720822c80ffa0057b42"

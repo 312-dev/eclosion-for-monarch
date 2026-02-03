@@ -185,11 +185,24 @@ export function BiometricResetBanner({ displayName }: Readonly<BiometricResetBan
   );
 }
 
-export function SecurityNote() {
+interface SecurityNoteProps {
+  remoteMode?: boolean;
+}
+
+export function SecurityNote({ remoteMode = false }: Readonly<SecurityNoteProps>) {
   const isDesktop = isDesktopMode();
-  const description = isDesktop
-    ? 'Using AES-256 encryption. Your credentials are stored locally and cannot be decrypted without your passphrase.'
-    : 'Using AES-256 encryption. The server cannot decrypt your credentials without your passphrase.';
+
+  let description: string;
+  if (remoteMode) {
+    description =
+      'Your session is protected by email verification and passphrase encryption. Data is transmitted securely through your personal tunnel.';
+  } else if (isDesktop) {
+    description =
+      'Using AES-256 encryption. Your credentials are stored locally and cannot be decrypted without your passphrase.';
+  } else {
+    description =
+      'Using AES-256 encryption. The server cannot decrypt your credentials without your passphrase.';
+  }
 
   return (
     <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-elevated)' }}>
@@ -197,7 +210,7 @@ export function SecurityNote() {
         <ShieldCheckIcon size={16} color="var(--monarch-orange)" className="mt-0.5 shrink-0" />
         <div className="text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
           <p className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
-            Your credentials are encrypted
+            {remoteMode ? 'Secure connection' : 'Your credentials are encrypted'}
           </p>
           <p>{description}</p>
         </div>

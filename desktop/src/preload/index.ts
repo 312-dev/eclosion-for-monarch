@@ -1291,10 +1291,22 @@ const electronAPI = {
 
   /**
    * Remote access tunnel API for exposing the app to the internet.
-   * Allows access from phones/browsers outside the local network.
+   * Uses named Cloudflare Tunnels with claimed *.eclosion.me subdomains.
    * Remote users authenticate with the desktop app passphrase.
    */
   tunnel: {
+    /**
+     * Check if a subdomain is available for claiming.
+     */
+    check: (subdomain: string): Promise<{ available: boolean; error?: string }> =>
+      ipcRenderer.invoke('tunnel:check', subdomain),
+
+    /**
+     * Claim a subdomain. Creates tunnel + DNS, stores credentials locally.
+     */
+    claim: (subdomain: string): Promise<{ success: boolean; subdomain?: string; error?: string }> =>
+      ipcRenderer.invoke('tunnel:claim', subdomain),
+
     /**
      * Start a tunnel to expose the backend for remote access.
      */
@@ -1307,13 +1319,31 @@ const electronAPI = {
     stop: (): Promise<{ success: boolean }> => ipcRenderer.invoke('tunnel:stop'),
 
     /**
-     * Get the current tunnel status.
+     * Get the current tunnel status including subdomain info.
      */
     getStatus: (): Promise<{
       active: boolean;
       url: string | null;
       enabled: boolean;
+      subdomain: string | null;
+      configured: boolean;
     }> => ipcRenderer.invoke('tunnel:get-status'),
+
+    /**
+     * Get the tunnel configuration.
+     */
+    getConfig: (): Promise<{
+      subdomain: string | null;
+      tunnelId: string | null;
+      enabled: boolean;
+      createdAt: string | null;
+    }> => ipcRenderer.invoke('tunnel:get-config'),
+
+    /**
+     * Release the claimed subdomain (deletes tunnel + DNS + local credentials).
+     */
+    unclaim: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('tunnel:unclaim'),
   },
 };
 

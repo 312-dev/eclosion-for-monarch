@@ -105,9 +105,16 @@ export interface StoreSchema {
   // API credentials (encrypted with safeStorage)
   'api.openverseCredentials': string;
 
-  // Remote access (tunnel) settings
-  'security.remoteAccessEnabled': boolean;
+  // Security - notes
   'security.notesEncryptionKey': string;
+
+  // Named tunnel settings
+  'tunnel.subdomain': string;
+  'tunnel.tunnelId': string;
+  'tunnel.enabled': boolean;
+  'tunnel.createdAt': string;
+  'tunnel.encryptedCredentials': string;
+  'tunnel.encryptedManagementKey': string;
 }
 
 /**

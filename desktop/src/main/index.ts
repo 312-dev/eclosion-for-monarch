@@ -110,7 +110,7 @@ import {
 } from './auto-backup';
 import { migrateSettings } from './settings-migration';
 import { checkAndRepairBackend } from './integrity';
-import { startTunnel, cleanupTunnel, isRemoteAccessEnabled } from './tunnel';
+import { startTunnel, cleanupTunnel, isTunnelEnabled, isTunnelConfigured } from './tunnel';
 
 /**
  * Check if the app is running from a macOS DMG volume mount.
@@ -510,15 +510,16 @@ async function checkAndRunStartupSync(sessionRestored: boolean): Promise<void> {
 
 /**
  * Auto-start remote access tunnel if it was enabled when the app last quit.
+ * Requires a subdomain to have been claimed (named tunnel configured).
  * Remote users authenticate with the desktop app passphrase (validated via PBKDF2).
  */
 async function tryAutoStartTunnel(): Promise<void> {
-  // Check if remote access should auto-start
-  if (!isRemoteAccessEnabled()) {
+  // Check if tunnel should auto-start and is properly configured
+  if (!isTunnelEnabled() || !isTunnelConfigured()) {
     return;
   }
 
-  debugLog('Remote access was enabled - auto-starting tunnel...');
+  debugLog('Remote access was enabled - auto-starting named tunnel...');
 
   try {
     const port = backendManager.getPort();

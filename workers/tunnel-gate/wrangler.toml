@@ -1,0 +1,14 @@
+name = "eclosion-tunnel-gate"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "*.eclosion.me/*", zone_name = "eclosion.me" }
+]
+
+[[kv_namespaces]]
+binding = "TUNNELS"
+id = "a337b013a6e04720822c80ffa0057b42"
+
+# JWT_SECRET set via: npx wrangler secret put JWT_SECRET
+# Generate with: openssl rand -hex 32

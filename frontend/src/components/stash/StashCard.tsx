@@ -1032,12 +1032,8 @@ export const StashCard = memo(function StashCard({
               savedLabel="committed"
               // Flex categories behave like savings_buffer (spending reduces balance)
               goalType={item.is_flexible_group ? 'savings_buffer' : item.goal_type}
-              // Show expected progress tick for time-based goals (not savings_buffer which has no end date)
-              expectedProgressPercent={
-                item.goal_type === 'savings_buffer'
-                  ? null
-                  : calculateExpectedProgress(item.target_date)
-              }
+              // Show expected progress tick for goals with a target date
+              expectedProgressPercent={calculateExpectedProgress(item.target_date)}
               {...(item.available_to_spend !== undefined && {
                 availableToSpend: item.available_to_spend,
               })}

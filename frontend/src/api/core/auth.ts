@@ -174,6 +174,8 @@ export interface RemoteUnlockResult {
 /**
  * Unlock remote access with the desktop passphrase.
  * Used by remote users (accessing via tunnel) to authenticate.
+ * OTP verification is handled at the Cloudflare edge via HttpOnly cookies —
+ * no OTP headers needed from the frontend.
  */
 export async function remoteUnlock(passphrase: string): Promise<RemoteUnlockResult> {
   return fetchApi<RemoteUnlockResult>('/auth/remote-unlock', {

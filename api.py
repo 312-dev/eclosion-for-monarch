@@ -178,7 +178,7 @@ def security_checks():
         return error_response
 
     # Tunnel mode: require passphrase auth for remote access
-    # This protects the app when accessed via Tunnelmole or similar services
+    # This protects the app when accessed via Cloudflare tunnel
     if error_response := enforce_tunnel_auth(services):
         return error_response
 

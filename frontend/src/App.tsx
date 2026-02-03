@@ -366,6 +366,8 @@ const appShellChildren: RouteObject[] = [
 /**
  * Minimal layout for remote unlock page.
  * Provides AuthProvider (required by UnlockPage) but skips auth state checks.
+ * OTP verification is handled at the Cloudflare edge by the tunnel-gate Worker —
+ * requests only reach this page after OTP is verified.
  */
 function RemoteUnlockLayout() {
   return (

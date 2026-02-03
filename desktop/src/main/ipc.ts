@@ -116,7 +116,12 @@ import {
   stopTunnel,
   getTunnelUrl,
   isTunnelActive,
-  isRemoteAccessEnabled,
+  isTunnelEnabled,
+  isTunnelConfigured,
+  getTunnelConfig,
+  checkSubdomainAvailability,
+  claimSubdomain,
+  unclaimSubdomain,
 } from './tunnel';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -1256,8 +1261,38 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   // =========================================================================
 
   /**
+   * Check if a subdomain is available for claiming.
+   */
+  ipcMain.handle('tunnel:check', async (_event, subdomain: string) => {
+    return checkSubdomainAvailability(subdomain);
+  });
+
+  /**
+   * Claim a subdomain. Creates tunnel + DNS via the provisioner Worker.
+   * Credentials are stored internally via safeStorage (never exposed to renderer).
+   * Auto-starts the tunnel on successful claim.
+   */
+  ipcMain.handle('tunnel:claim', async (_event, subdomain: string) => {
+    const result = await claimSubdomain(subdomain);
+    if (result.success) {
+      // Auto-start tunnel after claiming
+      const port = backendManager.getPort();
+      if (port) {
+        try {
+          const url = await startTunnel(port);
+          return { ...result, url };
+        } catch (error) {
+          // Claim succeeded but tunnel start failed — still return success
+          debugLog(`[Tunnel] Auto-start after claim failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+    }
+    return result;
+  });
+
+  /**
    * Start a tunnel to expose the backend for remote access.
-   * Remote users will authenticate with the desktop app passphrase.
+   * Requires a subdomain to have been claimed first.
    */
   ipcMain.handle('tunnel:start', async () => {
     const port = backendManager.getPort();
@@ -1285,14 +1320,32 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   });
 
   /**
-   * Get the current tunnel status.
+   * Get the current tunnel status including subdomain info.
    */
   ipcMain.handle('tunnel:get-status', () => {
+    const config = getTunnelConfig();
     return {
       active: isTunnelActive(),
       url: getTunnelUrl(),
-      enabled: isRemoteAccessEnabled(),
+      enabled: isTunnelEnabled(),
+      subdomain: config.subdomain,
+      configured: isTunnelConfigured(),
     };
+  });
+
+  /**
+   * Get the tunnel configuration (subdomain, tunnelId, enabled, createdAt).
+   */
+  ipcMain.handle('tunnel:get-config', () => {
+    return getTunnelConfig();
+  });
+
+  /**
+   * Release a claimed subdomain.
+   * Stops the tunnel, deletes tunnel + DNS + KV via provisioner, and clears local data.
+   */
+  ipcMain.handle('tunnel:unclaim', async () => {
+    return unclaimSubdomain();
   });
 
 }

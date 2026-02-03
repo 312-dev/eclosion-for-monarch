@@ -884,7 +884,7 @@ export function StartingBalanceInput({
         disabled={disabled}
         className={`pl-7 pr-3 py-2 rounded-md tabular-nums ${disabled ? 'cursor-not-allowed' : ''}`}
         style={{
-          width: `${inputWidth + 3}ch`,
+          width: `${inputWidth + 4}ch`,
           minWidth: '5ch',
           backgroundColor: disabled ? 'var(--monarch-bg-muted)' : 'var(--monarch-bg-page)',
           border: `1px solid ${isOverAvailable ? 'var(--monarch-error)' : 'var(--monarch-border)'}`,

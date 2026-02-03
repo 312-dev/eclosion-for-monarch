@@ -6,6 +6,8 @@
  * - Red when enabled but not active (failing)
  * - Muted when disabled
  * - Clicks navigate to settings remote access section
+ *
+ * Displays the subdomain URL instead of a random URL for named tunnels.
  */
 
 import { useState, useEffect } from 'react';
@@ -50,11 +52,15 @@ export function RemoteAccessIndicator() {
   const isActive = status?.active ?? false;
   const isEnabled = status?.enabled ?? false;
   const isFailing = isEnabled && !isActive;
+  const subdomain = status?.subdomain;
 
   // Determine color based on state
   let color: string;
   let tooltipText: string;
-  if (isActive) {
+  if (isActive && subdomain) {
+    color = 'var(--monarch-green)';
+    tooltipText = `Remote access: ${subdomain}.eclosion.me`;
+  } else if (isActive) {
     color = 'var(--monarch-green)';
     tooltipText = 'Remote access: On';
   } else if (isFailing) {

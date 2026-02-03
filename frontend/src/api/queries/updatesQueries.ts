@@ -7,6 +7,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys, getQueryKey } from './keys';
 import { useDemo } from '../../context/DemoContext';
+import { getSiteBaseUrl } from '../../utils/environment';
 
 export interface UpdateEntry {
   id: string;
@@ -24,7 +25,7 @@ interface UpdatesResponse {
 }
 
 async function fetchUpdates(): Promise<UpdateEntry[]> {
-  const response = await fetch('https://eclosion.app/api/updates');
+  const response = await fetch(`${getSiteBaseUrl()}/api/updates`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch updates: ${response.status}`);

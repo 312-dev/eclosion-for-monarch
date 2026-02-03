@@ -40,6 +40,7 @@ export function AppHeader({
   onStartTour,
 }: Readonly<AppHeaderProps>) {
   const isMobile = useMediaQuery(breakpoints.sm);
+  const isElectron = isMacOSElectron || isWindowsElectron || !!globalThis.electron;
   // Desktop title bar: compact height with vertically centered content
   const desktopHeaderHeight = 48;
   // Account for native window controls
@@ -58,8 +59,8 @@ export function AppHeader({
           paddingRight: isWindowsElectron ? `${windowsControlsWidth}px` : undefined,
         }}
       >
-        {/* Remote access indicator - left side on mobile only */}
-        {isMobile && (
+        {/* Remote access indicator - left side on mobile web only (not desktop Electron) */}
+        {isMobile && !isElectron && (
           <div
             style={{
               position: 'absolute',
@@ -103,7 +104,7 @@ export function AppHeader({
             right: isWindowsElectron ? `${windowsControlsWidth}px` : '1rem',
           }}
         >
-          {!isMobile && <RemoteAccessIndicator />}
+          {(!isMobile || isElectron) && <RemoteAccessIndicator />}
           <SyncButton onSync={onSync} isSyncing={isSyncing} isFetching={isFetching} compact />
           <HelpDropdown hasTour={hasTour} onStartTour={onStartTour} />
         </div>

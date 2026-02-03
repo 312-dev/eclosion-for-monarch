@@ -467,6 +467,10 @@ def auth_remote_unlock():
     passphrase = data.get("passphrase", "")
     client_ip = get_client_ip()
 
+    # OTP verification is enforced at the Cloudflare edge by the gate Worker.
+    # If this request reached the backend via a tunnel, the gate Worker has
+    # already validated the OTP session cookie. No server-side OTP check needed.
+
     # Only enforce IP lockout for tunnel requests (remote access)
     # Local desktop app users share the same IP and shouldn't be locked out
     if is_tunnel_request() and services.security_service.is_ip_locked_out(client_ip):

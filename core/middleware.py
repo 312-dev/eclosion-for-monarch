@@ -94,15 +94,15 @@ def is_api_request() -> bool:
 
 
 def is_tunnel_request() -> bool:
-    """Check if the request is coming through a tunnel (remote access).
+    """Check if the request is coming through a Cloudflare tunnel (remote access).
 
-    Tunnel providers like Tunnelmole add X-Forwarded-For header to
-    indicate the request is being proxied. Local requests from the
-    Electron app don't have this header.
+    Cloudflare tunnels add proxy headers (X-Forwarded-For, CF-Connecting-IP)
+    to indicate the request is being proxied. Local requests from the
+    Electron app don't have these headers.
 
     Returns True if the request appears to be from a tunnel, False otherwise.
     """
-    # Tunnelmole and similar tunnel providers add X-Forwarded-For
+    # Cloudflare and other tunnel providers add X-Forwarded-For
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:
         return True
@@ -121,7 +121,7 @@ def is_tunnel_request() -> bool:
             return True
 
         # Check Host header - tunnel requests have external hostnames
-        # Tunnelmole proxies locally but preserves the external Host header
+        # Cloudflare tunnel proxies locally but preserves the external Host header
         host = request.host.lower() if request.host else ""
         # Strip port if present
         host_without_port = host.split(":")[0]
@@ -470,11 +470,12 @@ def add_security_headers(response: Response) -> Response:
     dev_vite_url = os.environ.get("DEV_VITE_URL")
     if dev_vite_url:
         # Dev mode: allow Vite HMR WebSocket and module loading
-        connect_src = f"'self' ws://localhost:* wss://localhost:* {external_connect}"
+        connect_src = f"'self' ws://localhost:* wss://localhost:* https://eclosion.app {external_connect}"
         script_src = "'self' 'unsafe-inline' 'unsafe-eval'"  # Vite needs eval for HMR
     else:
         # Production: strict CSP with required external APIs
-        connect_src = f"'self' {external_connect}"
+        # https://eclosion.app needed for update checks when accessed via tunnel
+        connect_src = f"'self' https://eclosion.app {external_connect}"
         script_src = "'self' 'unsafe-inline'"
 
     csp_directives = [

@@ -164,7 +164,7 @@ export function PassphrasePrompt({
       return 'Your Monarch credentials will be encrypted with this passphrase. Only you can decrypt them.';
     }
     if (remoteMode) {
-      return 'Enter your app passphrase to access Eclosion remotely.';
+      return 'Enter your passphrase to continue';
     }
     if (isDesktopBiometricOnly) return `Use ${biometric.displayName} to unlock your credentials.`;
     return 'Enter your passphrase to unlock your encrypted credentials.';
@@ -179,14 +179,14 @@ export function PassphrasePrompt({
     >
       <ElectronTitleBar variant="compact" />
       <div
-        className="rounded-xl shadow-lg max-w-md w-full p-6"
+        className={`rounded-xl shadow-lg max-w-md w-full ${remoteMode ? 'p-8 section-enter' : 'p-6'}`}
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
         }}
       >
         <PassphraseHeader mode={mode} remoteMode={remoteMode} />
-        <p className="mb-6" style={{ color: 'var(--monarch-text-muted)' }}>
+        <p className={`mb-6 ${remoteMode ? 'text-center' : ''}`} style={{ color: 'var(--monarch-text-muted)' }}>
           {getDescriptionText()}
         </p>
 
@@ -289,7 +289,7 @@ export function PassphrasePrompt({
           </button>
         )}
 
-        <SecurityNote />
+        <SecurityNote remoteMode={remoteMode} />
       </div>
     </div>
   );

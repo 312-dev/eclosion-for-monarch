@@ -26,6 +26,9 @@ export {
   type RemoteUnlockResult,
 } from './auth';
 
+// OTP (tunnel access detection — verification handled by edge gate Worker)
+export { isTunnelAccess } from './otp';
+
 // Security
 export {
   getSecurityStatus,

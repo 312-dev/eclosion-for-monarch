@@ -27,7 +27,7 @@ def get_client_ip() -> str | None:
     """Get the real client IP, accounting for tunnel proxies.
 
     Priority:
-    1. CF-Connecting-IP (Cloudflare Quick Tunnel header - used for remote access)
+    1. CF-Connecting-IP (Cloudflare tunnel header - used for remote access)
     2. X-Real-IP (common proxy header, used by nginx and some tunnels)
     3. X-Forwarded-For (standard proxy header, take first IP)
     4. request.remote_addr (direct connection fallback)

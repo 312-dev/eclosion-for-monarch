@@ -1,40 +1,241 @@
 /**
- * Remote Access Tunnel Manager
+ * Remote Access Tunnel Manager (Named Tunnels)
  *
- * Manages a Cloudflare Quick Tunnel to expose the local Flask backend
- * to the internet for remote access from phones/browsers.
+ * Manages Cloudflare Named Tunnels with claimed *.eclosion.me subdomains.
  *
  * Security model:
  * - Tunnel is opt-in and disabled by default
- * - Remote users authenticate with the desktop app passphrase (PBKDF2 validated)
- * - Tunnel URL is random and unguessable
+ * - Subdomain claimed once via the provisioner Worker, credentials stored locally
+ * - Tunnel credentials encrypted at rest via Electron's safeStorage
+ * - Remote users authenticate via email OTP + desktop passphrase
+ * - OTP email registered/deregistered with provisioner on tunnel start/stop
  * - TLS termination at Cloudflare (HTTPS automatic)
  * - Real client IP forwarded via CF-Connecting-IP header
+ *
+ * Credential flow:
+ * 1. User claims subdomain → Worker creates tunnel + DNS + remote ingress → returns credentials once
+ * 2. Credentials encrypted via safeStorage, stored in electron-store
+ * 3. On tunnel start: update remote ingress port → decrypt → write temp credentials file → spawn cloudflared
+ * 4. On tunnel stop: kill process → delete temp credentials file
  */
 
 import { spawn, type ChildProcess } from 'child_process';
-import { createWriteStream, existsSync, mkdirSync, chmodSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, chmodSync, writeFileSync, unlinkSync } from 'fs';
 import { get as httpsGet } from 'https';
 import { join } from 'path';
-import { app } from 'electron';
+import { app, safeStorage, net } from 'electron';
 import { debugLog } from './logger';
 import { getStore } from './store';
+import { getMonarchCredentials } from './biometric';
 
-/**
- * Storage key for tracking if remote access is enabled.
- */
-const REMOTE_ACCESS_ENABLED_KEY = 'security.remoteAccessEnabled' as const;
+// =============================================================================
+// Constants
+// =============================================================================
 
-/**
- * Active tunnel state.
- */
+const PROVISIONER_BASE_URL = 'https://tunnel-api.eclosion.me';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+interface TunnelCredentials {
+  AccountTag: string;
+  TunnelID: string;
+  TunnelSecret: string;
+}
+
 interface ActiveTunnel {
   url: string;
   port: number;
   process: ChildProcess;
+  credentialsFilePath: string;
 }
 
+interface ClaimResponse {
+  subdomain: string;
+  tunnelId: string;
+  accountTag: string;
+  tunnelSecret: string;
+  managementKey: string;
+  error?: string;
+}
+
+interface CheckResponse {
+  available: boolean;
+  error?: string;
+}
+
+export interface TunnelConfig {
+  subdomain: string | null;
+  tunnelId: string | null;
+  enabled: boolean;
+  createdAt: string | null;
+}
+
+// =============================================================================
+// State
+// =============================================================================
+
 let activeTunnel: ActiveTunnel | null = null;
+
+// =============================================================================
+// Credential Storage (safeStorage)
+// =============================================================================
+
+/**
+ * Store tunnel credentials encrypted via safeStorage.
+ * Credentials are only available at claim time — this is the only copy.
+ */
+function storeTunnelCredentials(creds: TunnelCredentials): boolean {
+  if (!safeStorage.isEncryptionAvailable()) {
+    debugLog('[Tunnel] safeStorage encryption not available');
+    return false;
+  }
+
+  const encrypted = safeStorage.encryptString(JSON.stringify(creds));
+  getStore().set('tunnel.encryptedCredentials', encrypted.toString('base64'));
+  debugLog('[Tunnel] Credentials stored in safeStorage');
+  return true;
+}
+
+/**
+ * Retrieve and decrypt tunnel credentials from safeStorage.
+ */
+function getTunnelCredentials(): TunnelCredentials | null {
+  const encrypted = getStore().get('tunnel.encryptedCredentials') as string | undefined;
+  if (!encrypted) return null;
+
+  try {
+    const decrypted = safeStorage.decryptString(Buffer.from(encrypted, 'base64'));
+    return JSON.parse(decrypted) as TunnelCredentials;
+  } catch (error) {
+    debugLog(`[Tunnel] Failed to decrypt credentials: ${error}`);
+    return null;
+  }
+}
+
+/**
+ * Retrieve and decrypt the management key from safeStorage.
+ * Used for OTP registration with the provisioner Worker.
+ */
+export function getManagementKey(): string | null {
+  const encrypted = getStore().get('tunnel.encryptedManagementKey') as string | undefined;
+  if (!encrypted) return null;
+
+  try {
+    return safeStorage.decryptString(Buffer.from(encrypted, 'base64'));
+  } catch (error) {
+    debugLog(`[Tunnel] Failed to decrypt management key: ${error}`);
+    return null;
+  }
+}
+
+/**
+ * Write a temporary credentials file for cloudflared.
+ * Returns the path to the file.
+ */
+function writeCredentialsFile(creds: TunnelCredentials): string {
+  const credentialsPath = join(app.getPath('userData'), 'tunnel-credentials.json');
+  writeFileSync(credentialsPath, JSON.stringify(creds), { mode: 0o600 });
+  debugLog(`[Tunnel] Credentials file written to ${credentialsPath}`);
+  return credentialsPath;
+}
+
+/**
+ * Delete the temporary credentials file.
+ */
+function deleteCredentialsFile(filePath: string): void {
+  try {
+    if (existsSync(filePath)) {
+      unlinkSync(filePath);
+      debugLog('[Tunnel] Credentials file deleted');
+    }
+  } catch (error) {
+    debugLog(`[Tunnel] Error deleting credentials file: ${error}`);
+  }
+}
+
+// =============================================================================
+// OTP Email Registration
+// =============================================================================
+
+/**
+ * Register the user's Monarch email with the provisioner worker for OTP.
+ * Called after tunnel connects successfully.
+ */
+async function registerOtpEmail(subdomain: string): Promise<void> {
+  const managementKey = getManagementKey();
+  if (!managementKey) {
+    debugLog('[Tunnel] No management key available, skipping OTP registration');
+    return;
+  }
+
+  const credentials = getMonarchCredentials();
+  if (!credentials?.email) {
+    debugLog('[Tunnel] No Monarch email available, skipping OTP registration');
+    return;
+  }
+
+  try {
+    await provisionerFetch('/api/otp/register', {
+      method: 'POST',
+      body: {
+        subdomain,
+        managementKey,
+        email: credentials.email,
+      },
+    });
+    debugLog(`[Tunnel] OTP email registered for ${subdomain}`);
+  } catch (error) {
+    // Non-fatal — tunnel still works, just without OTP protection
+    debugLog(`[Tunnel] OTP registration failed (non-fatal): ${error}`);
+  }
+}
+
+/**
+ * Deregister OTP email from the provisioner worker.
+ * Called before tunnel stops. Fire-and-forget to avoid blocking shutdown.
+ */
+function deregisterOtpEmail(subdomain: string): void {
+  const managementKey = getManagementKey();
+  if (!managementKey) return;
+
+  // Fire-and-forget — don't await, don't block tunnel stop
+  provisionerFetch('/api/otp/deregister', {
+    method: 'POST',
+    body: { subdomain, managementKey },
+  }).catch((error) => {
+    debugLog(`[Tunnel] OTP deregistration failed (non-fatal): ${error}`);
+  });
+}
+
+// =============================================================================
+// Remote Ingress Management
+// =============================================================================
+
+/**
+ * Update the remote ingress rules with the current backend port.
+ * Called before spawning cloudflared so the remote config has the correct port.
+ */
+async function updateIngress(subdomain: string, port: number): Promise<void> {
+  const managementKey = getManagementKey();
+  if (!managementKey) {
+    throw new Error('No management key available for ingress update');
+  }
+
+  debugLog(`[Tunnel] Updating remote ingress for ${subdomain} → localhost:${port}`);
+
+  await provisionerFetch('/api/tunnel/update-ingress', {
+    method: 'POST',
+    body: { subdomain, managementKey, port },
+  });
+
+  debugLog('[Tunnel] Remote ingress updated');
+}
+
+// =============================================================================
+// cloudflared Binary Management
+// =============================================================================
 
 /**
  * Get the cloudflared binary path for the current platform.
@@ -43,15 +244,12 @@ function getCloudflaredPath(): string {
   const userDataPath = app.getPath('userData');
   const binDir = join(userDataPath, 'bin');
 
-  // Ensure bin directory exists
   if (!existsSync(binDir)) {
     mkdirSync(binDir, { recursive: true });
   }
 
-  const platform = process.platform;
-
   let binaryName = 'cloudflared';
-  if (platform === 'win32') {
+  if (process.platform === 'win32') {
     binaryName = 'cloudflared.exe';
   }
 
@@ -64,28 +262,18 @@ function getCloudflaredPath(): string {
 function getCloudflaredDownloadUrl(): string {
   const platform = process.platform;
   const arch = process.arch;
-
-  // Cloudflare's download URLs
-  // https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/
   const baseUrl = 'https://github.com/cloudflare/cloudflared/releases/latest/download';
 
   if (platform === 'darwin') {
-    // macOS - universal binary works for both Intel and Apple Silicon
     return `${baseUrl}/cloudflared-darwin-amd64.tgz`;
   } else if (platform === 'win32') {
-    if (arch === 'x64') {
-      return `${baseUrl}/cloudflared-windows-amd64.exe`;
-    } else {
-      return `${baseUrl}/cloudflared-windows-386.exe`;
-    }
+    return arch === 'x64'
+      ? `${baseUrl}/cloudflared-windows-amd64.exe`
+      : `${baseUrl}/cloudflared-windows-386.exe`;
   } else if (platform === 'linux') {
-    if (arch === 'x64') {
-      return `${baseUrl}/cloudflared-linux-amd64`;
-    } else if (arch === 'arm64') {
-      return `${baseUrl}/cloudflared-linux-arm64`;
-    } else if (arch === 'arm') {
-      return `${baseUrl}/cloudflared-linux-arm`;
-    }
+    if (arch === 'x64') return `${baseUrl}/cloudflared-linux-amd64`;
+    if (arch === 'arm64') return `${baseUrl}/cloudflared-linux-arm64`;
+    if (arch === 'arm') return `${baseUrl}/cloudflared-linux-arm`;
   }
 
   throw new Error(`Unsupported platform: ${platform}-${arch}`);
@@ -99,7 +287,6 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
     debugLog(`[Tunnel] Downloading from ${url}`);
 
     const handleResponse = (response: NodeJS.ReadableStream & { statusCode?: number; headers?: { location?: string } }): void => {
-      // Handle redirects
       const res = response as { statusCode?: number; headers?: { location?: string } };
       if (res.statusCode === 302 || res.statusCode === 301) {
         const redirectUrl = res.headers?.location;
@@ -119,7 +306,6 @@ async function downloadFile(url: string, destPath: string): Promise<void> {
       response.pipe(file);
       file.on('finish', () => {
         file.close();
-        // Make executable on Unix
         if (process.platform !== 'win32') {
           chmodSync(destPath, 0o755);
         }
@@ -149,19 +335,16 @@ async function ensureCloudflared(): Promise<string> {
   debugLog('[Tunnel] cloudflared not found, downloading...');
   const downloadUrl = getCloudflaredDownloadUrl();
 
-  // For macOS, we download a .tgz file that needs extraction
   if (process.platform === 'darwin') {
     const tgzPath = `${binaryPath}.tgz`;
     await downloadFile(downloadUrl, tgzPath);
 
-    // Extract the binary using tar
     const { execSync } = await import('child_process');
     const binDir = join(app.getPath('userData'), 'bin');
     execSync(`tar -xzf "${tgzPath}" -C "${binDir}"`, { stdio: 'ignore' });
 
-    // Remove the tgz file
-    const { unlinkSync } = await import('fs');
-    unlinkSync(tgzPath);
+    const { unlinkSync: unlinkTgz } = await import('fs');
+    unlinkTgz(tgzPath);
 
     debugLog(`[Tunnel] Extracted cloudflared to ${binaryPath}`);
   } else {
@@ -171,12 +354,161 @@ async function ensureCloudflared(): Promise<string> {
   return binaryPath;
 }
 
+// =============================================================================
+// Provisioner API
+// =============================================================================
+
 /**
- * Start a tunnel to the specified local port.
- * Returns the public HTTPS URL.
- *
- * @param port The local port to tunnel (Flask backend port)
- * @returns The public HTTPS URL
+ * Make a request to the tunnel provisioner Worker.
+ */
+async function provisionerFetch<T>(
+  path: string,
+  options: { method?: string; body?: unknown } = {},
+): Promise<T> {
+  const url = `${PROVISIONER_BASE_URL}${path}`;
+  const fetchOptions: RequestInit = {
+    method: options.method ?? 'GET',
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (options.body) {
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
+  const response = await net.fetch(url, fetchOptions);
+  const data = (await response.json()) as T & { error?: string };
+
+  if (!response.ok) {
+    throw new Error(data.error ?? `HTTP ${response.status}`);
+  }
+
+  return data;
+}
+
+/**
+ * Check if a subdomain is available.
+ */
+export async function checkSubdomainAvailability(
+  subdomain: string,
+): Promise<{ available: boolean; error?: string }> {
+  try {
+    return await provisionerFetch<CheckResponse>(
+      `/api/check/${subdomain.toLowerCase()}`,
+    );
+  } catch (error) {
+    return {
+      available: false,
+      error: error instanceof Error ? error.message : 'Failed to check availability',
+    };
+  }
+}
+
+/**
+ * Claim a subdomain and store the returned credentials.
+ */
+export async function claimSubdomain(
+  subdomain: string,
+): Promise<{ success: boolean; subdomain?: string; error?: string }> {
+  try {
+    const result = await provisionerFetch<ClaimResponse>('/api/claim', {
+      method: 'POST',
+      body: { subdomain: subdomain.toLowerCase() },
+    });
+
+    // Store credentials in safeStorage
+    const stored = storeTunnelCredentials({
+      AccountTag: result.accountTag,
+      TunnelID: result.tunnelId,
+      TunnelSecret: result.tunnelSecret,
+    });
+
+    if (!stored) {
+      return { success: false, error: 'Failed to store tunnel credentials securely' };
+    }
+
+    // Store tunnel metadata in electron-store
+    const store = getStore();
+    store.set('tunnel.subdomain', result.subdomain);
+    store.set('tunnel.tunnelId', result.tunnelId);
+    store.set('tunnel.enabled', true);
+    store.set('tunnel.createdAt', new Date().toISOString());
+
+    // Encrypt and store management key via safeStorage
+    if (result.managementKey && safeStorage.isEncryptionAvailable()) {
+      const encryptedKey = safeStorage.encryptString(result.managementKey);
+      store.set('tunnel.encryptedManagementKey', encryptedKey.toString('base64'));
+    }
+
+    debugLog(`[Tunnel] Subdomain claimed: ${result.subdomain}.eclosion.me`);
+    return { success: true, subdomain: result.subdomain };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to claim subdomain';
+    debugLog(`[Tunnel] Claim failed: ${msg}`);
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Release a claimed subdomain.
+ * Stops the tunnel if active, calls the provisioner to delete tunnel + DNS + KV,
+ * and clears all local tunnel store keys.
+ */
+export async function unclaimSubdomain(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const store = getStore();
+    const subdomain = store.get('tunnel.subdomain') as string | undefined;
+
+    if (!subdomain) {
+      return { success: false, error: 'No subdomain configured' };
+    }
+
+    // Stop tunnel if active (handles OTP deregistration and sets enabled = false)
+    if (activeTunnel) {
+      stopTunnel();
+    }
+
+    // Call provisioner to delete tunnel + DNS + KV (requires management key)
+    const managementKey = getManagementKey();
+    if (managementKey) {
+      try {
+        await provisionerFetch('/api/unclaim', {
+          method: 'POST',
+          body: { subdomain, managementKey },
+        });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Failed to unclaim subdomain';
+        debugLog(`[Tunnel] Unclaim API call failed: ${msg}`);
+        return { success: false, error: msg };
+      }
+    } else {
+      // No management key — can't clean up server-side resources.
+      // Clear local state only so the user can reclaim a new subdomain.
+      debugLog('[Tunnel] No management key — skipping server-side cleanup, clearing local state only');
+    }
+
+    // Clear all local tunnel store keys
+    store.delete('tunnel.subdomain');
+    store.delete('tunnel.tunnelId');
+    store.delete('tunnel.enabled');
+    store.delete('tunnel.createdAt');
+    store.delete('tunnel.encryptedCredentials');
+    store.delete('tunnel.encryptedManagementKey');
+
+    debugLog(`[Tunnel] Subdomain released: ${subdomain}.eclosion.me`);
+    return { success: true };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to release subdomain';
+    debugLog(`[Tunnel] Unclaim failed: ${msg}`);
+    return { success: false, error: msg };
+  }
+}
+
+// =============================================================================
+// Tunnel Lifecycle
+// =============================================================================
+
+/**
+ * Start the named tunnel to the specified local port.
+ * Returns the public HTTPS URL (subdomain.eclosion.me).
  */
 export async function startTunnel(port: number): Promise<string> {
   if (activeTunnel) {
@@ -184,22 +516,47 @@ export async function startTunnel(port: number): Promise<string> {
     return activeTunnel.url;
   }
 
-  debugLog(`[Tunnel] Starting Cloudflare tunnel to port ${port}...`);
+  const store = getStore();
+  const subdomain = store.get('tunnel.subdomain') as string | undefined;
+  const tunnelId = store.get('tunnel.tunnelId') as string | undefined;
+
+  if (!subdomain || !tunnelId) {
+    throw new Error('No subdomain claimed. Set up a subdomain first.');
+  }
+
+  // Get credentials from safeStorage
+  const credentials = getTunnelCredentials();
+  if (!credentials) {
+    throw new Error('Tunnel credentials not found or could not be decrypted');
+  }
+
+  debugLog(`[Tunnel] Starting named tunnel for ${subdomain}.eclosion.me on port ${port}...`);
+
+  const binaryPath = await ensureCloudflared();
+
+  // Update remote ingress with the current port before starting cloudflared
+  await updateIngress(subdomain, port);
+
+  // Write temporary credentials file
+  const credentialsFilePath = writeCredentialsFile(credentials);
 
   try {
-    const binaryPath = await ensureCloudflared();
-
-    // Spawn cloudflared with quick tunnel
-    const tunnelProcess = spawn(binaryPath, ['tunnel', '--url', `http://localhost:${port}`], {
+    // Spawn cloudflared with credentials file — ingress rules are managed remotely
+    const tunnelProcess = spawn(binaryPath, [
+      'tunnel', '--no-autoupdate',
+      '--credentials-file', credentialsFilePath,
+      'run', tunnelId,
+    ], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    // Wait for the URL to appear in output
-    const url = await new Promise<string>((resolve, reject) => {
+    // Wait for tunnel to connect
+    await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         tunnelProcess.kill();
+        deleteCredentialsFile(credentialsFilePath);
         reject(new Error('Tunnel connection timeout'));
-      }, 60000); // Cloudflare can take longer than Tunnelmole
+      }, 60000);
 
       let output = '';
 
@@ -208,13 +565,10 @@ export async function startTunnel(port: number): Promise<string> {
         output += text;
         debugLog(`[Tunnel] ${text.trim()}`);
 
-        // Look for the URL in the output
-        // Format: "Your quick Tunnel has been created! Visit it at (it may take some time to be reachable): https://xxx.trycloudflare.com"
-        // Or simpler: just find the trycloudflare.com URL
-        const urlMatch = text.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/i);
-        if (urlMatch) {
+        // Named tunnels log "Registered tunnel connection" when connected
+        if (text.includes('Registered tunnel connection') || text.includes('Connection registered')) {
           clearTimeout(timeout);
-          resolve(urlMatch[0]);
+          resolve();
         }
       };
 
@@ -223,25 +577,35 @@ export async function startTunnel(port: number): Promise<string> {
 
       tunnelProcess.on('error', (error) => {
         clearTimeout(timeout);
+        deleteCredentialsFile(credentialsFilePath);
         reject(error);
       });
 
       tunnelProcess.on('exit', (code) => {
         if (!activeTunnel) {
           clearTimeout(timeout);
+          deleteCredentialsFile(credentialsFilePath);
           reject(new Error(`cloudflared exited with code ${code}\n${output}`));
         }
       });
     });
 
-    activeTunnel = { url, port, process: tunnelProcess };
+    const url = `https://${subdomain}.eclosion.me`;
+    activeTunnel = { url, port, process: tunnelProcess, credentialsFilePath };
+
     debugLog(`[Tunnel] Started successfully: ${url}`);
 
-    // Mark remote access as enabled
-    getStore().set(REMOTE_ACCESS_ENABLED_KEY, true);
+    // Mark tunnel as enabled
+    store.set('tunnel.enabled', true);
+
+    // Register OTP email with provisioner (non-blocking)
+    registerOtpEmail(subdomain).catch((error) => {
+      debugLog(`[Tunnel] OTP registration error (non-fatal): ${error}`);
+    });
 
     return url;
   } catch (error) {
+    deleteCredentialsFile(credentialsFilePath);
     debugLog(`[Tunnel] Failed to start: ${error}`);
     throw error;
   }
@@ -258,7 +622,12 @@ export function stopTunnel(): void {
 
   debugLog(`[Tunnel] Stopping tunnel at ${activeTunnel.url}`);
 
-  // Kill the cloudflared process
+  // Deregister OTP email (fire-and-forget, non-blocking)
+  const subdomain = getStore().get('tunnel.subdomain') as string | undefined;
+  if (subdomain) {
+    deregisterOtpEmail(subdomain);
+  }
+
   try {
     activeTunnel.process.kill();
     debugLog('[Tunnel] Process killed');
@@ -266,10 +635,13 @@ export function stopTunnel(): void {
     debugLog(`[Tunnel] Error killing process: ${error}`);
   }
 
+  // Clean up temporary credentials file
+  deleteCredentialsFile(activeTunnel.credentialsFilePath);
+
   activeTunnel = null;
 
-  // Mark remote access as disabled
-  getStore().set(REMOTE_ACCESS_ENABLED_KEY, false);
+  // Mark tunnel as disabled
+  getStore().set('tunnel.enabled', false);
 
   debugLog('[Tunnel] Stopped');
 }
@@ -289,19 +661,38 @@ export function isTunnelActive(): boolean {
 }
 
 /**
- * Check if remote access is enabled (persisted setting).
+ * Check if the tunnel is enabled (persisted setting for auto-start).
  */
-export function isRemoteAccessEnabled(): boolean {
-  return getStore().get(REMOTE_ACCESS_ENABLED_KEY, false);
+export function isTunnelEnabled(): boolean {
+  return getStore().get('tunnel.enabled', false);
+}
+
+/**
+ * Check if a subdomain has been configured (claimed).
+ */
+export function isTunnelConfigured(): boolean {
+  return !!getStore().get('tunnel.subdomain');
+}
+
+/**
+ * Get the tunnel configuration.
+ */
+export function getTunnelConfig(): TunnelConfig {
+  const store = getStore();
+  return {
+    subdomain: (store.get('tunnel.subdomain') as string) ?? null,
+    tunnelId: (store.get('tunnel.tunnelId') as string) ?? null,
+    enabled: isTunnelEnabled(),
+    createdAt: (store.get('tunnel.createdAt') as string) ?? null,
+  };
 }
 
 // =============================================================================
-// Cleanup on app quit
+// Cleanup
 // =============================================================================
 
 /**
  * Clean up tunnel resources when the app is quitting.
- * Called from the main process during app shutdown.
  */
 export function cleanupTunnel(): void {
   if (activeTunnel) {
@@ -311,6 +702,7 @@ export function cleanupTunnel(): void {
     } catch {
       // Ignore errors during cleanup
     }
+    deleteCredentialsFile(activeTunnel.credentialsFilePath);
     activeTunnel = null;
   }
 }

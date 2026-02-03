@@ -655,22 +655,61 @@ export interface TunnelStartResult {
   error?: string;
 }
 
+/** Result of claiming a subdomain */
+export interface TunnelClaimResult {
+  success: boolean;
+  subdomain?: string;
+  error?: string;
+}
+
+/** Subdomain availability check result */
+export interface TunnelCheckResult {
+  available: boolean;
+  error?: string;
+}
+
+/** Tunnel configuration (persisted settings) */
+export interface TunnelConfig {
+  subdomain: string | null;
+  tunnelId: string | null;
+  enabled: boolean;
+  createdAt: string | null;
+}
+
 /** Tunnel status */
 export interface TunnelStatus {
   active: boolean;
   url: string | null;
   /** Whether remote access is enabled (user turned it on, should auto-start) */
   enabled: boolean;
+  /** Claimed subdomain (e.g., "acme" for acme.eclosion.me) */
+  subdomain: string | null;
+  /** Whether a subdomain has been claimed and configured */
+  configured: boolean;
+}
+
+/** Result of releasing a subdomain */
+export interface TunnelUnclaimResult {
+  success: boolean;
+  error?: string;
 }
 
 /** Remote Access Tunnel API for exposing the app to the internet */
 export interface TunnelAPI {
+  /** Check if a subdomain is available for claiming */
+  check: (subdomain: string) => Promise<TunnelCheckResult>;
+  /** Claim a subdomain (creates tunnel + DNS, stores credentials locally) */
+  claim: (subdomain: string) => Promise<TunnelClaimResult>;
   /** Start a tunnel to expose the backend for remote access */
   start: () => Promise<TunnelStartResult>;
   /** Stop the active tunnel */
   stop: () => Promise<{ success: boolean }>;
-  /** Get the current tunnel status */
+  /** Get the current tunnel status including subdomain info */
   getStatus: () => Promise<TunnelStatus>;
+  /** Get the tunnel configuration */
+  getConfig: () => Promise<TunnelConfig>;
+  /** Release the claimed subdomain (deletes tunnel + DNS + local credentials) */
+  unclaim: () => Promise<TunnelUnclaimResult>;
 }
 
 // Bookmark Sync Types (import from bookmarks.ts for implementation, inline here for .d.ts)

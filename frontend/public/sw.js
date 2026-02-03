@@ -1,5 +1,5 @@
 // Eclosion for Monarch - Service Worker for PWA functionality
-const CACHE_NAME = 'eclosion-v1';
+const CACHE_NAME = 'eclosion-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -14,7 +14,9 @@ self.addEventListener('install', (event) => {
       return cache.addAll(STATIC_ASSETS);
     })
   );
-  // Don't skip waiting - let user control when to update
+  // Activate immediately so fixes (like cross-origin skip) take effect
+  // without requiring all tabs to close
+  self.skipWaiting();
 });
 
 // Activate event - clean up old caches and notify clients
@@ -65,6 +67,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = new URL(event.request.url);
+
+  // Skip cross-origin requests — only cache same-origin resources.
+  // Cross-origin fetches (e.g., Cloudinary images) should be handled
+  // directly by the browser, not intercepted by the service worker.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
 
   // Skip API requests - always go to network
   if (url.pathname.startsWith('/auth/') ||

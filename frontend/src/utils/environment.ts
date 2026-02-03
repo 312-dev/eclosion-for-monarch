@@ -149,7 +149,7 @@ const MARKETING_HOSTNAMES = ['eclosion.app', 'pages.dev'];
  * - Not localhost
  * - Not marketing site (eclosion.app, pages.dev)
  *
- * This means the app is being accessed via Tunnelmole or similar tunnel service,
+ * This means the app is being accessed via Cloudflare tunnel (*.eclosion.me),
  * typically for remote access from a phone or other device.
  */
 export function isTunnelSite(): boolean {
