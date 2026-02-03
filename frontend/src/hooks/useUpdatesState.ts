@@ -80,6 +80,8 @@ function getSnapshot(): UpdatesState {
 export interface UseUpdatesStateReturn {
   /** All updates relevant to this user (since install or latest) */
   allUpdates: UpdateEntry[];
+  /** All fetched updates regardless of install date (for browsing) */
+  allFetchedUpdates: UpdateEntry[];
   /** Updates not yet marked as read */
   unreadUpdates: UpdateEntry[];
   /** Count of unread updates */
@@ -145,6 +147,7 @@ export function useUpdatesState(): UseUpdatesStateReturn {
 
   return {
     allUpdates: relevantUpdates,
+    allFetchedUpdates: allUpdates,
     unreadUpdates,
     unreadCount,
     currentUpdate,

@@ -2,81 +2,29 @@
  * Updates Carousel
  *
  * Dashboard component that displays unread Reddit updates in a compact card format.
- * Features intuitive navigation and clear dismiss actions.
+ * Features intuitive navigation and clear dismiss actions. When all updates have been
+ * read, falls back to a collapsible recent-articles view.
  */
 
-import { useState, useEffect, useCallback, type ReactNode } from 'react';
-import ReactMarkdown, { type Components } from 'react-markdown';
+import { useState, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useUpdatesState } from '../../hooks/useUpdatesState';
 import { Icons, RedditIcon } from '../icons';
+import { RecentUpdates } from './RecentUpdates';
+import { formatRelativeTime, markdownComponents, stripMarkdown } from './updatesUtils';
 
 type SlideDirection = 'forward' | 'backward' | null;
 
-/** Markdown components for preview - preserves paragraph breaks */
-const markdownComponents: Components = {
-  // Render paragraphs with breaks preserved
-  p: ({ children }: { children?: ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
-  // Flatten lists but keep structure
-  ul: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
-  ol: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
-  li: ({ children }: { children?: ReactNode }) => <span>• {children} </span>,
-  // Links just show text
-  a: ({ children }: { children?: ReactNode }) => (
-    <span style={{ color: 'var(--monarch-orange)' }}>{children}</span>
-  ),
-  // Keep formatting
-  strong: ({ children }: { children?: ReactNode }) => (
-    <strong className="font-semibold">{children}</strong>
-  ),
-  em: ({ children }: { children?: ReactNode }) => <em>{children}</em>,
-  // Inline code
-  code: ({ children }: { children?: ReactNode }) => (
-    <code className="px-1 rounded text-xs" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
-      {children}
-    </code>
-  ),
-  // Skip block elements in preview
-  pre: () => null,
-  blockquote: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
-  h1: ({ children }: { children?: ReactNode }) => (
-    <span className="font-semibold">{children} </span>
-  ),
-  h2: ({ children }: { children?: ReactNode }) => (
-    <span className="font-semibold">{children} </span>
-  ),
-  h3: ({ children }: { children?: ReactNode }) => (
-    <span className="font-semibold">{children} </span>
-  ),
-  // Skip images in preview (don't load external resources)
-  img: () => null,
-  // Skip horizontal rules
-  hr: () => null,
-};
-
-/** Format a date as relative time (e.g., "2 days ago") */
-function formatRelativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) {
-    return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-  }
-  if (diffHours > 0) {
-    return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-  }
-  if (diffMinutes > 0) {
-    return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
-  }
-  return 'just now';
-}
-
 export function UpdatesCarousel() {
-  const { unreadUpdates, unreadCount, isLoading, error, markAsRead, markAllAsRead } =
-    useUpdatesState();
+  const {
+    allFetchedUpdates,
+    unreadUpdates,
+    unreadCount,
+    isLoading,
+    error,
+    markAsRead,
+    markAllAsRead,
+  } = useUpdatesState();
   const [rawIndex, setRawIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState<SlideDirection>(null);
 
@@ -119,9 +67,10 @@ export function UpdatesCarousel() {
     return null; // Graceful degradation
   }
 
-  // All caught up - hide the component entirely
+  // All caught up - show browse recent option if there are past updates
   if (unreadUpdates.length === 0) {
-    return null;
+    if (allFetchedUpdates.length === 0) return null;
+    return <RecentUpdates updates={allFetchedUpdates} />;
   }
 
   const currentUpdate = unreadUpdates[currentIndex];
@@ -231,7 +180,7 @@ export function UpdatesCarousel() {
                 className="text-base font-semibold leading-snug"
                 style={{ color: 'var(--monarch-text-dark)' }}
               >
-                {currentUpdate.title}
+                {stripMarkdown(currentUpdate.title)}
               </h4>
 
               {/* Meta line: date + source */}
