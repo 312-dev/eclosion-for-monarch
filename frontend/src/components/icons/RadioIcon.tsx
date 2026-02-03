@@ -102,7 +102,7 @@ export const RadioIcon = forwardRef<RadioIconHandle, RadioIconProps>(
     }, [autoAnimate, animationInterval, runAnimation]);
 
     return (
-      <div className={className} {...props}>
+      <div className={className} style={{ display: 'flex', alignItems: 'center' }} {...props}>
         <svg
           fill="none"
           height={size}

@@ -73,7 +73,7 @@ export function RemoteAccessIndicator() {
     <Tooltip content={tooltipText}>
       <button
         onClick={handleClick}
-        className="p-1.5 rounded-lg transition-colors hover:bg-(--monarch-bg-hover)"
+        className="flex items-center justify-center p-1.5 rounded-lg transition-colors hover:bg-(--monarch-bg-hover)"
         aria-label={tooltipText}
         type="button"
       >
