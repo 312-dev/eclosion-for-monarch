@@ -470,7 +470,9 @@ def add_security_headers(response: Response) -> Response:
     dev_vite_url = os.environ.get("DEV_VITE_URL")
     if dev_vite_url:
         # Dev mode: allow Vite HMR WebSocket and module loading
-        connect_src = f"'self' ws://localhost:* wss://localhost:* https://eclosion.app {external_connect}"
+        connect_src = (
+            f"'self' ws://localhost:* wss://localhost:* https://eclosion.app {external_connect}"
+        )
         script_src = "'self' 'unsafe-inline' 'unsafe-eval'"  # Vite needs eval for HMR
     else:
         # Production: strict CSP with required external APIs

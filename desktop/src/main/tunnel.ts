@@ -366,7 +366,7 @@ async function provisionerFetch<T>(
   options: { method?: string; body?: unknown } = {},
 ): Promise<T> {
   const url = `${PROVISIONER_BASE_URL}${path}`;
-  const fetchOptions: RequestInit = {
+  const fetchOptions: { method: string; headers: Record<string, string>; body?: string } = {
     method: options.method ?? 'GET',
     headers: { 'Content-Type': 'application/json' },
   };
