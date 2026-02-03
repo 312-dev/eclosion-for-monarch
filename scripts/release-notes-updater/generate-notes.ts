@@ -72,6 +72,74 @@ function deduplicateAgainstPrevious(commits: string[], previousBullets: Set<stri
   return filtered;
 }
 
+/** Common stop words to ignore when comparing commit subjects */
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'to', 'for', 'of', 'in', 'on', 'with', 'and', 'or',
+  'is', 'be', 'by', 'from', 'at', 'as', 'into', 'its', 'via', 'when',
+  'add', 'fix', 'update', 'improve', 'set', 'use', 'make', 'ensure',
+]);
+
+/**
+ * Extract significant words from a commit message for similarity comparison.
+ * Strips conventional commit prefix, PR links, stop words, and short tokens.
+ */
+function extractSignificantWords(message: string): Set<string> {
+  const normalized = normalizeCommitMessage(message);
+  return new Set(
+    normalized
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+  );
+}
+
+/**
+ * Calculate word overlap ratio between two sets.
+ * Returns a value 0-1 representing how similar the commits are,
+ * relative to the smaller set (so a subset always scores 1.0).
+ */
+function wordOverlap(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let shared = 0;
+  for (const word of a) {
+    if (b.has(word)) shared++;
+  }
+  return shared / Math.min(a.size, b.size);
+}
+
+/** Similarity threshold above which two commits are considered duplicates */
+const SIMILARITY_THRESHOLD = 0.5;
+
+/**
+ * Deduplicate commits within a single category that describe the same change.
+ * Keeps the most recent (first in array, since git log is reverse-chronological).
+ */
+function deduplicateSimilarCommits(commits: string[]): string[] {
+  if (commits.length <= 1) return commits;
+
+  const dominated = new Set<number>();
+
+  for (let i = 0; i < commits.length; i++) {
+    if (dominated.has(i)) continue;
+    const wordsI = extractSignificantWords(commits[i]);
+
+    for (let j = i + 1; j < commits.length; j++) {
+      if (dominated.has(j)) continue;
+      const wordsJ = extractSignificantWords(commits[j]);
+
+      if (wordOverlap(wordsI, wordsJ) >= SIMILARITY_THRESHOLD) {
+        // Keep i (more recent), mark j as dominated
+        dominated.add(j);
+      }
+    }
+  }
+
+  if (dominated.size > 0) {
+    console.error(`Consolidated ${dominated.size} similar commits within category`);
+  }
+
+  return commits.filter((_, idx) => !dominated.has(idx));
+}
+
 interface CommitCategories {
   features: string[];
   fixes: string[];
@@ -258,6 +326,12 @@ async function main(): Promise<void> {
     categories.improvements = deduplicateAgainstPrevious(categories.improvements, previousBullets);
     categories.other = deduplicateAgainstPrevious(categories.other, previousBullets);
   }
+
+  // Deduplicate similar commits within the same release
+  categories.features = deduplicateSimilarCommits(categories.features);
+  categories.fixes = deduplicateSimilarCommits(categories.fixes);
+  categories.improvements = deduplicateSimilarCommits(categories.improvements);
+  categories.other = deduplicateSimilarCommits(categories.other);
 
   // Polish if requested
   if (shouldPolish) {

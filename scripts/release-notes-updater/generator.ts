@@ -586,7 +586,7 @@ If you see multiple commits about the SAME topic (e.g., several commits about "m
 - Or if user-facing: describe only the end state achieved
 
 **IMPORTANT - Duplicate/Redundant Fixes:**
-If multiple commits fix the same thing in slightly different ways (e.g., "center icon with flex" and "vertically center icon on mobile"), treat them as ONE fix. Don't mention both - just describe the end result once.
+If multiple commits fix the same thing in slightly different ways, treat them as ONE fix. Don't mention each attempt separately - just describe the end result once.
 
 ${formatGuidelines}
 
