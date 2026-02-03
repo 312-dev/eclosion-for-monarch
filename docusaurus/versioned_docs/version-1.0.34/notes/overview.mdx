@@ -1,0 +1,118 @@
+---
+title: Overview
+description: Learn how to add notes to your Monarch categories and track budgeting decisions over time.
+sidebar_position: 1
+---
+
+import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
+import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+import { StickyNote, Calendar, History, Calculator } from 'lucide-react';
+
+# Monthly Notes
+
+The Notes tab helps you remember why you set each budget. Add notes to any Monarch category or category group that carry forward each month.
+
+<FeatureGrid>
+  <FeatureCard
+    icon={<StickyNote size={24} />}
+    title="Category Notes"
+    description="Attach notes to any category or group to track your reasoning"
+  />
+  <FeatureCard
+    icon={<Calendar size={24} />}
+    title="Carry Forward"
+    description="Notes automatically appear in future months until changed"
+  />
+  <FeatureCard
+    icon={<History size={24} />}
+    title="Revision History"
+    description="See how your notes evolved over time"
+  />
+  <FeatureCard
+    icon={<Calculator size={24} />}
+    title="Inline Math"
+    description="Type math expressions and press Tab to evaluate"
+  />
+</FeatureGrid>
+
+## How It Works
+
+Your notes are organized to match your Monarch category structure:
+
+### Category Groups
+
+Category groups from Monarch appear as expandable sections. Click a group to see its categories. You can add notes to both the group level and individual categories within it.
+
+### General Month Notes
+
+Use the sidebar (desktop) or top section (mobile) for notes that don't belong to a specific category. Great for:
+
+- Monthly goals and priorities
+- Budget reminders
+- End-of-month summaries
+
+## Adding Notes
+
+<WorkflowSteps
+  title="Creating Your First Note"
+  steps={[
+    {
+      title: "Navigate to Notes",
+      description: "Click the Notes tab in the sidebar to open the notes view."
+    },
+    {
+      title: "Find a Category",
+      description: "Expand a category group and locate the category you want to annotate."
+    },
+    {
+      title: "Click Add Note",
+      description: "Click the \"+ Add note\" button next to the category name."
+    },
+    {
+      title: "Write Your Note",
+      description: "Type your note using markdown formatting. Notes save automatically as you type."
+    }
+  ]}
+/>
+
+:::tip
+Notes support markdown formatting including **bold**, *italics*, bullet lists, and checkboxes. Use checkboxes to track action items for the month.
+:::
+
+## Navigating Months
+
+Use the month navigator at the top to move between months:
+
+- **Arrow buttons**: Move forward or back one month at a time
+- **Click month/year**: Jump directly to any month with the calendar picker
+
+When you navigate to a future month, your existing notes carry forward automatically. They'll appear as "inherited" until you modify them for that specific month.
+
+## Inline Math
+
+Type math expressions directly in your notes and press **Tab** to evaluate them. This is useful for quick calculations:
+
+- `100 + 50` + Tab = `150`
+- `1200 / 12` + Tab = `100`
+- `250 * 1.08` + Tab = `270`
+
+## Revision History
+
+Every change to a note is saved in the revision history. Click the history icon on any note to:
+
+- View all previous versions
+- See when each change was made
+- Restore a previous version if needed
+
+## Exporting Notes
+
+Export your notes to PDF for printing or sharing:
+
+1. Click the **Export** button in the top right
+2. Select a date range (single month or range)
+3. Choose which category groups to include
+4. Download the formatted PDF
+
+:::note
+Export is only available when you have at least one note in the selected range.
+:::
