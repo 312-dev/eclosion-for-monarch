@@ -32,10 +32,13 @@ export function NavItemLink({ item, onSettingsClick }: Readonly<NavItemLinkProps
       <span className="sidebar-nav-icon" aria-hidden="true">
         {item.icon}
         {item.badge !== undefined && item.badge > 0 && (
-          <span className="sidebar-nav-badge">{item.badge}</span>
+          <span className="sidebar-nav-badge sidebar-nav-badge-mobile">{item.badge}</span>
         )}
       </span>
       <span className="sidebar-nav-label">{item.label}</span>
+      {item.badge !== undefined && item.badge > 0 && (
+        <span className="sidebar-nav-badge sidebar-nav-badge-desktop">{item.badge}</span>
+      )}
       {settingsHash !== undefined && onSettingsClick && (
         <button
           type="button"

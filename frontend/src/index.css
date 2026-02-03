@@ -1180,9 +1180,6 @@ input[type='radio'] {
 }
 
 .sidebar-nav-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1194,6 +1191,19 @@ input[type='radio'] {
   color: white;
   background-color: var(--monarch-orange);
   border-radius: 9999px;
+}
+
+/* Desktop: badge sits inline to the right of the label */
+.sidebar-nav-badge-desktop {
+  display: flex;
+}
+
+/* Mobile badge (on icon) hidden on desktop */
+.sidebar-nav-badge-mobile {
+  display: none;
+  position: absolute;
+  top: -6px;
+  right: -8px;
 }
 
 .sidebar-nav-label {
@@ -1457,6 +1467,15 @@ input[type='radio'] {
   }
 
   .sidebar-settings-cog {
+    display: none !important;
+  }
+
+  /* Mobile: badge on icon, not inline */
+  .sidebar-nav-badge-mobile {
+    display: flex;
+  }
+
+  .sidebar-nav-badge-desktop {
     display: none !important;
   }
 
