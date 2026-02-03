@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { generateSummary, buildUpdatedReleaseBody } from './generator.js';
+import { getStructuredChangeSummary } from './utils.js';
 
 interface ReleaseInfo {
   tagName: string;
@@ -111,110 +112,6 @@ function getPreviousTag(currentTag: string): string | null {
   } catch {
     return null;
   }
-}
-
-interface StructuredChanges {
-  newComponents: string[];
-  newHooks: string[];
-  newApi: string[];
-  newUtils: string[];
-  modifiedComponents: string[];
-  modifiedHooks: string[];
-  modifiedApi: string[];
-  renamed: string[];
-  deleted: string[];
-}
-
-/**
- * Get a structured summary of changes between two refs
- */
-function getStructuredChangeSummary(fromRef: string, toRef: string): string {
-  const repoRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
-  const nameStatus = execSync(
-    `git diff --name-status "${fromRef}"..${toRef} -- frontend/src/components/ frontend/src/pages/ frontend/src/hooks/ frontend/src/utils/ frontend/src/api/ services/ blueprints/`,
-    { encoding: 'utf-8', cwd: repoRoot }
-  );
-
-  const changes: StructuredChanges = {
-    newComponents: [],
-    newHooks: [],
-    newApi: [],
-    newUtils: [],
-    modifiedComponents: [],
-    modifiedHooks: [],
-    modifiedApi: [],
-    renamed: [],
-    deleted: [],
-  };
-
-  const getName = (filePath: string): string => {
-    const match = filePath.match(/([^/]+)\.(tsx?|py)$/);
-    return match ? match[1] : filePath;
-  };
-
-  for (const line of nameStatus.split('\n').filter(Boolean)) {
-    const parts = line.split('\t');
-    const status = parts[0];
-    const filePath = parts.at(-1) ?? '';
-    const oldPath = parts.length > 2 ? parts[1] : null;
-    const name = getName(filePath);
-
-    if (name.includes('.test') || name === 'index' || name.startsWith('demo')) continue;
-
-    if (status === 'A') {
-      if (filePath.includes('/components/')) changes.newComponents.push(name);
-      else if (filePath.includes('/hooks/')) changes.newHooks.push(name);
-      else if (filePath.includes('/api/') && !filePath.includes('/demo/')) changes.newApi.push(name);
-      else if (filePath.includes('/utils/')) changes.newUtils.push(name);
-    } else if (status === 'M') {
-      if (filePath.includes('/components/')) changes.modifiedComponents.push(name);
-      else if (filePath.includes('/hooks/')) changes.modifiedHooks.push(name);
-      else if (filePath.includes('/api/') && !filePath.includes('/demo/')) changes.modifiedApi.push(name);
-    } else if (status === 'D') {
-      changes.deleted.push(name);
-    } else if (status.startsWith('R') && oldPath) {
-      const oldName = getName(oldPath);
-      if (oldName !== name) changes.renamed.push(`${oldName} → ${name}`);
-    }
-  }
-
-  const dedupe = (arr: string[]): string[] => [...new Set(arr)].slice(0, 20);
-  Object.keys(changes).forEach((key) => {
-    changes[key as keyof StructuredChanges] = dedupe(changes[key as keyof StructuredChanges]);
-  });
-
-  const lines: string[] = ['## Structured Change Summary\n'];
-
-  if (changes.newComponents.length || changes.newHooks.length || changes.newApi.length || changes.newUtils.length) {
-    lines.push('### NEW (Added Features)');
-    if (changes.newComponents.length) lines.push(`Components: ${changes.newComponents.join(', ')}`);
-    if (changes.newHooks.length) lines.push(`Hooks: ${changes.newHooks.join(', ')}`);
-    if (changes.newApi.length) lines.push(`API modules: ${changes.newApi.join(', ')}`);
-    if (changes.newUtils.length) lines.push(`Utilities: ${changes.newUtils.join(', ')}`);
-    lines.push('');
-  }
-
-  if (changes.modifiedComponents.length || changes.modifiedHooks.length || changes.modifiedApi.length) {
-    lines.push('### MODIFIED (Improvements/Fixes)');
-    if (changes.modifiedComponents.length) lines.push(`Components: ${changes.modifiedComponents.join(', ')}`);
-    if (changes.modifiedHooks.length) lines.push(`Hooks: ${changes.modifiedHooks.join(', ')}`);
-    if (changes.modifiedApi.length) lines.push(`API: ${changes.modifiedApi.join(', ')}`);
-    lines.push('');
-  }
-
-  if (changes.renamed.length) {
-    lines.push('### RENAMED');
-    lines.push(changes.renamed.join(', '));
-    lines.push('');
-  }
-
-  if (changes.deleted.length) {
-    lines.push('### REMOVED');
-    lines.push(changes.deleted.join(', '));
-    lines.push('');
-  }
-
-  return lines.join('\n');
 }
 
 async function main(): Promise<void> {
