@@ -1,0 +1,10 @@
+{
+  "label": "Stashes",
+  "position": 3,
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "doc",
+    "id": "stashes/overview"
+  }
+}
