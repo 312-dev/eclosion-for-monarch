@@ -507,8 +507,8 @@ export const pageQueryMap: Record<PageName, PageQueryRequirements> = {
     syncScope: 'recurring',
   },
   stash: {
-    primary: ['stash', 'availableToStash', 'stashConfig'],
-    supporting: ['monarchGoals', 'pendingBookmarks', 'dashboard'],
+    primary: ['dashboard', 'stash', 'availableToStash', 'stashConfig'],
+    supporting: ['monarchGoals', 'pendingBookmarks'],
     syncScope: 'stash',
   },
   notes: {
