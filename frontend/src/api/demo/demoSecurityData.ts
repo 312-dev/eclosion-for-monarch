@@ -11,36 +11,6 @@ import type { SecurityEvent } from '../../types';
 export const DEMO_SECURITY_EVENTS: SecurityEvent[] = [
   {
     id: 1,
-    event_type: 'REMOTE_UNLOCK',
-    success: false,
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 min ago - after last success
-    ip_address: '203.0.113.42',
-    country: 'China',
-    city: 'Beijing',
-    details: 'Invalid passphrase',
-  },
-  {
-    id: 2,
-    event_type: 'LOGIN_ATTEMPT',
-    success: false,
-    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 min ago - after last success
-    ip_address: '185.220.101.45',
-    country: 'Germany',
-    city: 'Frankfurt',
-    details: 'Invalid credentials',
-  },
-  {
-    id: 3,
-    event_type: 'LOGIN_ATTEMPT',
-    success: false,
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 min ago - after last success
-    ip_address: '91.243.82.116',
-    country: 'Russia',
-    city: 'Moscow',
-    details: 'Invalid credentials',
-  },
-  {
-    id: 4,
     event_type: 'LOGIN_ATTEMPT',
     success: true,
     timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min ago - last successful login

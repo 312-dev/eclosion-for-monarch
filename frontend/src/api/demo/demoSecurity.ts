@@ -90,7 +90,7 @@ export async function getSecuritySummary(): Promise<SecurityEventSummary> {
     failed_unlock_attempts: failedUnlocks,
     unique_ips: uniqueIps,
     last_successful_login: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    last_failed_login: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    last_failed_login: null,
   };
 }
 
