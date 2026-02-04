@@ -21,7 +21,7 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const toast = useToast();
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const checkAvailability = useCallback(async (value: string) => {
     if (!globalThis.electron?.tunnel || value.length < 3) return;

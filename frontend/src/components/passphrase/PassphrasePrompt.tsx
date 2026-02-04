@@ -231,7 +231,7 @@ export function PassphrasePrompt({
           <form onSubmit={handleSubmit}>
             <PasswordInput
               id="passphrase"
-              label={mode === 'create' ? 'Create Passphrase' : undefined}
+              {...(mode === 'create' ? { label: 'Create Passphrase' } : {})}
               value={passphrase}
               onChange={setPassphrase}
               showPassword={showPassphrase}
