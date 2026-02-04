@@ -101,6 +101,11 @@
     <script src="./theme-init.js"></script>
   </head>
   <body>
+    <!-- Static drag region: allows window dragging immediately before React loads.
+         Electron's -webkit-app-region: drag enables this on macOS (hiddenInset) and
+         Windows (hidden titlebar). On Linux (native titlebar) or web, it's harmless.
+         React's MacOSDragRegion renders on top once loaded. -->
+    <div id="electron-drag-region" style="position:fixed;top:0;left:0;right:0;height:20px;z-index:9999;-webkit-app-region:drag;" aria-hidden="true"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

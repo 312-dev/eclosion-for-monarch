@@ -143,6 +143,81 @@ interface WindowBounds {
   y?: number;
   width: number;
   height: number;
+  isMaximized?: boolean;
+  isFullScreen?: boolean;
+}
+
+/**
+ * Get the display where the window currently is, or the display nearest the cursor.
+ * Prefers the window's current display for multi-monitor awareness.
+ * Falls back to cursor position when no window exists yet.
+ */
+function getCurrentDisplay(): Electron.Display {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    return screen.getDisplayMatching(mainWindow.getBounds());
+  }
+  return screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+}
+
+/**
+ * Validate and clamp window bounds to ensure they're on a visible display.
+ * Handles cases where a saved position references a now-disconnected monitor
+ * or where the saved size exceeds the current display's work area.
+ */
+function ensureBoundsOnScreen(bounds: Electron.Rectangle): Electron.Rectangle {
+  const display = screen.getDisplayMatching(bounds);
+  const workArea = display.workArea;
+
+  // Clamp size to work area
+  const width = Math.min(bounds.width, workArea.width);
+  const height = Math.min(bounds.height, workArea.height);
+
+  // Clamp position so window stays within work area
+  const x = Math.max(workArea.x, Math.min(bounds.x, workArea.x + workArea.width - width));
+  const y = Math.max(workArea.y, Math.min(bounds.y, workArea.y + workArea.height - height));
+
+  return { x, y, width, height };
+}
+
+/**
+ * Save current window bounds and state to the store.
+ * Only saves in full mode. When maximized/fullscreen, preserves the last
+ * normal bounds and only updates the state flags.
+ */
+function saveBounds(): void {
+  if (!mainWindow || mainWindow.isDestroyed() || currentWindowMode !== 'full') return;
+
+  const isMaximized = mainWindow.isMaximized();
+  const isFullScreen = mainWindow.isFullScreen();
+
+  if (isMaximized || isFullScreen) {
+    // Don't overwrite normal bounds with maximized/fullscreen dimensions.
+    // Only update the state flags on previously saved bounds.
+    const existing = getStore().get('windowBounds') as WindowBounds | undefined;
+    if (existing) {
+      getStore().set('windowBounds', { ...existing, isMaximized, isFullScreen });
+    }
+  } else {
+    const bounds = mainWindow.getBounds();
+    getStore().set('windowBounds', {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      isMaximized: false,
+      isFullScreen: false,
+    });
+  }
+}
+
+/**
+ * Debounced version of saveBounds for resize/move events.
+ * Prevents excessive store writes during drag operations.
+ */
+let saveBoundsTimer: ReturnType<typeof setTimeout> | null = null;
+function debouncedSaveBounds(): void {
+  if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+  saveBoundsTimer = setTimeout(saveBounds, 500);
 }
 
 // Track if we're quitting the app (vs hiding to tray)
@@ -170,14 +245,15 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   setupCSP();
   logWindowTiming('CSP configured');
 
-  // Start in compact mode - centered on screen
+  // Start in compact mode - centered on the current display
   // Full bounds will be restored when setWindowMode('full') is called
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const display = getCurrentDisplay();
+  const workArea = display.workArea;
 
-  // Center the compact window on screen
-  const x = Math.round((screenWidth - COMPACT_WINDOW.width) / 2);
-  const y = Math.round((screenHeight - COMPACT_WINDOW.height) / 2);
+  // Center the compact window on the current display (using workArea for correct
+  // multi-monitor offsets — workAreaSize lacks x/y position)
+  const x = workArea.x + Math.round((workArea.width - COMPACT_WINDOW.width) / 2);
+  const y = workArea.y + Math.round((workArea.height - COMPACT_WINDOW.height) / 2);
 
   currentWindowMode = 'compact';
 
@@ -311,14 +387,35 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
     logWindowTiming('loadFile completed');
   }
 
+  // Save bounds on resize and move (debounced) so we don't lose state on crash
+  mainWindow.on('resize', debouncedSaveBounds);
+  mainWindow.on('move', debouncedSaveBounds);
+
+  // Handle display topology changes — move window on-screen if its display was removed
+  screen.on('display-removed', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (currentWindowMode !== 'full') return;
+
+    const bounds = mainWindow.getBounds();
+    const validBounds = ensureBoundsOnScreen(bounds);
+
+    if (
+      bounds.x !== validBounds.x ||
+      bounds.y !== validBounds.y ||
+      bounds.width !== validBounds.width ||
+      bounds.height !== validBounds.height
+    ) {
+      mainWindow.setBounds(validBounds);
+    }
+  });
+
   // Handle close - always hide to tray instead of quitting
   // The app runs in both the dock/taskbar AND the system tray/menu bar
   mainWindow.on('close', (event) => {
-    // Always save window bounds regardless of close behavior
-    const currentBounds = mainWindow?.getBounds();
-    if (currentBounds) {
-      getStore().set('windowBounds', currentBounds);
-    }
+    // Flush any pending debounced save and do a final save.
+    // saveBounds() handles mode checks and maximize/fullscreen state internally.
+    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+    saveBounds();
 
     if (!isQuitting) {
       // Hide to tray instead of quitting (dock stays visible)
@@ -331,6 +428,7 @@ export async function createWindow(backendPort: number): Promise<BrowserWindow> 
   // No custom handling needed since we always show in both dock and tray
 
   mainWindow.on('closed', () => {
+    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
     mainWindow = null;
   });
 
@@ -413,11 +511,11 @@ export function setWindowMode(mode: 'compact' | 'full'): void {
   currentWindowMode = mode;
 
   if (mode === 'compact') {
-    // Switch to compact mode - center on screen
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
-    const x = Math.round((screenWidth - COMPACT_WINDOW.width) / 2);
-    const y = Math.round((screenHeight - COMPACT_WINDOW.height) / 2);
+    // Switch to compact mode - center on the current display
+    const display = getCurrentDisplay();
+    const workArea = display.workArea;
+    const x = workArea.x + Math.round((workArea.width - COMPACT_WINDOW.width) / 2);
+    const y = workArea.y + Math.round((workArea.height - COMPACT_WINDOW.height) / 2);
 
     mainWindow.setMinimumSize(COMPACT_WINDOW.minWidth, COMPACT_WINDOW.minHeight);
     mainWindow.setBounds({
@@ -438,17 +536,26 @@ export function setWindowMode(mode: 'compact' | 'full'): void {
     mainWindow.setMinimumSize(DEFAULT_FULL_WINDOW.minWidth, DEFAULT_FULL_WINDOW.minHeight);
 
     if (savedBounds?.x !== undefined && savedBounds?.y !== undefined) {
-      // Restore exact position if we have it
-      mainWindow.setBounds({
+      // Validate saved bounds against current display topology.
+      // Handles disconnected monitors and resolution changes.
+      const validBounds = ensureBoundsOnScreen({
         x: savedBounds.x,
         y: savedBounds.y,
         width: bounds.width,
         height: bounds.height,
       });
+      mainWindow.setBounds(validBounds);
     } else {
-      // No saved position - resize and center
+      // No saved position - resize and center on current display
       mainWindow.setSize(bounds.width, bounds.height);
       mainWindow.center();
+    }
+
+    // Restore maximized/fullscreen state after setting base bounds
+    if (savedBounds?.isMaximized) {
+      mainWindow.maximize();
+    } else if (savedBounds?.isFullScreen) {
+      mainWindow.setFullScreen(true);
     }
   }
 }
@@ -476,11 +583,11 @@ export function setCompactSize(height: number): number {
   if (!mainWindow || mainWindow.isDestroyed()) return 0;
   if (currentWindowMode !== 'compact') return 0;
 
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const display = getCurrentDisplay();
+  const workArea = display.workArea;
 
   // Leave some padding from screen edges (40px top + bottom)
-  const maxScreenHeight = screenHeight - 80;
+  const maxScreenHeight = workArea.height - 80;
 
   // Clamp height to bounds, respecting both our max and the user's screen
   const clampedHeight = Math.max(
@@ -492,9 +599,9 @@ export function setCompactSize(height: number): number {
   const currentBounds = mainWindow.getBounds();
   const width = currentBounds.width;
 
-  // Center the window with the new height
-  const x = Math.round((screenWidth - width) / 2);
-  const y = Math.round((screenHeight - clampedHeight) / 2);
+  // Center the window with the new height on the current display
+  const x = workArea.x + Math.round((workArea.width - width) / 2);
+  const y = workArea.y + Math.round((workArea.height - clampedHeight) / 2);
 
   mainWindow.setBounds({
     x,

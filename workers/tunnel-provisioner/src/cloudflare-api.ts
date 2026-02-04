@@ -118,6 +118,22 @@ export async function createDnsCname(
 }
 
 /**
+ * Find a tunnel by name. Returns the tunnel ID if found, null otherwise.
+ * Used to detect orphaned tunnels that weren't cleaned up properly.
+ */
+export async function findTunnelByName(
+  accountId: string,
+  apiToken: string,
+  name: string,
+): Promise<string | null> {
+  const results = await cfFetch<Array<{ id: string }>>(
+    `/accounts/${accountId}/cfd_tunnel?name=${encodeURIComponent(name)}&is_deleted=false`,
+    apiToken,
+  );
+  return results.length > 0 ? results[0].id : null;
+}
+
+/**
  * Delete a Cloudflare Tunnel (cleanup).
  */
 export async function deleteTunnel(

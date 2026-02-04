@@ -13,7 +13,7 @@ import type { RequirementCheck } from './PassphraseUtils';
 
 interface PasswordInputProps {
   id: string;
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   showPassword: boolean;
@@ -34,13 +34,15 @@ export function PasswordInput({
 }: Readonly<PasswordInputProps>) {
   return (
     <div className="mb-4">
-      <label
-        htmlFor={id}
-        className="block text-sm font-medium mb-1"
-        style={{ color: 'var(--monarch-text-dark)' }}
-      >
-        {label}
-      </label>
+      {label && (
+        <label
+          htmlFor={id}
+          className="block text-sm font-medium mb-1"
+          style={{ color: 'var(--monarch-text-dark)' }}
+        >
+          {label}
+        </label>
+      )}
       <div className="relative">
         <input
           type={showPassword ? 'text' : 'password'}

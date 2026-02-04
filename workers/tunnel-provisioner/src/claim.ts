@@ -7,12 +7,14 @@
  */
 
 import type { Env } from './index';
+import type { TunnelCredentials } from './cloudflare-api';
 import { validateSubdomain } from './validation';
 import {
   createTunnel,
   createDnsCname,
   configureTunnelIngress,
   deleteTunnel,
+  findTunnelByName,
 } from './cloudflare-api';
 import { generateRandomHex, hashManagementKey } from './crypto';
 
@@ -44,6 +46,49 @@ async function isRateLimited(
   });
 
   return false;
+}
+
+/**
+ * Create a tunnel, cleaning up any orphaned tunnel with the same name.
+ * Orphans can occur when unclaim's tunnel deletion fails (treated as non-fatal).
+ * Safe because we only reach this code after confirming no KV entry exists for
+ * the subdomain, meaning no one currently owns it.
+ */
+async function createTunnelWithOrphanCleanup(
+  env: Env,
+  subdomain: string,
+): Promise<TunnelCredentials> {
+  try {
+    return await createTunnel(
+      env.CLOUDFLARE_ACCOUNT_ID,
+      env.CLOUDFLARE_API_TOKEN,
+      subdomain,
+    );
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : '';
+    if (!msg.includes('already have a tunnel with this name')) {
+      throw error;
+    }
+
+    // Orphaned tunnel — find and delete it, then retry
+    const orphanId = await findTunnelByName(
+      env.CLOUDFLARE_ACCOUNT_ID,
+      env.CLOUDFLARE_API_TOKEN,
+      `eclosion-${subdomain}`,
+    );
+    if (orphanId) {
+      await deleteTunnel(
+        env.CLOUDFLARE_ACCOUNT_ID,
+        env.CLOUDFLARE_API_TOKEN,
+        orphanId,
+      );
+    }
+    return await createTunnel(
+      env.CLOUDFLARE_ACCOUNT_ID,
+      env.CLOUDFLARE_API_TOKEN,
+      subdomain,
+    );
+  }
 }
 
 export async function handleClaim(
@@ -97,14 +142,10 @@ export async function handleClaim(
     );
   }
 
-  // Create the tunnel via Cloudflare API
-  let credentials;
+  // Create tunnel, cleaning up any orphan from a previous failed unclaim
+  let credentials: TunnelCredentials;
   try {
-    credentials = await createTunnel(
-      env.CLOUDFLARE_ACCOUNT_ID,
-      env.CLOUDFLARE_API_TOKEN,
-      subdomain,
-    );
+    credentials = await createTunnelWithOrphanCleanup(env, subdomain);
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     return Response.json(

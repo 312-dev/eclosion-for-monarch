@@ -7,17 +7,20 @@
  */
 
 import { useState } from 'react';
-import { Copy, Check, AlertTriangle, KeyRound } from 'lucide-react';
+import { Copy, Check, AlertTriangle, KeyRound, RotateCcw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from '../../../context/ToastContext';
+import { Tooltip } from '../../ui/Tooltip';
 import type { TunnelStatus } from '../../../types/electron';
 
 interface TunnelStatusDisplayProps {
   status: TunnelStatus;
   onChangePassphrase: () => void;
+  onReset: () => void;
+  resetting?: boolean;
 }
 
-export function TunnelStatusDisplay({ status, onChangePassphrase }: TunnelStatusDisplayProps) {
+export function TunnelStatusDisplay({ status, onChangePassphrase, onReset, resetting }: TunnelStatusDisplayProps) {
   const [copied, setCopied] = useState(false);
   const toast = useToast();
 
@@ -49,8 +52,8 @@ export function TunnelStatusDisplay({ status, onChangePassphrase }: TunnelStatus
           style={{ color: 'var(--monarch-orange)' }}
         />
         <div className="text-sm" style={{ color: 'var(--monarch-text-dark)' }}>
-          <span className="font-medium">Remote access is active.</span> Anyone with your URL
-          will be prompted for your app passphrase. Keep your URL private.
+          <span className="font-medium">Remote access is active.</span> Your URL is protected by
+          a one-time password sent to your Monarch email, plus your app passphrase.
         </div>
       </div>
 
@@ -61,15 +64,15 @@ export function TunnelStatusDisplay({ status, onChangePassphrase }: TunnelStatus
           border: '1px solid var(--monarch-border)',
         }}
       >
-        <div className="flex items-start gap-4">
-          {/* Left side: explanation and URL */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm mb-2" style={{ color: 'var(--monarch-text-muted)' }}>
+        <div className="flex items-stretch gap-4">
+          {/* Left side: explanation + URL pinned to bottom */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <p className="text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
               Scan the QR code with your phone or copy the URL to access Eclosion remotely.
               You&apos;ll need your app passphrase to connect.
             </p>
             <div
-              className="flex items-center gap-2 px-3 py-2 rounded-lg w-full"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg w-full mt-auto"
               style={{
                 backgroundColor: 'var(--monarch-bg-card)',
                 border: '1px solid var(--monarch-border)',
@@ -81,19 +84,31 @@ export function TunnelStatusDisplay({ status, onChangePassphrase }: TunnelStatus
               >
                 {tunnelUrl}
               </code>
-              <button
-                onClick={handleCopyUrl}
-                className="p-1.5 rounded transition-colors shrink-0 hover:bg-black/5"
-                title="Copy URL"
-                aria-label="Copy URL to clipboard"
-                type="button"
-              >
-                {copied ? (
-                  <Check size={14} style={{ color: 'var(--monarch-green)' }} />
-                ) : (
-                  <Copy size={14} style={{ color: 'var(--monarch-text-muted)' }} />
-                )}
-              </button>
+              <Tooltip content="Copy URL">
+                <button
+                  onClick={handleCopyUrl}
+                  className="p-1.5 rounded transition-colors shrink-0 hover:bg-black/5"
+                  aria-label="Copy URL to clipboard"
+                  type="button"
+                >
+                  {copied ? (
+                    <Check size={14} style={{ color: 'var(--monarch-green)' }} />
+                  ) : (
+                    <Copy size={14} style={{ color: 'var(--monarch-text-muted)' }} />
+                  )}
+                </button>
+              </Tooltip>
+              <Tooltip content="Release subdomain">
+                <button
+                  onClick={onReset}
+                  disabled={resetting}
+                  className="p-1.5 rounded transition-colors shrink-0 hover:bg-black/5 disabled:opacity-50"
+                  aria-label="Release subdomain"
+                  type="button"
+                >
+                  <RotateCcw size={14} style={{ color: 'var(--monarch-error)' }} />
+                </button>
+              </Tooltip>
             </div>
           </div>
 

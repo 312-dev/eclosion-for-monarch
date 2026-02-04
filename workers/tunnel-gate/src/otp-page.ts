@@ -44,10 +44,13 @@ h1{color:var(--primary);font-size:24px;font-weight:700;text-align:center;margin-
 .email-input{width:100%;padding:14px;background:var(--bg-input);border:2px solid var(--border);border-radius:8px;font-size:15px;color:var(--text);outline:none;transition:border-color .15s;margin-bottom:12px;font-family:inherit}
 .email-input:focus{border-color:var(--primary)}
 .email-input::placeholder{color:var(--text-muted)}
-.digits{display:flex;gap:8px;justify-content:center;margin-bottom:24px}
-.digit{width:48px;height:56px;background:var(--bg-input);border:2px solid var(--border);border-radius:8px;text-align:center;font-size:24px;font-weight:700;color:var(--text);font-family:'SF Mono','Fira Code',monospace;outline:none;transition:border-color .15s}
-.digit:focus{border-color:var(--primary)}
-.digit.err{border-color:var(--error)}
+.digits{position:relative;display:flex;gap:8px;justify-content:center;margin-bottom:24px;cursor:text}
+.digits-input{position:absolute;inset:0;opacity:0;font-size:24px;font-family:'SF Mono','Fira Code',monospace;letter-spacing:1em;z-index:1}
+.slot{width:48px;height:56px;background:var(--bg-input);border:2px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--text);font-family:'SF Mono','Fira Code',monospace;transition:border-color .15s}
+.slot.active{border-color:var(--primary)}
+.slot.err{border-color:var(--error)}
+.slot .caret{width:2px;height:28px;background:var(--text);animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
 .msg{text-align:center;padding:10px;border-radius:8px;font-size:13px;margin-bottom:16px}
 .msg-ok{background:var(--success-bg);color:var(--success)}
 .msg-err{background:var(--error-bg);color:var(--error)}
@@ -56,7 +59,7 @@ h1{color:var(--primary);font-size:24px;font-weight:700;text-align:center;margin-
 @keyframes spin{to{transform:rotate(360deg)}}
 .hidden{display:none}
 .success-icon{width:48px;height:48px;margin:0 auto 12px}
-@media(max-width:440px){.card{padding:24px 20px}.digit{width:40px;height:48px;font-size:20px}}
+@media(max-width:440px){.card{padding:24px 20px}.slot{width:40px;height:48px;font-size:20px}}
 </style>
 </head>
 <body>
@@ -170,75 +173,76 @@ function startButtonCooldown(btnId,seconds,label){
 function buildDigits(){
   var container=document.getElementById('digits');
   container.innerHTML='';
+  // Single hidden input — handles all typing, paste, and autofill natively
+  var inp=document.createElement('input');
+  inp.type='text';inp.inputMode='numeric';inp.pattern='[0-9]*';inp.maxLength=6;
+  inp.className='digits-input';inp.autocomplete='one-time-code';inp.id='otpInput';
+  inp.setAttribute('aria-label','Verification code');
+  inp.addEventListener('input',onInput);
+  container.appendChild(inp);
+  // Visual slot divs
   for(var i=0;i<6;i++){
-    var inp=document.createElement('input');
-    inp.type='text';inp.inputMode='numeric';inp.pattern='[0-9]*';inp.maxLength=1;
-    inp.className='digit';inp.autocomplete='one-time-code';
-    inp.dataset.idx=String(i);
-    inp.addEventListener('input',onDigitInput);
-    inp.addEventListener('keydown',onDigitKeydown);
-    inp.addEventListener('paste',onPaste);
-    inp.addEventListener('focus',function(){this.select();});
-    container.appendChild(inp);
+    var slot=document.createElement('div');
+    slot.className='slot';
+    slot.dataset.idx=String(i);
+    container.appendChild(slot);
   }
+  // Clicking anywhere in the container focuses the input
+  container.addEventListener('click',function(){inp.focus();});
+  inp.addEventListener('focus',renderSlots);
+  inp.addEventListener('blur',renderSlots);
 }
 
-function onDigitInput(e){
-  var inp=e.target;
-  var val=inp.value.replace(/\\D/g,'');
-  inp.value=val.slice(0,1);
-  if(val&&inp.dataset.idx<'5'){
-    var next=inp.nextElementSibling;
-    if(next)next.focus();
-  }
-  checkComplete();
+function onInput(){
+  var inp=document.getElementById('otpInput');
+  // Strip non-digits, enforce max 6
+  var val=inp.value.replace(/\\D/g,'').slice(0,6);
+  inp.value=val;
+  renderSlots();
+  if(val.length===6)verifyCode(val);
 }
 
-function onDigitKeydown(e){
-  if(e.key==='Backspace'&&!e.target.value){
-    var prev=e.target.previousElementSibling;
-    if(prev){prev.focus();prev.value='';}
-  }
-}
-
-function onPaste(e){
-  e.preventDefault();
-  var text=(e.clipboardData||window.clipboardData).getData('text').replace(/\\D/g,'').slice(0,6);
-  var inputs=document.querySelectorAll('.digit');
-  for(var i=0;i<text.length&&i<6;i++){
-    inputs[i].value=text[i];
-  }
-  if(text.length>0){
-    var focusIdx=Math.min(text.length,5);
-    inputs[focusIdx].focus();
-  }
-  checkComplete();
-}
-
-function checkComplete(){
-  var inputs=document.querySelectorAll('.digit');
-  var code='';
-  inputs.forEach(function(inp){code+=inp.value;});
-  if(code.length===6)verifyCode(code);
+function renderSlots(){
+  var inp=document.getElementById('otpInput');
+  if(!inp)return;
+  var val=inp.value;
+  var focused=document.activeElement===inp;
+  var slots=document.querySelectorAll('.slot');
+  slots.forEach(function(slot,i){
+    var hasErr=slot.classList.contains('err');
+    slot.className='slot'+(hasErr?' err':'');
+    if(val[i]){
+      slot.textContent=val[i];
+    }else if(focused&&i===val.length){
+      // Active slot with blinking caret
+      slot.textContent='';
+      slot.classList.add('active');
+      var caret=document.createElement('div');
+      caret.className='caret';
+      slot.appendChild(caret);
+    }else{
+      slot.textContent='';
+    }
+  });
 }
 
 function getCode(){
-  var code='';
-  document.querySelectorAll('.digit').forEach(function(inp){code+=inp.value;});
-  return code;
+  var inp=document.getElementById('otpInput');
+  return inp?inp.value:'';
 }
 
 function setDigitsError(on){
-  document.querySelectorAll('.digit').forEach(function(inp){
-    if(on)inp.classList.add('err');
-    else inp.classList.remove('err');
+  document.querySelectorAll('.slot').forEach(function(slot){
+    if(on)slot.classList.add('err');
+    else slot.classList.remove('err');
   });
 }
 
 function clearDigits(){
-  document.querySelectorAll('.digit').forEach(function(inp){inp.value='';inp.classList.remove('err');});
-  var first=document.querySelector('.digit');
-  if(first)first.focus();
+  var inp=document.getElementById('otpInput');
+  if(inp){inp.value='';inp.disabled=false;inp.focus();}
+  setDigitsError(false);
+  renderSlots();
 }
 
 window.goBack=function(){
@@ -282,7 +286,7 @@ window.sendCode=async function(){
     buildDigits();
     show('s-code');
     startButtonCooldown('resendBtn',60,'Resend code');
-    setTimeout(function(){document.querySelector('.digit').focus();},100);
+    setTimeout(function(){var el=document.getElementById('otpInput');if(el)el.focus();},100);
   }catch(err){
     show('s-init');
     showMsg(err.message,'err');
@@ -293,7 +297,8 @@ async function verifyCode(code){
   hideMsg();
   setDigitsError(false);
   document.getElementById('s-verify-spinner').classList.remove('hidden');
-  document.querySelectorAll('.digit').forEach(function(inp){inp.disabled=true;});
+  var otpInp=document.getElementById('otpInput');
+  if(otpInp)otpInp.disabled=true;
   try{
     var deviceKey=getDeviceKey();
     var deviceKeyHash=await hashKey(deviceKey);
@@ -322,14 +327,14 @@ async function verifyCode(code){
       showMsg('Incorrect code. '+rem+' attempt'+(rem===1?'':'s')+' remaining.','err');
       setDigitsError(true);
       clearDigits();
-      document.querySelectorAll('.digit').forEach(function(inp){inp.disabled=false;});
+      var otpEl=document.getElementById('otpInput');if(otpEl)otpEl.disabled=false;
       document.getElementById('s-verify-spinner').classList.add('hidden');
     }
   }catch(err){
     showMsg(err.message,'err');
     setDigitsError(true);
     clearDigits();
-    document.querySelectorAll('.digit').forEach(function(inp){inp.disabled=false;});
+    var otpEl=document.getElementById('otpInput');if(otpEl)otpEl.disabled=false;
     document.getElementById('s-verify-spinner').classList.add('hidden');
   }
 }

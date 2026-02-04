@@ -95,6 +95,16 @@ export interface StoreSchema {
   'autoBackup.retentionDays': number;
   'autoBackup.lastBackupDate': string;
 
+  // Window state
+  windowBounds: {
+    x?: number;
+    y?: number;
+    width: number;
+    height: number;
+    isMaximized?: boolean;
+    isFullScreen?: boolean;
+  };
+
   // Crash recovery state
   'crashRecovery.crashCount': number;
   'crashRecovery.lastCrashTime': number;

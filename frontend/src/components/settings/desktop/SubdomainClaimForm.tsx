@@ -1,11 +1,11 @@
 /**
  * Subdomain Claim Form
  *
- * Input field with .eclosion.me suffix, availability check, and claim button.
+ * Input field with .eclosion.me suffix, auto-check availability, and claim button.
  * Used in RemoteAccessSection when no subdomain has been claimed yet.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Check, X, Loader2, Globe } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 
@@ -21,24 +21,16 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
   const toast = useToast();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const handleSubdomainChange = (value: string) => {
-    // Normalize: lowercase, strip invalid characters
-    const normalized = value.toLowerCase().replaceAll(/[^a-z0-9-]/g, '');
-    setSubdomain(normalized);
-    // Reset availability when input changes
-    setAvailability('idle');
-    setAvailabilityError(null);
-  };
-
-  const checkAvailability = useCallback(async () => {
-    if (!globalThis.electron?.tunnel || subdomain.length < 3) return;
+  const checkAvailability = useCallback(async (value: string) => {
+    if (!globalThis.electron?.tunnel || value.length < 3) return;
 
     setAvailability('checking');
     setAvailabilityError(null);
 
     try {
-      const result = await globalThis.electron.tunnel.check(subdomain);
+      const result = await globalThis.electron.tunnel.check(value);
       if (result.error) {
         setAvailability('error');
         setAvailabilityError(result.error);
@@ -49,7 +41,28 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
       setAvailability('error');
       setAvailabilityError('Failed to check availability');
     }
-  }, [subdomain]);
+  }, []);
+
+  const handleSubdomainChange = (value: string) => {
+    const normalized = value.toLowerCase().replaceAll(/[^a-z0-9-]/g, '');
+    setSubdomain(normalized);
+    setAvailability('idle');
+    setAvailabilityError(null);
+
+    // Debounce auto-check
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (normalized.length >= 3) {
+      debounceRef.current = setTimeout(() => {
+        checkAvailability(normalized);
+      }, 1500);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const handleClaim = async () => {
     if (!globalThis.electron?.tunnel || availability !== 'available') return;
@@ -70,25 +83,47 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
     }
   };
 
-  const isValidLength = subdomain.length >= 3;
-  const canCheck = isValidLength && availability === 'idle';
   const canClaim = availability === 'available' && !claiming;
+
+  const renderClaimButtonContent = (): React.ReactNode => {
+    if (claiming) {
+      return (
+        <>
+          <Loader2 size={16} className="animate-spin" />
+          Claiming...
+        </>
+      );
+    }
+    if (availability === 'checking') {
+      return (
+        <>
+          <Loader2 size={16} className="animate-spin" />
+          Checking...
+        </>
+      );
+    }
+    return (
+      <>
+        <Globe size={16} />
+        Claim & Enable
+      </>
+    );
+  };
 
   return (
     <div className="px-4 pb-4">
-      <p className="text-sm mb-3" style={{ color: 'var(--monarch-text-muted)' }}>
-        Choose a permanent subdomain for remote access. This creates a stable URL
-        you can bookmark on your phone.
-      </p>
+      <div
+        className="text-xs font-medium uppercase tracking-wide mb-2"
+        style={{ color: 'var(--monarch-text-muted)' }}
+      >
+        Choose your subdomain
+      </div>
 
-      {/* Subdomain input with suffix */}
+      {/* Subdomain input with suffix + claim button */}
       <div className="flex items-center gap-2 mb-3">
         <div
-          className="flex items-center flex-1 rounded-lg overflow-hidden"
-          style={{
-            backgroundColor: 'var(--monarch-bg-page)',
-            border: '1px solid var(--monarch-border)',
-          }}
+          className="flex rounded-lg overflow-hidden"
+          style={{ border: '1px solid var(--monarch-border)' }}
         >
           <input
             type="text"
@@ -96,13 +131,16 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
             onChange={(e) => handleSubdomainChange(e.target.value)}
             placeholder="my-home"
             maxLength={32}
-            className="flex-1 px-3 py-2 text-sm bg-transparent outline-none min-w-0"
-            style={{ color: 'var(--monarch-text-dark)' }}
+            className="w-32 sm:w-48 px-3 py-2 text-sm outline-none"
+            style={{
+              color: 'var(--monarch-text-dark)',
+              backgroundColor: 'var(--monarch-bg-page)',
+            }}
             aria-label="Subdomain name"
             disabled={claiming}
           />
           <span
-            className="px-3 py-2 text-sm shrink-0"
+            className="inline-flex items-center px-3 py-2 text-sm"
             style={{
               color: 'var(--monarch-text-muted)',
               backgroundColor: 'var(--monarch-bg-card)',
@@ -113,33 +151,29 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
           </span>
         </div>
 
-        {/* Check availability button */}
         <button
-          onClick={checkAvailability}
-          disabled={!canCheck || claiming}
-          className="px-3 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-50"
+          onClick={handleClaim}
+          disabled={!canClaim}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
           style={{
-            backgroundColor: 'var(--monarch-bg-page)',
-            border: '1px solid var(--monarch-border)',
-            color: 'var(--monarch-text-dark)',
+            backgroundColor: canClaim ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
+            color: canClaim ? 'white' : 'var(--monarch-text-muted)',
+            border: canClaim ? 'none' : '1px solid var(--monarch-border)',
           }}
           type="button"
-          aria-label="Check availability"
         >
-          {availability === 'checking' ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            'Check'
-          )}
+          {renderClaimButtonContent()}
         </button>
       </div>
 
       {/* Availability indicator */}
-      {availability !== 'idle' && availability !== 'checking' && (
+      {(availability === 'available' ||
+        availability === 'unavailable' ||
+        availability === 'error') && (
         <div className="flex items-center gap-2 mb-3 text-sm">
           {availability === 'available' && (
             <>
-              <Check size={16} style={{ color: 'var(--monarch-green)' }} />
+              <Check size={16} className="shrink-0" style={{ color: 'var(--monarch-green)' }} />
               <span style={{ color: 'var(--monarch-green)' }}>
                 {subdomain}.eclosion.me is available
               </span>
@@ -147,7 +181,7 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
           )}
           {availability === 'unavailable' && (
             <>
-              <X size={16} style={{ color: 'var(--monarch-red)' }} />
+              <X size={16} className="shrink-0" style={{ color: 'var(--monarch-red)' }} />
               <span style={{ color: 'var(--monarch-red)' }}>
                 {subdomain}.eclosion.me is already taken
               </span>
@@ -155,7 +189,7 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
           )}
           {availability === 'error' && (
             <>
-              <X size={16} style={{ color: 'var(--monarch-red)' }} />
+              <X size={16} className="shrink-0" style={{ color: 'var(--monarch-red)' }} />
               <span style={{ color: 'var(--monarch-red)' }}>
                 {availabilityError ?? 'Error checking availability'}
               </span>
@@ -164,33 +198,8 @@ export function SubdomainClaimForm({ onClaimed }: SubdomainClaimFormProps) {
         </div>
       )}
 
-      {/* Claim button */}
-      <button
-        onClick={handleClaim}
-        disabled={!canClaim}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 w-full justify-center"
-        style={{
-          backgroundColor: canClaim ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
-          color: canClaim ? 'white' : 'var(--monarch-text-muted)',
-          border: canClaim ? 'none' : '1px solid var(--monarch-border)',
-        }}
-        type="button"
-      >
-        {claiming ? (
-          <>
-            <Loader2 size={16} className="animate-spin" />
-            Claiming...
-          </>
-        ) : (
-          <>
-            <Globe size={16} />
-            Claim & Enable Remote Access
-          </>
-        )}
-      </button>
-
-      <p className="text-xs mt-2" style={{ color: 'var(--monarch-text-muted)' }}>
-        Your subdomain can be released later from the settings if you want to change it.
+      <p className="text-xs mt-1" style={{ color: 'var(--monarch-text-muted)', opacity: 0.7 }}>
+        Can be released later if you want to change it.
       </p>
     </div>
   );

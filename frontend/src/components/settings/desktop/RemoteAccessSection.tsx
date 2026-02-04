@@ -118,11 +118,19 @@ export function RemoteAccessSection() {
     fetchStatus();
   };
 
+  const handleResetSubdomain = () => {
+    setShowUnclaimModal(true);
+  };
+
   const handleUnclaimConfirm = async () => {
     if (!globalThis.electron?.tunnel) return;
 
     setUnclaiming(true);
     try {
+      // Stop tunnel first if active
+      if (status?.active) {
+        await globalThis.electron.tunnel.stop();
+      }
       const result = await globalThis.electron.tunnel.unclaim();
       if (result.success) {
         setShowUnclaimModal(false);
@@ -209,6 +217,8 @@ export function RemoteAccessSection() {
             setPassphraseMode('change');
             setShowPassphraseModal(true);
           }}
+          onReset={handleResetSubdomain}
+          resetting={busy}
         />
       )}
 
