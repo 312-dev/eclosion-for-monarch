@@ -235,10 +235,12 @@ export function SearchableSelect({
 
       {dropdown.isOpen && (
         <Portal>
-          {/* Backdrop for closing */}
+          {/* Backdrop for closing — stopPropagation prevents parent click-outside handlers from
+              interfering when this Portal dropdown is nested inside another dropdown */}
           <div
             className={insideModal ? 'fixed inset-0' : 'fixed inset-0 z-(--z-index-dropdown)'}
             style={dropdownZIndex ? { zIndex: dropdownZIndex } : undefined}
+            onMouseDown={(e) => e.nativeEvent.stopPropagation()}
             onClick={() => dropdown.close()}
             aria-hidden="true"
           />
@@ -260,6 +262,7 @@ export function SearchableSelect({
               maxWidth: '90vw',
               ...(dropdownZIndex ? { zIndex: dropdownZIndex } : {}),
             }}
+            onMouseDown={(e) => e.nativeEvent.stopPropagation()}
             onKeyDown={handleKeyDown}
             tabIndex={-1}
           >

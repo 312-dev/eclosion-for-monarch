@@ -20,7 +20,6 @@ import { SecurityInfo } from '../SecurityInfo';
 import { WhatsNewModal } from '../WhatsNewModal';
 import { NoticeBanner } from '../ui/NoticeBanner';
 import { SecurityAlertBanner } from '../SecurityAlertBanner';
-import { SkeletonAppShell } from '../ui/SkeletonLayouts';
 import {
   useDashboardQuery,
   useStashQuery,
@@ -52,7 +51,7 @@ export function AppShell() {
   const isDemo = useDemo();
   const isDesktop = isDesktopMode();
   const toast = useToast();
-  const { data, isLoading, isFetching, error, refetch } = useDashboardQuery();
+  const { data, isFetching, error, refetch } = useDashboardQuery();
   const isMacOSElectron = useMacOSElectron();
 
   // Page-aware sync - only syncs data relevant to current page
@@ -119,13 +118,8 @@ export function AppShell() {
     }
   };
 
-  // Loading state - show skeleton layout
-  if (isLoading || !data) {
-    return <SkeletonAppShell />;
-  }
-
   // Error state (no cached data)
-  if (error) {
+  if (error && !data) {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-4"
@@ -204,7 +198,7 @@ export function AppShell() {
             <SidebarNavigation onLock={handleLock} />
             <div className="app-content-wrapper">
               {!isDesktop && <SecurityAlertBanner />}
-              {data.notices && data.notices.length > 0 && (
+              {data?.notices && data.notices.length > 0 && (
                 <section className="px-4 pt-6" aria-label="Notifications">
                   {data.notices.map((notice) => (
                     <NoticeBanner key={notice.id} notice={notice} onDismiss={() => refetch()} />
