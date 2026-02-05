@@ -1,15 +1,5 @@
-# Electron Builder Configuration for Beta Releases
-#
-# This configuration is used for beta builds and differs from the stable
-# config (electron-builder.yml) in the following ways:
-# - Different appId to prevent conflicts with production installation
-# - Different productName to clearly identify beta builds
-# - Different shortcut names on Windows
-#
-# Usage: electron-builder --config electron-builder.beta.yml
-
-appId: com.eclosion.desktop.beta
-productName: Eclosion Beta
+appId: com.eclosion.desktop
+productName: Eclosion
 copyright: Copyright (c) 2026
 
 # Build directories
@@ -40,19 +30,16 @@ extraResources:
     filter:
       - "**/*"
 
-# Publish to GitHub Releases (prereleases for beta)
-# channel: beta ensures beta builds only see beta releases, not stable ones
+# Publish to GitHub Releases
 publish:
   provider: github
   owner: 312-dev
   repo: eclosion
-  releaseType: prerelease
-  channel: beta
+  releaseType: release
 
 # Protocol handler (deep links)
-# Using same scheme - users typically won't have both versions installed
 protocols:
-  - name: Eclosion Beta
+  - name: Eclosion
     schemes:
       - eclosion
 
@@ -65,7 +52,7 @@ mac:
   target:
     - dmg
     - zip
-  icon: assets/icon-beta.icns
+  icon: assets/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: entitlements.mac.plist
@@ -101,7 +88,7 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: assets/icon-beta.ico
+  icon: assets/icon.ico
 
 # NSIS installer configuration
 nsis:
@@ -110,9 +97,9 @@ nsis:
   deleteAppDataOnUninstall: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Eclosion Beta
-  installerIcon: assets/icon-beta.ico
-  uninstallerIcon: assets/icon-beta.ico
+  shortcutName: Eclosion
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
   differentialPackage: true
   # Include custom NSIS scripts for uninstall prompts
   include: installer/custom.nsh
@@ -133,15 +120,15 @@ linux:
         - x64
         - arm64
   category: Finance
-  icon: assets/icon-beta.png
+  icon: assets/icon.png
   maintainer: grayson@eclosion.app
   vendor: Eclosion
-  synopsis: Recurring expense tracker for Monarch Money (Beta)
-  description: A self-hosted toolkit that expands what's possible with Monarch Money - Beta channel
+  synopsis: Recurring expense tracker for Monarch Money
+  description: A self-hosted toolkit that expands what's possible with Monarch Money
 
 # AppImage configuration
 appImage:
-  artifactName: ${productName}-${version}.${ext}
+  artifactName: ${productName}-${version}-${arch}.${ext}
 
 # Debian package configuration
 deb:
