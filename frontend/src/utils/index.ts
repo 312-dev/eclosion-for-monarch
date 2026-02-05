@@ -21,6 +21,7 @@ export {
   spacifyEmoji,
   extractLeadingEmoji,
   stripLeadingEmoji,
+  stripNameSuffix,
   FREQUENCY_LABELS,
   FREQUENCY_SHORT_LABELS,
   FREQUENCY_ORDER,

@@ -293,6 +293,22 @@ export function decodeHtmlEntities(text: string): string {
 }
 
 /**
+ * Strip the trailing date/frequency suffix from a recurring item name.
+ *
+ * Backend generates category names like "Netflix (Jun 15, 2025, Monthly)".
+ * The date and frequency are already shown in dedicated columns, so we strip
+ * the suffix for cleaner row display.
+ *
+ * Pattern: " (Mon DD, YYYY, FrequencyLabel)"
+ */
+const NAME_SUFFIX_REGEX =
+  / \([A-Z][a-z]{2} \d{1,2}, \d{4}, (?:Weekly|Bi-weekly|Every [24] (?:weeks|months)|1st & 15th|15th & last|Monthly|Quarterly|6 months|Yearly)\)$/;
+
+export function stripNameSuffix(name: string): string {
+  return name.replace(NAME_SUFFIX_REGEX, '');
+}
+
+/**
  * Regex pattern to match leading emoji(s) at the start of a string.
  * Matches common emoji patterns including:
  * - Basic emoji (single codepoint)
