@@ -42,9 +42,8 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Rollup Zone
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Your Rollup Zone combines small subscriptions into one category. Netflix,
-          Spotify, cloud storage &ndash; they all share a single budget in Monarch.
-          Less clutter, same tracking.
+          Your Rollup Zone combines small subscriptions into one category. Netflix, Spotify, cloud
+          storage &ndash; they all share a single budget in Monarch. Less clutter, same tracking.
         </p>
       </div>
     ),
@@ -65,8 +64,8 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Rollup Items
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Each subscription is tracked separately here. You can see due dates, amounts,
-          and progress. Use the menu to remove an item if it needs its own category.
+          Each subscription is tracked separately here. You can see due dates, amounts, and
+          progress. Hover to access actions like refreshing or re-linking the category.
         </p>
       </div>
     ),
@@ -87,8 +86,9 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Individual Items
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Larger expenses like insurance get their own dedicated category. This creates
-          a separate budget line in Monarch, making it easier to see and manage big bills.
+          Larger expenses like insurance get their own dedicated category. This creates a separate
+          budget line in Monarch, making it easier to see and manage big bills. The progress bar
+          along the bottom shows how close you are to your target.
         </p>
       </div>
     ),
@@ -115,8 +115,9 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Disabled Items
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          These items aren&apos;t being tracked yet. Toggle them on to start building
-          savings, or leave them off if you don&apos;t need to prepare for them.
+          These items aren&apos;t being tracked yet. Click the icon to enable tracking &mdash; you
+          can create a dedicated category, link to an existing one, or add it to your rollup. Leave
+          items off if you don&apos;t need to prepare for them.
         </p>
       </div>
     ),
@@ -137,9 +138,9 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Monthly Savings Goal
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          This is the sum of all your budget targets. Meet each category&apos;s target
-          in the &ldquo;Budgeted&rdquo; column and you&apos;ll hit this number automatically
-          &mdash; no extra budgeting needed.
+          This is the sum of all your budget targets. Meet each category&apos;s target in the
+          &ldquo;Budget&rdquo; column and you&apos;ll hit this number automatically &mdash; no extra
+          budgeting needed.
         </p>
       </div>
     ),
@@ -160,10 +161,10 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Why It Goes Down
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          The chart shows your monthly contribution decreasing over time. That&apos;s a
-          good thing! As you build up savings for each expense, the &ldquo;catch-up&rdquo;
-          portion of your payment drops off. You&apos;ll settle into a lower, steady
-          amount once all categories are fully funded.
+          The chart shows your monthly contribution decreasing over time. That&apos;s a good thing!
+          As you build up savings for each expense, the &ldquo;catch-up&rdquo; portion of your
+          payment drops off. You&apos;ll settle into a lower, steady amount once all categories are
+          fully funded.
         </p>
       </div>
     ),
@@ -184,8 +185,8 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Left to Budget
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          Quick access to your Monarch budget. Green means you have money available
-          to assign; red means you&apos;ve over-budgeted. Click to open Monarch.
+          Quick access to your Monarch budget. Green means you have money available to assign; red
+          means you&apos;ve over-budgeted. Click to open Monarch.
         </p>
       </div>
     ),
@@ -206,9 +207,9 @@ export const RECURRING_TOUR_STEPS: TourStep[] = [
           Untracked Tally
         </div>
         <p style={{ fontSize: '14px', color: 'var(--monarch-text-muted)', margin: 0 }}>
-          We keep a running total of your untracked recurring expenses so you&apos;re
-          never surprised. This amount isn&apos;t included in your monthly savings goal,
-          but you&apos;ll always know it&apos;s there.
+          We keep a running total of your untracked recurring expenses so you&apos;re never
+          surprised. This amount isn&apos;t included in your monthly savings goal, but you&apos;ll
+          always know it&apos;s there.
         </p>
       </div>
     ),
