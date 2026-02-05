@@ -111,7 +111,6 @@ export function RollupItemsTable({ items, onRemoveItem }: RollupItemsTableProps)
             <th className="py-2 px-3 text-right text-xs font-medium text-monarch-text-muted">
               Monthly Set-aside
             </th>
-            <th className="py-2 px-3 w-12"></th>
           </tr>
         </thead>
         <tbody>
@@ -122,7 +121,7 @@ export function RollupItemsTable({ items, onRemoveItem }: RollupItemsTableProps)
               <React.Fragment key={frequency}>
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     className="py-1 px-3 text-[10px] font-medium uppercase tracking-wide bg-monarch-bg-hover text-monarch-text-muted"
                   >
                     {formatFrequency(frequency)}

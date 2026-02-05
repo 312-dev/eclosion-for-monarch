@@ -15,8 +15,8 @@ import {
   getNormalizationDate,
 } from '../../utils';
 import { getCurrentMonthKey } from '../../utils/dateRangeUtils';
-import { MerchantIcon, LoadingSpinner } from '../ui';
-import { TrendUpIcon, TrendDownIcon, XIcon, AnchorIcon } from '../icons';
+import { MerchantIcon } from '../ui';
+import { TrendUpIcon, TrendDownIcon, AnchorIcon, BlockedIcon, SpinnerIcon } from '../icons';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RollupItemRowProps {
@@ -55,7 +55,27 @@ export const RollupItemRow = memo(function RollupItemRow({
       {/* Subscription name with logo */}
       <td className="py-2 px-3">
         <div className="flex items-center gap-2">
-          <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="sm" />
+          <Tooltip content="Remove from rollup">
+            <button
+              onClick={handleRemove}
+              disabled={isDisabled}
+              aria-label={`Remove ${decodeHtmlEntities(item.name)} from rollup`}
+              className="group/avatar relative shrink-0 w-6 h-6 rounded-full cursor-pointer disabled:opacity-50"
+            >
+              <div className="group-hover/avatar:opacity-30 transition-opacity">
+                <MerchantIcon logoUrl={item.logo_url} itemName={item.name} size="sm" />
+              </div>
+              {isRemoving ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <SpinnerIcon size={14} color="var(--monarch-orange)" strokeWidth={2} />
+                </div>
+              ) : (
+                <div className="absolute inset-0 hidden group-hover/avatar:flex items-center justify-center">
+                  <BlockedIcon size={14} color="var(--monarch-text-muted)" strokeWidth={2} />
+                </div>
+              )}
+            </button>
+          </Tooltip>
           <a
             href={`https://app.monarch.com/merchants/${item.merchant_id}?date=${getCurrentMonthKey()}-01`}
             target="_blank"
@@ -170,23 +190,6 @@ export const RollupItemRow = memo(function RollupItemRow({
             </Tooltip>
           )}
         </div>
-      </td>
-      {/* Remove button */}
-      <td className="py-2 px-3 text-center">
-        <button
-          type="button"
-          onClick={handleRemove}
-          disabled={isDisabled}
-          aria-label={`Remove ${decodeHtmlEntities(item.name)} from rollup`}
-          aria-busy={isRemoving}
-          className={`p-1 rounded transition-all disabled:opacity-50 hover-bg-transparent-to-hover ${isRemoving ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
-        >
-          {isRemoving ? (
-            <LoadingSpinner size="sm" color="var(--monarch-text-muted)" />
-          ) : (
-            <XIcon size={16} color="var(--monarch-text-muted)" aria-hidden="true" />
-          )}
-        </button>
       </td>
     </tr>
   );
