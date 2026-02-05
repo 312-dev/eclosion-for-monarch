@@ -75,7 +75,7 @@ function InlineActionIcon({
   isEditable: boolean;
   isRecreating: boolean;
   isRateLimited: boolean;
-  onRecreate?: () => Promise<void>;
+  onRecreate: (() => Promise<void>) | undefined;
   onEmojiChange: (emoji: string) => Promise<void>;
   currentEmoji: string;
 }) {
