@@ -3050,6 +3050,10 @@ progress::-moz-progress-bar {
     table-layout: fixed;
   }
 
+  .recurring-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
   .recurring-cards {
     display: none;
   }
@@ -3067,8 +3071,6 @@ progress::-moz-progress-bar {
 .rollup-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
 }
 
 /* Frequency group header for card layout */
@@ -3078,12 +3080,8 @@ progress::-moz-progress-bar {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--monarch-text-muted);
-  padding: 0.25rem 0;
-  margin-top: 0.5rem;
-}
-
-.rollup-cards-group-header:first-child {
-  margin-top: 0;
+  padding: 0.25rem 0.75rem;
+  background-color: var(--monarch-bg-hover);
 }
 
 /* Desktop: Show table, hide cards */

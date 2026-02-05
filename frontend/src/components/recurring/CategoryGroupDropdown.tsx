@@ -1,21 +1,21 @@
 /**
- * CategoryGroupDropdown - Dropdown for changing category groups
+ * CategoryGroupDropdown - Inline trigger with portal-based searchable dropdown
  *
- * Accessibility features:
- * - aria-haspopup and aria-expanded on trigger button
- * - role="listbox" on dropdown menu
- * - role="option" on menu items with aria-selected
- * - Keyboard navigation (Escape to close, Arrow keys, Enter to select)
- * - Focus management
+ * Renders the category group name + chevron inline, and opens a
+ * Portal-based dropdown with search on click. The Portal ensures
+ * the dropdown is never clipped by row/table overflow.
  */
 
-import React, { useState, useRef, useCallback, useEffect, useId } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
+import { Search, Check } from 'lucide-react';
 import type { CategoryGroup } from '../../types';
 import { useCategoryGroupsQuery } from '../../api/queries/dashboardQueries';
-import { useClickOutside } from '../../hooks';
+import { Portal } from '../Portal';
 import { Tooltip } from '../ui/Tooltip';
+import { useDropdown } from '../../hooks';
 import { SpinnerIcon, ChevronDownIcon } from '../icons';
 import { decodeHtmlEntities } from '../../utils';
+import { UI } from '../../constants';
 
 interface CategoryGroupDropdownProps {
   readonly currentGroupName: string | null;
@@ -28,28 +28,37 @@ export function CategoryGroupDropdown({
   onChangeGroup,
   disabled,
 }: CategoryGroupDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const menuId = useId();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
   const triggerId = useId();
 
   const { data: groups = [], isLoading } = useCategoryGroupsQuery();
+  const dropdown = useDropdown<HTMLDivElement, HTMLButtonElement>({ alignment: 'left' });
 
-  useClickOutside([dropdownRef], () => setIsOpen(false), isOpen);
+  const filteredGroups = searchQuery
+    ? groups.filter((g) =>
+        decodeHtmlEntities(g.name).toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : groups;
 
-  const handleOpen = () => {
-    if (disabled || isChanging) return;
-    setIsOpen(!isOpen);
-  };
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (dropdown.isOpen) {
+      setSearchQuery('');
+      setActiveIndex(-1);
+      setTimeout(() => searchInputRef.current?.focus(), UI.DELAY.FOCUS_AFTER_OPEN);
+    }
+  }, [dropdown.isOpen]);
 
-  const handleSelect = async (group: CategoryGroup) => {
+  if (!currentGroupName) return null;
+
+  const handleSelect = async (group: CategoryGroup): Promise<void> => {
+    dropdown.close();
+    dropdown.triggerRef.current?.focus();
     setIsChanging(true);
-    setIsOpen(false);
-    triggerRef.current?.focus();
     try {
       await onChangeGroup(group.id, group.name);
     } finally {
@@ -57,156 +66,178 @@ export function CategoryGroupDropdown({
     }
   };
 
-  // Keyboard navigation handler
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!isOpen) {
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleOpen();
-        }
-        return;
+  const handleKeyDown = (e: React.KeyboardEvent): void => {
+    const len = filteredGroups.length;
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        dropdown.close();
+        dropdown.triggerRef.current?.focus();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveIndex((prev) => (prev + 1 < len ? prev + 1 : 0));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveIndex((prev) => (prev - 1 >= 0 ? prev - 1 : len - 1));
+        break;
+      case 'Enter': {
+        e.preventDefault();
+        const opt = activeIndex >= 0 && activeIndex < len ? filteredGroups[activeIndex] : null;
+        if (opt) handleSelect(opt);
+        break;
       }
-
-      switch (e.key) {
-        case 'Escape':
-          e.preventDefault();
-          setIsOpen(false);
-          triggerRef.current?.focus();
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          setFocusedIndex((prev) => (prev < groups.length - 1 ? prev + 1 : 0));
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : groups.length - 1));
-          break;
-        case 'Home':
-          e.preventDefault();
-          setFocusedIndex(0);
-          break;
-        case 'End':
-          e.preventDefault();
-          setFocusedIndex(groups.length - 1);
-          break;
-        case 'Enter':
-        case ' ': {
-          e.preventDefault();
-          const selectedGroup = groups[focusedIndex];
-          if (focusedIndex >= 0 && selectedGroup) {
-            handleSelect(selectedGroup);
-          }
-          break;
-        }
-        case 'Tab':
-          setIsOpen(false);
-          break;
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleOpen/handleSelect are stable
-    [isOpen, groups, focusedIndex]
-  );
-
-  // Focus the selected option when dropdown opens or focus changes
-  useEffect(() => {
-    if (isOpen && focusedIndex >= 0) {
-      optionRefs.current[focusedIndex]?.focus();
+      case 'Home':
+        e.preventDefault();
+        setActiveIndex(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        setActiveIndex(len - 1);
+        break;
     }
-  }, [isOpen, focusedIndex]);
+  };
 
-  // Set initial focus to current group when opening
-  useEffect(() => {
-    if (isOpen && groups.length > 0 && !isLoading) {
-      const currentIndex = groups.findIndex((g) => g.name === currentGroupName);
-      setFocusedIndex(Math.max(currentIndex, 0));
+  const handleTriggerKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!dropdown.isOpen) dropdown.toggle();
     }
-  }, [isOpen, groups, isLoading, currentGroupName]);
-
-  // Reset refs array when groups change
-  useEffect(() => {
-    optionRefs.current = [];
-  }, [groups]);
-
-  if (!currentGroupName) return null;
+  };
 
   return (
-    <div className="relative inline-flex items-center gap-1 min-w-0 max-w-full" ref={dropdownRef}>
-      <span className="truncate" id={`${triggerId}-label`}>
-        {decodeHtmlEntities(currentGroupName)}
-      </span>
+    <div className="inline-flex min-w-0 max-w-full">
       <Tooltip content="Change category group">
         <button
+          ref={dropdown.triggerRef}
           id={triggerId}
-          ref={triggerRef}
-          onClick={handleOpen}
-          onKeyDown={handleKeyDown}
+          onClick={() => !(disabled || isChanging) && dropdown.toggle()}
+          onKeyDown={handleTriggerKeyDown}
           disabled={disabled || isChanging}
           aria-label={`Change category group. Current: ${decodeHtmlEntities(currentGroupName)}`}
           aria-haspopup="listbox"
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? menuId : undefined}
-          className="hover:opacity-70 transition-opacity disabled:opacity-50"
+          aria-expanded={dropdown.isOpen}
+          aria-controls={dropdown.isOpen ? listboxId : undefined}
+          className="inline-flex items-center gap-1 min-w-0 max-w-full hover:opacity-70 transition-opacity disabled:opacity-50"
         >
+          <span className="truncate">{decodeHtmlEntities(currentGroupName)}</span>
           {isChanging ? (
-            <SpinnerIcon size={12} aria-hidden="true" />
+            <SpinnerIcon size={12} className="shrink-0" aria-hidden="true" />
           ) : (
-            <ChevronDownIcon size={12} aria-hidden="true" />
+            <ChevronDownIcon size={12} className="shrink-0" aria-hidden="true" />
           )}
         </button>
       </Tooltip>
-      {isOpen && (
-        <div
-          id={menuId}
-          role="listbox"
-          tabIndex={-1}
-          aria-labelledby={triggerId}
-          aria-activedescendant={focusedIndex >= 0 ? `${menuId}-option-${focusedIndex}` : undefined}
-          onKeyDown={handleKeyDown}
-          className="absolute left-0 top-6 z-popover py-1 rounded-lg shadow-lg text-sm max-h-64 overflow-y-auto dropdown-menu"
-          style={{
-            backgroundColor: 'var(--monarch-bg-card)',
-            border: '1px solid var(--monarch-border)',
-            minWidth: '180px',
-          }}
-        >
-          {isLoading ? (
-            <div
-              className="px-3 py-2"
-              style={{ color: 'var(--monarch-text-light)' }}
-              aria-live="polite"
-            >
-              Loading...
+
+      {dropdown.isOpen && (
+        <Portal>
+          {/* Backdrop — stopPropagation prevents parent click-outside handlers
+              from interfering when nested inside another dropdown */}
+          <div
+            className="fixed inset-0 z-(--z-index-dropdown)"
+            onMouseDown={(e) => e.nativeEvent.stopPropagation()}
+            onClick={() => dropdown.close()}
+            aria-hidden="true"
+          />
+          <div
+            ref={dropdown.dropdownRef}
+            id={listboxId}
+            role="listbox"
+            aria-label="Category groups"
+            aria-activedescendant={
+              activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+            }
+            className="fixed rounded-lg shadow-lg border border-(--monarch-border) bg-(--monarch-bg-card) overflow-hidden dropdown-menu z-(--z-index-dropdown)"
+            style={{
+              top: dropdown.position.top,
+              bottom: dropdown.position.bottom,
+              left: dropdown.position.left,
+              right: dropdown.position.right,
+              minWidth: 200,
+              maxWidth: '90vw',
+            }}
+            onMouseDown={(e) => e.nativeEvent.stopPropagation()}
+            onKeyDown={handleKeyDown}
+            tabIndex={-1}
+          >
+            {/* Search input */}
+            <div className="p-2 border-b border-(--monarch-border)">
+              <div className="relative">
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-(--monarch-text-muted)"
+                  aria-hidden="true"
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Search groups..."
+                  aria-label="Search category groups"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-(--monarch-border) bg-(--monarch-bg-page) text-(--monarch-text-dark) placeholder:text-(--monarch-text-muted) focus:outline-none focus:border-(--monarch-orange) focus:ring-1 focus:ring-(--monarch-orange)/20"
+                />
+              </div>
             </div>
-          ) : (
-            groups.map((group, index) => {
-              const isSelected = group.name === currentGroupName;
-              const isFocused = index === focusedIndex;
-              const bgColor = isFocused || isSelected ? 'var(--monarch-bg-hover)' : 'transparent';
-              return (
-                <button
-                  key={group.id}
-                  id={`${menuId}-option-${index}`}
-                  ref={(el) => {
-                    optionRefs.current[index] = el;
-                  }}
-                  role="option"
-                  aria-selected={isSelected}
-                  onClick={() => handleSelect(group)}
-                  className="w-full text-left px-3 py-2 hover:opacity-80 transition-opacity"
-                  style={{
-                    color: isSelected ? 'var(--monarch-orange)' : 'var(--monarch-text-dark)',
-                    backgroundColor: bgColor,
-                    outline: isFocused ? '2px solid var(--monarch-text-muted)' : 'none',
-                    outlineOffset: '-2px',
-                  }}
-                >
-                  {decodeHtmlEntities(group.name)}
-                </button>
-              );
-            })
-          )}
-        </div>
+
+            {/* Options list */}
+            <div className="max-h-60 overflow-y-auto" role="presentation">
+              {(() => {
+                if (isLoading) {
+                  return (
+                    <div
+                      className="px-3 py-4 text-sm text-center text-(--monarch-text-muted)"
+                      role="status"
+                    >
+                      Loading...
+                    </div>
+                  );
+                }
+
+                if (filteredGroups.length === 0) {
+                  const emptyMessage = searchQuery ? 'No results found' : 'No groups available';
+                  return (
+                    <div className="px-3 py-4 text-sm text-center text-(--monarch-text-muted)">
+                      {emptyMessage}
+                    </div>
+                  );
+                }
+
+                return filteredGroups.map((group, idx) => {
+                  const isSelected = group.name === currentGroupName;
+                  const isActive = idx === activeIndex;
+                  return (
+                    <button
+                      key={group.id}
+                      id={`${listboxId}-option-${idx}`}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => handleSelect(group)}
+                      onMouseEnter={() => setActiveIndex(idx)}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                        isSelected
+                          ? 'bg-(--monarch-orange)/10 text-(--monarch-orange)'
+                          : 'hover:bg-(--monarch-bg-hover) text-(--monarch-text-dark)'
+                      } ${isActive && !isSelected ? 'bg-(--monarch-bg-hover)' : ''}`}
+                    >
+                      <span className="flex-1 truncate">{decodeHtmlEntities(group.name)}</span>
+                      {isSelected && (
+                        <Check
+                          size={16}
+                          className="text-(--monarch-orange) shrink-0"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

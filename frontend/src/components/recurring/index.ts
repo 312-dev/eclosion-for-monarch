@@ -8,7 +8,6 @@ export { RecurringListHeader, SortButton, COLUMN_WIDTHS } from './RecurringListH
 export type { SortField, SortDirection } from './RecurringListHeader';
 export { RecurringFrequencyGroup } from './RecurringFrequencyGroup';
 export { RecurringListEmpty } from './RecurringListEmpty';
-export { ActionsDropdown } from './ActionsDropdown';
 export { CategoryGroupDropdown } from './CategoryGroupDropdown';
 export { StaleWarningPopover } from './StaleWarningPopover';
 

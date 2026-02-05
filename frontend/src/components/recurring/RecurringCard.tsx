@@ -8,17 +8,12 @@
 
 import { memo, useState, useRef, useEffect } from 'react';
 import type { RecurringItem } from '../../types';
-import { Tooltip } from '../ui/Tooltip';
-import { formatDateRelative } from '../../utils';
+import { formatDateRelative, getStatusStyles } from '../../utils';
 import { RecurringItemHeader } from './RecurringItemHeader';
 import { RecurringItemBudget } from './RecurringItemBudget';
 import { RecurringItemStatus } from './RecurringItemStatus';
-import { RecurringItemProgress } from './RecurringItemProgress';
-import { ActionsDropdown } from './ActionsDropdown';
 import { UI } from '../../constants';
-import { SpinnerIcon, ArrowUpIcon } from '../icons';
 import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
-import { useIsRateLimited } from '../../context/RateLimitContext';
 import { useDataMonth, formatMonthShort } from '../../context/MonthTransitionContext';
 
 interface RecurringCardProps {
@@ -29,7 +24,6 @@ interface RecurringCardProps {
   readonly onChangeGroup: (id: string, groupId: string, groupName: string) => Promise<void>;
   readonly onAddToRollup: ((id: string) => Promise<void>) | undefined;
   readonly onEmojiChange: (id: string, emoji: string) => Promise<void>;
-  readonly onRefreshItem: (id: string) => Promise<void>;
   readonly onNameChange: (id: string, name: string) => Promise<void>;
   readonly onLinkCategory: (item: RecurringItem) => void;
   readonly highlightId?: string | null;
@@ -46,7 +40,6 @@ export const RecurringCard = memo(function RecurringCard({
   onChangeGroup,
   onAddToRollup,
   onEmojiChange,
-  onRefreshItem,
   onNameChange,
   onLinkCategory,
   highlightId,
@@ -58,8 +51,6 @@ export const RecurringCard = memo(function RecurringCard({
   const allocateAction = useAsyncAction();
   const recreateAction = useAsyncAction();
   const addToRollupAction = useAsyncAction();
-  const refreshAction = useAsyncAction();
-  const isRateLimited = useIsRateLimited();
   const dataMonth = useDataMonth();
   const monthLabel = formatMonthShort(dataMonth);
 
@@ -92,8 +83,6 @@ export const RecurringCard = memo(function RecurringCard({
   const handleEmojiChange = async (emoji: string) => {
     await onEmojiChange(item.id, emoji);
   };
-
-  const handleRefresh = () => refreshAction.execute(() => onRefreshItem(item.id));
 
   const handleNameChange = async (name: string) => {
     await onNameChange(item.id, name);
@@ -128,15 +117,21 @@ export const RecurringCard = memo(function RecurringCard({
       data-tour={dataTourId}
     >
       {/* Row 1: Header + Status + Actions */}
-      <div className="flex items-start justify-between gap-3">
+      <div
+        className={`flex justify-between gap-3 ${item.is_enabled ? 'items-center' : 'items-start'}`}
+      >
         <div className="flex-1 min-w-0">
           <RecurringItemHeader
             item={item}
             onToggle={handleToggle}
+            onRecreate={handleRecreate}
+            onLinkCategory={() => onLinkCategory(item)}
+            onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
             onEmojiChange={handleEmojiChange}
             onNameChange={handleNameChange}
             onChangeGroup={handleChangeGroup}
             isToggling={toggleAction.loading}
+            isRecreating={recreateAction.loading}
             contentOpacity={contentOpacity}
             displayStatus={displayStatus}
             progressPercent={progressPercent}
@@ -144,59 +139,28 @@ export const RecurringCard = memo(function RecurringCard({
             showProgress={false}
           />
         </div>
-        <div className="flex items-center gap-2">
-          <div className={contentOpacity}>
-            <RecurringItemStatus
-              item={item}
-              displayStatus={displayStatus}
-              onAllocate={handleAllocateNeeded}
-              isAllocating={allocateAction.loading}
-            />
-          </div>
-          {item.is_enabled ? (
-            <ActionsDropdown
-              item={item}
-              onToggle={handleToggle}
-              onLinkCategory={() => onLinkCategory(item)}
-              onRecreate={handleRecreate}
-              onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
-              onRefresh={handleRefresh}
-              onChangeGroup={handleChangeGroup}
-              isToggling={toggleAction.loading}
-              isRecreating={recreateAction.loading}
-              isAddingToRollup={addToRollupAction.loading}
-              isRefreshing={refreshAction.loading}
-              showCategoryGroup={showCategoryGroup}
-            />
-          ) : (
-            onAddToRollup && (
-              <Tooltip content="Add to rollup">
-                <button
-                  onClick={handleAddToRollup}
-                  disabled={addToRollupAction.loading || isRateLimited}
-                  aria-label="Add to rollup"
-                  className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-black/10 disabled:opacity-50"
-                >
-                  {addToRollupAction.loading ? (
-                    <SpinnerIcon size={16} color="var(--monarch-orange)" />
-                  ) : (
-                    <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
-                  )}
-                </button>
-              </Tooltip>
-            )
-          )}
+        <div className={contentOpacity}>
+          <RecurringItemStatus
+            item={item}
+            displayStatus={displayStatus}
+            onAllocate={handleAllocateNeeded}
+            isAllocating={allocateAction.loading}
+          />
         </div>
       </div>
 
-      {/* Progress bar - aligned with text content (after icon + gap) */}
-      <div className={`mt-2 mb-3 pl-15 ${contentOpacity}`}>
-        <RecurringItemProgress
-          item={item}
-          displayStatus={displayStatus}
-          progressPercent={progressPercent}
-        />
-      </div>
+      {/* Thin progress bar - full width divider between header and bottom section */}
+      {item.is_enabled && (
+        <div className="-mx-4 mt-3 h-0.75" aria-hidden="true">
+          <div
+            className="h-full transition-all"
+            style={{
+              width: `${progressPercent}%`,
+              backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color,
+            }}
+          />
+        </div>
+      )}
 
       {/* Bottom section with darker background */}
       <div className="bg-monarch-bg-page -mx-4 -mb-4 px-4 py-3 rounded-b-lg">

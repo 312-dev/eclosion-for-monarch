@@ -56,11 +56,10 @@ interface RecurringListHeaderProps {
  * These must match the widths used in RecurringRow.tsx
  */
 export const COLUMN_WIDTHS = {
-  name: 'w-[42%]', // Name, icon, category, progress bar
+  name: 'w-[50%]', // Name, icon, category
   date: 'w-[12%]', // Due date
-  budget: 'w-[23%]', // Budget input and target
-  status: 'w-[14%]', // Status badge
-  actions: 'w-[9%]', // Actions menu
+  budget: 'w-[22%]', // Budget input and target
+  status: 'w-[16%]', // Status badge
 } as const;
 
 export function RecurringListHeader({
@@ -74,7 +73,7 @@ export function RecurringListHeader({
   return (
     <thead>
       <tr className="bg-monarch-bg-page border-b border-monarch-border">
-        <th className={`py-3 pl-5 pr-2 text-left ${COLUMN_WIDTHS.name}`}>
+        <th className={`py-3 pl-4 pr-2 text-left ${COLUMN_WIDTHS.name}`}>
           <SortButton
             field="name"
             label="Recurring"
@@ -83,7 +82,7 @@ export function RecurringListHeader({
             onClick={onSort}
           />
         </th>
-        <th className={`py-3 px-4 text-left ${COLUMN_WIDTHS.date}`}>
+        <th className={`py-3 px-3 text-left ${COLUMN_WIDTHS.date}`}>
           <SortButton
             field="due_date"
             label="Date"
@@ -92,7 +91,7 @@ export function RecurringListHeader({
             onClick={onSort}
           />
         </th>
-        <th className={`py-3 px-4 text-right ${COLUMN_WIDTHS.budget}`}>
+        <th className={`py-3 px-3 text-right ${COLUMN_WIDTHS.budget}`}>
           <SortButton
             field="monthly"
             label={`${monthLabel}. Budget`}
@@ -103,12 +102,9 @@ export function RecurringListHeader({
           />
         </th>
         <th
-          className={`py-3 px-5 text-center text-sm font-medium text-monarch-text-light ${COLUMN_WIDTHS.status}`}
+          className={`py-3 px-3 text-center text-sm font-medium text-monarch-text-light ${COLUMN_WIDTHS.status}`}
         >
           Status
-        </th>
-        <th className={`py-3 px-3 ${COLUMN_WIDTHS.actions}`}>
-          <span className="sr-only">Actions</span>
         </th>
       </tr>
     </thead>

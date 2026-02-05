@@ -7,16 +7,13 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import type { RecurringItem } from '../../types';
 import { Tooltip } from '../ui/Tooltip';
-import { formatDateRelative } from '../../utils';
+import { formatDateRelative, getStatusStyles } from '../../utils';
 import { RecurringItemHeader } from './RecurringItemHeader';
 import { RecurringItemBudget } from './RecurringItemBudget';
 import { RecurringItemStatus } from './RecurringItemStatus';
-import { ActionsDropdown } from './ActionsDropdown';
 import { COLUMN_WIDTHS } from './RecurringListHeader';
 import { UI } from '../../constants';
-import { SpinnerIcon, ArrowUpIcon } from '../icons';
 import { useAsyncAction, useItemDisplayStatus } from '../../hooks';
-import { useIsRateLimited } from '../../context/RateLimitContext';
 
 interface RecurringRowProps {
   readonly item: RecurringItem;
@@ -26,7 +23,6 @@ interface RecurringRowProps {
   readonly onChangeGroup: (id: string, groupId: string, groupName: string) => Promise<void>;
   readonly onAddToRollup: ((id: string) => Promise<void>) | undefined;
   readonly onEmojiChange: (id: string, emoji: string) => Promise<void>;
-  readonly onRefreshItem: (id: string) => Promise<void>;
   readonly onNameChange: (id: string, name: string) => Promise<void>;
   readonly onLinkCategory: (item: RecurringItem) => void;
   readonly highlightId?: string | null;
@@ -43,7 +39,6 @@ export const RecurringRow = memo(function RecurringRow({
   onChangeGroup,
   onAddToRollup,
   onEmojiChange,
-  onRefreshItem,
   onNameChange,
   onLinkCategory,
   highlightId,
@@ -55,8 +50,6 @@ export const RecurringRow = memo(function RecurringRow({
   const allocateAction = useAsyncAction();
   const recreateAction = useAsyncAction();
   const addToRollupAction = useAsyncAction();
-  const refreshAction = useAsyncAction();
-  const isRateLimited = useIsRateLimited();
 
   const rowRef = useRef<HTMLTableRowElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -76,11 +69,9 @@ export const RecurringRow = memo(function RecurringRow({
   const displayStatus = useItemDisplayStatus(item);
   const { date, relative } = formatDateRelative(item.next_due_date);
 
-  const handleToggle = () =>
-    toggleAction.execute(() => onToggle(item.id, !item.is_enabled));
+  const handleToggle = () => toggleAction.execute(() => onToggle(item.id, !item.is_enabled));
 
-  const handleRecreate = () =>
-    recreateAction.execute(() => onRecreate(item.id));
+  const handleRecreate = () => recreateAction.execute(() => onRecreate(item.id));
 
   const handleChangeGroup = async (groupId: string, groupName: string) => {
     await onChangeGroup(item.id, groupId, groupName);
@@ -89,9 +80,6 @@ export const RecurringRow = memo(function RecurringRow({
   const handleEmojiChange = async (emoji: string) => {
     await onEmojiChange(item.id, emoji);
   };
-
-  const handleRefresh = () =>
-    refreshAction.execute(() => onRefreshItem(item.id));
 
   const handleNameChange = async (name: string) => {
     await onNameChange(item.id, name);
@@ -118,39 +106,58 @@ export const RecurringRow = memo(function RecurringRow({
   return (
     <tr
       ref={rowRef}
-      className={`group transition-all duration-300 border-b border-monarch-border ${isHighlighted ? 'animate-highlight bg-monarch-orange-light' : 'bg-monarch-bg-card hover:bg-monarch-bg-hover'}`}
+      className={`group relative transition-all duration-300 border-b border-monarch-border ${isHighlighted ? 'animate-highlight bg-monarch-orange-light' : 'bg-monarch-bg-card hover:bg-monarch-bg-hover'}`}
       data-tour={dataTourId}
     >
-      <td className={`${rowPadding} pl-5 pr-2 ${COLUMN_WIDTHS.name}`}>
+      <td className={`${rowPadding} pl-4 pr-2 ${COLUMN_WIDTHS.name}`}>
         <RecurringItemHeader
           item={item}
           onToggle={handleToggle}
+          onRecreate={handleRecreate}
+          onLinkCategory={() => onLinkCategory(item)}
+          onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
           onEmojiChange={handleEmojiChange}
           onNameChange={handleNameChange}
           onChangeGroup={handleChangeGroup}
           isToggling={toggleAction.loading}
+          isRecreating={recreateAction.loading}
           contentOpacity={contentOpacity}
           displayStatus={displayStatus}
           progressPercent={progressPercent}
           showCategoryGroup={showCategoryGroup}
+          showProgress={false}
         />
-      </td>
-      <td className={`${rowPadding} px-4 ${COLUMN_WIDTHS.date} ${contentOpacity}`}>
-        <div className="text-monarch-text-dark">{date}</div>
-        {relative && (
-          <div className="text-sm text-monarch-text-light">
-            {relative}
+        {item.is_enabled && (
+          <div className="absolute bottom-0 left-0 right-0 z-2 h-0.75" aria-hidden="true">
+            <div
+              className="h-full transition-all"
+              style={{
+                width: `${progressPercent}%`,
+                backgroundColor: getStatusStyles(displayStatus, item.is_enabled).color,
+              }}
+            />
           </div>
         )}
       </td>
-      <td className={`${rowPadding} px-4 text-right ${COLUMN_WIDTHS.budget} ${contentOpacity}`}>
+      <td className={`${rowPadding} px-3 ${COLUMN_WIDTHS.date} ${contentOpacity}`}>
+        {relative ? (
+          <Tooltip content={relative}>
+            <span className="text-monarch-text-dark cursor-help decoration-dotted underline-offset-4 opacity-100 group-hover:underline">
+              {date}
+            </span>
+          </Tooltip>
+        ) : (
+          <div className="text-monarch-text-dark">{date}</div>
+        )}
+      </td>
+      <td className={`${rowPadding} px-3 text-right ${COLUMN_WIDTHS.budget} ${contentOpacity}`}>
         <RecurringItemBudget
           item={item}
           onAllocate={handleAllocate}
           isAllocating={allocateAction.loading}
         />
       </td>
-      <td className={`${rowPadding} px-5 ${COLUMN_WIDTHS.status}`}>
+      <td className={`${rowPadding} px-3 ${COLUMN_WIDTHS.status}`}>
         <div className="flex justify-center">
           <RecurringItemStatus
             item={item}
@@ -159,40 +166,6 @@ export const RecurringRow = memo(function RecurringRow({
             isAllocating={allocateAction.loading}
           />
         </div>
-      </td>
-      <td className={`${rowPadding} px-3 ${COLUMN_WIDTHS.actions}`}>
-        {item.is_enabled ? (
-          <ActionsDropdown
-            item={item}
-            onToggle={handleToggle}
-            onLinkCategory={() => onLinkCategory(item)}
-            onRecreate={handleRecreate}
-            onAddToRollup={onAddToRollup ? handleAddToRollup : undefined}
-            onRefresh={handleRefresh}
-            onChangeGroup={handleChangeGroup}
-            isToggling={toggleAction.loading}
-            isRecreating={recreateAction.loading}
-            isAddingToRollup={addToRollupAction.loading}
-            isRefreshing={refreshAction.loading}
-            showCategoryGroup={showCategoryGroup}
-          />
-        ) : (
-          onAddToRollup && (
-            <Tooltip content="Add to rollup">
-              <button
-                onClick={handleAddToRollup}
-                disabled={addToRollupAction.loading || isRateLimited}
-                className="w-7 h-7 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 hover:bg-black/10 disabled:opacity-50"
-              >
-                {addToRollupAction.loading ? (
-                  <SpinnerIcon size={16} color="var(--monarch-orange)" />
-                ) : (
-                  <ArrowUpIcon size={16} color="var(--monarch-orange)" strokeWidth={2.5} />
-                )}
-              </button>
-            </Tooltip>
-          )
-        )}
       </td>
     </tr>
   );

@@ -17,7 +17,7 @@ export function RecurringListSectionHeader({
   onToggleHide,
 }: RecurringListSectionHeaderProps) {
   return (
-    <div className="px-5 py-4 flex items-center justify-between bg-monarch-bg-card border-b border-monarch-border">
+    <div className="px-5 py-4 flex items-center justify-between bg-monarch-bg-card border-b border-monarch-border rounded-t-xl">
       <div className="flex flex-col gap-1">
         <span className="text-lg font-semibold text-monarch-text-dark leading-tight">
           Dedicated Categories
@@ -28,7 +28,11 @@ export function RecurringListSectionHeader({
       </div>
       <div className="flex items-center gap-4">
         {disabledCount > 0 && (
-          <Tooltip content={hideDisabled ? `Show ${disabledCount} untracked` : `Hide ${disabledCount} untracked`}>
+          <Tooltip
+            content={
+              hideDisabled ? `Show ${disabledCount} untracked` : `Hide ${disabledCount} untracked`
+            }
+          >
             <button
               onClick={onToggleHide}
               className="p-1.5 rounded-md transition-colors text-monarch-text-muted hover:bg-monarch-bg-elevated"

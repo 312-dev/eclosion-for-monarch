@@ -91,7 +91,7 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
 
   if (!item.is_enabled) {
     return (
-      <div className="flex flex-col items-end">
+      <div className="flex flex-col">
         <div className="flex items-center whitespace-nowrap rounded bg-monarch-bg-card border border-monarch-border px-2 py-1 opacity-50">
           <span className="font-medium text-monarch-text-muted">$</span>
           <input
@@ -101,7 +101,7 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
             value="0"
             disabled
             readOnly
-            className="w-16 text-right font-medium text-monarch-text-muted bg-transparent font-inherit cursor-not-allowed tabular-nums"
+            className="w-16 grow text-right font-medium text-monarch-text-muted bg-transparent font-inherit cursor-not-allowed tabular-nums"
           />
           <span className="text-monarch-text-muted ml-1">/ {target}</span>
           {isCatchingUp && (
@@ -195,7 +195,7 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
   }
 
   return (
-    <div className="flex flex-col items-end">
+    <div className="flex flex-col">
       <div className="flex items-center whitespace-nowrap rounded bg-monarch-bg-card border border-monarch-border px-2 py-1 focus-within:border-monarch-orange">
         <span className="font-medium text-monarch-text-dark">$</span>
         <input
@@ -209,7 +209,7 @@ export function RecurringItemBudget({ item, onAllocate, isAllocating }: Recurrin
           onFocus={(e) => e.target.select()}
           disabled={isDisabled}
           placeholder="0"
-          className="w-16 text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none tabular-nums"
+          className="w-16 grow text-right font-medium text-monarch-text-dark bg-transparent font-inherit disabled:opacity-50 outline-none tabular-nums"
         />
         <span className="text-monarch-text-muted ml-1">/ {target}</span>
         {isCatchingUp && (

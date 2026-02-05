@@ -11,7 +11,7 @@ interface RecurringListEmptyProps {
 export function RecurringListEmpty({ showEnabled }: RecurringListEmptyProps) {
   return (
     <tr>
-      <td colSpan={6} className="py-12 text-center">
+      <td colSpan={4} className="py-12 text-center">
         <div className="flex flex-col items-center gap-3">
           <FrequencyIcon frequency="monthly" />
           <p style={{ color: 'var(--monarch-text-muted)' }}>

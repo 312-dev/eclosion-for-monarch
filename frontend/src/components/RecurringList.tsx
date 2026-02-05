@@ -43,7 +43,6 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
     handleChangeGroupItem,
     handleAddToRollupItem,
     handleEmojiChangeItem,
-    handleRefreshItem,
     handleNameChangeItem,
     handleLinkCategory,
     handleLinkSuccess,
@@ -147,7 +146,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
   // Filtered empty state - items exist but are hidden by filters
   if (filteredItems.length === 0) {
     return (
-      <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
+      <div className="rounded-xl shadow-sm bg-monarch-bg-card border border-monarch-border">
         <RecurringListSectionHeader
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
@@ -168,7 +167,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
 
   return (
     <div>
-      <div className="rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
+      <div className="rounded-xl shadow-sm bg-monarch-bg-card border border-monarch-border overflow-hidden">
         <RecurringListSectionHeader
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
@@ -192,7 +191,6 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
                   onChangeGroup={handleChangeGroupItem}
                   onAddToRollup={handleAddToRollupItem}
                   onEmojiChange={handleEmojiChangeItem}
-                  onRefreshItem={handleRefreshItem}
                   onNameChange={handleNameChangeItem}
                   onLinkCategory={handleLinkCategory}
                   highlightId={highlightId}
@@ -217,7 +215,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
               <Fragment key={frequency}>
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={4}
                     className={`py-2 px-5 text-xs font-medium uppercase tracking-wide bg-monarch-bg-page text-monarch-text-muted border-b border-monarch-border ${index > 0 ? 'border-t' : ''}`}
                   >
                     {formatFrequency(frequency)}
@@ -233,7 +231,6 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
                     onChangeGroup={handleChangeGroupItem}
                     onAddToRollup={handleAddToRollupItem}
                     onEmojiChange={handleEmojiChangeItem}
-                    onRefreshItem={handleRefreshItem}
                     onNameChange={handleNameChangeItem}
                     onLinkCategory={handleLinkCategory}
                     highlightId={highlightId}
