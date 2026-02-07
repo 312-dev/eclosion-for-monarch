@@ -144,6 +144,7 @@ class SettingsExportService:
         data: dict[str, Any],
         tools: list[str] | None = None,
         passphrase: str | None = None,
+        known_category_ids: set[str] | None = None,
     ) -> ImportResult:
         """
         Import settings from export data.
@@ -152,6 +153,9 @@ class SettingsExportService:
             data: The export data to import
             tools: Optional list of tool names to import (None = all)
             passphrase: Required for notes import (re-encrypts note content)
+            known_category_ids: Pre-fetched set of category IDs that exist in the
+                current Monarch account. Used to auto-link stash items when importing
+                to the same account. If None, all stash items are imported unlinked.
 
         Returns:
             ImportResult with success status and any warnings
@@ -199,7 +203,7 @@ class SettingsExportService:
             # Import stash tool if requested
             if tools is None or "stash" in tools:
                 if "stash" in tools_data:
-                    self._import_stash(tools_data["stash"], warnings)
+                    self._import_stash(tools_data["stash"], warnings, known_category_ids)
                     imported["stash"] = True
                 elif tools is not None and "stash" in tools:
                     warnings.append("Stash tool data not found in export")
@@ -644,15 +648,29 @@ class SettingsExportService:
                     viewing_month = parts[2]
                     # Only import if we imported this general note
                     if source_month in general_note_month_map:
-                        checkbox = CheckboxState(
-                            note_id=None,
-                            general_note_month_key=source_month,
-                            viewing_month=viewing_month,
-                            states_json=json.dumps(states),
-                            created_at=now,
-                            updated_at=now,
+                        # Override existing checkbox state for this combo
+                        existing = (
+                            repo.session.query(CheckboxState)
+                            .filter(
+                                CheckboxState.general_note_month_key == source_month,
+                                CheckboxState.viewing_month == viewing_month,
+                            )
+                            .first()
                         )
-                        repo.session.add(checkbox)
+                        if existing:
+                            existing.states_json = json.dumps(states)
+                            existing.updated_at = now
+                        else:
+                            repo.session.add(
+                                CheckboxState(
+                                    note_id=None,
+                                    general_note_month_key=source_month,
+                                    viewing_month=viewing_month,
+                                    states_json=json.dumps(states),
+                                    created_at=now,
+                                    updated_at=now,
+                                )
+                            )
             else:
                 # Format: "{note_id}:{viewing_month}"
                 parts = key.split(":")
@@ -662,15 +680,29 @@ class SettingsExportService:
                     # Only import if we have a mapping for this note
                     new_note_id = note_id_map.get(old_note_id)
                     if new_note_id:
-                        checkbox = CheckboxState(
-                            note_id=new_note_id,
-                            general_note_month_key=None,
-                            viewing_month=viewing_month,
-                            states_json=json.dumps(states),
-                            created_at=now,
-                            updated_at=now,
+                        # Override existing checkbox state for this combo
+                        existing = (
+                            repo.session.query(CheckboxState)
+                            .filter(
+                                CheckboxState.note_id == new_note_id,
+                                CheckboxState.viewing_month == viewing_month,
+                            )
+                            .first()
                         )
-                        repo.session.add(checkbox)
+                        if existing:
+                            existing.states_json = json.dumps(states)
+                            existing.updated_at = now
+                        else:
+                            repo.session.add(
+                                CheckboxState(
+                                    note_id=new_note_id,
+                                    general_note_month_key=None,
+                                    viewing_month=viewing_month,
+                                    states_json=json.dumps(states),
+                                    created_at=now,
+                                    updated_at=now,
+                                )
+                            )
 
     # ========== Stash Export/Import ==========
 
@@ -749,7 +781,7 @@ class SettingsExportService:
             "browser_type": bm.browser_type,
             "logo_url": bm.logo_url,
             "status": bm.status,
-            "stash_item_id": bm.stash_item_id,
+            "stash_item_id": bm.wishlist_item_id,
             "created_at": bm.created_at.isoformat() if bm.created_at else None,
         }
 
@@ -774,16 +806,18 @@ class SettingsExportService:
         self,
         stash_data: dict[str, Any],
         warnings: list[str],
+        known_category_ids: set[str] | None = None,
     ) -> dict[str, int]:
         """
         Import stash items and config.
 
-        NOTE: monarch_category_id values are NOT imported because they may not
-        exist in the target account. Items are imported unlinked.
+        When known_category_ids is provided, items whose monarch_category_id
+        exists in the set are auto-linked. Otherwise items are imported unlinked.
 
         Args:
             stash_data: Stash export data
             warnings: List to append warnings to
+            known_category_ids: Pre-fetched set of category IDs in the current account
 
         Returns:
             Dict with counts of imported items
@@ -808,18 +842,25 @@ class SettingsExportService:
                 show_monarch_goals=config.get("show_monarch_goals", True),
             )
 
-        # Import items (unlinked - user must re-link to Monarch categories)
+        # Import items - auto-link if category ID exists in current account
         items = stash_data.get("items", [])
+        linked_count = 0
         for item in items:
             try:
+                exported_cat_id = item.get("monarch_category_id")
+                can_link = (
+                    exported_cat_id
+                    and known_category_ids
+                    and exported_cat_id in known_category_ids
+                )
                 repo.create_stash_item(
                     item_id=str(uuid.uuid4()),
                     name=item["name"],
                     amount=item["amount"],
                     target_date=item["target_date"],
                     emoji=item.get("emoji", "🎯"),
-                    monarch_category_id=None,  # Unlinked on import
-                    category_group_id=None,
+                    monarch_category_id=exported_cat_id if can_link else None,
+                    category_group_id=item.get("category_group_id") if can_link else None,
                     category_group_name=item.get("category_group_name"),
                     source_url=item.get("source_url"),
                     source_bookmark_id=None,  # Don't preserve bookmark link
@@ -831,6 +872,8 @@ class SettingsExportService:
                     row_span=item.get("row_span", 1),
                 )
                 imported["items"] += 1
+                if can_link:
+                    linked_count += 1
             except Exception as e:
                 warnings.append(f"Failed to import stash '{item.get('name')}': {e}")
 
@@ -840,6 +883,12 @@ class SettingsExportService:
             # Only import pending or skipped bookmarks, not converted ones
             if bm.get("status") in ("pending", "skipped"):
                 try:
+                    # Override existing bookmark with same URL
+                    existing = repo.get_pending_bookmark_by_url(bm["url"])
+                    if existing:
+                        repo.session.delete(existing)
+                        repo.session.flush()
+
                     repo.create_pending_bookmark(
                         url=bm["url"],
                         name=bm["name"],
@@ -849,21 +898,26 @@ class SettingsExportService:
                     )
                     # If it was skipped, mark it as skipped again
                     if bm.get("status") == "skipped":
-                        existing = repo.get_pending_bookmark_by_url(bm["url"])
-                        if existing:
-                            repo.skip_pending_bookmark(existing.id)
+                        new_bm = repo.get_pending_bookmark_by_url(bm["url"])
+                        if new_bm:
+                            repo.skip_pending_bookmark(new_bm.id)
                     imported["pending_bookmarks"] += 1
-                except Exception:
-                    # Likely duplicate URL, skip silently
-                    pass
+                except Exception as e:
+                    warnings.append(f"Failed to import bookmark '{bm.get('name')}': {e}")
 
-        # Import hypotheses
+        # Import hypotheses (override existing with same ID)
         hypotheses = stash_data.get("hypotheses", [])
         imported["hypotheses"] = 0
         for hyp in hypotheses:
             try:
+                hyp_id = hyp.get("id") or str(uuid.uuid4())
+                existing_hyp = repo.get_hypothesis(hyp_id)
+                if existing_hyp:
+                    repo.session.delete(existing_hyp)
+                    repo.session.flush()
+
                 repo.create_hypothesis(
-                    hypothesis_id=hyp.get("id") or str(uuid.uuid4()),
+                    hypothesis_id=hyp_id,
                     name=hyp["name"],
                     savings_allocations=json.dumps(hyp.get("savings_allocations", {})),
                     savings_total=hyp.get("savings_total", 0),
@@ -882,10 +936,15 @@ class SettingsExportService:
         repo.session.commit()
 
         # Add warning about unlinked items
-        if imported["items"] > 0:
+        unlinked_count = imported["items"] - linked_count
+        if unlinked_count > 0:
             warnings.append(
-                f"Imported {imported['items']} stash(es). "
-                "Stashes are unlinked and need to be connected to Monarch categories."
+                f"{unlinked_count} imported stash(es) are unlinked "
+                "and need to be connected to Monarch categories."
+            )
+        if linked_count > 0:
+            warnings.append(
+                f"{linked_count} imported stash(es) were auto-linked to existing categories."
             )
 
         return imported

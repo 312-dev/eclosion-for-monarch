@@ -1,12 +1,19 @@
 # Settings blueprint
 # /settings/* endpoints for export/import functionality
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from flask import Blueprint, request
 from markupsafe import escape as markupsafe_escape
 
 from core import api_handler
 
 from . import get_services
+
+if TYPE_CHECKING:
+    from . import Services
 
 
 def _sanitize_errors(errors: list[str]) -> list[str]:
@@ -40,6 +47,23 @@ def _sanitize_preview(preview: dict) -> dict:
 settings_bp = Blueprint("settings", __name__, url_prefix="/settings")
 
 
+async def _fetch_known_category_ids(services: Services) -> set[str] | None:
+    """Pre-fetch category IDs from Monarch for auto-linking stash items on import.
+
+    Returns a set of known category IDs, or None if fetching fails.
+    """
+    try:
+        cm = services.sync_service.category_manager
+        categories = await cm._get_categories_cached()
+        return {
+            cat["id"]
+            for cat in categories.get("categories", [])
+            if cat.get("id")
+        }
+    except Exception:
+        return None
+
+
 @settings_bp.route("/export", methods=["GET"])
 @api_handler(handle_mfa=False)
 def export_settings():
@@ -71,7 +95,7 @@ def export_settings():
 
 @settings_bp.route("/import", methods=["POST"])
 @api_handler(handle_mfa=False)
-def import_settings():
+async def import_settings():
     """
     Import settings from a previously exported backup.
 
@@ -85,6 +109,9 @@ def import_settings():
 
     Note: If the export contains notes and passphrase is not provided,
     notes will be skipped with a warning.
+
+    Auto-links stash items to existing Monarch categories when the category ID
+    from the export exists in the current account.
     """
     from services.settings_export_service import SettingsExportService
 
@@ -98,11 +125,15 @@ def import_settings():
     tools = options.get("tools")
     passphrase = options.get("passphrase")
 
+    # Pre-fetch category IDs for auto-linking stash items
+    known_category_ids = await _fetch_known_category_ids(services)
+
     export_service = SettingsExportService(services.sync_service.state_manager)
     result = export_service.import_settings(
         data=export_data,
         tools=tools,
         passphrase=passphrase,
+        known_category_ids=known_category_ids,
     )
 
     return {
