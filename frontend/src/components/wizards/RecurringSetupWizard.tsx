@@ -105,7 +105,7 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
       <TourController isOpen={wizard.showLinkTour} onClose={() => wizard.setShowLinkTour(false)} />
       <div className="flex items-center justify-center md:p-4">
         <div
-          className="w-full md:max-w-lg md:p-6 md:rounded-xl md:shadow-lg md:border md:border-(--monarch-border)"
+          className="w-full rounded-xl p-4 md:max-w-lg md:p-6 md:shadow-lg md:border md:border-(--monarch-border)"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
           }}

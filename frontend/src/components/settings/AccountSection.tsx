@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { Lock, ChevronRight } from 'lucide-react';
+import { SectionHeader } from './settingsSections';
 import { useAuth } from '../../context/AuthContext';
 
 /**
@@ -41,13 +42,7 @@ export function AccountSection() {
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        <Lock size={12} />
-        Account
-      </h2>
+      <SectionHeader sectionId="account" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { Sun, Moon, Monitor, Home } from 'lucide-react';
 import { SearchableSelect } from '../SearchableSelect';
+import { SectionHeader } from './settingsSections';
 import { useTheme, type Theme } from '../../context/ThemeContext';
 import { getLandingPage, setLandingPage, type LandingPageOption } from '../../App';
 import { RecurringIcon, NotesIcon, StashIcon } from '../wizards/WizardComponents';
@@ -45,12 +46,7 @@ export function AppearanceSettings() {
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        Appearance
-      </h2>
+      <SectionHeader sectionId="appearance" />
       <div
         className="rounded-xl overflow-hidden"
         style={{
@@ -118,10 +114,7 @@ export function AppearanceSettings() {
             <SearchableSelect
               value={landingPage}
               onChange={(val) => handleLandingPageChange(val as LandingPageOption)}
-              options={landingPageOptions.map((option) => ({
-                value: option.value,
-                label: option.label,
-              }))}
+              options={landingPageOptions}
               searchable={false}
               className="min-w-32"
             />

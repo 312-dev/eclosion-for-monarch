@@ -9,6 +9,7 @@ import { TourProvider } from '@reactour/tour';
 import { usePwaInstall } from '../hooks/usePwaInstall';
 import { useSetupWizard } from '../hooks/useSetupWizard';
 import { LinkCategoryModal } from './LinkCategoryModal';
+import { ImportSettingsModal } from './import/ImportSettingsModal';
 import { TourController, wizardTourStyles } from './wizards/WizardComponents';
 import { StepIndicator, SETUP_WIZARD_STEPS } from './wizards/StepIndicator';
 import { WizardNavigation } from './wizards/WizardNavigation';
@@ -38,7 +39,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const renderStepContent = () => {
     switch (wizard.currentStep) {
       case 0:
-        return <WelcomeStep />;
+        return <WelcomeStep onRestoreFromBackup={wizard.handleRestoreFromBackup} />;
       case 1:
         return (
           <CategoryStep
@@ -170,6 +171,12 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         )}
 
         <RollupTipModal isOpen={wizard.showRollupTip} onClose={() => wizard.setShowRollupTip(false)} />
+
+        <ImportSettingsModal
+          isOpen={wizard.showImportModal}
+          onClose={() => wizard.setShowImportModal(false)}
+          onSuccess={wizard.handleImportSuccess}
+        />
       </div>
     </TourProvider>
   );

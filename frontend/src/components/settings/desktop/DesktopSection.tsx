@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Monitor } from 'lucide-react';
+import { SectionHeader } from '../settingsSections';
 import { useBiometric } from '../../../hooks';
 import type {
   DesktopSettings,
@@ -161,13 +161,7 @@ export function DesktopSection() {
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        <Monitor size={12} />
-        Desktop App
-      </h2>
+      <SectionHeader sectionId="desktop" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

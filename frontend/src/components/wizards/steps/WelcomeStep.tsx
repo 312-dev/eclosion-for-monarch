@@ -2,6 +2,7 @@
  * WelcomeStep - Initial welcome screen for the setup wizard
  */
 
+import { Upload } from 'lucide-react';
 import { RecurringIcon } from '../WizardComponents';
 import { AppIcon } from '../SetupWizardIcons';
 
@@ -30,7 +31,11 @@ export function FeatureCard({ icon, title, description }: FeatureCardProps) {
   );
 }
 
-export function WelcomeStep() {
+interface WelcomeStepProps {
+  readonly onRestoreFromBackup?: () => void;
+}
+
+export function WelcomeStep({ onRestoreFromBackup }: WelcomeStepProps) {
   return (
     <div className="text-center animate-fade-in">
       <div className="mb-4 flex justify-center">
@@ -59,6 +64,23 @@ export function WelcomeStep() {
           description="Track subscriptions and bills with smart budgeting, automatic catch-up calculations, and rollup categories."
         />
       </div>
+
+      {onRestoreFromBackup && (
+        <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
+          <button
+            type="button"
+            onClick={onRestoreFromBackup}
+            className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:opacity-80"
+            style={{ color: 'var(--monarch-text-muted)' }}
+          >
+            <Upload size={16} />
+            <span>Restore from backup</span>
+          </button>
+          <p className="mt-1 text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+            Have a backup from another instance? Import it to restore your settings.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

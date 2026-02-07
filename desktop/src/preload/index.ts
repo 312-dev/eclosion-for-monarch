@@ -1344,6 +1344,62 @@ const electronAPI = {
      */
     unclaim: (): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke('tunnel:unclaim'),
+
+    /**
+     * Get the decrypted management key (for IFTTT broker authentication).
+     */
+    getManagementKey: (): Promise<string | null> =>
+      ipcRenderer.invoke('tunnel:get-management-key'),
+
+    /**
+     * Fetch the per-subdomain IFTTT action secret from the broker
+     * and write it to disk for Flask to use.
+     */
+    fetchIftttActionSecret: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke('tunnel:fetch-ifttt-action-secret'),
+
+    /**
+     * Manually drain the IFTTT action queue.
+     * Returns results for each action processed.
+     */
+    drainIftttQueue: (): Promise<{
+      processed: number;
+      succeeded: number;
+      failed: number;
+      actions: Array<{
+        id: string;
+        action_slug: string;
+        success: boolean;
+        error?: string;
+      }>;
+    }> => ipcRenderer.invoke('tunnel:drain-ifttt-queue'),
+
+    /**
+     * Listen for tunnel status change events.
+     * Called when tunnel starts, stops, or configuration changes.
+     */
+    onStatusChanged: (
+      callback: (status: {
+        active: boolean;
+        url: string | null;
+        enabled: boolean;
+        subdomain: string | null;
+        configured: boolean;
+      }) => void
+    ): (() => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        status: {
+          active: boolean;
+          url: string | null;
+          enabled: boolean;
+          subdomain: string | null;
+          configured: boolean;
+        }
+      ): void => callback(status);
+      ipcRenderer.on('tunnel:status-changed', handler);
+      return () => ipcRenderer.removeListener('tunnel:status-changed', handler);
+    },
   },
 };
 

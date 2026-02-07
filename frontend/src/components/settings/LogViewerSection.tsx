@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Search, RefreshCw, ChevronDown } from 'lucide-react';
+import { SectionHeader } from './settingsSections';
 import type { LogFileInfo, LogFileContent } from '../../types/electron';
 
 const MAX_LINES = 500;
@@ -86,13 +87,7 @@ export function LogViewerSection() {
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        <FileText size={12} />
-        Logs
-      </h2>
+      <SectionHeader sectionId="logs" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

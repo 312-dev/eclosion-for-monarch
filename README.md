@@ -64,6 +64,12 @@
 | **Monthly Notes** | Persistent notes for Monarch categories/groups. Auto-carry-forward, revision history, inline math evaluation. |
 | **Stashes** | Visual dashboard for savings goals. Set target amounts and dates, track progress with status badges, organize with drag/drop. Optional browser bookmark sync. |
 
+### Coming Soon
+
+| Feature | Description |
+|---------|-------------|
+| **IFTTT Integration** | Connect Eclosion to 900+ apps via IFTTT. Trigger automations when goals are funded, budgets exceeded, or sync completes. *(Awaiting IFTTT review approval — expected within 2 weeks)* |
+
 ### Planned
 
 | Feature | Description |

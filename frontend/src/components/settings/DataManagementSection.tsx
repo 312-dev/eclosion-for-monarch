@@ -4,7 +4,8 @@
  * Export and import settings functionality.
  */
 
-import { Database, Download, Upload, ChevronRight } from 'lucide-react';
+import { Download, Upload, ChevronRight } from 'lucide-react';
+import { SectionHeader } from './settingsSections';
 import { useToast } from '../../context/ToastContext';
 import { useApiClient } from '../../hooks';
 
@@ -36,13 +37,7 @@ export function DataManagementSection({ onShowImportModal }: DataManagementSecti
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        <Database size={12} />
-        Data Management
-      </h2>
+      <SectionHeader sectionId="data" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

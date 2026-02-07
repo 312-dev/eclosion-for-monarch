@@ -7,6 +7,7 @@
 import { Link } from 'react-router-dom';
 import { SyncButton } from '../SyncButton';
 import { HelpDropdown } from './HelpDropdown';
+import { NotificationBell } from './NotificationBell';
 import { AppIcon } from '../wizards/WizardComponents';
 import { RateLimitBanner } from '../ui/RateLimitBanner';
 import { OfflineIndicator } from '../OfflineIndicator';
@@ -15,6 +16,7 @@ import { MonthTransitionBanner } from '../ui/MonthTransitionBanner';
 import { DistributionModeBanner } from '../stash/DistributionModeBanner';
 import { RemoteAccessIndicator } from '../RemoteAccessIndicator';
 import { useMediaQuery, breakpoints } from '../../hooks/useMediaQuery';
+import { scrollToTop } from '../../utils';
 
 interface AppHeaderProps {
   isDemo: boolean;
@@ -86,7 +88,7 @@ export function AppHeader({
             className="flex items-center gap-2"
             style={{ textDecoration: 'none' }}
             aria-label="Eclosion - Go to home"
-            onClick={() => isDemo && window.scrollTo(0, 0)}
+            onClick={() => isDemo && scrollToTop()}
           >
             <AppIcon size={26} />
             <h1
@@ -106,6 +108,7 @@ export function AppHeader({
         >
           {(!isMobile || isElectron) && <RemoteAccessIndicator />}
           <SyncButton onSync={onSync} isSyncing={isSyncing} isFetching={isFetching} compact />
+          <NotificationBell />
           <HelpDropdown hasTour={hasTour} onStartTour={onStartTour} />
         </div>
       </div>

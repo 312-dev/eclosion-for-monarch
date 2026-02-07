@@ -14,6 +14,7 @@
 import type { Env } from './index';
 import { verifyManagementKey, constantTimeEqual, sha256, generateRandomHex, generateOtpCode } from './crypto';
 import { sendOtpEmail } from './email';
+import { logAudit, getClientIp } from './audit';
 
 // =============================================================================
 // Constants
@@ -45,6 +46,7 @@ interface OtpData {
   attempts: number;
   created_at: string;
   resend_count: number;
+  last_attempt_at?: string; // For exponential backoff
 }
 
 interface OtpSessionData {
@@ -109,6 +111,9 @@ export async function handleOtpRegister(
     JSON.stringify({ email } satisfies OtpEmailData),
   );
 
+  // Audit log: successful OTP registration
+  await logAudit(env.TUNNELS, 'otp_register', subdomain, getClientIp(request), true);
+
   return jsonResponse({ success: true });
 }
 
@@ -152,6 +157,9 @@ export async function handleOtpDeregister(
     env.TUNNELS.delete(`otp:${subdomain}`),
     env.TUNNELS.delete(`otp-cooldown:${subdomain}`),
   ]);
+
+  // Audit log: successful OTP deregistration
+  await logAudit(env.TUNNELS, 'otp_deregister', subdomain, getClientIp(request), true);
 
   return jsonResponse({ success: true });
 }
@@ -287,8 +295,26 @@ export async function handleOtpVerify(
     return errorResponse('Too many attempts. Request a new code.', 429);
   }
 
-  // Increment attempts BEFORE comparing (prevents race conditions)
+  // Exponential backoff: delay increases with each failed attempt
+  // Delay = 2^(attempts-1) seconds: 0s, 1s, 2s, 4s, 8s for attempts 0,1,2,3,4
+  if (otpData.attempts > 0 && otpData.last_attempt_at) {
+    const backoffSeconds = Math.pow(2, otpData.attempts - 1);
+    const lastAttempt = new Date(otpData.last_attempt_at).getTime();
+    const elapsedMs = Date.now() - lastAttempt;
+    const requiredMs = backoffSeconds * 1000;
+
+    if (elapsedMs < requiredMs) {
+      const waitSeconds = Math.ceil((requiredMs - elapsedMs) / 1000);
+      return jsonResponse(
+        { error: `Too many attempts. Please wait ${waitSeconds} seconds.`, retryAfter: waitSeconds },
+        429,
+      );
+    }
+  }
+
+  // Increment attempts and record timestamp BEFORE comparing (prevents race conditions)
   otpData.attempts += 1;
+  otpData.last_attempt_at = new Date().toISOString();
   await env.TUNNELS.put(
     `otp:${subdomain}`,
     JSON.stringify(otpData),

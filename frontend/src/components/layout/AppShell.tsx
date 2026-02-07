@@ -192,7 +192,6 @@ export function AppShell() {
 
         <SecurityInfo isOpen={showSecurityInfo} onClose={() => setShowSecurityInfo(false)} />
         <WhatsNewModal />
-
         <div className="app-scroll-area">
           <div className="app-body">
             <SidebarNavigation onLock={handleLock} />

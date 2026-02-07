@@ -1,10 +1,13 @@
 /**
  * Cloudflare API Wrapper
  *
- * Handles Tunnel creation, DNS CNAME records, and tunnel configuration.
+ * Handles Tunnel creation and configuration.
  * Uses the Cloudflare v4 API with an API token scoped to:
  * - Cloudflare Tunnel: Edit
- * - DNS: Edit (for eclosion.me zone)
+ *
+ * Note: DNS is handled via wildcard CNAME (*.eclosion.me), so no per-subdomain
+ * DNS operations are needed. The tunnel-gate Worker proxies directly to
+ * {tunnelId}.cfargotunnel.com.
  */
 
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
@@ -94,27 +97,6 @@ export async function createTunnel(
     tunnelId: result.id,
     tunnelSecret,
   };
-}
-
-/**
- * Create a DNS CNAME record pointing {subdomain}.eclosion.me to the tunnel.
- */
-export async function createDnsCname(
-  zoneId: string,
-  apiToken: string,
-  subdomain: string,
-  tunnelId: string,
-): Promise<void> {
-  await cfFetch<unknown>(`/zones/${zoneId}/dns_records`, apiToken, {
-    method: 'POST',
-    body: JSON.stringify({
-      type: 'CNAME',
-      name: `${subdomain}.${TUNNEL_DOMAIN}`,
-      content: `${tunnelId}.cfargotunnel.com`,
-      proxied: true,
-      comment: 'Eclosion tunnel - auto-provisioned',
-    }),
-  });
 }
 
 /**
@@ -209,38 +191,3 @@ export async function updateTunnelIngress(
   await configureTunnelIngress(accountId, apiToken, tunnelId, subdomain, port);
 }
 
-/**
- * Delete DNS CNAME record(s) for a subdomain.
- */
-export async function deleteDnsCname(
-  zoneId: string,
-  apiToken: string,
-  subdomain: string,
-): Promise<void> {
-  const records = await cfFetch<Array<{ id: string }>>(
-    `/zones/${zoneId}/dns_records?name=${subdomain}.${TUNNEL_DOMAIN}&type=CNAME`,
-    apiToken,
-  );
-  for (const record of records) {
-    await cfFetch<unknown>(
-      `/zones/${zoneId}/dns_records/${record.id}`,
-      apiToken,
-      { method: 'DELETE' },
-    );
-  }
-}
-
-/**
- * Check if a DNS record already exists for a subdomain.
- */
-export async function dnsRecordExists(
-  zoneId: string,
-  apiToken: string,
-  subdomain: string,
-): Promise<boolean> {
-  const result = await cfFetch<Array<{ id: string }>>(
-    `/zones/${zoneId}/dns_records?name=${subdomain}.${TUNNEL_DOMAIN}&type=CNAME`,
-    apiToken,
-  );
-  return result.length > 0;
-}

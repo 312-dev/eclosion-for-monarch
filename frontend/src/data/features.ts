@@ -186,6 +186,49 @@ export const FEATURES: FeatureDefinition[] = [
     ],
   },
   {
+    id: 'ifttt',
+    name: 'IFTTT Integration',
+    tagline: 'Connect to 900+ apps and services',
+    description:
+      'Automate your financial workflows by connecting Eclosion to IFTTT. Trigger actions when goals are funded, budgets are exceeded, or sync completes. Send notifications, update spreadsheets, or connect to smart home devices.',
+    icon: 'Ifttt',
+    status: 'coming-soon',
+    releaseDate: 'February 2026',
+    benefits: [
+      {
+        icon: 'Zap',
+        title: 'Powerful Automation',
+        description:
+          'Create automated workflows triggered by budget events, goal milestones, and sync completions.',
+      },
+      {
+        icon: 'Globe',
+        title: '900+ App Connections',
+        description:
+          'Connect to Slack, Google Sheets, smart lights, email, SMS, and hundreds more via IFTTT.',
+      },
+      {
+        icon: 'Bell',
+        title: 'Custom Notifications',
+        description:
+          'Get notified your way when you hit savings milestones or exceed budget limits.',
+      },
+      {
+        icon: 'Shield',
+        title: 'Secure by Design',
+        description:
+          'Your financial data stays private—only trigger events are shared, never account details.',
+      },
+    ],
+    appPath: '/settings',
+    sourcePaths: [
+      'blueprints/ifttt.py',
+      'services/ifttt_service.py',
+      'frontend/src/components/settings/desktop/IftttSection.tsx',
+      'workers/ifttt-service/',
+    ],
+  },
+  {
     id: 'linked-goals',
     name: 'Joint Goals',
     tagline: 'Privacy-first shared goals',

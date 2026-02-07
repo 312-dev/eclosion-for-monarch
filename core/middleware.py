@@ -268,6 +268,51 @@ def enforce_instance_secret(services: "Services") -> tuple[Response, int] | None
     return make_response(get_access_denied_page()), 403
 
 
+# In-memory IFTTT secrets cache (set via IPC from Electron, never written to disk)
+_ifttt_secrets_cache: dict[str, str | None] = {
+    "action_secret": None,
+    "subdomain": None,
+    "management_key": None,
+}
+
+
+def set_ifttt_secrets(
+    action_secret: str | None = None,
+    subdomain: str | None = None,
+    management_key: str | None = None,
+) -> None:
+    """Set IFTTT secrets in memory. Called via IPC from Electron."""
+    if action_secret is not None:
+        _ifttt_secrets_cache["action_secret"] = action_secret
+    if subdomain is not None:
+        _ifttt_secrets_cache["subdomain"] = subdomain
+    if management_key is not None:
+        _ifttt_secrets_cache["management_key"] = management_key
+
+
+def clear_ifttt_secrets() -> None:
+    """Clear all IFTTT secrets from memory."""
+    _ifttt_secrets_cache["action_secret"] = None
+    _ifttt_secrets_cache["subdomain"] = None
+    _ifttt_secrets_cache["management_key"] = None
+
+
+def get_ifttt_tunnel_creds() -> tuple[str | None, str | None]:
+    """Get the subdomain and management key from memory cache.
+
+    Returns (subdomain, management_key) tuple.
+    """
+    return _ifttt_secrets_cache["subdomain"], _ifttt_secrets_cache["management_key"]
+
+
+def _get_ifttt_action_secret() -> str | None:
+    """Get the per-subdomain IFTTT action secret from memory cache.
+
+    Secrets are pushed to Flask via IPC from Electron, never read from disk.
+    """
+    return _ifttt_secrets_cache["action_secret"]
+
+
 def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:
     """Enforce authentication for tunnel (remote) requests.
 
@@ -298,6 +343,21 @@ def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:
         return None
     if request.path.startswith("/remote-unlock/"):
         return None
+
+    # Skip for IFTTT action endpoints — authenticated via X-IFTTT-Action-Secret
+    # from the IFTTT worker, which is the only entity that knows this per-subdomain secret.
+    # Also skip for the IFTTT authorize page (approval screen after OTP).
+    if request.path.startswith("/ifttt/"):
+        if request.path == "/ifttt/authorize":
+            return None
+
+        ifttt_secret = request.headers.get("X-IFTTT-Action-Secret")
+        configured_secret = _get_ifttt_action_secret()
+        if ifttt_secret and configured_secret and len(ifttt_secret) == len(configured_secret):
+            import secrets as secrets_module
+
+            if secrets_module.compare_digest(ifttt_secret, configured_secret):
+                return None
 
     # Skip for static assets (js, css, images)
     if request.path.startswith("/static/") or request.path.startswith("/assets/"):
@@ -491,7 +551,9 @@ def add_security_headers(response: Response) -> Response:
         "base-uri 'self'",
         "form-action 'self'",
     ]
-    response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
+    # Don't overwrite CSP if the route already set one (e.g. IFTTT approval page)
+    if "Content-Security-Policy" not in response.headers:
+        response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
 
     # HSTS in production (when behind HTTPS proxy)
     if request.headers.get("X-Forwarded-Proto") == "https":

@@ -224,7 +224,8 @@ export class BackendManager extends EventEmitter {
     if (this.isDev) {
       // Read port from environment variable (set by dev.sh), fallback to 5002
       this.port = Number.parseInt(process.env.DEV_FLASK_PORT || '5002', 10);
-      this.desktopSecret = ''; // No secret needed for dev
+      // Generate a secret for dev mode too (needed for IFTTT IPC)
+      this.desktopSecret = crypto.randomBytes(32).toString('hex');
 
       this.emitStartupStatus({
         phase: 'initializing',
@@ -252,6 +253,9 @@ export class BackendManager extends EventEmitter {
 
       // Start health monitoring
       this.startHealthCheck();
+
+      // Emit event so listeners can re-push secrets after restart
+      this.emit('backend-ready');
       return;
     }
 
@@ -369,6 +373,9 @@ export class BackendManager extends EventEmitter {
 
     // Start health monitoring
     this.startHealthCheck();
+
+    // Emit event so listeners can re-push secrets after restart
+    this.emit('backend-ready');
   }
 
   /**
@@ -421,6 +428,47 @@ export class BackendManager extends EventEmitter {
     throw new Error('Backend failed to start within timeout');
   }
 
+  /** Track Flask's boot ID to detect hot-reloads */
+  private lastBootId: string | null = null;
+
+  /**
+   * Perform a single health check and update boot_id tracking.
+   * Returns true if healthy.
+   */
+  private async performHealthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`http://127.0.0.1:${this.port}/health`, {
+        headers: this.desktopSecret ? { 'X-Desktop-Secret': this.desktopSecret } : {},
+      });
+      if (response.ok) {
+        this.restartAttempts = 0;
+        updateHealthStatus(true);
+
+        // Check for Flask hot-reload by comparing boot_id
+        try {
+          const data = (await response.json()) as { boot_id?: string };
+          if (data.boot_id) {
+            if (this.lastBootId && data.boot_id !== this.lastBootId) {
+              log('[Backend] Flask restarted (boot_id changed), re-pushing secrets');
+              this.emit('backend-ready');
+            }
+            this.lastBootId = data.boot_id;
+          }
+        } catch {
+          // Ignore JSON parse errors
+        }
+        return true;
+      } else {
+        updateHealthStatus(false);
+        return false;
+      }
+    } catch {
+      console.warn('Health check failed');
+      updateHealthStatus(false);
+      return false;
+    }
+  }
+
   /**
    * Start periodic health checks.
    */
@@ -428,24 +476,12 @@ export class BackendManager extends EventEmitter {
     // Update status immediately when starting
     updateHealthStatus(true);
 
-    this.healthCheckInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`http://127.0.0.1:${this.port}/health`, {
-          headers: this.desktopSecret
-            ? { 'X-Desktop-Secret': this.desktopSecret }
-            : {},
-        });
-        if (response.ok) {
-          this.restartAttempts = 0; // Reset on successful check
-          updateHealthStatus(true);
-        } else {
-          updateHealthStatus(false);
-        }
-      } catch {
-        console.warn('Health check failed');
-        updateHealthStatus(false);
-      }
-    }, 30000); // Every 30 seconds
+    // Capture initial boot_id immediately
+    this.performHealthCheck();
+
+    this.healthCheckInterval = setInterval(() => {
+      this.performHealthCheck();
+    }, 10000); // Every 10 seconds (detect Flask hot-reloads faster)
   }
 
   /**

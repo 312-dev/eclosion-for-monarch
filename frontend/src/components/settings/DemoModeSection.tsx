@@ -6,6 +6,7 @@
 
 import { RotateCcw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { SectionHeader } from './settingsSections';
 import { useToast } from '../../context/ToastContext';
 import * as demoApi from '../../api/demoClient';
 
@@ -21,13 +22,7 @@ export function DemoModeSection() {
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-orange)' }}
-      >
-        <RotateCcw size={12} />
-        Demo Mode
-      </h2>
+      <SectionHeader sectionId="demo" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

@@ -4,7 +4,7 @@
  * Shows recent login activity in a simple, Google-style format.
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Shield, ChevronDown, ChevronUp, Download, MapPin } from 'lucide-react';
 import {
   useSecurityEventsQuery,
@@ -12,6 +12,7 @@ import {
   useExportSecurityEventsMutation,
 } from '../api/queries';
 import { useToast } from '../context/ToastContext';
+import { scrollIntoViewLocal } from '../utils';
 import type { SecurityEvent } from '../types';
 
 interface SecurityPanelProps {
@@ -42,11 +43,16 @@ function getEventLabel(event: SecurityEvent): string {
   return isRemote ? 'Failed remote sign-in' : 'Failed sign-in attempt';
 }
 
-function LoginEvent({ event }: { event: SecurityEvent }) {
+interface LoginEventProps {
+  readonly event: SecurityEvent;
+  readonly animate?: boolean;
+}
+
+function LoginEvent({ event, animate = false }: LoginEventProps) {
   const location = [event.city, event.country].filter(Boolean).join(', ') || 'Unknown location';
 
   return (
-    <div className="flex items-center justify-between py-1.5">
+    <div className={`flex items-center justify-between py-1.5 ${animate ? 'list-item-enter' : ''}`}>
       <div className="flex items-center gap-3">
         <div
           className="w-2 h-2 rounded-full"
@@ -72,10 +78,13 @@ function LoginEvent({ event }: { event: SecurityEvent }) {
   );
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 4;
 
 export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  // Track threshold above which items should animate (state is safe to read during render, unlike refs)
+  const [animateFromIndex, setAnimateFromIndex] = useState(ITEMS_PER_PAGE);
+  const panelRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
   // Fetch login attempts (both regular and remote)
@@ -111,7 +120,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       a.download = `security_log_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      a.remove();
       URL.revokeObjectURL(url);
       toast.success('Security log exported');
     } catch {
@@ -147,11 +156,11 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   }
 
   return (
-    <div className={className}>
+    <div ref={panelRef} className={className}>
       {/* Failed attempts warning - same as SecurityAlertBanner */}
       {alerts?.has_alerts && alerts.count > 0 && (
         <div
-          className="px-3 py-2 rounded-lg mb-3"
+          className="px-3 py-2 rounded-lg mb-3 fade-in"
           style={{
             backgroundColor: 'var(--monarch-error-bg, rgba(239, 68, 68, 0.1))',
             border: '1px solid var(--monarch-error, #ef4444)',
@@ -174,53 +183,58 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
 
       {/* Login list */}
       <div className="space-y-0.5">
-        {events.map((event) => (
-          <LoginEvent key={event.id} event={event} />
+        {events.map((event, index) => (
+          <LoginEvent key={event.id} event={event} animate={index >= animateFromIndex} />
         ))}
       </div>
 
-      {/* Show more / Export */}
+      {/* Show more / Show less / Export */}
       <div
         className="flex items-center justify-between mt-3 pt-3 border-t"
         style={{ borderColor: 'var(--monarch-border)' }}
       >
-        {totalLogins > ITEMS_PER_PAGE && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              const button = e.currentTarget;
-              if (visibleCount >= totalLogins) {
-                setVisibleCount(ITEMS_PER_PAGE);
-              } else {
+        <div className="flex items-center gap-3">
+          {totalLogins > visibleCount && (
+            <button
+              type="button"
+              onClick={(e) => {
+                const button = e.currentTarget;
+                setAnimateFromIndex(visibleCount);
                 setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, totalLogins));
-                // Keep button visible after content expands
                 requestAnimationFrame(() => {
-                  button.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+                  scrollIntoViewLocal(button, { block: 'nearest', behavior: 'instant' });
                 });
-              }
-            }}
-            className="flex items-center gap-1 text-xs hover:opacity-80"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
-            {visibleCount >= totalLogins ? (
-              <>
-                <ChevronUp size={14} />
-                Show less
-              </>
-            ) : (
-              <>
-                <ChevronDown size={14} />
-                Show more ({totalLogins - visibleCount} remaining)
-              </>
-            )}
-          </button>
-        )}
+              }}
+              className="flex items-center gap-1 text-xs transition-opacity hover:opacity-80"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            >
+              <ChevronDown size={14} className="transition-transform" />
+              Show more ({totalLogins - visibleCount} remaining)
+            </button>
+          )}
+          {visibleCount > ITEMS_PER_PAGE && (
+            <button
+              type="button"
+              onClick={() => {
+                setAnimateFromIndex(ITEMS_PER_PAGE);
+                setVisibleCount(ITEMS_PER_PAGE);
+                requestAnimationFrame(() => {
+                  scrollIntoViewLocal(panelRef.current, { block: 'nearest', behavior: 'smooth' });
+                });
+              }}
+              className="flex items-center gap-1 text-xs transition-opacity hover:opacity-80 fade-in"
+              style={{ color: 'var(--monarch-text-muted)' }}
+            >
+              <ChevronUp size={14} className="transition-transform" />
+              Show less
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={handleExport}
           disabled={exportMutation.isPending}
-          className="flex items-center gap-1 text-xs hover:opacity-80 ml-auto"
+          className="flex items-center gap-1 text-xs transition-opacity hover:opacity-80 ml-auto"
           style={{ color: 'var(--monarch-text-muted)' }}
           aria-label="Export full security log"
         >

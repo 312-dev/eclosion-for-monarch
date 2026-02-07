@@ -4,16 +4,13 @@
  * Security and activity settings with the SecurityPanel component.
  */
 
-import { Shield } from 'lucide-react';
 import { SecurityPanel } from '../SecurityPanel';
+import { SectionHeader } from './settingsSections';
 
 export function SecuritySection() {
   return (
     <section className="mb-8">
-      <h2 className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
-        <Shield size={12} />
-        Security & Activity
-      </h2>
+      <SectionHeader sectionId="security" />
       <div
         className="rounded-xl overflow-hidden p-4"
         style={{

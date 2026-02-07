@@ -770,7 +770,132 @@ class SyncService:
         if auto_categorize_result:
             results["auto_categorize"] = auto_categorize_result
 
+        # Check for IFTTT trigger events (non-blocking)
+        try:
+            await self._check_ifttt_events()
+        except Exception as e:
+            logger.warning(f"[SYNC] IFTTT event check failed (non-fatal): {e}")
+
         return results
+
+    async def _check_ifttt_events(self) -> None:
+        """
+        Check for IFTTT trigger events and push to broker.
+        Handles goal achievements, budget triggers, and field option caching.
+        Non-critical — failures are logged only.
+        """
+        logger.info("[SYNC] Running IFTTT event check...")
+        from services.ifttt_service import IftttService
+        from services.stash_service import StashService
+
+        ifttt = IftttService.from_tunnel_creds()
+        logger.info(f"[SYNC] IFTTT configured: {ifttt.is_configured}, subdomain: {ifttt.subdomain}")
+        if not ifttt.is_configured:
+            logger.info("[SYNC] IFTTT not configured, skipping event check")
+            return
+
+        # 1. Check goal achievements (existing)
+        stash_service = StashService()
+        dashboard = await stash_service.get_dashboard_data()
+        items = dashboard.get("items", [])
+
+        stash_items = []
+        for item in items:
+            target = item.get("amount")
+            balance = item.get("current_balance", 0)
+            if target and target > 0:
+                stash_items.append(
+                    {
+                        "id": item["id"],
+                        "name": item["name"],
+                        "balance": balance,
+                        "target_amount": target,
+                    }
+                )
+
+        if stash_items:
+            pushed = await ifttt.check_goal_achievements(stash_items)
+            if pushed:
+                logger.info(f"[IFTTT] Pushed {len(pushed)} goal achievement events")
+
+        # 2. Check budget-based triggers
+        try:
+            budget_data = await self.category_manager.get_all_category_budget_data()
+            category_info = await self.category_manager.get_all_category_info()
+
+            # Fetch active subscriptions to only push events for triggers user cares about
+            subscriptions = await ifttt.get_active_subscriptions()
+
+            pushed = await ifttt.check_under_budget(budget_data, category_info, subscriptions)
+            if pushed:
+                logger.info(f"[IFTTT] Pushed {len(pushed)} under-budget events")
+
+            pushed = await ifttt.check_budget_surplus(self.category_manager)
+            if pushed:
+                logger.info(f"[IFTTT] Pushed {len(pushed)} budget surplus events")
+
+            pushed = await ifttt.check_balance_thresholds(budget_data, category_info, subscriptions)
+            if pushed:
+                logger.info(f"[IFTTT] Pushed {len(pushed)} balance threshold events")
+
+            pushed = await ifttt.check_spending_streaks(budget_data, category_info, subscriptions)
+            if pushed:
+                logger.info(f"[IFTTT] Pushed {len(pushed)} spending streak events")
+
+            pushed = await ifttt.check_new_charges(category_info, subscriptions)
+            if pushed:
+                logger.info(f"[IFTTT] Pushed {len(pushed)} new charge events")
+        except Exception as e:
+            logger.warning(f"[IFTTT] Budget trigger check failed (non-fatal): {e}")
+
+        # 3. Push field options cache for offline dropdown population
+        try:
+            # Get detailed group info to check group_level_budgeting_enabled
+            detailed_groups = await self.category_manager.get_category_groups_detailed()
+            group_level_enabled = {
+                g["id"]: g.get("group_level_budgeting_enabled", False) for g in detailed_groups
+            }
+
+            # Build category/group options with proper prefixes
+            category_options = []
+            flexible_group_options = []
+
+            groups = await self.category_manager.get_all_categories_grouped()
+            for group in groups:
+                group_id = group.get("id")
+                group_name = group.get("name", "")
+                is_group_level = group_level_enabled.get(group_id, False)
+
+                if is_group_level:
+                    # Flexible group: add group itself, not its categories
+                    if group_id:
+                        flexible_group_options.append(
+                            {
+                                "label": f"{group_name} (Flexible)",
+                                "value": f"group:{group_id}",
+                            }
+                        )
+                else:
+                    # Regular group: add individual categories
+                    for cat in group.get("categories", []):
+                        if cat.get("id"):
+                            category_options.append(
+                                {
+                                    "label": cat["name"],
+                                    "value": f"cat:{cat['id']}",
+                                }
+                            )
+
+            # Combine: categories first, then flexible groups
+            all_options = category_options + flexible_group_options
+
+            goals = [
+                {"label": item["name"], "value": item["id"]} for item in items if item.get("id")
+            ]
+
+            await ifttt.push_field_options(categories=all_options, goals=goals)
+        except Exception as e:
+            logger.warning(f"[IFTTT] Failed to push field options (non-fatal): {e}")
 
     async def _process_recurring_item(
         self,
@@ -1179,6 +1304,12 @@ class SyncService:
 
             # Mark sync complete
             self.state_manager.mark_sync_complete()
+
+            # Check for goal achievements and push IFTTT trigger events (non-blocking)
+            try:
+                await self._check_ifttt_events()
+            except Exception as e:
+                logger.warning(f"[STASH_SYNC] IFTTT event check failed (non-fatal): {e}")
 
             return {
                 "success": True,

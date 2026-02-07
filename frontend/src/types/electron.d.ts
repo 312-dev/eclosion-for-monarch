@@ -710,6 +710,24 @@ export interface TunnelAPI {
   getConfig: () => Promise<TunnelConfig>;
   /** Release the claimed subdomain (deletes tunnel + DNS + local credentials) */
   unclaim: () => Promise<TunnelUnclaimResult>;
+  /** Get the decrypted management key (for IFTTT broker authentication) */
+  getManagementKey?: () => Promise<string | null>;
+  /** Fetch the per-subdomain IFTTT action secret and write to disk */
+  fetchIftttActionSecret?: () => Promise<{ success: boolean; error?: string }>;
+  /** Manually drain the IFTTT action queue */
+  drainIftttQueue?: () => Promise<{
+    processed: number;
+    succeeded: number;
+    failed: number;
+    actions: Array<{
+      id: string;
+      action_slug: string;
+      success: boolean;
+      error?: string;
+    }>;
+  }>;
+  /** Listen for tunnel status change events */
+  onStatusChanged?: (callback: (status: TunnelStatus) => void) => () => void;
 }
 
 // Bookmark Sync Types (import from bookmarks.ts for implementation, inline here for .d.ts)

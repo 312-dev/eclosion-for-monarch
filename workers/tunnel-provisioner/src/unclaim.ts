@@ -8,7 +8,8 @@
 
 import type { Env } from './index';
 import { verifyManagementKey } from './crypto';
-import { deleteTunnel, deleteDnsCname } from './cloudflare-api';
+import { deleteTunnel } from './cloudflare-api';
+import { logAudit, getClientIp } from './audit';
 
 interface SubdomainData {
   tunnel_id: string;
@@ -62,6 +63,7 @@ export async function handleUnclaim(
   }
 
   // Delete Cloudflare tunnel (non-fatal if it fails)
+  // Note: No DNS cleanup needed - using wildcard CNAME
   try {
     await deleteTunnel(
       env.CLOUDFLARE_ACCOUNT_ID,
@@ -72,17 +74,6 @@ export async function handleUnclaim(
     console.error(`Failed to delete tunnel ${subdomainData.tunnel_id}: ${error}`);
   }
 
-  // Delete DNS CNAME record (non-fatal if it fails)
-  try {
-    await deleteDnsCname(
-      env.CLOUDFLARE_ZONE_ID,
-      env.CLOUDFLARE_API_TOKEN,
-      subdomain,
-    );
-  } catch (error) {
-    console.error(`Failed to delete DNS record for ${subdomain}: ${error}`);
-  }
-
   // Delete all KV entries for this subdomain
   await Promise.all([
     env.TUNNELS.delete(`subdomain:${subdomain}`),
@@ -90,6 +81,9 @@ export async function handleUnclaim(
     env.TUNNELS.delete(`otp:${subdomain}`),
     env.TUNNELS.delete(`otp-cooldown:${subdomain}`),
   ]);
+
+  // Audit log: successful unclaim
+  await logAudit(env.TUNNELS, 'unclaim', subdomain, getClientIp(request), true);
 
   return Response.json({ success: true });
 }

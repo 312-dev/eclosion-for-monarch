@@ -29,6 +29,7 @@ import { generateOfflinePage } from './offline-page';
 export interface Env {
   TUNNELS: KVNamespace;
   JWT_SECRET: string;
+  JWT_SECRET_PREVIOUS?: string; // Optional fallback secret for seamless rotation
 }
 
 const SKIP_HOSTS = new Set([
@@ -43,6 +44,12 @@ interface OtpSessionKvData {
   subdomain: string;
   device_key_hash: string;
   created_at: string;
+}
+
+interface SubdomainData {
+  tunnel_id: string;
+  created_at: string;
+  management_key_hash?: string;
 }
 
 const ROBOTS_TXT = `User-agent: *
@@ -83,14 +90,32 @@ export default {
 const OFFLINE_STATUS_CODES = new Set([502, 504, 521, 522, 523, 530]);
 
 /**
- * Fetch from the tunnel origin, returning a themed offline page
- * if the tunnel is unreachable.
+ * Proxy request directly to the tunnel via cfargotunnel.com.
+ * This bypasses DNS CNAME resolution by explicitly targeting the tunnel ID.
+ * Returns a themed offline page if the tunnel is unreachable.
  */
-async function fetchOriginOrOffline(
+async function fetchOriginToTunnel(
   request: Request,
   subdomain: string,
+  tunnelId: string,
 ): Promise<Response> {
-  const response = await fetch(request);
+  const url = new URL(request.url);
+  // Construct the tunnel origin URL using the tunnel ID directly
+  const tunnelOrigin = `https://${tunnelId}.cfargotunnel.com`;
+  const proxyUrl = `${tunnelOrigin}${url.pathname}${url.search}`;
+
+  // Clone headers but set Host to the original hostname (tunnel expects this)
+  const headers = new Headers(request.headers);
+  headers.set('Host', `${subdomain}.eclosion.me`);
+
+  const proxyRequest = new Request(proxyUrl, {
+    method: request.method,
+    headers,
+    body: request.body,
+    redirect: 'manual', // Don't follow redirects, let client handle them
+  });
+
+  const response = await fetch(proxyRequest);
   if (OFFLINE_STATUS_CODES.has(response.status)) {
     return new Response(generateOfflinePage(subdomain), {
       status: 503,
@@ -120,19 +145,21 @@ async function handleTunnelRequest(
     });
   }
 
-  // Check if this subdomain is claimed
-  const subdomainData = await env.TUNNELS.get(`subdomain:${subdomain}`);
-  if (!subdomainData) {
+  // Check if this subdomain is claimed and get tunnel ID for proxying
+  const subdomainDataRaw = await env.TUNNELS.get(`subdomain:${subdomain}`);
+  if (!subdomainDataRaw) {
     // Unclaimed subdomain — redirect to main site
     return Response.redirect('https://eclosion.app', 302);
   }
+  const subdomainData: SubdomainData = JSON.parse(subdomainDataRaw);
+  const tunnelId = subdomainData.tunnel_id;
 
   // Check if OTP is configured for this subdomain
   const otpEmail = await env.TUNNELS.get(`otp-email:${subdomain}`);
   if (!otpEmail) {
     // No OTP email registered — tunnel owner hasn't enabled OTP or tunnel
     // is still in setup. Pass through without gating.
-    return fetchOriginOrOffline(request, subdomain);
+    return fetchOriginToTunnel(request, subdomain, tunnelId);
   }
 
   // Handle POST /.eclosion/set-session — OTP page calls this after successful verify
@@ -140,15 +167,36 @@ async function handleTunnelRequest(
     return handleSetSession(request, subdomain, env);
   }
 
+  // IFTTT action bypass: validate X-IFTTT-Action-Secret header for /ifttt/* paths
+  // This allows the IFTTT worker to proxy action requests without OTP
+  if (url.pathname.startsWith('/ifttt/')) {
+    const iftttSecret = request.headers.get('X-IFTTT-Action-Secret');
+    if (iftttSecret) {
+      const validSecret = await validateIftttSecret(iftttSecret, subdomain, env);
+      if (validSecret) {
+        // Valid IFTTT action secret — pass through to tunnel origin
+        return fetchOriginToTunnel(request, subdomain, tunnelId);
+      }
+    }
+    // For /ifttt/authorize, allow through without secret (handled by Flask after OTP)
+    if (url.pathname === '/ifttt/authorize') {
+      // Fall through to normal JWT validation
+    }
+  }
+
   // Validate JWT cookie + device cookie
   const jwtToken = parseCookie(request, 'eclosion-otp');
   const deviceKey = parseCookie(request, 'eclosion-device');
 
   if (jwtToken && deviceKey) {
-    const valid = await validateJwt(jwtToken, deviceKey, subdomain, env.JWT_SECRET);
+    // Try current secret first, then fallback to previous (for rotation)
+    let valid = await validateJwt(jwtToken, deviceKey, subdomain, env.JWT_SECRET);
+    if (!valid && env.JWT_SECRET_PREVIOUS) {
+      valid = await validateJwt(jwtToken, deviceKey, subdomain, env.JWT_SECRET_PREVIOUS);
+    }
     if (valid) {
       // Valid session — strip auth cookies and pass through to tunnel origin
-      return fetchOriginOrOffline(stripAuthCookies(request), subdomain);
+      return fetchOriginToTunnel(stripAuthCookies(request), subdomain, tunnelId);
     }
   }
 
@@ -209,6 +257,20 @@ function constantTimeEqual(a: string, b: string): boolean {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return result === 0;
+}
+
+/**
+ * Validate an IFTTT action secret against the stored secret for a subdomain.
+ * Used to bypass OTP for IFTTT action proxy requests.
+ */
+async function validateIftttSecret(
+  providedSecret: string,
+  subdomain: string,
+  env: Env,
+): Promise<boolean> {
+  const storedSecret = await env.TUNNELS.get(`ifttt-secret:${subdomain}`);
+  if (!storedSecret) return false;
+  return constantTimeEqual(providedSecret, storedSecret);
 }
 
 /**

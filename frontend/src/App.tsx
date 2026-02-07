@@ -28,6 +28,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DemoProvider, isGlobalDemoMode } from './context/DemoContext';
 import { RateLimitProvider } from './context/RateLimitContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { RateLimitToastBridge } from './components/RateLimitToastBridge';
 import { DemoAuthProvider } from './context/DemoAuthContext';
 import { MonthTransitionProvider } from './context/MonthTransitionContext';
@@ -54,6 +55,7 @@ import { MfaReauthPrompt } from './components/MfaReauthPrompt';
 import { SessionExpiredOverlay } from './components/SessionExpiredOverlay';
 import { UpdateProvider, useUpdate } from './context/UpdateContext';
 import { RuntimeUpdateModal } from './components/update/RuntimeUpdateModal';
+import { scrollToId, scrollToTop } from './utils';
 
 const LANDING_PAGE_KEY = 'eclosion-landing-page';
 
@@ -75,27 +77,19 @@ function isMarketingSiteHostname(): boolean {
 
 /**
  * Scrolls to top on route changes, unless there's a hash anchor.
- * Targets the .app-scroll-area container which is the actual scrollable element.
+ * Uses centralized scroll utilities that account for fixed header height.
  */
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
 
   useEffect(() => {
     if (hash) {
-      const element = document.getElementById(hash.slice(1));
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
+      // Use scrollToId which accounts for header offset
+      scrollToId(hash.slice(1), { behavior: 'smooth' });
       return;
     }
-    // Scroll the app's scroll container, not the window
-    const scrollArea = document.querySelector('.app-scroll-area');
-    if (scrollArea) {
-      scrollArea.scrollTo(0, 0);
-    } else {
-      // Fallback to window for pages without app layout (marketing, login)
-      window.scrollTo(0, 0);
-    }
+    // Scroll to top using centralized utility
+    scrollToTop();
   }, [pathname, hash]);
 
   return null;
@@ -547,8 +541,10 @@ export default function App() {
         <ToastProvider>
           <TooltipProvider>
             <RateLimitProvider>
-              <RateLimitToastBridge />
-              <RouterProvider router={router} />
+              <NotificationProvider>
+                <RateLimitToastBridge />
+                <RouterProvider router={router} />
+              </NotificationProvider>
             </RateLimitProvider>
           </TooltipProvider>
         </ToastProvider>

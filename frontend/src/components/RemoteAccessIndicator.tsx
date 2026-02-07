@@ -38,11 +38,16 @@ export function RemoteAccessIndicator() {
     // Initial check
     void checkStatus();
 
-    // Poll for status changes every 5 seconds
-    const interval = setInterval(() => void checkStatus(), 5000);
+    // Subscribe to status change events for live updates
+    const unsubscribe = globalThis.electron?.tunnel?.onStatusChanged?.((newStatus) => {
+      if (!cancelled) {
+        setStatus(newStatus);
+      }
+    });
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      unsubscribe?.();
     };
   }, []);
 

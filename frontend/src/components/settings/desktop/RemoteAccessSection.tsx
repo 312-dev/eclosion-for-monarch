@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Globe, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Radio } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { ToggleSwitch } from '../ToggleSwitch';
 import { Modal } from '../../ui/Modal';
@@ -50,7 +50,12 @@ export function RemoteAccessSection() {
   }, []);
 
   useEffect(() => {
+    // Initial fetch
     fetchStatus();
+
+    // Subscribe to status change events for live updates
+    const unsubscribe = globalThis.electron?.tunnel?.onStatusChanged?.(setStatus);
+    return () => unsubscribe?.();
   }, [fetchStatus]);
 
   const startTunnel = async () => {
@@ -155,7 +160,7 @@ export function RemoteAccessSection() {
 
   return (
     <div
-      className={`rounded-xl overflow-hidden mb-4${busy ? ' cursor-wait' : ''}`}
+      className={`rounded-xl overflow-hidden${busy ? ' cursor-wait' : ''}`}
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',
@@ -163,29 +168,27 @@ export function RemoteAccessSection() {
       }}
     >
       <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+              className="p-2.5 rounded-lg flex items-center justify-center shrink-0"
               style={{ backgroundColor: 'var(--monarch-bg-page)' }}
             >
-              <Globe size={20} style={{ color: 'var(--monarch-orange)' }} />
+              <Radio size={20} style={{ color: 'var(--monarch-text-muted)' }} />
             </div>
-            <div className="min-w-0 pt-0.5">
+            <div className="min-w-0">
               <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
                 Remote Access
               </div>
               <div className="text-sm mt-0.5" style={{ color: 'var(--monarch-text-muted)' }}>
-                {isConfigured && subdomain
-                  ? `${subdomain}.eclosion.me`
-                  : 'Access Eclosion from your phone or other devices'}
+                Access Eclosion from your phone or other devices
               </div>
             </div>
           </div>
 
           {/* Show toggle only when subdomain is configured */}
           {isConfigured && (
-            <div className="pt-2 shrink-0">
+            <div className="shrink-0">
               {loading ? (
                 <div
                   className="w-9 h-5 rounded-full animate-pulse"

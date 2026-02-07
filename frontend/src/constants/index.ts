@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   FUNDS_BAR_POSITION: 'eclosion-funds-bar-position',
   NOTES_UI_STATE: 'eclosion-notes-ui-state',
   HYPOTHESIZE_SCENARIOS: 'eclosion-hypothesize-scenarios',
+  NOTIFICATIONS: 'eclosion-notifications',
 } as const;
 
 // ============================================================================
@@ -42,6 +43,11 @@ export const UI = {
   /** Scroll behavior delays */
   SCROLL: {
     AFTER_MOUNT: 100, // Delay before scroll after component mount
+  },
+  /** Layout dimensions */
+  LAYOUT: {
+    HEADER_HEIGHT: 48, // App header height in pixels (matches --header-height CSS var)
+    SCROLL_PADDING: 16, // Extra padding when scrolling to elements
   },
   /** Highlight/feedback durations */
   HIGHLIGHT: {

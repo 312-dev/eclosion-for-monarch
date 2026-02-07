@@ -4,7 +4,8 @@
  * Destructive actions like resetting credentials and uninstalling.
  */
 
-import { AlertTriangle, Key, RotateCcw, ChevronRight } from 'lucide-react';
+import { Key, RotateCcw, ChevronRight } from 'lucide-react';
+import { SectionHeader } from './settingsSections';
 
 interface DangerZoneSectionProps {
   onShowResetModal: () => void;
@@ -17,13 +18,7 @@ export function DangerZoneSection({
 }: DangerZoneSectionProps) {
   return (
     <section>
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-error)' }}
-      >
-        <AlertTriangle size={12} />
-        Danger Zone
-      </h2>
+      <SectionHeader sectionId="danger" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

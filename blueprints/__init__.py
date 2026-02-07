@@ -107,3 +107,13 @@ def register_blueprints(app: Flask) -> None:
     from .stash import stash_bp
 
     app.register_blueprint(stash_bp)
+
+    # Phase 9: IFTTT blueprint
+    from .ifttt import ifttt_bp
+
+    app.register_blueprint(ifttt_bp)
+
+    # Phase 10: Internal blueprint (desktop<->Flask IPC)
+    from .internal import internal_bp
+
+    app.register_blueprint(internal_bp)

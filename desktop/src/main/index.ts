@@ -110,7 +110,7 @@ import {
 } from './auto-backup';
 import { migrateSettings } from './settings-migration';
 import { checkAndRepairBackend } from './integrity';
-import { startTunnel, cleanupTunnel, isTunnelEnabled, isTunnelConfigured } from './tunnel';
+import { startTunnel, cleanupTunnel, isTunnelEnabled, isTunnelConfigured, isTunnelActive, getIftttTunnelCreds, pushIftttSecretsToFlask } from './tunnel';
 
 /**
  * Check if the app is running from a macOS DMG volume mount.
@@ -236,6 +236,24 @@ async function initialize(): Promise<void> {
     backendManager = new BackendManager();
     logStartupTiming('BackendManager created');
     debugLog('BackendManager created');
+
+    // Re-push IFTTT secrets when backend becomes ready (handles restarts)
+    backendManager.on('backend-ready', async () => {
+      if (isTunnelActive()) {
+        const port = backendManager.getPort();
+        const desktopSecret = backendManager.getDesktopSecret();
+        if (port && desktopSecret) {
+          const { subdomain, managementKey } = getIftttTunnelCreds();
+          if (subdomain && managementKey) {
+            debugLog('[IFTTT] Re-pushing tunnel creds after backend ready');
+            await pushIftttSecretsToFlask(port, desktopSecret, {
+              subdomain,
+              management_key: managementKey,
+            });
+          }
+        }
+      }
+    });
 
     // Setup IPC handlers (needed before window creation)
     debugLog('Setting up IPC handlers...');
@@ -526,6 +544,20 @@ async function tryAutoStartTunnel(): Promise<void> {
     if (port) {
       const url = await startTunnel(port);
       debugLog(`Remote access tunnel auto-started: ${url}`);
+
+      // Push tunnel creds to Flask for IFTTT trigger events
+      const desktopSecret = backendManager.getDesktopSecret();
+      debugLog(`[IFTTT] Auto-start push: desktopSecret=${!!desktopSecret}`);
+      if (desktopSecret) {
+        const { subdomain, managementKey } = getIftttTunnelCreds();
+        debugLog(`[IFTTT] Auto-start push: subdomain=${subdomain}, managementKey=${!!managementKey}`);
+        if (subdomain && managementKey) {
+          await pushIftttSecretsToFlask(port, desktopSecret, {
+            subdomain,
+            management_key: managementKey,
+          });
+        }
+      }
     }
   } catch (error) {
     debugLog(`Failed to auto-start tunnel: ${error instanceof Error ? error.message : String(error)}`);

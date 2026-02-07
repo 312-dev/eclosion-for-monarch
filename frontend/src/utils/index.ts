@@ -76,3 +76,14 @@ export {
   getAvailableStatus,
   getAvailableStatusColor,
 } from './availableToStash';
+
+export {
+  scrollToElement,
+  scrollToId,
+  scrollToTop,
+  scrollContainerTo,
+  scrollIntoViewLocal,
+  scrollToPosition,
+  getScrollOffset,
+  getScrollPosition,
+} from './scroll';

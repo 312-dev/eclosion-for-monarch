@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint("admin", __name__)
 
+# Unique ID generated on each Flask startup - used by Electron to detect restarts
+BOOT_ID = str(uuid.uuid4())
+
 
 # ---- HEALTH ENDPOINTS ----
 
@@ -26,7 +30,7 @@ admin_bp = Blueprint("admin", __name__)
 @admin_bp.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint."""
-    return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+    return jsonify({"status": "ok", "timestamp": datetime.now().isoformat(), "boot_id": BOOT_ID})
 
 
 @admin_bp.route("/health/monarch", methods=["GET"])

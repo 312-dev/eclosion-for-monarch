@@ -5,13 +5,14 @@ from flask import Flask
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from core import config
-
 # Create limiter instance without app binding
 # Will be initialized with app in init_limiter()
+#
+# No default_limits - only security-sensitive endpoints (login, unlock, etc.)
+# have rate limits via @limiter.limit() decorators. Blanket rate limiting
+# doesn't make sense for a desktop app where the frontend is trusted.
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=list(config.DEFAULT_RATE_LIMITS),
     storage_uri="memory://",
 )
 

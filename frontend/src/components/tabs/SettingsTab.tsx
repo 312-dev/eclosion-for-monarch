@@ -3,9 +3,12 @@
  *
  * General application settings including appearance, tool settings,
  * syncing, updates, account, security, data management, and danger zone.
+ *
+ * Section rendering is driven by SETTINGS_SECTIONS from settingsSections.tsx.
+ * Each section has a renderer in SECTION_RENDERERS below.
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -13,6 +16,7 @@ import type { DashboardData, AutoSyncStatus, VersionInfo } from '../../types';
 import { useDemo } from '../../context/DemoContext';
 import { usePageTitle, useApiClient, useTunnelStatus } from '../../hooks';
 import { isDesktopMode } from '../../utils/apiBase';
+import { scrollToElement } from '../../utils';
 import { UI } from '../../constants';
 import * as api from '../../api/client';
 import {
@@ -32,7 +36,11 @@ import {
   DeveloperSection,
   SettingsHeader,
   RemoteAccessSection,
+  IftttSection,
   SettingsModals,
+  SectionHeader,
+  getVisibleSections,
+  type SectionId,
 } from '../settings';
 import {
   useUpdateStashConfigMutation,
@@ -91,7 +99,7 @@ export function SettingsTab() {
           notes: notesSettingsRef,
           stash: stashSettingsRef,
         };
-        refMap[expandedTool].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollToElement(refMap[expandedTool].current, { behavior: 'smooth' });
       }, UI.SCROLL.AFTER_MOUNT);
     }
   }, [expandedTool]);
@@ -100,7 +108,7 @@ export function SettingsTab() {
   useEffect(() => {
     if (scrollToRemoteAccess && isDesktop) {
       setTimeout(() => {
-        remoteAccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrollToElement(remoteAccessRef.current, { behavior: 'smooth' });
       }, UI.SCROLL.AFTER_MOUNT);
     }
   }, [scrollToRemoteAccess, isDesktop]);
@@ -179,95 +187,137 @@ export function SettingsTab() {
   const totalCategories = dedicatedItems.length + (dashboardData?.rollup?.category_id ? 1 : 0);
   const totalItems = dedicatedItems.length + rollupItems.length;
 
-  return (
-    <div className="settings-page" data-testid="settings-content">
-      <div className="settings-content tab-content-enter">
-        <SettingsHeader />
-        {isDesktop && (
-          <div id="remote-access" ref={remoteAccessRef}>
-            <RemoteAccessSection />
-          </div>
-        )}
-        {isDemo && (
-          <div id="demo">
-            <DemoModeSection />
-          </div>
-        )}
-        <div id="appearance">
-          <AppearanceSettings />
-        </div>
-        <section id="tool-settings" className="mb-8">
-          <h2
-            className="text-xs font-semibold uppercase tracking-wider mb-3 px-1"
-            style={{ color: 'var(--monarch-text-muted)' }}
-          >
-            Tool Settings
-          </h2>
-          <div className="flex flex-col gap-4">
-            <RecurringToolSettings
-              ref={recurringSettingsRef}
-              dashboardData={dashboardData}
-              loading={loading}
-              onRefreshDashboard={fetchDashboardData}
-              onShowResetModal={() => setShowRecurringResetModal(true)}
-              defaultExpanded={expandedTool === 'recurring'}
-            />
-            <NotesToolCard ref={notesSettingsRef} defaultExpanded={expandedTool === 'notes'} />
-            <StashToolSettings
-              ref={stashSettingsRef}
-              defaultExpanded={expandedTool === 'stash'}
-              onSetupBookmarkSync={isDesktop ? () => setShowBookmarkSetupModal(true) : undefined}
-              onChangeBookmarkSource={isDesktop ? handleChangeBookmarkSource : undefined}
-              onUnlinkBookmarks={isDesktop ? handleUnlinkBookmarks : undefined}
-            />
-          </div>
-        </section>
-        {isDesktop && (
-          <div id="desktop">
-            <DesktopSection />
-          </div>
-        )}
-        <div id="account">
-          <AccountSection />
-        </div>
-        <div id="updates">
+  // Get visible sections based on current context
+  // This ensures sidebar navigation and settings page stay in sync
+  const visibleSections = getVisibleSections(isDemo, isDesktop, isRemoteActive ?? false);
+
+  /**
+   * Renders a section by ID. The order and visibility are determined by SETTINGS_SECTIONS.
+   * When adding a new section, add it to SETTINGS_SECTIONS in settingsSections.tsx
+   * and add a case here.
+   */
+  function renderSection(sectionId: SectionId): ReactNode {
+    switch (sectionId) {
+      case 'demo':
+        return <DemoModeSection />;
+
+      case 'appearance':
+        return <AppearanceSettings />;
+
+      case 'connectivity':
+        return (
+          <section id="connectivity" className="mb-8" ref={remoteAccessRef}>
+            <SectionHeader sectionId="connectivity" />
+            <div className="flex flex-col gap-4">
+              <div id="remote-access">
+                <RemoteAccessSection />
+              </div>
+              <div id="ifttt">
+                <IftttSection />
+              </div>
+            </div>
+          </section>
+        );
+
+      case 'tool-settings':
+        return (
+          <section id="tool-settings" className="mb-8">
+            <SectionHeader sectionId="tool-settings" />
+            <div className="flex flex-col gap-4">
+              <RecurringToolSettings
+                ref={recurringSettingsRef}
+                dashboardData={dashboardData}
+                loading={loading}
+                onRefreshDashboard={fetchDashboardData}
+                onShowResetModal={() => setShowRecurringResetModal(true)}
+                defaultExpanded={expandedTool === 'recurring'}
+              />
+              <NotesToolCard ref={notesSettingsRef} defaultExpanded={expandedTool === 'notes'} />
+              <StashToolSettings
+                ref={stashSettingsRef}
+                defaultExpanded={expandedTool === 'stash'}
+                onSetupBookmarkSync={isDesktop ? () => setShowBookmarkSetupModal(true) : undefined}
+                onChangeBookmarkSource={isDesktop ? handleChangeBookmarkSource : undefined}
+                onUnlinkBookmarks={isDesktop ? handleUnlinkBookmarks : undefined}
+              />
+            </div>
+          </section>
+        );
+
+      case 'account':
+        return <AccountSection />;
+
+      case 'updates':
+        return (
           <UpdatesSection
             versionInfo={versionInfo}
             onShowUpdateModal={() => setShowUpdateModal(true)}
           />
-        </div>
-        <div id="syncing">
+        );
+
+      case 'syncing':
+        return (
           <SyncingSection
             status={autoSyncStatus}
             onEnable={handleEnableAutoSync}
             onDisable={handleDisableAutoSync}
             onRefresh={fetchAutoSyncStatus}
           />
-        </div>
-        {(!isDesktop || isRemoteActive) && (
-          <div id="security">
-            <SecuritySection />
-          </div>
-        )}
-        <div id="data">
-          <DataManagementSection onShowImportModal={() => setShowImportModal(true)} />
-        </div>
-        {isDesktop && (
+        );
+
+      case 'desktop':
+        return <DesktopSection />;
+
+      case 'security':
+        return <SecuritySection />;
+
+      case 'data':
+        return <DataManagementSection onShowImportModal={() => setShowImportModal(true)} />;
+
+      case 'logs':
+        return (
           <>
-            <div id="logs">
-              <LogViewerSection />
-            </div>
-            <div id="developer">
-              <DeveloperSection />
-            </div>
+            <LogViewerSection />
+            <DeveloperSection />
           </>
-        )}
-        <div id="danger">
+        );
+
+      case 'danger':
+        return (
           <DangerZoneSection
             onShowResetModal={() => setShowResetModal(true)}
             onShowUninstallModal={() => setShowUninstallModal(true)}
           />
-        </div>
+        );
+
+      default:
+        return null;
+    }
+  }
+
+  // Sections that render their own id wrapper (have nested sub-sections)
+  const selfWrappedSections = new Set<SectionId>(['connectivity', 'tool-settings']);
+
+  return (
+    <div className="settings-page" data-testid="settings-content">
+      <div className="settings-content tab-content-enter">
+        <SettingsHeader />
+        {visibleSections.map((section) => {
+          const content = renderSection(section.id);
+          if (!content) return null;
+
+          // Self-wrapped sections handle their own id attribute
+          if (selfWrappedSections.has(section.id)) {
+            return <div key={section.id}>{content}</div>;
+          }
+
+          // Standard sections get an id wrapper for scroll navigation
+          return (
+            <div key={section.id} id={section.id}>
+              {content}
+            </div>
+          );
+        })}
       </div>
       <SettingsModals
         showResetModal={showResetModal}

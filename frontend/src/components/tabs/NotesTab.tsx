@@ -25,6 +25,8 @@ import {
   convertEffectiveGeneralNote,
   hasAnyNotes,
   calculateNoteMonthBounds,
+  scrollToPosition,
+  getScrollPosition,
 } from '../../utils';
 import { STORAGE_KEYS } from '../../constants';
 import type { MonthKey, EffectiveGeneralNote, CategoryGroupWithNotes } from '../../types/notes';
@@ -173,12 +175,13 @@ export function NotesTab() {
       hasRestoredScroll.current = true;
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
-        globalThis.scrollTo(0, uiState.scrollTop);
+        scrollToPosition(uiState.scrollTop);
       });
     }
   }, [isLoading, uiState.scrollTop]);
 
   // Save scroll position on scroll (debounced)
+  // Listen on both the app scroll container and window for compatibility
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -187,14 +190,17 @@ export function NotesTab() {
       timeoutId = setTimeout(() => {
         setUIState((prev) => ({
           ...prev,
-          scrollTop: globalThis.scrollY,
+          scrollTop: getScrollPosition(),
         }));
       }, 150); // Debounce to avoid excessive writes
     };
 
-    globalThis.addEventListener('scroll', handleScroll, { passive: true });
+    // Listen on the app scroll container if available, otherwise window
+    const scrollContainer = document.querySelector('.app-scroll-area');
+    const target = scrollContainer ?? globalThis;
+    target.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      globalThis.removeEventListener('scroll', handleScroll);
+      target.removeEventListener('scroll', handleScroll);
       clearTimeout(timeoutId);
     };
   }, [setUIState]);

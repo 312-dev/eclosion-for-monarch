@@ -7,55 +7,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  Settings,
-  Lock,
-  Lightbulb,
-  LayoutDashboard,
-  Paintbrush,
-  Wrench,
-  User,
-  Download,
-  Zap,
-  Monitor,
-  Shield,
-  Database,
-  FileText,
-  AlertTriangle,
-  RotateCcw,
-  Radio,
-} from 'lucide-react';
+import { Settings, Lock, Lightbulb, LayoutDashboard } from 'lucide-react';
 import { RecurringIcon, NotesIcon, StashIcon } from '../wizards/WizardComponents';
 import { ToolSettingsModal, type ToolType } from '../ui/ToolSettingsModal';
 import { NavItemLink, type NavItem } from './NavItemLink';
 import { useDemo } from '../../context/DemoContext';
 import { useUpdatesState } from '../../hooks/useUpdatesState';
-import { useMediaQuery, useScrollEnd } from '../../hooks';
+import { useMediaQuery, useScrollEnd, useTunnelStatus } from '../../hooks';
 import { isDesktopMode } from '../../utils/apiBase';
-
-interface SettingsSection {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  showInDemo?: boolean;
-  desktopOnly?: boolean;
-  webOnly?: boolean;
-}
-
-const SETTINGS_SECTIONS: SettingsSection[] = [
-  { id: 'remote-access', label: 'Remote', icon: <Radio size={16} />, desktopOnly: true },
-  { id: 'demo', label: 'Demo Mode', icon: <RotateCcw size={16} />, showInDemo: true },
-  { id: 'appearance', label: 'Appearance', icon: <Paintbrush size={16} /> },
-  { id: 'tool-settings', label: 'Tool Settings', icon: <Wrench size={16} /> },
-  { id: 'account', label: 'Account', icon: <User size={16} /> },
-  { id: 'updates', label: 'Updates', icon: <Download size={16} /> },
-  { id: 'syncing', label: 'Automation', icon: <Zap size={16} /> },
-  { id: 'desktop', label: 'Desktop', icon: <Monitor size={16} />, desktopOnly: true },
-  { id: 'security', label: 'Security', icon: <Shield size={16} />, webOnly: true },
-  { id: 'data', label: 'Data', icon: <Database size={16} /> },
-  { id: 'logs', label: 'Logs', icon: <FileText size={16} />, desktopOnly: true },
-  { id: 'danger', label: 'Danger Zone', icon: <AlertTriangle size={16} /> },
-];
+import { getVisibleSections } from '../settings';
+import { scrollToElement, scrollIntoViewLocal } from '../../utils';
 
 interface SidebarNavigationProps {
   onLock: () => void;
@@ -106,6 +67,8 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const [settingsModalTool, setSettingsModalTool] = useState<ToolType | null>(null);
   const { dashboardItem, toolkitItems, otherItems } = getNavItems(isDemo);
   const { unreadCount } = useUpdatesState();
+  const { status: tunnelStatus } = useTunnelStatus();
+  const isRemoteActive = isDesktop && tunnelStatus?.active;
   const dashboardItemWithBadge = { ...dashboardItem, badge: unreadCount };
   const prefix = isDemo ? '/demo' : '';
   const toolkitListRef = useRef<HTMLUListElement>(null);
@@ -126,7 +89,7 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
 
     const activeItem = toolkitListRef.current.querySelector('.sidebar-nav-item-active');
     if (activeItem) {
-      activeItem.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+      scrollIntoViewLocal(activeItem, { behavior: 'smooth', inline: 'nearest', block: 'nearest' });
     }
   }, [isMobile, location.pathname]);
 
@@ -134,14 +97,7 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   const isSettingsPage = location.pathname === `${prefix}/settings`;
 
   // Filter settings sections based on context (only used when on settings page)
-  const visibleSettingsSections = SETTINGS_SECTIONS.filter((section) => {
-    if (section.showInDemo && !isDemo) return false;
-    if (section.desktopOnly && !isDesktop) return false;
-    if (section.webOnly && isDesktop) return false;
-    if (isDemo && section.id === 'demo') return true;
-    if (section.showInDemo) return isDemo;
-    return true;
-  });
+  const visibleSettingsSections = getVisibleSections(isDemo, isDesktop, isRemoteActive ?? false);
 
   const handleSettingsClick = (hash: string) => {
     // Convert hash to tool type: #notes -> 'notes', #recurring -> 'recurring', #stash -> 'stash'
@@ -157,11 +113,9 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
   };
 
   const handleSettingsSectionClick = (sectionId: string) => {
-    // Scroll to section on the settings page
+    // Scroll to section on the settings page (accounts for header offset)
     const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    scrollToElement(element, { behavior: 'smooth' });
   };
 
   return (

@@ -47,6 +47,10 @@ def configure_logging(
         handlers=[logging.FileHandler(str(log_file)), logging.StreamHandler()],
     )
 
+    # Quiet noisy loggers - SQLAlchemy logs every query at INFO which creates
+    # duplicate lines (once from its handler, once from root). Only show warnings.
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
     return logging.getLogger(__name__)
 
 

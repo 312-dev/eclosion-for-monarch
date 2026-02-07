@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { Download, RotateCcw, CheckCircle } from 'lucide-react';
 import { VersionBadge } from '../VersionBadge';
+import { SectionHeader } from './settingsSections';
 import { useUpdate } from '../../context/UpdateContext';
 import type { VersionInfo } from '../../types';
 
@@ -117,13 +118,7 @@ export function UpdatesSection({ versionInfo, onShowUpdateModal }: UpdatesSectio
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        <Download size={12} />
-        Updates
-      </h2>
+      <SectionHeader sectionId="updates" />
       <div
         className="rounded-xl overflow-hidden"
         style={{

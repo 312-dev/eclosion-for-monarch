@@ -20,6 +20,7 @@ import { GetStartedModal } from '../components/ui/GetStartedModal';
 import { IdeaInputProvider, CoderModeProvider } from '../context';
 import { FEATURES } from '../data/features';
 import { CocoonIcon, ButterflyIcon, CloudSunIcon } from '../components/icons';
+import { scrollToElement } from '../utils';
 
 interface HowItWorksStepProps {
   readonly icon: React.ComponentType<{ size?: number; className?: string }>;
@@ -75,7 +76,7 @@ export function LandingPage() {
   const transformationRef = useRef<HTMLElement>(null);
 
   const scrollToTransformation = () => {
-    transformationRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToElement(transformationRef.current, { behavior: 'smooth' });
   };
 
   return (

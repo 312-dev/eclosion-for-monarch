@@ -7,6 +7,7 @@
 #   - eclosion-updates (workers/) — Reddit updates feed for eclosion.app
 #   - eclosion-tunnel-provisioner (workers/tunnel-provisioner/) — Named tunnel provisioning for eclosion.me
 #   - eclosion-tunnel-gate (workers/tunnel-gate/) — Edge-enforced OTP gate for *.eclosion.me
+#   - eclosion-ifttt-service (workers/ifttt-service/) — IFTTT integration service for ifttt-api.eclosion.app
 #
 # Triggers:
 #   - Push to main when worker files change
@@ -33,6 +34,7 @@ jobs:
       updates-proxy: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.updates-proxy }}
       tunnel-provisioner: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.tunnel-provisioner }}
       tunnel-gate: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.tunnel-gate }}
+      ifttt-service: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ifttt-service }}
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
@@ -50,6 +52,8 @@ jobs:
               - 'workers/tunnel-provisioner/**'
             tunnel-gate:
               - 'workers/tunnel-gate/**'
+            ifttt-service:
+              - 'workers/ifttt-service/**'
 
   deploy-updates-proxy:
     needs: changes
@@ -147,3 +151,41 @@ jobs:
           echo "### Tunnel Gate Deployed" >> $GITHUB_STEP_SUMMARY
           echo "- **Worker:** eclosion-tunnel-gate" >> $GITHUB_STEP_SUMMARY
           echo "- **Route:** *.eclosion.me/*" >> $GITHUB_STEP_SUMMARY
+
+  deploy-ifttt-service:
+    needs: changes
+    if: needs.changes.outputs.ifttt-service == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: workers/ifttt-service
+        run: npm ci
+
+      - name: Run tests
+        working-directory: workers/ifttt-service
+        run: npx vitest run
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@da0e0dfe58b7a431659754fdf3f186c529afbe65 # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/ifttt-service
+          command: deploy
+
+      - name: Summary
+        run: |
+          echo "### IFTTT Service Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker:** eclosion-ifttt-service" >> $GITHUB_STEP_SUMMARY
+          echo "- **Route:** ifttt-api.eclosion.app/*" >> $GITHUB_STEP_SUMMARY

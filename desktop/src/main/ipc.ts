@@ -122,6 +122,14 @@ import {
   checkSubdomainAvailability,
   claimSubdomain,
   unclaimSubdomain,
+  getManagementKey,
+  fetchIftttActionSecret,
+  drainIftttQueue,
+  pushIftttSecretsToFlask,
+  clearIftttSecretsFromFlask,
+  getIftttTunnelCreds,
+  tunnelEvents,
+  type TunnelStatusEvent,
 } from './tunnel';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -1261,6 +1269,16 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   // =========================================================================
 
   /**
+   * Forward tunnel status change events to the renderer.
+   */
+  tunnelEvents.on('status-changed', (status: TunnelStatusEvent) => {
+    const mainWindow = getMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('tunnel:status-changed', status);
+    }
+  });
+
+  /**
    * Check if a subdomain is available for claiming.
    */
   ipcMain.handle('tunnel:check', async (_event, subdomain: string) => {
@@ -1275,8 +1293,21 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   ipcMain.handle('tunnel:claim', async (_event, subdomain: string) => {
     const result = await claimSubdomain(subdomain);
     if (result.success) {
-      // Auto-start tunnel after claiming
       const port = backendManager.getPort();
+      const desktopSecret = backendManager.getDesktopSecret();
+
+      // Push tunnel creds to Flask for IFTTT trigger events
+      if (port && desktopSecret) {
+        const { subdomain: sub, managementKey } = getIftttTunnelCreds();
+        if (sub && managementKey) {
+          await pushIftttSecretsToFlask(port, desktopSecret, {
+            subdomain: sub,
+            management_key: managementKey,
+          });
+        }
+      }
+
+      // Auto-start tunnel after claiming
       if (port) {
         try {
           const url = await startTunnel(port);
@@ -1302,6 +1333,19 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
 
     try {
       const url = await startTunnel(port);
+
+      // Push tunnel creds to Flask for IFTTT trigger events
+      const desktopSecret = backendManager.getDesktopSecret();
+      if (desktopSecret) {
+        const { subdomain, managementKey } = getIftttTunnelCreds();
+        if (subdomain && managementKey) {
+          await pushIftttSecretsToFlask(port, desktopSecret, {
+            subdomain,
+            management_key: managementKey,
+          });
+        }
+      }
+
       return { success: true, url };
     } catch (error) {
       return {
@@ -1314,8 +1358,16 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
   /**
    * Stop the active tunnel.
    */
-  ipcMain.handle('tunnel:stop', () => {
+  ipcMain.handle('tunnel:stop', async () => {
     stopTunnel();
+
+    // Clear secrets from Flask memory
+    const port = backendManager.getPort();
+    const desktopSecret = backendManager.getDesktopSecret();
+    if (port && desktopSecret) {
+      await clearIftttSecretsFromFlask(port, desktopSecret);
+    }
+
     return { success: true };
   });
 
@@ -1345,7 +1397,55 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
    * Stops the tunnel, deletes tunnel + DNS + KV via provisioner, and clears local data.
    */
   ipcMain.handle('tunnel:unclaim', async () => {
-    return unclaimSubdomain();
+    const result = await unclaimSubdomain();
+
+    // Clear secrets from Flask memory
+    if (result.success) {
+      const port = backendManager.getPort();
+      const desktopSecret = backendManager.getDesktopSecret();
+      if (port && desktopSecret) {
+        await clearIftttSecretsFromFlask(port, desktopSecret);
+      }
+    }
+
+    return result;
+  });
+
+  /**
+   * Get the decrypted management key (for IFTTT broker authentication).
+   */
+  ipcMain.handle('tunnel:get-management-key', () => {
+    return getManagementKey();
+  });
+
+  /**
+   * Fetch the per-subdomain IFTTT action secret from the broker
+   * and push it to Flask via IPC.
+   */
+  ipcMain.handle('tunnel:fetch-ifttt-action-secret', async () => {
+    const result = await fetchIftttActionSecret();
+
+    // Push action secret to Flask if successful
+    if (result.success && result.secret) {
+      const port = backendManager.getPort();
+      const desktopSecret = backendManager.getDesktopSecret();
+      if (port && desktopSecret) {
+        await pushIftttSecretsToFlask(port, desktopSecret, {
+          action_secret: result.secret,
+        });
+      }
+    }
+
+    // Don't expose the secret to the renderer
+    return { success: result.success, error: result.error };
+  });
+
+  /**
+   * Manually drain the IFTTT action queue.
+   * Returns the number of actions processed.
+   */
+  ipcMain.handle('tunnel:drain-ifttt-queue', async () => {
+    return drainIftttQueue();
   });
 
 }

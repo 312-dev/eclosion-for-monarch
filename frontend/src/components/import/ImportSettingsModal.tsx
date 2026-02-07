@@ -19,9 +19,11 @@ import { CancelButton, WarningButton } from '../ui/ModalButtons';
 interface ImportSettingsModalProps {
   readonly isOpen: boolean;
   readonly onClose: () => void;
+  /** Called after successful import - use for setup wizard flow */
+  readonly onSuccess?: () => void;
 }
 
-export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProps) {
+export function ImportSettingsModal({ isOpen, onClose, onSuccess }: ImportSettingsModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [exportData, setExportData] = useState<EclosionExport | null>(null);
@@ -105,6 +107,7 @@ export function ImportSettingsModal({ isOpen, onClose }: ImportSettingsModalProp
 
       queryClient.invalidateQueries();
       handleClose();
+      onSuccess?.();
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Import failed');
     } finally {

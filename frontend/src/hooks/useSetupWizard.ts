@@ -25,6 +25,7 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [autoCategorizeEnabled, setAutoCategorizeEnabled] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const categoryGroups = useCategoryGroups();
   const itemSelection = useItemSelection();
@@ -214,5 +215,11 @@ export function useSetupWizard({ onComplete }: UseSetupWizardOptions) {
     saveError,
     handleSkip,
     handleComplete,
+
+    // Import modal (restore from backup)
+    showImportModal,
+    setShowImportModal,
+    handleRestoreFromBackup: () => setShowImportModal(true),
+    handleImportSuccess: onComplete,
   };
 }

@@ -20,13 +20,46 @@
  */
 
 import { spawn, type ChildProcess } from 'child_process';
+import { randomUUID } from 'crypto';
 import { createWriteStream, existsSync, mkdirSync, chmodSync, writeFileSync, unlinkSync } from 'fs';
 import { get as httpsGet } from 'https';
 import { join } from 'path';
 import { app, safeStorage, net } from 'electron';
+import { EventEmitter } from 'events';
 import { debugLog } from './logger';
 import { getStore } from './store';
 import { getMonarchCredentials } from './biometric';
+
+// =============================================================================
+// Event Emitter for Status Changes
+// =============================================================================
+
+export const tunnelEvents = new EventEmitter();
+
+export interface TunnelStatusEvent {
+  active: boolean;
+  url: string | null;
+  enabled: boolean;
+  subdomain: string | null;
+  configured: boolean;
+}
+
+/**
+ * Emit a tunnel status change event.
+ * Components can subscribe via tunnelEvents.on('status-changed', callback).
+ */
+function emitStatusChange(): void {
+  const config = getTunnelConfig();
+  const status: TunnelStatusEvent = {
+    active: isTunnelActive(),
+    url: getTunnelUrl(),
+    enabled: isTunnelEnabled(),
+    subdomain: config.subdomain,
+    configured: isTunnelConfigured(),
+  };
+  tunnelEvents.emit('status-changed', status);
+  debugLog(`[Tunnel] Status changed: active=${status.active}, enabled=${status.enabled}`);
+}
 
 // =============================================================================
 // Constants
@@ -77,6 +110,9 @@ export interface TunnelConfig {
 // =============================================================================
 
 let activeTunnel: ActiveTunnel | null = null;
+let iftttRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+const IFTTT_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 // =============================================================================
 // Credential Storage (safeStorage)
@@ -438,6 +474,11 @@ export async function claimSubdomain(
       store.set('tunnel.encryptedManagementKey', encryptedKey.toString('base64'));
     }
 
+    // Note: IPC handler pushes secrets to Flask after claim succeeds
+
+    // Emit status change event
+    emitStatusChange();
+
     debugLog(`[Tunnel] Subdomain claimed: ${result.subdomain}.eclosion.me`);
     return { success: true, subdomain: result.subdomain };
   } catch (error) {
@@ -492,6 +533,11 @@ export async function unclaimSubdomain(): Promise<{ success: boolean; error?: st
     store.delete('tunnel.createdAt');
     store.delete('tunnel.encryptedCredentials');
     store.delete('tunnel.encryptedManagementKey');
+
+    // Note: IPC handler clears secrets from Flask after unclaim succeeds
+
+    // Emit status change event
+    emitStatusChange();
 
     debugLog(`[Tunnel] Subdomain released: ${subdomain}.eclosion.me`);
     return { success: true };
@@ -598,10 +644,23 @@ export async function startTunnel(port: number): Promise<string> {
     // Mark tunnel as enabled
     store.set('tunnel.enabled', true);
 
+    // Emit status change event
+    emitStatusChange();
+
     // Register OTP email with provisioner (non-blocking)
     registerOtpEmail(subdomain).catch((error) => {
       debugLog(`[Tunnel] OTP registration error (non-fatal): ${error}`);
     });
+
+    // Note: IPC handler pushes secrets to Flask after tunnel starts
+
+    // Drain queued IFTTT actions (non-blocking)
+    drainIftttQueue().catch((error) => {
+      debugLog(`[Tunnel] IFTTT queue drain error (non-fatal): ${error}`);
+    });
+
+    // Start periodic IFTTT trigger refresh (every 15 minutes)
+    startIftttRefreshInterval();
 
     return url;
   } catch (error) {
@@ -621,6 +680,9 @@ export function stopTunnel(): void {
   }
 
   debugLog(`[Tunnel] Stopping tunnel at ${activeTunnel.url}`);
+
+  // Stop IFTTT periodic refresh
+  stopIftttRefreshInterval();
 
   // Deregister OTP email (fire-and-forget, non-blocking)
   const subdomain = getStore().get('tunnel.subdomain') as string | undefined;
@@ -642,6 +704,9 @@ export function stopTunnel(): void {
 
   // Mark tunnel as disabled
   getStore().set('tunnel.enabled', false);
+
+  // Emit status change event
+  emitStatusChange();
 
   debugLog('[Tunnel] Stopped');
 }
@@ -688,6 +753,385 @@ export function getTunnelConfig(): TunnelConfig {
 }
 
 // =============================================================================
+// IFTTT Secrets IPC (Push to Flask via HTTP)
+// =============================================================================
+
+/**
+ * Push IFTTT secrets to Flask via HTTP IPC.
+ * Secrets are stored in Flask's memory, never written to disk.
+ *
+ * @param port - Flask backend port
+ * @param desktopSecret - Desktop secret for authentication
+ * @param secrets - Object containing action_secret, subdomain, management_key
+ */
+export async function pushIftttSecretsToFlask(
+  port: number,
+  desktopSecret: string,
+  secrets: {
+    action_secret?: string;
+    subdomain?: string;
+    management_key?: string;
+  },
+): Promise<void> {
+  debugLog(`[IFTTT] Pushing secrets to Flask: port=${port}, subdomain=${secrets.subdomain}, hasManagementKey=${!!secrets.management_key}, hasActionSecret=${!!secrets.action_secret}`);
+  try {
+    const response = await net.fetch(`http://127.0.0.1:${port}/internal/ifttt-secrets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Desktop-Secret': desktopSecret,
+      },
+      body: JSON.stringify(secrets),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      debugLog(`[IFTTT] Failed to push secrets to Flask: ${response.status} - ${text}`);
+    } else {
+      debugLog('[IFTTT] Secrets pushed to Flask via IPC successfully');
+    }
+  } catch (error) {
+    debugLog(`[IFTTT] Error pushing secrets to Flask: ${error}`);
+  }
+}
+
+/**
+ * Clear IFTTT secrets from Flask's memory.
+ * Called when tunnel is stopped or IFTTT is disconnected.
+ *
+ * @param port - Flask backend port
+ * @param desktopSecret - Desktop secret for authentication
+ */
+export async function clearIftttSecretsFromFlask(
+  port: number,
+  desktopSecret: string,
+): Promise<void> {
+  try {
+    const response = await net.fetch(`http://127.0.0.1:${port}/internal/ifttt-secrets`, {
+      method: 'DELETE',
+      headers: {
+        'X-Desktop-Secret': desktopSecret,
+      },
+    });
+
+    if (!response.ok) {
+      debugLog(`[IFTTT] Failed to clear secrets from Flask: ${response.status}`);
+    } else {
+      debugLog('[IFTTT] Secrets cleared from Flask via IPC');
+    }
+  } catch (error) {
+    debugLog(`[IFTTT] Error clearing secrets from Flask: ${error}`);
+  }
+}
+
+/**
+ * Get the current IFTTT tunnel credentials from store.
+ * Used by IPC handlers to push secrets after tunnel operations.
+ */
+export function getIftttTunnelCreds(): { subdomain: string | null; managementKey: string | null } {
+  const store = getStore();
+  const subdomain = store.get('tunnel.subdomain') as string | undefined;
+  const managementKey = getManagementKey();
+  return {
+    subdomain: subdomain ?? null,
+    managementKey: managementKey ?? null,
+  };
+}
+
+// =============================================================================
+// IFTTT Queue Drain
+// =============================================================================
+
+const IFTTT_BROKER_URL = 'https://ifttt-api.eclosion.app';
+
+export interface DrainResult {
+  processed: number;
+  succeeded: number;
+  failed: number;
+  actions: Array<{
+    id: string;
+    action_slug: string;
+    success: boolean;
+    error?: string;
+  }>;
+}
+
+/**
+ * Drain queued IFTTT actions that were stored while offline.
+ * Called after tunnel starts successfully, or manually from UI.
+ *
+ * Flow:
+ * 1. Poll broker for pending actions
+ * 2. Forward each action to the local Flask backend for execution
+ * 3. ACK each action with the broker
+ *
+ * Returns structured results for UI display.
+ */
+export async function drainIftttQueue(): Promise<DrainResult> {
+  const emptyResult: DrainResult = { processed: 0, succeeded: 0, failed: 0, actions: [] };
+
+  const store = getStore();
+  const subdomain = store.get('tunnel.subdomain') as string | undefined;
+  if (!subdomain) return emptyResult;
+
+  const managementKey = getManagementKey();
+  if (!managementKey) return emptyResult;
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Subdomain': subdomain,
+    'X-Management-Key': managementKey,
+  };
+
+  const result: DrainResult = { processed: 0, succeeded: 0, failed: 0, actions: [] };
+
+  try {
+    // Poll for pending actions
+    const pollResponse = await net.fetch(`${IFTTT_BROKER_URL}/api/queue/pending`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!pollResponse.ok) {
+      debugLog(`[IFTTT] Queue poll failed: ${pollResponse.status}`);
+      return emptyResult;
+    }
+
+    const { actions } = (await pollResponse.json()) as {
+      actions: Array<{
+        id: string;
+        action_slug: string;
+        fields: Record<string, string>;
+        queued_at: number;
+      }>;
+    };
+
+    if (!actions || actions.length === 0) {
+      debugLog('[IFTTT] No queued actions');
+      return emptyResult;
+    }
+
+    debugLog(`[IFTTT] Draining ${actions.length} queued action(s)`);
+
+    for (const action of actions) {
+      result.processed++;
+      let actionSuccess = false;
+      let actionError: string | undefined;
+
+      try {
+        // Execute via local Flask backend
+        const port = activeTunnel?.port;
+        if (!port) {
+          debugLog('[IFTTT] No active tunnel port, skipping queue drain');
+          actionError = 'No active tunnel';
+        } else {
+          const actionRouteMap: Record<string, string> = {
+            budget_to: 'budget-to',
+            budget_to_goal: 'budget-to-goal',
+            move_funds: 'move-funds',
+          };
+          const actionSlug = actionRouteMap[action.action_slug] ?? action.action_slug;
+
+          const actionBodyMap: Record<string, Record<string, unknown>> = {
+            budget_to: { category_id: action.fields.category, amount: action.fields.amount },
+            budget_to_goal: { goal_id: action.fields.goal, amount: action.fields.amount },
+            move_funds: { source_category_id: action.fields.source_category, destination_category_id: action.fields.destination_category, amount: action.fields.amount },
+          };
+          const body = actionBodyMap[action.action_slug] ?? action.fields;
+
+          const execResponse = await net.fetch(`http://127.0.0.1:${port}/ifttt/actions/${actionSlug}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+
+          if (execResponse.ok) {
+            actionSuccess = true;
+            result.succeeded++;
+          } else {
+            const errorData = await execResponse.json().catch(() => ({})) as { error?: string };
+            actionError = errorData.error ?? `HTTP ${execResponse.status}`;
+            result.failed++;
+          }
+        }
+
+        // Push history entry
+        await net.fetch(`${IFTTT_BROKER_URL}/api/action-history`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            id: randomUUID(),
+            action_slug: action.action_slug,
+            fields: action.fields,
+            queued_at: action.queued_at,
+            executed_at: Date.now(),
+            success: actionSuccess,
+            error: actionError,
+            was_queued: true,
+          }),
+        });
+
+        // ACK the action regardless of execution result
+        await net.fetch(`${IFTTT_BROKER_URL}/api/queue/ack`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ id: action.id }),
+        });
+
+        debugLog(`[IFTTT] ${actionSuccess ? 'Executed' : 'Failed'} and ACKed action ${action.id} (${action.action_slug})`);
+      } catch (error) {
+        actionError = error instanceof Error ? error.message : String(error);
+        result.failed++;
+        debugLog(`[IFTTT] Failed to execute action ${action.id}: ${actionError}`);
+        // ACK anyway to avoid infinite retry
+        try {
+          await net.fetch(`${IFTTT_BROKER_URL}/api/queue/ack`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ id: action.id }),
+          });
+        } catch {
+          // Best effort
+        }
+      }
+
+      result.actions.push({
+        id: action.id,
+        action_slug: action.action_slug,
+        success: actionSuccess,
+        error: actionError,
+      });
+    }
+
+    debugLog(`[IFTTT] Queue drain complete: ${result.succeeded}/${result.processed} succeeded`);
+    return result;
+  } catch (error) {
+    debugLog(`[IFTTT] Queue drain failed: ${error}`);
+    return emptyResult;
+  }
+}
+
+// =============================================================================
+// IFTTT Action Secret
+// =============================================================================
+
+/**
+ * Fetch the per-subdomain IFTTT action secret from the broker.
+ *
+ * Called when the desktop detects IFTTT is connected.
+ * Returns the secret so the IPC handler can push it to Flask via HTTP.
+ * Also stores the secret encrypted in safeStorage as a backup.
+ */
+export async function fetchIftttActionSecret(): Promise<{ success: boolean; secret?: string; error?: string }> {
+  const store = getStore();
+  const subdomain = store.get('tunnel.subdomain') as string | undefined;
+  if (!subdomain) {
+    return { success: false, error: 'No subdomain configured' };
+  }
+
+  const managementKey = getManagementKey();
+  if (!managementKey) {
+    return { success: false, error: 'No management key available' };
+  }
+
+  try {
+    const response = await net.fetch(`${IFTTT_BROKER_URL}/api/action-secret`, {
+      method: 'GET',
+      headers: {
+        'X-Subdomain': subdomain,
+        'X-Management-Key': managementKey,
+      },
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      return { success: false, error: data.error ?? `HTTP ${response.status}` };
+    }
+
+    const { secret } = (await response.json()) as { secret: string };
+    if (!secret) {
+      return { success: false, error: 'No secret in response' };
+    }
+
+    // Store encrypted in safeStorage as backup
+    if (safeStorage.isEncryptionAvailable()) {
+      const encrypted = safeStorage.encryptString(secret);
+      store.set('tunnel.encryptedIftttActionSecret', encrypted.toString('base64'));
+    }
+
+    debugLog('[IFTTT] Action secret retrieved');
+    return { success: true, secret };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to fetch action secret';
+    debugLog(`[IFTTT] Action secret fetch failed: ${msg}`);
+    return { success: false, error: msg };
+  }
+}
+
+// =============================================================================
+// IFTTT Periodic Refresh
+// =============================================================================
+
+/**
+ * Refresh IFTTT triggers by calling the Flask backend.
+ * Called periodically while the tunnel is active.
+ */
+async function refreshIftttTriggers(): Promise<void> {
+  const port = activeTunnel?.port;
+  if (!port) {
+    debugLog('[IFTTT] Skipping refresh - no active tunnel');
+    return;
+  }
+
+  try {
+    const response = await net.fetch(`http://127.0.0.1:${port}/ifttt/refresh-triggers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (response.ok) {
+      const result = await response.json() as { events_pushed?: Record<string, number> };
+      const totalPushed = Object.values(result.events_pushed ?? {}).reduce(
+        (sum, count) => sum + (typeof count === 'number' ? count : 0),
+        0,
+      );
+      debugLog(`[IFTTT] Periodic refresh complete: ${totalPushed} events pushed`);
+    } else {
+      debugLog(`[IFTTT] Periodic refresh failed: HTTP ${response.status}`);
+    }
+  } catch (error) {
+    debugLog(`[IFTTT] Periodic refresh error: ${error}`);
+  }
+}
+
+/**
+ * Start the periodic IFTTT refresh interval.
+ * Called when tunnel starts successfully.
+ */
+function startIftttRefreshInterval(): void {
+  stopIftttRefreshInterval(); // Clear any existing interval
+
+  debugLog('[IFTTT] Starting periodic refresh interval (every 15 minutes)');
+  iftttRefreshInterval = setInterval(() => {
+    refreshIftttTriggers().catch((error) => {
+      debugLog(`[IFTTT] Refresh interval error: ${error}`);
+    });
+  }, IFTTT_REFRESH_INTERVAL_MS);
+}
+
+/**
+ * Stop the periodic IFTTT refresh interval.
+ * Called when tunnel stops.
+ */
+function stopIftttRefreshInterval(): void {
+  if (iftttRefreshInterval) {
+    debugLog('[IFTTT] Stopping periodic refresh interval');
+    clearInterval(iftttRefreshInterval);
+    iftttRefreshInterval = null;
+  }
+}
+
+// =============================================================================
 // Cleanup
 // =============================================================================
 
@@ -695,6 +1139,7 @@ export function getTunnelConfig(): TunnelConfig {
  * Clean up tunnel resources when the app is quitting.
  */
 export function cleanupTunnel(): void {
+  stopIftttRefreshInterval();
   if (activeTunnel) {
     debugLog('[Tunnel] Cleaning up on app quit');
     try {
@@ -705,4 +1150,6 @@ export function cleanupTunnel(): void {
     deleteCredentialsFile(activeTunnel.credentialsFilePath);
     activeTunnel = null;
   }
+  // IFTTT secrets are stored in Flask's memory and cleared on Flask shutdown.
+  // No cleanup needed here for IFTTT secrets.
 }

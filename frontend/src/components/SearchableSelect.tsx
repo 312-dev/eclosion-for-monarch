@@ -8,6 +8,7 @@ import { UI, Z_INDEX } from '../constants';
 export interface SelectOption {
   value: string;
   label: string;
+  icon?: React.ReactNode;
   disabled?: boolean;
   disabledReason?: string;
 }
@@ -182,6 +183,7 @@ export function SearchableSelect({
         title={opt.disabled ? opt.disabledReason : undefined}
         onMouseEnter={() => setActiveIndex(idx)}
       >
+        {opt.icon && <span className="shrink-0">{opt.icon}</span>}
         <span className="flex-1 truncate">{opt.label}</span>
         {isSelected && (
           <Check size={16} className="text-(--monarch-orange) shrink-0" aria-hidden="true" />
@@ -219,8 +221,9 @@ export function SearchableSelect({
         `}
       >
         <span
-          className={`truncate ${selectedOption ? 'text-(--monarch-text-dark)' : 'text-(--monarch-text-muted)'}`}
+          className={`flex items-center gap-2 truncate ${selectedOption ? 'text-(--monarch-text-dark)' : 'text-(--monarch-text-muted)'}`}
         >
+          {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
           {loading ? 'Loading...' : selectedOption?.label || placeholder}
         </span>
         <ChevronDown

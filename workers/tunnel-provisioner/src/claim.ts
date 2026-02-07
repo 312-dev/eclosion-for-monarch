@@ -11,12 +11,12 @@ import type { TunnelCredentials } from './cloudflare-api';
 import { validateSubdomain } from './validation';
 import {
   createTunnel,
-  createDnsCname,
   configureTunnelIngress,
   deleteTunnel,
   findTunnelByName,
 } from './cloudflare-api';
 import { generateRandomHex, hashManagementKey } from './crypto';
+import { logAudit } from './audit';
 
 interface ClaimRequest {
   subdomain: string;
@@ -154,29 +154,8 @@ export async function handleClaim(
     );
   }
 
-  // Create DNS CNAME record and configure remote ingress rules
-  try {
-    await createDnsCname(
-      env.CLOUDFLARE_ZONE_ID,
-      env.CLOUDFLARE_API_TOKEN,
-      subdomain,
-      credentials.tunnelId,
-    );
-  } catch (error) {
-    // Cleanup: delete the tunnel if DNS fails
-    await deleteTunnel(
-      env.CLOUDFLARE_ACCOUNT_ID,
-      env.CLOUDFLARE_API_TOKEN,
-      credentials.tunnelId,
-    ).catch(() => {});
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json(
-      { error: `Failed to create DNS record: ${msg}` },
-      { status: 502 },
-    );
-  }
-
   // Configure initial ingress rules with default port
+  // Note: DNS is handled via wildcard CNAME, no per-subdomain record needed
   try {
     await configureTunnelIngress(
       env.CLOUDFLARE_ACCOUNT_ID,
@@ -203,6 +182,9 @@ export async function handleClaim(
       management_key_hash: managementKeyHash,
     }),
   );
+
+  // Audit log: successful claim
+  await logAudit(env.TUNNELS, 'claim', subdomain, clientIp, true);
 
   // Return credentials + management key — this is the ONLY time they are available
   return Response.json({

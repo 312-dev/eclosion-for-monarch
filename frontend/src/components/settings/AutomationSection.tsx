@@ -4,9 +4,9 @@
  * Sync settings including auto-sync and background sync (desktop only).
  */
 
-import { RefreshCw } from 'lucide-react';
 import { AutoSyncSettings } from '../AutoSyncSettings';
 import { BackgroundSyncSection } from './desktop/DesktopSyncSections';
+import { SectionHeader } from './settingsSections';
 import { useBackgroundSync } from '../../hooks';
 import { isDesktopMode } from '../../utils/apiBase';
 import type { AutoSyncStatus } from '../../types';
@@ -24,13 +24,7 @@ export function SyncingSection({ status, onEnable, onDisable, onRefresh }: Synci
 
   return (
     <section className="mb-8">
-      <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
-        style={{ color: 'var(--monarch-text-muted)' }}
-      >
-        <RefreshCw size={12} />
-        Syncing
-      </h2>
+      <SectionHeader sectionId="syncing" />
 
       {isDesktop ? (
         /* Desktop: Combined card with both sync options */

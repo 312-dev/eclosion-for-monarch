@@ -77,20 +77,6 @@ SESSION_COOKIE_LIFETIME = timedelta(days=SESSION_LIFETIME_DAYS)
 
 
 # ============================================================================
-# RATE LIMITING
-# ============================================================================
-
-# Daily request limit per IP
-RATE_LIMIT_DAILY = int(os.environ.get("RATE_LIMIT_DAILY", 1000))
-
-# Hourly request limit per IP
-RATE_LIMIT_HOURLY = int(os.environ.get("RATE_LIMIT_HOURLY", 200))
-
-# Default rate limits as list for Flask-Limiter
-DEFAULT_RATE_LIMITS = [f"{RATE_LIMIT_DAILY} per day", f"{RATE_LIMIT_HOURLY} per hour"]
-
-
-# ============================================================================
 # STATE & DATA PATHS
 # ============================================================================
 

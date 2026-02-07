@@ -1020,6 +1020,233 @@ class CategoryManager:
         except Exception as e:
             return {"success": False, "category_id": category_id, "error": str(e)}
 
+    async def move_funds(
+        self,
+        source_category_id: str,
+        destination_category_id: str,
+        amount: float,
+    ) -> dict[str, Any]:
+        """
+        Move funds between two categories by adjusting their budgets.
+
+        Reduces source category's budget by amount and increases destination's.
+        Amount is clamped if source has insufficient budget (partial move).
+
+        Args:
+            source_category_id: Category to take funds from
+            destination_category_id: Category to move funds to
+            amount: Dollar amount to move
+
+        Returns:
+            Dict with success status, moved amount, and budget details
+        """
+        mm = await get_mm()
+        start, _ = get_month_range()
+
+        rounded_amount = max(1, round(amount))  # Monarch integer-only, min $1
+
+        # Get current budgets for both categories
+        budgets = await self._get_budgets_cached()
+        source_budget = 0
+        dest_budget = 0
+        source_found = False
+        dest_found = False
+
+        for entry in budgets.get("budgetData", {}).get("monthlyAmountsByCategory", []):
+            cat_id = entry.get("category", {}).get("id")
+            if cat_id == source_category_id:
+                source_found = True
+                for month in entry.get("monthlyAmounts", []):
+                    if month.get("month") == start:
+                        source_budget = month.get("plannedCashFlowAmount", 0)
+                        break
+            elif cat_id == destination_category_id:
+                dest_found = True
+                for month in entry.get("monthlyAmounts", []):
+                    if month.get("month") == start:
+                        dest_budget = month.get("plannedCashFlowAmount", 0)
+                        break
+
+        if not source_found:
+            return {"success": False, "error": "Source category not found"}
+        if not dest_found:
+            return {"success": False, "error": "Destination category not found"}
+
+        # Clamp: don't let source go below 0
+        actual_move = min(rounded_amount, max(0, source_budget))
+        if actual_move <= 0:
+            return {
+                "success": False,
+                "error": "Source category has no budget to move",
+                "source_budget": source_budget,
+            }
+
+        new_source = source_budget - actual_move
+        new_dest = dest_budget + actual_move
+
+        # Set source budget (reduced)
+        await retry_with_backoff(
+            lambda: mm.set_budget_amount(
+                int(new_source),
+                category_id=source_category_id,
+                category_group_id=None,
+                timeframe="month",
+                start_date=start,
+                apply_to_future=False,
+            )
+        )
+
+        # Set destination budget (increased)
+        await retry_with_backoff(
+            lambda: mm.set_budget_amount(
+                int(new_dest),
+                category_id=destination_category_id,
+                category_group_id=None,
+                timeframe="month",
+                start_date=start,
+                apply_to_future=False,
+            )
+        )
+
+        clear_cache("budget")
+
+        return {
+            "success": True,
+            "moved_amount": actual_move,
+            "requested_amount": rounded_amount,
+            "partial": actual_move < rounded_amount,
+            "source_previous": source_budget,
+            "source_new": new_source,
+            "destination_previous": dest_budget,
+            "destination_new": new_dest,
+        }
+
+    async def move_funds_mixed(
+        self,
+        source_id: str,
+        source_type: str,
+        dest_id: str,
+        dest_type: str,
+        amount: float,
+    ) -> dict[str, Any]:
+        """
+        Move funds between categories and/or groups.
+
+        Supports any combination:
+        - category -> category
+        - group -> group
+        - category -> group
+        - group -> category
+
+        Args:
+            source_id: ID of source category or group
+            source_type: "category" or "group"
+            dest_id: ID of destination category or group
+            dest_type: "category" or "group"
+            amount: Dollar amount to move
+
+        Returns:
+            Dict with success status, moved amount, and budget details
+        """
+        mm = await get_mm()
+        start, _ = get_month_range()
+
+        rounded_amount = max(1, round(amount))  # Monarch integer-only, min $1
+
+        # Get current budgets based on type
+        budgets = await self._get_budgets_cached()
+        group_budget_data = await self.get_all_category_group_budget_data()
+
+        # Get source budget
+        source_budget: float = 0
+        source_found = False
+
+        if source_type == "group":
+            if source_id in group_budget_data:
+                source_budget = group_budget_data[source_id].get("budgeted", 0)
+                source_found = True
+        else:
+            for entry in budgets.get("budgetData", {}).get("monthlyAmountsByCategory", []):
+                if entry.get("category", {}).get("id") == source_id:
+                    source_found = True
+                    for month in entry.get("monthlyAmounts", []):
+                        if month.get("month") == start:
+                            source_budget = month.get("plannedCashFlowAmount", 0)
+                            break
+                    break
+
+        # Get destination budget
+        dest_budget: float = 0
+        dest_found = False
+
+        if dest_type == "group":
+            if dest_id in group_budget_data:
+                dest_budget = group_budget_data[dest_id].get("budgeted", 0)
+                dest_found = True
+        else:
+            for entry in budgets.get("budgetData", {}).get("monthlyAmountsByCategory", []):
+                if entry.get("category", {}).get("id") == dest_id:
+                    dest_found = True
+                    for month in entry.get("monthlyAmounts", []):
+                        if month.get("month") == start:
+                            dest_budget = month.get("plannedCashFlowAmount", 0)
+                            break
+                    break
+
+        if not source_found:
+            return {"success": False, "error": f"Source {source_type} not found"}
+        if not dest_found:
+            return {"success": False, "error": f"Destination {dest_type} not found"}
+
+        # Clamp: don't let source go below 0
+        actual_move = min(rounded_amount, max(0, source_budget))
+        if actual_move <= 0:
+            return {
+                "success": False,
+                "error": f"Source {source_type} has no budget to move",
+                "source_budget": source_budget,
+            }
+
+        new_source = source_budget - actual_move
+        new_dest = dest_budget + actual_move
+
+        # Set source budget (reduced)
+        await retry_with_backoff(
+            lambda: mm.set_budget_amount(
+                int(new_source),
+                category_id=source_id if source_type == "category" else None,
+                category_group_id=source_id if source_type == "group" else None,
+                timeframe="month",
+                start_date=start,
+                apply_to_future=False,
+            )
+        )
+
+        # Set destination budget (increased)
+        await retry_with_backoff(
+            lambda: mm.set_budget_amount(
+                int(new_dest),
+                category_id=dest_id if dest_type == "category" else None,
+                category_group_id=dest_id if dest_type == "group" else None,
+                timeframe="month",
+                start_date=start,
+                apply_to_future=False,
+            )
+        )
+
+        clear_cache("budget")
+
+        return {
+            "success": True,
+            "moved_amount": actual_move,
+            "requested_amount": rounded_amount,
+            "partial": actual_move < rounded_amount,
+            "source_previous": source_budget,
+            "source_new": new_source,
+            "destination_previous": dest_budget,
+            "destination_new": new_dest,
+        }
+
     async def allocate_to_category(
         self,
         category_id: str,
@@ -1061,6 +1288,55 @@ class CategoryManager:
                 int(new_budget),
                 category_id=category_id,
                 category_group_id=None,
+                timeframe="month",
+                start_date=start,
+                apply_to_future=False,  # One-time allocation
+            )
+        )
+
+        # Clear budget cache after mutation
+        clear_cache("budget")
+
+        return {
+            "success": True,
+            "previous_budget": current_budget,
+            "allocated": amount,
+            "new_budget": new_budget,
+        }
+
+    async def allocate_to_group(
+        self,
+        group_id: str,
+        amount: float,
+    ) -> dict[str, Any]:
+        """
+        Allocate additional funds to a category group by increasing its budget.
+
+        Used for groups with group_level_budgeting_enabled=True (flexible groups),
+        where budgets are managed at the group level rather than individual categories.
+
+        Args:
+            group_id: Monarch category group ID
+            amount: Additional amount to allocate (added to current budget)
+
+        Returns:
+            Dict with success status and new budget amount
+        """
+        mm = await get_mm()
+        start, _ = get_month_range()
+
+        # Get current budget for this group
+        group_budget_data = await self.get_all_category_group_budget_data()
+        current_budget = group_budget_data.get(group_id, {}).get("budgeted", 0)
+
+        # Set new budget (current + allocation)
+        new_budget = current_budget + amount
+
+        await retry_with_backoff(
+            lambda: mm.set_budget_amount(
+                int(new_budget),
+                category_id=None,
+                category_group_id=group_id,
                 timeframe="month",
                 start_date=start,
                 apply_to_future=False,  # One-time allocation

@@ -1,0 +1,40 @@
+name = "eclosion-ifttt-service"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+routes = [
+  { pattern = "ifttt-api.eclosion.app/*", zone_name = "eclosion.app" }
+]
+
+# KV for OAuth tokens and IFTTT service state
+[[kv_namespaces]]
+binding = "IFTTT_TOKENS"
+id = "1a63bb77cb0844569334944cd4d61dfe"
+
+# Shared TUNNELS KV (read-only, for subdomain validation)
+[[kv_namespaces]]
+binding = "TUNNELS"
+id = "a337b013a6e04720822c80ffa0057b42"
+
+# Durable Object for event brokering
+[durable_objects]
+bindings = [
+  { name = "EVENT_BROKER", class_name = "EventBroker" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["EventBroker"]
+
+# Secrets (set via `wrangler secret put`):
+# IFTTT_SERVICE_KEY       - From IFTTT service dashboard
+# OAUTH_SIGNING_SECRET    - For signing OAuth tokens (openssl rand -hex 32)
+# IFTTT_ACTION_SECRET     - Shared with Flask for proxied action auth (openssl rand -hex 32)
+# OAUTH_CLIENT_ID         - Client ID for IFTTT OAuth flow
+# OAUTH_CLIENT_SECRET     - Client secret for IFTTT OAuth flow
+
+# Observability - enable logging for debugging
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
