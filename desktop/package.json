@@ -1,6 +1,6 @@
 {
   "name": "eclosion-desktop",
-  "version": "1.1.5",
+  "version": "1.1.4",
   "description": "Eclosion for Monarch - Desktop Application",
   "main": "dist/main/index.js",
   "homepage": "https://eclosion.app",
