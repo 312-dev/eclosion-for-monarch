@@ -55,11 +55,7 @@ async def _fetch_known_category_ids(services: Services) -> set[str] | None:
     try:
         cm = services.sync_service.category_manager
         categories = await cm._get_categories_cached()
-        return {
-            cat["id"]
-            for cat in categories.get("categories", [])
-            if cat.get("id")
-        }
+        return {cat["id"] for cat in categories.get("categories", []) if cat.get("id")}
     except Exception:
         return None
 

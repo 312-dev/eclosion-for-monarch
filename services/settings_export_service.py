@@ -849,9 +849,7 @@ class SettingsExportService:
             try:
                 exported_cat_id = item.get("monarch_category_id")
                 can_link = (
-                    exported_cat_id
-                    and known_category_ids
-                    and exported_cat_id in known_category_ids
+                    exported_cat_id and known_category_ids and exported_cat_id in known_category_ids
                 )
                 repo.create_stash_item(
                     item_id=str(uuid.uuid4()),
