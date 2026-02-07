@@ -25,8 +25,12 @@ export function buildStashItem(
   item: StashExportItem,
   index: number,
   baseOrder: number,
-  isArchived: boolean
+  isArchived: boolean,
+  knownCategoryIds?: Set<string>
 ): StashItem {
+  const canLink =
+    item.monarch_category_id != null && knownCategoryIds?.has(item.monarch_category_id) === true;
+
   const stashItem: StashItem = {
     type: 'stash',
     id: `imported-${item.id}`,
@@ -34,9 +38,9 @@ export function buildStashItem(
     amount: item.amount,
     target_date: item.target_date,
     emoji: item.emoji,
-    category_id: null,
-    category_name: 'Unlinked',
-    category_group_id: null,
+    category_id: canLink ? item.monarch_category_id : null,
+    category_name: canLink ? item.name : 'Unlinked',
+    category_group_id: canLink ? (item.category_group_id ?? null) : null,
     category_group_name: item.category_group_name ?? null,
     is_archived: isArchived,
     is_enabled: !isArchived,

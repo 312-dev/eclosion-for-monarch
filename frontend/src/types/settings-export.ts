@@ -26,6 +26,8 @@ export interface RecurringExportConfig {
   auto_sync_new: boolean;
   auto_track_threshold: number | null;
   auto_update_targets: boolean;
+  auto_categorize_enabled?: boolean;
+  show_category_group?: boolean;
 }
 
 /**

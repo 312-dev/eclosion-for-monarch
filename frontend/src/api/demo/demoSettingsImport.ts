@@ -17,7 +17,7 @@ import type {
   ImportPreview,
   StashEventsMap,
 } from '../../types';
-import { updateDemoState, simulateDelay } from './demoState';
+import { getDemoState, updateDemoState, simulateDelay } from './demoState';
 import { buildCategoryRef, buildStashItem } from './demoSettingsHelpers';
 
 /** Import settings from a backup file. Supports recurring, notes, and stash tools. */
@@ -55,6 +55,19 @@ export async function importSettings(
     importStashTool(data, imported, warnings);
   }
 
+  // Import app_settings (theme and landing page stored in localStorage)
+  if (data.app_settings) {
+    if (data.app_settings.theme) {
+      localStorage.setItem('eclosion-theme-preference', data.app_settings.theme);
+    }
+    if (data.app_settings.landing_page) {
+      localStorage.setItem('eclosion-landing-page', data.app_settings.landing_page);
+    }
+    if (data.app_settings.theme || data.app_settings.landing_page) {
+      imported['app_settings'] = true;
+    }
+  }
+
   return { success: true, imported, warnings };
 }
 
@@ -66,8 +79,10 @@ function importRecurringTool(data: EclosionExport, imported: Record<string, bool
       auto_sync_new: recurring.config.auto_sync_new,
       auto_track_threshold: recurring.config.auto_track_threshold,
       auto_update_targets: recurring.config.auto_update_targets,
-      auto_categorize_enabled: state.settings.auto_categorize_enabled,
-      show_category_group: state.settings.show_category_group,
+      auto_categorize_enabled:
+        recurring.config.auto_categorize_enabled ?? state.settings.auto_categorize_enabled,
+      show_category_group:
+        recurring.config.show_category_group ?? state.settings.show_category_group,
     },
     dashboard: {
       ...state.dashboard,
@@ -79,6 +94,11 @@ function importRecurringTool(data: EclosionExport, imported: Record<string, bool
         auto_sync_new: recurring.config.auto_sync_new,
         auto_track_threshold: recurring.config.auto_track_threshold,
         auto_update_targets: recurring.config.auto_update_targets,
+        auto_categorize_enabled:
+          recurring.config.auto_categorize_enabled ??
+          state.dashboard.config.auto_categorize_enabled,
+        show_category_group:
+          recurring.config.show_category_group ?? state.dashboard.config.show_category_group,
       },
       items: state.dashboard.items.map((item) => ({
         ...item,
@@ -172,13 +192,30 @@ function importStashTool(
   warnings: string[]
 ): void {
   const stashData = data.tools.stash!;
+
+  // Build set of known category IDs for auto-linking (before state update)
+  const currentState = getDemoState();
+  const knownCategoryIds = new Set<string>();
+  for (const group of currentState.categoryGroupsDetailed ?? []) {
+    for (const cat of group.categories ?? []) {
+      if (cat.id) knownCategoryIds.add(cat.id);
+    }
+  }
+  for (const item of currentState.stash.items) {
+    if (item.category_id) knownCategoryIds.add(item.category_id);
+  }
+
   updateDemoState((state) => {
     const newItems = stashData.items
       .filter((i) => !i.is_archived)
-      .map((item, index) => buildStashItem(item, index, state.stash.items.length, false));
+      .map((item, index) =>
+        buildStashItem(item, index, state.stash.items.length, false, knownCategoryIds)
+      );
     const newArchivedItems = stashData.items
       .filter((i) => i.is_archived)
-      .map((item, index) => buildStashItem(item, index, state.stash.archived_items.length, true));
+      .map((item, index) =>
+        buildStashItem(item, index, state.stash.archived_items.length, true, knownCategoryIds)
+      );
 
     // Import hypotheses
     const existingHypotheses = state.stashHypotheses ?? [];
@@ -207,8 +244,10 @@ function importStashTool(
       stashConfig: {
         ...state.stashConfig,
         isConfigured: stashData.config.is_configured,
+        defaultCategoryGroupId: stashData.config.default_category_group_id ?? null,
         defaultCategoryGroupName: stashData.config.default_category_group_name ?? null,
         selectedBrowser: (stashData.config.selected_browser ?? null) as BrowserType | null,
+        selectedFolderIds: stashData.config.selected_folder_ids ?? [],
         selectedFolderNames: stashData.config.selected_folder_names,
         autoArchiveOnBookmarkDelete: stashData.config.auto_archive_on_bookmark_delete,
         autoArchiveOnGoalMet: stashData.config.auto_archive_on_goal_met,
@@ -219,10 +258,21 @@ function importStashTool(
     };
   });
   imported['stash'] = true;
-  if (stashData.items.length > 0)
-    warnings.push(
-      `Imported ${stashData.items.length} stash(es). Stashes are unlinked and need to be connected to Monarch categories.`
-    );
+  if (stashData.items.length > 0) {
+    const allImported = [...stashData.items];
+    const linkedCount = allImported.filter(
+      (i) => i.monarch_category_id != null && knownCategoryIds.has(i.monarch_category_id)
+    ).length;
+    const unlinkedCount = allImported.length - linkedCount;
+    if (unlinkedCount > 0) {
+      warnings.push(
+        `${unlinkedCount} imported stash(es) are unlinked and need to be connected to Monarch categories.`
+      );
+    }
+    if (linkedCount > 0) {
+      warnings.push(`${linkedCount} imported stash(es) were auto-linked to existing categories.`);
+    }
+  }
 }
 
 /** Preview an import before applying. Supports v1.0 and v1.1 exports. */

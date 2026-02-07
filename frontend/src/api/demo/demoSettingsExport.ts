@@ -6,7 +6,7 @@
  */
 
 import type { DemoState } from '../demoData';
-import type { EclosionExport, NotesExport, StashExport } from '../../types';
+import type { AppSettingsExport, EclosionExport, NotesExport, StashExport } from '../../types';
 import { getDemoState, simulateDelay } from './demoState';
 
 // Re-export import functions for backward compatibility
@@ -59,6 +59,8 @@ export async function exportSettings(): Promise<EclosionExport> {
           auto_sync_new: state.settings.auto_sync_new,
           auto_track_threshold: state.settings.auto_track_threshold,
           auto_update_targets: state.settings.auto_update_targets,
+          auto_categorize_enabled: state.settings.auto_categorize_enabled,
+          show_category_group: state.settings.show_category_group,
         },
         enabled_items: enabledItems,
         categories,
@@ -75,7 +77,7 @@ export async function exportSettings(): Promise<EclosionExport> {
       notes: notesExport,
       stash: stashExport,
     },
-    app_settings: {},
+    app_settings: buildAppSettingsExport(),
   };
 }
 
@@ -190,4 +192,17 @@ function buildStashExport(state: DemoState): StashExport {
       updated_at: h.updatedAt,
     })),
   };
+}
+
+function buildAppSettingsExport(): AppSettingsExport {
+  const settings: AppSettingsExport = {};
+  const theme = localStorage.getItem('eclosion-theme-preference');
+  if (theme === 'light' || theme === 'dark' || theme === 'system') {
+    settings.theme = theme;
+  }
+  const landingPage = localStorage.getItem('eclosion-landing-page');
+  if (landingPage) {
+    settings.landing_page = landingPage;
+  }
+  return settings;
 }
