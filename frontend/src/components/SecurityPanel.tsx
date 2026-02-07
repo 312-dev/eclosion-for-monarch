@@ -82,7 +82,8 @@ const ITEMS_PER_PAGE = 4;
 
 export function SecurityPanel({ className = '' }: SecurityPanelProps) {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  const prevCountRef = useRef(ITEMS_PER_PAGE);
+  // Track threshold above which items should animate (state is safe to read during render, unlike refs)
+  const [animateFromIndex, setAnimateFromIndex] = useState(ITEMS_PER_PAGE);
   const panelRef = useRef<HTMLDivElement>(null);
   const toast = useToast();
 
@@ -183,11 +184,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
       {/* Login list */}
       <div className="space-y-0.5">
         {events.map((event, index) => (
-          <LoginEvent
-            key={event.id}
-            event={event}
-            animate={index >= prevCountRef.current}
-          />
+          <LoginEvent key={event.id} event={event} animate={index >= animateFromIndex} />
         ))}
       </div>
 
@@ -202,7 +199,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
               type="button"
               onClick={(e) => {
                 const button = e.currentTarget;
-                prevCountRef.current = visibleCount;
+                setAnimateFromIndex(visibleCount);
                 setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, totalLogins));
                 requestAnimationFrame(() => {
                   scrollIntoViewLocal(button, { block: 'nearest', behavior: 'instant' });
@@ -219,7 +216,7 @@ export function SecurityPanel({ className = '' }: SecurityPanelProps) {
             <button
               type="button"
               onClick={() => {
-                prevCountRef.current = ITEMS_PER_PAGE;
+                setAnimateFromIndex(ITEMS_PER_PAGE);
                 setVisibleCount(ITEMS_PER_PAGE);
                 requestAnimationFrame(() => {
                   scrollIntoViewLocal(panelRef.current, { block: 'nearest', behavior: 'smooth' });

@@ -11,7 +11,7 @@ import logging
 from flask import Blueprint, Response, request
 
 from core import config
-from core.middleware import set_ifttt_secrets, clear_ifttt_secrets
+from core.middleware import clear_ifttt_secrets, set_ifttt_secrets
 
 logger = logging.getLogger(__name__)
 

@@ -20,7 +20,12 @@ interface TunnelStatusDisplayProps {
   resetting?: boolean;
 }
 
-export function TunnelStatusDisplay({ status, onChangePassphrase, onReset, resetting }: TunnelStatusDisplayProps) {
+export function TunnelStatusDisplay({
+  status,
+  onChangePassphrase,
+  onReset,
+  resetting,
+}: TunnelStatusDisplayProps) {
   const [copied, setCopied] = useState(false);
   const toast = useToast();
 
@@ -51,11 +56,14 @@ export function TunnelStatusDisplay({ status, onChangePassphrase, onReset, reset
             }}
           >
             <Tooltip content="Protected by email OTP + app passphrase">
-              <ShieldCheck size={14} className="shrink-0" style={{ color: 'var(--monarch-green)' }} />
+              <ShieldCheck
+                size={14}
+                className="shrink-0"
+                style={{ color: 'var(--monarch-green)' }}
+              />
             </Tooltip>
             <code
-              onClick={handleCopyUrl}
-              className="flex-1 text-xs break-all min-w-0 cursor-pointer select-all"
+              className="flex-1 text-xs break-all min-w-0 select-all"
               style={{ color: 'var(--monarch-text-dark)' }}
             >
               {tunnelUrl}

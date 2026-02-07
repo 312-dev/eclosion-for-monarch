@@ -12,8 +12,26 @@
  * - Recent action history
  */
 
+/* eslint-disable max-lines, sonarjs/cognitive-complexity */
+// Note: This file should be split into smaller components (ActivityLog, StatusPanel, etc.)
+
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ExternalLink, RefreshCw, ChevronDown, CheckCircle2, XCircle, Clock, AlertTriangle, Send, Download, Search, X, History, Activity, Unplug } from 'lucide-react';
+import {
+  ExternalLink,
+  RefreshCw,
+  ChevronDown,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Send,
+  Download,
+  Search,
+  X,
+  History,
+  Activity,
+  Unplug,
+} from 'lucide-react';
 import { SiIfttt } from 'react-icons/si';
 import { Modal } from '../../ui/Modal';
 import { Tooltip } from '../../ui/Tooltip';
@@ -70,7 +88,8 @@ interface RefreshResult {
 function sumObjectValues(obj: Record<string, unknown>): number {
   return Object.values(obj).reduce((sum: number, v) => {
     if (typeof v === 'number') return sum + v;
-    if (typeof v === 'object' && v !== null) return sum + sumObjectValues(v as Record<string, unknown>);
+    if (typeof v === 'object' && v !== null)
+      return sum + sumObjectValues(v as Record<string, unknown>);
     return sum;
   }, 0);
 }
@@ -91,7 +110,11 @@ const FRIENDLY_LABELS: Record<string, string> = {
 };
 
 // Collapsible section for displaying refresh results
-function RefreshSection({ data, label, defaultExpanded = false }: Readonly<{ data: Record<string, unknown>; label: string; defaultExpanded?: boolean }>) {
+function RefreshSection({
+  data,
+  label,
+  defaultExpanded = false,
+}: Readonly<{ data: Record<string, unknown>; label: string; defaultExpanded?: boolean }>) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!data || Object.keys(data).length === 0) return null;
@@ -105,10 +128,7 @@ function RefreshSection({ data, label, defaultExpanded = false }: Readonly<{ dat
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1.5 text-(--monarch-text-dark) hover:text-(--monarch-primary) transition-colors"
       >
-        <ChevronDown
-          size={14}
-          className={`transition-transform ${expanded ? '' : '-rotate-90'}`}
-        />
+        <ChevronDown size={14} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} />
         <span>{FRIENDLY_LABELS[label] || label}</span>
         <span className="text-(--monarch-text-muted)">({total})</span>
       </button>
@@ -290,7 +310,7 @@ function formatActionSlug(slug: string): string {
     budget_to_goal: 'Budget to goal',
     move_funds: 'Move funds',
   };
-  return map[slug] ?? slug.replace(/_/g, ' ');
+  return map[slug] ?? slug.replaceAll('_', ' ');
 }
 
 function formatTriggerSlug(slug: string): string {
@@ -302,7 +322,7 @@ function formatTriggerSlug(slug: string): string {
     spending_streak: 'Spending streak',
     new_charge: 'New charge',
   };
-  return map[slug] ?? slug.replace(/_/g, ' ');
+  return map[slug] ?? slug.replaceAll('_', ' ');
 }
 
 function formatRelativeTime(timestamp: number): string {
@@ -331,48 +351,98 @@ type TimeFilter = '1h' | '24h' | '7d' | 'all';
 
 const ITEMS_PER_PAGE = 20;
 
-function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Readonly<LogsModalProps>) {
-  const [tab, setTab] = useState<LogTab>('triggers');
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('24h');
-  const [searchQuery, setSearchQuery] = useState('');
+function LogsModal({
+  isOpen,
+  onClose,
+  actions,
+  triggers,
+  lastRefreshResult,
+}: Readonly<LogsModalProps>) {
+  const [tab, setTabState] = useState<LogTab>('triggers');
+  const [timeFilter, setTimeFilterState] = useState<TimeFilter>('24h');
+  const [searchQuery, setSearchQueryState] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [triggerTypeFilter, setTriggerTypeFilter] = useState<string | null>(null);
-  const [actionTypeFilter, setActionTypeFilter] = useState<string | null>(null);
+  const [triggerTypeFilter, setTriggerTypeFilterState] = useState<string | null>(null);
+  const [actionTypeFilter, setActionTypeFilterState] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Reset visible count when filters or tab change
-  useEffect(() => {
+  // Helper to reset pagination when filters change
+  const resetPagination = useCallback(() => {
     setVisibleCount(ITEMS_PER_PAGE);
     scrollContainerTo(scrollContainerRef.current, 0);
-  }, [tab, timeFilter, searchQuery, triggerTypeFilter, actionTypeFilter]);
+  }, []);
+
+  // Wrapped setters that reset pagination
+  const setTab = useCallback(
+    (value: LogTab) => {
+      setTabState(value);
+      resetPagination();
+    },
+    [resetPagination]
+  );
+
+  const setTimeFilter = useCallback(
+    (value: TimeFilter) => {
+      setTimeFilterState(value);
+      resetPagination();
+    },
+    [resetPagination]
+  );
+
+  const setSearchQuery = useCallback(
+    (value: string) => {
+      setSearchQueryState(value);
+      resetPagination();
+    },
+    [resetPagination]
+  );
+
+  const setTriggerTypeFilter = useCallback(
+    (value: string | null) => {
+      setTriggerTypeFilterState(value);
+      resetPagination();
+    },
+    [resetPagination]
+  );
+
+  const setActionTypeFilter = useCallback(
+    (value: string | null) => {
+      setActionTypeFilterState(value);
+      resetPagination();
+    },
+    [resetPagination]
+  );
 
   // Get unique types for filtering
   const triggerTypes = [...new Set(triggers.map((t) => t.trigger_slug))];
   const actionTypes = [...new Set(actions.map((a) => a.action_slug))];
 
-  // Store filter cutoff timestamp in state (updated when filter changes via effect)
-  const [filterCutoff, setFilterCutoff] = useState(0);
-  useEffect(() => {
+  // Compute time filter cutoff (computed fresh each filter call rather than stored in state)
+  const getFilterCutoff = useCallback((filter: TimeFilter): number => {
+    if (filter === 'all') return 0;
     const now = Date.now();
-    const cutoffs: Record<TimeFilter, number> = {
+    const cutoffs: Record<Exclude<TimeFilter, 'all'>, number> = {
       '1h': now - 60 * 60 * 1000,
       '24h': now - 24 * 60 * 60 * 1000,
       '7d': now - 7 * 24 * 60 * 60 * 1000,
-      all: 0,
     };
-    setFilterCutoff(cutoffs[timeFilter]);
-  }, [timeFilter]);
+    return cutoffs[filter];
+  }, []);
 
-  // Filter by time using the stored cutoff
-  const filterByTime = useCallback(<T extends { timestamp?: number; executed_at?: number }>(items: T[]): T[] => {
-    if (timeFilter === 'all') return items;
-    return items.filter((item) => {
-      const ts = item.timestamp ? item.timestamp * 1000 : item.executed_at ?? 0;
-      return ts > filterCutoff;
-    });
-  }, [timeFilter, filterCutoff]);
+  // Filter by time
+  const filterByTime = useCallback(
+    <T extends { timestamp?: number; executed_at?: number }>(items: T[]): T[] => {
+      if (timeFilter === 'all') return items;
+      const cutoff = getFilterCutoff(timeFilter);
+      return items.filter((item) => {
+        const ts = item.timestamp ? item.timestamp * 1000 : (item.executed_at ?? 0);
+        return ts > cutoff;
+      });
+    },
+    [timeFilter, getFilterCutoff]
+  );
 
   // Filter by search
   const filterBySearch = <T extends object>(items: T[], keys: (keyof T)[]): T[] => {
@@ -382,7 +452,8 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
       keys.some((key) => {
         const val = item[key];
         if (typeof val === 'string') return val.toLowerCase().includes(query);
-        if (typeof val === 'object' && val) return JSON.stringify(val).toLowerCase().includes(query);
+        if (typeof val === 'object' && val)
+          return JSON.stringify(val).toLowerCase().includes(query);
         return false;
       })
     );
@@ -436,17 +507,18 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
   ];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Activity Log"
-      maxWidth="lg"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Activity Log" maxWidth="lg">
       <div className="space-y-4">
         {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--monarch-bg-page)' }}>
+        <div
+          className="flex gap-1 p-1 rounded-lg"
+          style={{ backgroundColor: 'var(--monarch-bg-page)' }}
+        >
           <button
-            onClick={() => { setTab('triggers'); setActionTypeFilter(null); }}
+            onClick={() => {
+              setTab('triggers');
+              setActionTypeFilter(null);
+            }}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors"
             style={{
               backgroundColor: tab === 'triggers' ? 'var(--monarch-bg-card)' : 'transparent',
@@ -459,13 +531,19 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
             Triggers
             <span
               className="px-1.5 py-0.5 text-xs rounded-full"
-              style={{ backgroundColor: 'var(--monarch-bg-page)', color: 'var(--monarch-text-muted)' }}
+              style={{
+                backgroundColor: 'var(--monarch-bg-page)',
+                color: 'var(--monarch-text-muted)',
+              }}
             >
               {filteredTriggers.length}
             </span>
           </button>
           <button
-            onClick={() => { setTab('actions'); setTriggerTypeFilter(null); }}
+            onClick={() => {
+              setTab('actions');
+              setTriggerTypeFilter(null);
+            }}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors"
             style={{
               backgroundColor: tab === 'actions' ? 'var(--monarch-bg-card)' : 'transparent',
@@ -478,13 +556,20 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
             Actions
             <span
               className="px-1.5 py-0.5 text-xs rounded-full"
-              style={{ backgroundColor: 'var(--monarch-bg-page)', color: 'var(--monarch-text-muted)' }}
+              style={{
+                backgroundColor: 'var(--monarch-bg-page)',
+                color: 'var(--monarch-text-muted)',
+              }}
             >
               {filteredActions.length}
             </span>
           </button>
           <button
-            onClick={() => { setTab('status'); setTriggerTypeFilter(null); setActionTypeFilter(null); }}
+            onClick={() => {
+              setTab('status');
+              setTriggerTypeFilter(null);
+              setActionTypeFilter(null);
+            }}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors"
             style={{
               backgroundColor: tab === 'status' ? 'var(--monarch-bg-card)' : 'transparent',
@@ -539,7 +624,8 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
                   onClick={() => setTimeFilter(opt.value)}
                   className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors"
                   style={{
-                    backgroundColor: timeFilter === opt.value ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
+                    backgroundColor:
+                      timeFilter === opt.value ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
                     color: timeFilter === opt.value ? 'white' : 'var(--monarch-text-muted)',
                   }}
                   type="button"
@@ -553,66 +639,78 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
 
         {/* Type filter - fixed height container, hidden on status tab */}
         {tab !== 'status' && (
-        <div className="flex flex-wrap gap-1.5 min-h-[28px]">
-          {tab === 'triggers' && triggerTypes.length > 1 && (
-            <>
-              <button
-                onClick={() => setTriggerTypeFilter(null)}
-                className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
-                style={{
-                  backgroundColor: triggerTypeFilter === null ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
-                  color: triggerTypeFilter === null ? 'white' : 'var(--monarch-text-muted)',
-                }}
-                type="button"
-              >
-                All types
-              </button>
-              {triggerTypes.map((type) => (
+          <div className="flex flex-wrap gap-1.5 min-h-7">
+            {tab === 'triggers' && triggerTypes.length > 1 && (
+              <>
                 <button
-                  key={type}
-                  onClick={() => setTriggerTypeFilter(type)}
+                  onClick={() => setTriggerTypeFilter(null)}
                   className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
                   style={{
-                    backgroundColor: triggerTypeFilter === type ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
-                    color: triggerTypeFilter === type ? 'white' : 'var(--monarch-text-muted)',
+                    backgroundColor:
+                      triggerTypeFilter === null
+                        ? 'var(--monarch-orange)'
+                        : 'var(--monarch-bg-page)',
+                    color: triggerTypeFilter === null ? 'white' : 'var(--monarch-text-muted)',
                   }}
                   type="button"
                 >
-                  {formatTriggerSlug(type)}
+                  All types
                 </button>
-              ))}
-            </>
-          )}
-          {tab === 'actions' && actionTypes.length > 1 && (
-            <>
-              <button
-                onClick={() => setActionTypeFilter(null)}
-                className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
-                style={{
-                  backgroundColor: actionTypeFilter === null ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
-                  color: actionTypeFilter === null ? 'white' : 'var(--monarch-text-muted)',
-                }}
-                type="button"
-              >
-                All types
-              </button>
-              {actionTypes.map((type) => (
+                {triggerTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setTriggerTypeFilter(type)}
+                    className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
+                    style={{
+                      backgroundColor:
+                        triggerTypeFilter === type
+                          ? 'var(--monarch-orange)'
+                          : 'var(--monarch-bg-page)',
+                      color: triggerTypeFilter === type ? 'white' : 'var(--monarch-text-muted)',
+                    }}
+                    type="button"
+                  >
+                    {formatTriggerSlug(type)}
+                  </button>
+                ))}
+              </>
+            )}
+            {tab === 'actions' && actionTypes.length > 1 && (
+              <>
                 <button
-                  key={type}
-                  onClick={() => setActionTypeFilter(type)}
+                  onClick={() => setActionTypeFilter(null)}
                   className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
                   style={{
-                    backgroundColor: actionTypeFilter === type ? 'var(--monarch-orange)' : 'var(--monarch-bg-page)',
-                    color: actionTypeFilter === type ? 'white' : 'var(--monarch-text-muted)',
+                    backgroundColor:
+                      actionTypeFilter === null
+                        ? 'var(--monarch-orange)'
+                        : 'var(--monarch-bg-page)',
+                    color: actionTypeFilter === null ? 'white' : 'var(--monarch-text-muted)',
                   }}
                   type="button"
                 >
-                  {formatActionSlug(type)}
+                  All types
                 </button>
-              ))}
-            </>
-          )}
-        </div>
+                {actionTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setActionTypeFilter(type)}
+                    className="px-2.5 py-1 text-xs font-medium rounded-full transition-colors"
+                    style={{
+                      backgroundColor:
+                        actionTypeFilter === type
+                          ? 'var(--monarch-orange)'
+                          : 'var(--monarch-bg-page)',
+                      color: actionTypeFilter === type ? 'white' : 'var(--monarch-text-muted)',
+                    }}
+                    type="button"
+                  >
+                    {formatActionSlug(type)}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
         )}
 
         {/* List */}
@@ -621,9 +719,12 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
           className="rounded-lg overflow-hidden"
           style={{ backgroundColor: 'var(--monarch-bg-page)', height: '350px', overflowY: 'auto' }}
         >
-          {tab === 'triggers' && (
-            filteredTriggers.length === 0 ? (
-              <div className="p-8 text-center text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+          {tab === 'triggers' &&
+            (filteredTriggers.length === 0 ? (
+              <div
+                className="p-8 text-center text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 No triggers found
               </div>
             ) : (
@@ -637,16 +738,22 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
                   />
                 ))}
                 {hasMore && (
-                  <div ref={sentinelRef} className="p-4 text-center text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+                  <div
+                    ref={sentinelRef}
+                    className="p-4 text-center text-xs"
+                    style={{ color: 'var(--monarch-text-muted)' }}
+                  >
                     Loading more...
                   </div>
                 )}
               </>
-            )
-          )}
-          {tab === 'actions' && (
-            filteredActions.length === 0 ? (
-              <div className="p-8 text-center text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+            ))}
+          {tab === 'actions' &&
+            (filteredActions.length === 0 ? (
+              <div
+                className="p-8 text-center text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 No actions found
               </div>
             ) : (
@@ -660,17 +767,23 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
                   />
                 ))}
                 {hasMore && (
-                  <div ref={sentinelRef} className="p-4 text-center text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+                  <div
+                    ref={sentinelRef}
+                    className="p-4 text-center text-xs"
+                    style={{ color: 'var(--monarch-text-muted)' }}
+                  >
                     Loading more...
                   </div>
                 )}
               </>
-            )
-          )}
-          {tab === 'status' && (
-            lastRefreshResult ? (
+            ))}
+          {tab === 'status' &&
+            (lastRefreshResult ? (
               <div className="p-4 space-y-3">
-                <div className="text-sm flex items-center gap-2" style={{ color: 'var(--monarch-text-dark)' }}>
+                <div
+                  className="text-sm flex items-center gap-2"
+                  style={{ color: 'var(--monarch-text-dark)' }}
+                >
                   <Activity size={14} />
                   Last sync: {new Date(lastRefreshResult.timestamp).toLocaleString()}
                 </div>
@@ -693,11 +806,13 @@ function LogsModal({ isOpen, onClose, actions, triggers, lastRefreshResult }: Re
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-sm" style={{ color: 'var(--monarch-text-muted)' }}>
+              <div
+                className="p-8 text-center text-sm"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 No sync data yet. Click the sync button to refresh.
               </div>
-            )
-          )}
+            ))}
         </div>
       </div>
     </Modal>
@@ -714,7 +829,9 @@ interface ActionLogEntryProps {
 
 function ActionLogEntry({ entry, expanded, onToggle }: Readonly<ActionLogEntryProps>) {
   const StatusIcon = entry.success ? CheckCircle2 : XCircle;
-  const statusColor = entry.success ? 'var(--monarch-success, #22c55e)' : 'var(--monarch-error, #ef4444)';
+  const statusColor = entry.success
+    ? 'var(--monarch-success, #22c55e)'
+    : 'var(--monarch-error, #ef4444)';
 
   return (
     <div style={{ borderBottom: '1px solid var(--monarch-border)' }}>
@@ -759,17 +876,25 @@ function ActionLogEntry({ entry, expanded, onToggle }: Readonly<ActionLogEntryPr
               <span style={{ color: 'var(--monarch-text-muted)' }}>Action</span>
               <span style={{ color: 'var(--monarch-text-dark)' }}>{entry.action_slug}</span>
               <span style={{ color: 'var(--monarch-text-muted)' }}>ID</span>
-              <span style={{ color: 'var(--monarch-text-dark)' }} className="break-all">{entry.id}</span>
+              <span style={{ color: 'var(--monarch-text-dark)' }} className="break-all">
+                {entry.id}
+              </span>
               <span style={{ color: 'var(--monarch-text-muted)' }}>Time</span>
-              <span style={{ color: 'var(--monarch-text-dark)' }}>{new Date(entry.executed_at).toLocaleString()}</span>
+              <span style={{ color: 'var(--monarch-text-dark)' }}>
+                {new Date(entry.executed_at).toLocaleString()}
+              </span>
               {entry.was_queued && entry.queued_at && (
                 <>
                   <span style={{ color: 'var(--monarch-text-muted)' }}>Queued</span>
-                  <span style={{ color: 'var(--monarch-text-dark)' }}>{new Date(entry.queued_at).toLocaleString()}</span>
+                  <span style={{ color: 'var(--monarch-text-dark)' }}>
+                    {new Date(entry.queued_at).toLocaleString()}
+                  </span>
                 </>
               )}
               <span style={{ color: 'var(--monarch-text-muted)' }}>Status</span>
-              <span style={{ color: entry.success ? 'var(--monarch-success)' : 'var(--monarch-error)' }}>
+              <span
+                style={{ color: entry.success ? 'var(--monarch-success)' : 'var(--monarch-error)' }}
+              >
                 {entry.success ? 'Success' : 'Failed'}
               </span>
               {entry.error && (
@@ -780,8 +905,13 @@ function ActionLogEntry({ entry, expanded, onToggle }: Readonly<ActionLogEntryPr
               )}
             </div>
             <div className="pt-2 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
-              <div className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Fields received:</div>
-              <pre className="whitespace-pre-wrap break-all" style={{ color: 'var(--monarch-text-dark)' }}>
+              <div className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
+                Fields received:
+              </div>
+              <pre
+                className="whitespace-pre-wrap break-all"
+                style={{ color: 'var(--monarch-text-dark)' }}
+              >
                 {JSON.stringify(entry.fields, null, 2)}
               </pre>
             </div>
@@ -853,13 +983,22 @@ function TriggerLogEntry({ event, expanded, onToggle }: Readonly<TriggerLogEntry
               <span style={{ color: 'var(--monarch-text-muted)' }}>Trigger</span>
               <span style={{ color: 'var(--monarch-text-dark)' }}>{event.trigger_slug}</span>
               <span style={{ color: 'var(--monarch-text-muted)' }}>ID</span>
-              <span style={{ color: 'var(--monarch-text-dark)' }} className="break-all">{event.id}</span>
+              <span style={{ color: 'var(--monarch-text-dark)' }} className="break-all">
+                {event.id}
+              </span>
               <span style={{ color: 'var(--monarch-text-muted)' }}>Time</span>
-              <span style={{ color: 'var(--monarch-text-dark)' }}>{new Date(event.timestamp * 1000).toLocaleString()}</span>
+              <span style={{ color: 'var(--monarch-text-dark)' }}>
+                {new Date(event.timestamp * 1000).toLocaleString()}
+              </span>
             </div>
             <div className="pt-2 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
-              <div className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>Data sent:</div>
-              <pre className="whitespace-pre-wrap break-all" style={{ color: 'var(--monarch-text-dark)' }}>
+              <div className="mb-1" style={{ color: 'var(--monarch-text-muted)' }}>
+                Data sent:
+              </div>
+              <pre
+                className="whitespace-pre-wrap break-all"
+                style={{ color: 'var(--monarch-text-dark)' }}
+              >
                 {JSON.stringify(event.data, null, 2)}
               </pre>
             </div>
@@ -915,12 +1054,13 @@ export function IftttSection() {
       };
 
       // Fetch connection status, pending queue count, action history, and trigger history in parallel
-      const [statusResponse, queueResponse, historyResponse, triggerHistoryResponse] = await Promise.all([
-        fetch(`${IFTTT_API_URL}/api/ifttt-status`, { headers }),
-        fetch(`${IFTTT_API_URL}/api/queue/pending`, { headers }),
-        fetch(`${IFTTT_API_URL}/api/action-history`, { headers }),
-        fetch(`${IFTTT_API_URL}/api/trigger-history`, { headers }),
-      ]);
+      const [statusResponse, queueResponse, historyResponse, triggerHistoryResponse] =
+        await Promise.all([
+          fetch(`${IFTTT_API_URL}/api/ifttt-status`, { headers }),
+          fetch(`${IFTTT_API_URL}/api/queue/pending`, { headers }),
+          fetch(`${IFTTT_API_URL}/api/action-history`, { headers }),
+          fetch(`${IFTTT_API_URL}/api/trigger-history`, { headers }),
+        ]);
 
       let connected = false;
       let connectedAt: string | null = null;
@@ -978,11 +1118,14 @@ export function IftttSection() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Poll every 5 minutes for updates
-    const pollInterval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        fetchStatus();
-      }
-    }, 5 * 60 * 1000);
+    const pollInterval = setInterval(
+      () => {
+        if (document.visibilityState === 'visible') {
+          fetchStatus();
+        }
+      },
+      5 * 60 * 1000
+    );
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -995,7 +1138,8 @@ export function IftttSection() {
   useEffect(() => {
     if (pendingCount > 0 && !draining && globalThis.electron?.tunnel?.drainIftttQueue) {
       setDraining(true);
-      globalThis.electron.tunnel.drainIftttQueue()
+      globalThis.electron.tunnel
+        .drainIftttQueue()
         .then((result) => {
           if (result.processed > 0) {
             // Add notifications for each action result
@@ -1065,9 +1209,11 @@ export function IftttSection() {
       if (result.processed === 0) {
         toast.info('No pending actions to process');
       } else if (result.failed === 0) {
-        toast.success(`Processed ${result.succeeded} action${result.succeeded !== 1 ? 's' : ''}`);
+        toast.success(`Processed ${result.succeeded} action${result.succeeded === 1 ? '' : 's'}`);
       } else {
-        toast.warning(`Processed ${result.succeeded}/${result.processed} actions (${result.failed} failed)`);
+        toast.warning(
+          `Processed ${result.succeeded}/${result.processed} actions (${result.failed} failed)`
+        );
       }
 
       // Add notifications for each action result
@@ -1117,7 +1263,8 @@ export function IftttSection() {
         success: data.success,
         status: data.status,
         latency: data.latency,
-        error: data.error || (data.status && data.status >= 400 ? `HTTP ${data.status}` : undefined),
+        error:
+          data.error || (data.status && data.status >= 400 ? `HTTP ${data.status}` : undefined),
       });
 
       if (data.success) {
@@ -1215,7 +1362,10 @@ export function IftttSection() {
               <div className="font-medium" style={{ color: 'var(--monarch-text-dark)' }}>
                 IFTTT Integration
               </div>
-              <div className="text-sm mt-0.5 flex items-center flex-wrap gap-x-1.5" style={{ color: 'var(--monarch-text-muted)' }}>
+              <div
+                className="text-sm mt-0.5 flex items-center flex-wrap gap-x-1.5"
+                style={{ color: 'var(--monarch-text-muted)' }}
+              >
                 <span>
                   {tunnelActive
                     ? getSubtitle(loading, status?.connected)
@@ -1255,13 +1405,13 @@ export function IftttSection() {
 
         {/* Queue status & Activity Log - divider line with small text */}
         {tunnelActive && status?.connected && (
-          <div
-            className="mt-3 pt-3 border-t"
-            style={{ borderColor: 'var(--monarch-border)' }}
-          >
+          <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--monarch-border)' }}>
             <div className="flex items-center justify-between">
               {status.pendingActions.length > 0 && (
-                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--monarch-text-muted)' }}>
+                <div
+                  className="flex items-center gap-1.5 text-xs"
+                  style={{ color: 'var(--monarch-text-muted)' }}
+                >
                   <AlertTriangle size={12} style={{ color: 'var(--monarch-warning, #eab308)' }} />
                   <span>{status.pendingActions.length} queued</span>
                   <button
@@ -1286,8 +1436,9 @@ export function IftttSection() {
                   Activity
                   {(() => {
                     // Show last refresh time, or fall back to most recent trigger event
-                    const lastSyncTime = lastRefreshResult?.timestamp
-                      ?? (triggerHistory[0]?.timestamp ? triggerHistory[0].timestamp * 1000 : null);
+                    const lastSyncTime =
+                      lastRefreshResult?.timestamp ??
+                      (triggerHistory[0]?.timestamp ? triggerHistory[0].timestamp * 1000 : null);
                     return lastSyncTime ? (
                       <span style={{ color: 'var(--monarch-text-muted)' }}>
                         · {formatRelativeTime(lastSyncTime)}
