@@ -12,6 +12,7 @@ import { useModalFooter } from '../ui/Modal';
 import { useStashConfigQuery, useAvailableToStash } from '../../api/queries';
 import { StashCategoryModal, type CategorySelection } from './StashCategoryModal';
 import { useToast } from '../../context/ToastContext';
+import { Icons } from '../icons';
 import { useIsRateLimited } from '../../context/RateLimitContext';
 import { calculateStashMonthlyTarget, getQuickPickDates } from '../../utils/savingsCalculations';
 import { getLocalDateString } from '../../utils/dateRangeUtils';
@@ -422,12 +423,34 @@ export function EditStashForm({
         </div>
 
         {/* Category info - edit-specific */}
-        {item.category_name && item.category_id && (
+        {item.category_id ? (
           <CategoryInfoDisplay
             categoryName={item.category_name}
             categoryId={item.category_id}
             {...(item.category_group_name && { categoryGroupName: item.category_group_name })}
+            onChangeCategory={() => {
+              setCategoryMissingItemId(item.id);
+              setShowCategoryModal(true);
+            }}
           />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setCategoryMissingItemId(item.id);
+              setShowCategoryModal(true);
+            }}
+            className="w-full p-3 rounded-lg flex items-center justify-center gap-2 text-sm font-medium bg-transparent border-none cursor-pointer hover:opacity-80 transition-opacity"
+            style={{
+              backgroundColor: 'var(--monarch-bg-page)',
+              border: '1px solid var(--monarch-border)',
+              color: 'var(--monarch-orange)',
+            }}
+            aria-label="Link this stash to a Monarch category"
+          >
+            <Icons.Link size={14} />
+            <span>Link Category</span>
+          </button>
         )}
       </div>
 

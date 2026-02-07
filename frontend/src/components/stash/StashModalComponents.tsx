@@ -78,12 +78,14 @@ interface CategoryInfoDisplayProps {
   categoryName: string;
   categoryId: string;
   categoryGroupName?: string;
+  onChangeCategory?: () => void;
 }
 
 export function CategoryInfoDisplay({
   categoryName,
   categoryId,
   categoryGroupName,
+  onChangeCategory,
 }: CategoryInfoDisplayProps) {
   return (
     <div>
@@ -109,17 +111,30 @@ export function CategoryInfoDisplay({
             <span style={{ color: 'var(--monarch-text)' }}>{categoryName}</span>
           </div>
         </div>
-        <a
-          href={`https://app.monarch.com/categories/${categoryId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs hover:underline"
-          style={{ color: 'var(--monarch-orange)' }}
-          aria-label="View category in Monarch"
-        >
-          <span>View</span>
-          <Icons.ExternalLink size={12} />
-        </a>
+        <div className="flex items-center gap-2">
+          {onChangeCategory && (
+            <button
+              type="button"
+              onClick={onChangeCategory}
+              className="flex items-center gap-1 text-xs hover:underline bg-transparent border-none cursor-pointer"
+              style={{ color: 'var(--monarch-text-muted)' }}
+              aria-label="Change linked category"
+            >
+              <span>Change</span>
+            </button>
+          )}
+          <a
+            href={`https://app.monarch.com/categories/${categoryId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs hover:underline"
+            style={{ color: 'var(--monarch-orange)' }}
+            aria-label="View category in Monarch"
+          >
+            <span>View</span>
+            <Icons.ExternalLink size={12} />
+          </a>
+        </div>
       </div>
     </div>
   );
