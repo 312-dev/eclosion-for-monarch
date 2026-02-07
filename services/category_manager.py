@@ -1158,7 +1158,7 @@ class CategoryManager:
         group_budget_data = await self.get_all_category_group_budget_data()
 
         # Get source budget
-        source_budget = 0
+        source_budget: float = 0
         source_found = False
 
         if source_type == "group":
@@ -1176,7 +1176,7 @@ class CategoryManager:
                     break
 
         # Get destination budget
-        dest_budget = 0
+        dest_budget: float = 0
         dest_found = False
 
         if dest_type == "group":

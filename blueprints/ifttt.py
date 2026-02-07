@@ -9,6 +9,7 @@ Handles:
 """
 
 import logging
+from typing import Any
 
 from flask import Blueprint, make_response, request
 
@@ -82,9 +83,10 @@ async def budget_to():
 
     id_type, entity_id = _parse_category_or_group_id(raw_id)
     # Sanitize the extracted ID (without prefix)
-    entity_id = sanitize_id(entity_id)
-    if not entity_id:
+    sanitized_id = sanitize_id(entity_id)
+    if not sanitized_id:
         raise ValidationError("Invalid 'category_id' format")
+    entity_id = sanitized_id
     cm = services.sync_service.category_manager
 
     if id_type == "group":
@@ -153,12 +155,14 @@ async def move_funds():
     dest_type, dest_id = _parse_category_or_group_id(raw_dest_id)
 
     # Sanitize the extracted IDs (without prefix)
-    source_id = sanitize_id(source_id)
-    dest_id = sanitize_id(dest_id)
-    if not source_id:
+    sanitized_source = sanitize_id(source_id)
+    sanitized_dest = sanitize_id(dest_id)
+    if not sanitized_source:
         raise ValidationError("Invalid 'source_category_id' format")
-    if not dest_id:
+    if not sanitized_dest:
         raise ValidationError("Invalid 'destination_category_id' format")
+    source_id = sanitized_source
+    dest_id = sanitized_dest
 
     cm = services.sync_service.category_manager
 
@@ -706,7 +710,7 @@ async def refresh_triggers():
     cm = services.sync_service.category_manager
 
     ifttt = IftttService.from_tunnel_creds()
-    results = {
+    results: dict[str, Any] = {
         "configured": ifttt.is_configured,
         "subdomain": ifttt.subdomain,
         "events_pushed": {},
