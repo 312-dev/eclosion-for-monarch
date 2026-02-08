@@ -4,7 +4,7 @@ import { ToggleSwitch } from '../ToggleSwitch';
 import type { DesktopSettings, DesktopSettingKey } from '../../../types/electron';
 
 // Re-export sections from other files for convenience
-export { SyncScheduleSection, BackgroundSyncSection } from './DesktopSyncSections';
+export { SyncScheduleSection } from './DesktopSyncSections';
 export { SecuritySection, DataFolderSection } from './DesktopSecuritySections';
 
 interface StartupSectionProps {

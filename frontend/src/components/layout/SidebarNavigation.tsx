@@ -198,20 +198,22 @@ export function SidebarNavigation({ onLock }: Readonly<SidebarNavigationProps>) 
             {/* Nested settings sections - only shown when on settings page */}
             {isSettingsPage && (
               <ul className="sidebar-settings-submenu">
-                {visibleSettingsSections.map((section) => (
-                  <li key={section.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSettingsSectionClick(section.id)}
-                      className="sidebar-settings-submenu-item"
-                    >
-                      <span className="sidebar-settings-submenu-icon" aria-hidden="true">
-                        {section.icon}
-                      </span>
-                      <span className="sidebar-settings-submenu-label">{section.label}</span>
-                    </button>
-                  </li>
-                ))}
+                {visibleSettingsSections
+                  .filter((s) => s.id !== 'danger')
+                  .map((section) => (
+                    <li key={section.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleSettingsSectionClick(section.id)}
+                        className="sidebar-settings-submenu-item"
+                      >
+                        <span className="sidebar-settings-submenu-icon" aria-hidden="true">
+                          {section.icon}
+                        </span>
+                        <span className="sidebar-settings-submenu-label">{section.label}</span>
+                      </button>
+                    </li>
+                  ))}
               </ul>
             )}
           </div>

@@ -1,19 +1,21 @@
 /**
  * Log Viewer Section
  *
- * In-app log viewer for desktop app troubleshooting.
- * Shows last N lines from log files with search functionality.
+ * In-app log viewer for troubleshooting.
+ * Works in desktop mode (Electron IPC) and tunnel mode (Flask API via fetchApi).
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FileText, Search, RefreshCw, ChevronDown } from 'lucide-react';
 import { SectionHeader } from './settingsSections';
+import { useLogSource } from '../../hooks/useLogSource';
 import type { LogFileInfo, LogFileContent } from '../../types/electron';
 
 const MAX_LINES = 500;
 const AUTO_REFRESH_INTERVAL = 5000;
 
 export function LogViewerSection() {
+  const { available, getLogFiles, readLogFile } = useLogSource();
   const [logFiles, setLogFiles] = useState<LogFileInfo[]>([]);
   const [selectedFile, setSelectedFile] = useState<LogFileInfo | null>(null);
   const [logContent, setLogContent] = useState<LogFileContent | null>(null);
@@ -24,29 +26,27 @@ export function LogViewerSection() {
   const contentRef = useRef<HTMLPreElement>(null);
 
   const fetchLogFiles = useCallback(async () => {
-    if (!globalThis.electron) return;
+    if (!available) return;
     try {
-      const files = await globalThis.electron.getLogFiles();
+      const files = await getLogFiles();
       setLogFiles(files);
-      // Auto-select first file if none selected
       if (!selectedFile && files.length > 0) {
         setSelectedFile(files[0] ?? null);
       }
     } catch {
       // Ignore errors
     }
-  }, [selectedFile]);
+  }, [available, getLogFiles, selectedFile]);
 
   const fetchLogContent = useCallback(async () => {
-    if (!globalThis.electron || !selectedFile) return;
+    if (!available || !selectedFile) return;
     setLoading(true);
     try {
-      const content = await globalThis.electron.readLogFile(selectedFile.path, {
+      const content = await readLogFile(selectedFile.path, {
         lines: MAX_LINES,
         ...(searchTerm ? { search: searchTerm } : {}),
       });
       setLogContent(content);
-      // Auto-scroll to bottom
       if (contentRef.current) {
         contentRef.current.scrollTop = contentRef.current.scrollHeight;
       }
@@ -55,13 +55,13 @@ export function LogViewerSection() {
     } finally {
       setLoading(false);
     }
-  }, [selectedFile, searchTerm]);
+  }, [available, selectedFile, searchTerm, readLogFile]);
 
   useEffect(() => {
-    if (globalThis.electron && expanded) {
+    if (available && expanded) {
       fetchLogFiles();
     }
-  }, [fetchLogFiles, expanded]);
+  }, [fetchLogFiles, expanded, available]);
 
   useEffect(() => {
     if (expanded && selectedFile) {
@@ -82,8 +82,7 @@ export function LogViewerSection() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Don't render if not in desktop mode
-  if (!globalThis.electron) return null;
+  if (!available) return null;
 
   return (
     <section className="mb-8">

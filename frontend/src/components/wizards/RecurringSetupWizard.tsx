@@ -103,11 +103,12 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
       scrollSmooth
     >
       <TourController isOpen={wizard.showLinkTour} onClose={() => wizard.setShowLinkTour(false)} />
-      <div className="flex items-center justify-center md:p-4">
+      <div className="flex items-center justify-center p-4">
         <div
-          className="w-full rounded-xl p-4 md:max-w-lg md:p-6 md:shadow-lg md:border md:border-(--monarch-border)"
+          className="w-full rounded-xl shadow-lg p-4 md:max-w-lg md:p-6"
           style={{
             backgroundColor: 'var(--monarch-bg-card)',
+            border: '1px solid var(--monarch-border)',
           }}
         >
           <StepIndicator steps={STEPS} currentStep={wizard.currentStep} />
@@ -142,17 +143,22 @@ export function RecurringSetupWizard({ onComplete }: RecurringSetupWizardProps) 
             onClose={() => wizard.setLinkModalItem(null)}
             onSuccess={wizard.handleLinkSuccess}
             deferSave={true}
-            reservedCategories={new Map(
-              Array.from(wizard.pendingLinks.entries()).map(([itemId, link]) => {
-                const linkedItem = wizard.items.find(i => i.id === itemId);
-                const itemName = linkedItem?.merchant_name || linkedItem?.name || 'Unknown item';
-                return [link.categoryId, itemName];
-              })
-            )}
+            reservedCategories={
+              new Map(
+                Array.from(wizard.pendingLinks.entries()).map(([itemId, link]) => {
+                  const linkedItem = wizard.items.find((i) => i.id === itemId);
+                  const itemName = linkedItem?.merchant_name || linkedItem?.name || 'Unknown item';
+                  return [link.categoryId, itemName];
+                })
+              )
+            }
           />
         )}
 
-        <RollupTipModal isOpen={wizard.showRollupTip} onClose={() => wizard.setShowRollupTip(false)} />
+        <RollupTipModal
+          isOpen={wizard.showRollupTip}
+          onClose={() => wizard.setShowRollupTip(false)}
+        />
       </div>
     </TourProvider>
   );

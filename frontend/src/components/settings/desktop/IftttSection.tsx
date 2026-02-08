@@ -2,7 +2,8 @@
  * IFTTT Integration Section
  *
  * Settings section for managing IFTTT connection status.
- * Always visible on desktop, but disabled when tunnel is not configured.
+ * Works on desktop (via fetchApi to localhost Flask) and
+ * remotely via tunnel (via fetchApi through tunnel proxy).
  *
  * Shows:
  * - Connection status (connected/disconnected)
@@ -33,15 +34,17 @@ import {
   Unplug,
 } from 'lucide-react';
 import { SiIfttt } from 'react-icons/si';
+import { fetchApi } from '../../../api/core/fetchApi';
 import { Modal } from '../../ui/Modal';
 import { Tooltip } from '../../ui/Tooltip';
 import { useToast } from '../../../context/ToastContext';
 import { useNotifications } from '../../../context/NotificationContext';
 import { useTunnelStatus } from '../../../hooks';
+import { isDesktopMode } from '../../../utils/apiBase';
+import { isTunnelSite } from '../../../utils/environment';
 import { scrollContainerTo } from '../../../utils';
 
 const IFTTT_SERVICE_URL = 'https://ifttt.com/eclosion';
-const IFTTT_API_URL = 'https://ifttt-api.eclosion.app';
 
 interface PendingAction {
   id: string;
@@ -236,6 +239,23 @@ function StatusBadge({
 
   return (
     <div className="pt-2 shrink-0 flex items-center gap-1.5">
+      {onDisconnect && (
+        <Tooltip content={disconnecting ? 'Disconnecting...' : 'Disconnect'}>
+          <button
+            onClick={onDisconnect}
+            disabled={disconnecting}
+            className="p-1.5 rounded-md transition-colors hover:bg-red-500/10 disabled:opacity-50"
+            type="button"
+            aria-label="Disconnect"
+          >
+            <Unplug
+              size={14}
+              className={disconnecting ? 'animate-pulse' : ''}
+              style={{ color: 'var(--monarch-error)' }}
+            />
+          </button>
+        </Tooltip>
+      )}
       {onTest && (
         <Tooltip content={testing ? 'Testing...' : 'Test tunnel connection'}>
           <button
@@ -266,23 +286,6 @@ function StatusBadge({
               size={14}
               className={syncing ? 'animate-spin' : ''}
               style={{ color: 'var(--monarch-text-muted)' }}
-            />
-          </button>
-        </Tooltip>
-      )}
-      {onDisconnect && (
-        <Tooltip content={disconnecting ? 'Disconnecting...' : 'Disconnect'}>
-          <button
-            onClick={onDisconnect}
-            disabled={disconnecting}
-            className="p-1.5 rounded-md transition-colors hover:bg-red-500/10 disabled:opacity-50"
-            type="button"
-            aria-label="Disconnect"
-          >
-            <Unplug
-              size={14}
-              className={disconnecting ? 'animate-pulse' : ''}
-              style={{ color: 'var(--monarch-error)' }}
             />
           </button>
         </Tooltip>
@@ -1032,73 +1035,35 @@ export function IftttSection() {
   const { status: tunnelStatus } = useTunnelStatus();
 
   const fetchStatus = useCallback(async () => {
-    if (!globalThis.electron?.tunnel) return;
-
     try {
-      const config = await globalThis.electron.tunnel.getConfig();
-      if (!config?.subdomain) {
+      const data = await fetchApi<{
+        configured: boolean;
+        connected: boolean;
+        connectedAt: string | null;
+        pendingActions: PendingAction[];
+        history: ActionHistoryEntry[];
+        triggers: TriggerEvent[];
+      }>('/ifttt/connection-status');
+
+      if (!data.configured) {
         setStatus(null);
         return;
       }
 
-      // Check IFTTT connection status via the broker
-      const managementKey = await globalThis.electron.tunnel.getManagementKey?.();
-      if (!managementKey) {
-        setStatus({ connected: false, connectedAt: null, pendingActions: [] });
-        return;
+      setStatus({
+        connected: data.connected,
+        connectedAt: data.connectedAt,
+        pendingActions: data.pendingActions,
+      });
+      setHistory(data.history);
+      setTriggerHistory(data.triggers);
+
+      // Desktop-only: ensure action secret is provisioned on disk
+      if (data.connected && isDesktopMode()) {
+        globalThis.electron?.tunnel?.fetchIftttActionSecret?.().catch(() => {
+          // Non-fatal — secret may already be on disk
+        });
       }
-
-      const headers = {
-        'X-Subdomain': config.subdomain,
-        'X-Management-Key': managementKey,
-      };
-
-      // Fetch connection status, pending queue count, action history, and trigger history in parallel
-      const [statusResponse, queueResponse, historyResponse, triggerHistoryResponse] =
-        await Promise.all([
-          fetch(`${IFTTT_API_URL}/api/ifttt-status`, { headers }),
-          fetch(`${IFTTT_API_URL}/api/queue/pending`, { headers }),
-          fetch(`${IFTTT_API_URL}/api/action-history`, { headers }),
-          fetch(`${IFTTT_API_URL}/api/trigger-history`, { headers }),
-        ]);
-
-      let connected = false;
-      let connectedAt: string | null = null;
-      let pendingActions: PendingAction[] = [];
-
-      if (statusResponse.ok) {
-        const data = await statusResponse.json();
-        connected = data.connected ?? false;
-        connectedAt = data.connected_at ?? null;
-
-        // When connected, ensure action secret is provisioned on disk
-        if (connected) {
-          globalThis.electron?.tunnel?.fetchIftttActionSecret?.().catch(() => {
-            // Non-fatal — secret may already be on disk
-          });
-        }
-      }
-
-      if (queueResponse.ok) {
-        const data = await queueResponse.json();
-        pendingActions = data.actions ?? [];
-      }
-
-      if (historyResponse.ok) {
-        const data = await historyResponse.json();
-        setHistory(data.history ?? []);
-      } else {
-        setHistory([]);
-      }
-
-      if (triggerHistoryResponse.ok) {
-        const data = await triggerHistoryResponse.json();
-        setTriggerHistory(data.triggers ?? []);
-      } else {
-        setTriggerHistory([]);
-      }
-
-      setStatus({ connected, connectedAt, pendingActions });
     } catch {
       setStatus({ connected: false, connectedAt: null, pendingActions: [] });
     } finally {
@@ -1136,13 +1101,16 @@ export function IftttSection() {
   // Auto-drain pending actions immediately when detected
   const pendingCount = status?.pendingActions?.length ?? 0;
   useEffect(() => {
-    if (pendingCount > 0 && !draining && globalThis.electron?.tunnel?.drainIftttQueue) {
+    if (pendingCount > 0 && !draining) {
       setDraining(true);
-      globalThis.electron.tunnel
-        .drainIftttQueue()
+      fetchApi<{
+        processed: number;
+        succeeded: number;
+        failed: number;
+        actions: Array<{ action_slug: string; success: boolean; error?: string }>;
+      }>('/ifttt/drain-queue', { method: 'POST' })
         .then((result) => {
           if (result.processed > 0) {
-            // Add notifications for each action result
             for (const action of result.actions) {
               addNotification({
                 type: 'ifttt_queue',
@@ -1154,7 +1122,6 @@ export function IftttSection() {
               });
             }
           }
-          // Re-fetch to update UI
           fetchStatus();
         })
         .catch(() => {
@@ -1173,39 +1140,29 @@ export function IftttSection() {
   }, [fetchStatus]);
 
   const handleDisconnect = async () => {
-    if (!globalThis.electron?.tunnel) return;
-
     setDisconnecting(true);
     try {
-      const config = await globalThis.electron.tunnel.getConfig();
-      const managementKey = await globalThis.electron.tunnel.getManagementKey?.();
-
-      if (config?.subdomain && managementKey) {
-        await fetch(`${IFTTT_API_URL}/api/ifttt-disconnect`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Subdomain': config.subdomain,
-            'X-Management-Key': managementKey,
-          },
-        });
-      }
-
+      await fetchApi('/ifttt/disconnect', { method: 'POST' });
       setStatus({ connected: false, connectedAt: null, pendingActions: [] });
       toast.success('IFTTT disconnected');
-    } catch {
-      toast.error('Failed to disconnect IFTTT');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Failed to disconnect IFTTT: ${msg}`);
     } finally {
       setDisconnecting(false);
     }
   };
 
   const handleDrainQueue = async () => {
-    if (!globalThis.electron?.tunnel?.drainIftttQueue) return;
-
     setDraining(true);
     try {
-      const result = await globalThis.electron.tunnel.drainIftttQueue();
+      const result = await fetchApi<{
+        processed: number;
+        succeeded: number;
+        failed: number;
+        actions: Array<{ action_slug: string; success: boolean; error?: string }>;
+      }>('/ifttt/drain-queue', { method: 'POST' });
+
       if (result.processed === 0) {
         toast.info('No pending actions to process');
       } else if (result.failed === 0) {
@@ -1216,7 +1173,6 @@ export function IftttSection() {
         );
       }
 
-      // Add notifications for each action result
       for (const action of result.actions) {
         addNotification({
           type: 'ifttt_queue',
@@ -1228,44 +1184,35 @@ export function IftttSection() {
         });
       }
 
-      // Refresh status to update pending count and history
       await fetchStatus();
-    } catch {
-      toast.error('Failed to process queue');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Failed to process queue: ${msg}`);
     } finally {
       setDraining(false);
     }
   };
 
   const handleTestConnection = async () => {
-    if (!globalThis.electron?.tunnel) return;
-
     setTesting(true);
     setTestResult(null);
     try {
-      const config = await globalThis.electron.tunnel.getConfig();
-      const managementKey = await globalThis.electron.tunnel.getManagementKey?.();
+      const data = await fetchApi<{
+        success: boolean;
+        status?: number;
+        latency?: number;
+        error?: string;
+      }>('/ifttt/test-tunnel');
 
-      if (!config?.subdomain || !managementKey) {
-        setTestResult({ success: false, error: 'Missing credentials' });
-        return;
-      }
-
-      const response = await fetch(`${IFTTT_API_URL}/api/tunnel-test`, {
-        headers: {
-          'X-Subdomain': config.subdomain,
-          'X-Management-Key': managementKey,
-        },
-      });
-
-      const data = await response.json();
-      setTestResult({
+      const testError =
+        data.error || (data.status && data.status >= 400 ? `HTTP ${data.status}` : undefined);
+      const result: { success: boolean; status?: number; latency?: number; error?: string } = {
         success: data.success,
-        status: data.status,
-        latency: data.latency,
-        error:
-          data.error || (data.status && data.status >= 400 ? `HTTP ${data.status}` : undefined),
-      });
+      };
+      if (data.status !== undefined) result.status = data.status;
+      if (data.latency !== undefined) result.latency = data.latency;
+      if (testError !== undefined) result.error = testError;
+      setTestResult(result);
 
       if (data.success) {
         toast.success(`Tunnel working (${data.latency}ms)`);
@@ -1285,17 +1232,13 @@ export function IftttSection() {
   const handleRefreshTriggers = async () => {
     setRefreshingTriggers(true);
     try {
-      const response = await fetch('http://127.0.0.1:5002/ifttt/refresh-triggers', {
-        method: 'POST',
-      });
+      const data = await fetchApi<RefreshResult & { configured: boolean }>(
+        '/ifttt/refresh-triggers',
+        {
+          method: 'POST',
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      // Save the full result for display
       setLastRefreshResult({
         ...data,
         timestamp: Date.now(),
@@ -1306,15 +1249,14 @@ export function IftttSection() {
         return;
       }
 
-      // Count total events pushed
       const eventsPushed = data.events_pushed || {};
       const totalEvents = Object.values(eventsPushed).reduce(
         (sum: number, v) => sum + (typeof v === 'number' ? v : 0),
         0
       );
 
-      const fieldOptions = data.field_options_pushed || {};
-      const totalFieldOptions = (fieldOptions.categories || 0) + (fieldOptions.goals || 0);
+      const fieldOptions = data.field_options_pushed;
+      const totalFieldOptions = (fieldOptions?.categories || 0) + (fieldOptions?.goals || 0);
 
       if (totalEvents > 0) {
         toast.success(`Pushed ${totalEvents} trigger events`);
@@ -1324,7 +1266,6 @@ export function IftttSection() {
         toast.info('No new trigger events to push');
       }
 
-      // Refresh the history to show any new triggers
       await fetchStatus();
     } catch (err) {
       const error = err instanceof Error ? err.message : 'Refresh failed';
@@ -1334,10 +1275,11 @@ export function IftttSection() {
     }
   };
 
-  // Only render on desktop
-  if (!globalThis.electron?.tunnel) return null;
+  // Only render on desktop or when accessed via tunnel
+  if (!isDesktopMode() && !isTunnelSite()) return null;
 
-  const tunnelActive = !!tunnelStatus?.active;
+  // On tunnel sites, tunnel is always active (we're accessing through it)
+  const tunnelActive = isTunnelSite() || !!tunnelStatus?.active;
 
   return (
     <div
@@ -1425,28 +1367,26 @@ export function IftttSection() {
                   </button>
                 </div>
               )}
-              {(history.length > 0 || triggerHistory.length > 0) && (
-                <button
-                  onClick={() => setLogsModalOpen(true)}
-                  className="flex items-center gap-1 text-xs hover:opacity-80 ml-auto"
-                  style={{ color: 'var(--monarch-text-muted)' }}
-                  type="button"
-                >
-                  <History size={12} />
-                  Activity
-                  {(() => {
-                    // Show last refresh time, or fall back to most recent trigger event
-                    const lastSyncTime =
-                      lastRefreshResult?.timestamp ??
-                      (triggerHistory[0]?.timestamp ? triggerHistory[0].timestamp * 1000 : null);
-                    return lastSyncTime ? (
-                      <span style={{ color: 'var(--monarch-text-muted)' }}>
-                        · {formatRelativeTime(lastSyncTime)}
-                      </span>
-                    ) : null;
-                  })()}
-                </button>
-              )}
+              <button
+                onClick={() => setLogsModalOpen(true)}
+                className="flex items-center gap-1 text-xs hover:opacity-80 ml-auto"
+                style={{ color: 'var(--monarch-text-muted)' }}
+                type="button"
+              >
+                <History size={12} />
+                Activity
+                {(() => {
+                  // Show last refresh time, or fall back to most recent trigger event
+                  const lastSyncTime =
+                    lastRefreshResult?.timestamp ??
+                    (triggerHistory[0]?.timestamp ? triggerHistory[0].timestamp * 1000 : null);
+                  return lastSyncTime ? (
+                    <span style={{ color: 'var(--monarch-text-muted)' }}>
+                      · {formatRelativeTime(lastSyncTime)}
+                    </span>
+                  ) : null;
+                })()}
+              </button>
             </div>
           </div>
         )}
