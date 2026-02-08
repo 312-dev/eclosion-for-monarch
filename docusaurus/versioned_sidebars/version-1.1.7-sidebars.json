@@ -1,0 +1,47 @@
+{
+  "guideSidebar": [
+    "intro",
+    {
+      "type": "category",
+      "label": "Features",
+      "collapsed": false,
+      "items": [
+        {
+          "type": "category",
+          "label": "Recurring Expenses",
+          "collapsed": false,
+          "link": {
+            "type": "doc",
+            "id": "recurring/overview"
+          },
+          "items": [
+            "recurring/setup-wizard",
+            "recurring/rollup-category",
+            "recurring/category-linking"
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Monthly Notes",
+          "collapsed": false,
+          "link": {
+            "type": "doc",
+            "id": "notes/overview"
+          },
+          "items": []
+        },
+        {
+          "type": "category",
+          "label": "Stashes",
+          "collapsed": false,
+          "link": {
+            "type": "doc",
+            "id": "stashes/overview"
+          },
+          "items": []
+        }
+      ]
+    },
+    "faq"
+  ]
+}
