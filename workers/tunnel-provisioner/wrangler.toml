@@ -7,7 +7,7 @@ CLOUDFLARE_ZONE_ID = "862ca1c849605ffbc0de65e0591b5073"  # eclosion.me zone
 
 # Secrets (set via `wrangler secret put`):
 # CLOUDFLARE_ACCOUNT_ID - Cloudflare account ID
-# CLOUDFLARE_API_TOKEN  - Scoped to Tunnel + DNS management for eclosion.me
+# CLOUDFLARE_API_TOKEN  - Scoped to Tunnel (Edit) + DNS (Edit) for eclosion.me zone
 # RESEND_API_KEY        - Resend API key for OTP verification emails (sender: security@eclosion.me)
 
 [[kv_namespaces]]

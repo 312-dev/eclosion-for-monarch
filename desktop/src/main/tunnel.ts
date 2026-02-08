@@ -518,7 +518,13 @@ export async function unclaimSubdomain(): Promise<{ success: boolean; error?: st
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Failed to unclaim subdomain';
         debugLog(`[Tunnel] Unclaim API call failed: ${msg}`);
-        return { success: false, error: msg };
+
+        // If the subdomain is already gone server-side (404), proceed to clear local state
+        const alreadyGone = msg.toLowerCase().includes('not found');
+        if (!alreadyGone) {
+          return { success: false, error: msg };
+        }
+        debugLog('[Tunnel] Subdomain already released server-side, clearing local state');
       }
     } else {
       // No management key — can't clean up server-side resources.
@@ -533,6 +539,7 @@ export async function unclaimSubdomain(): Promise<{ success: boolean; error?: st
     store.delete('tunnel.createdAt');
     store.delete('tunnel.encryptedCredentials');
     store.delete('tunnel.encryptedManagementKey');
+    store.delete('tunnel.encryptedIftttActionSecret');
 
     // Note: IPC handler clears secrets from Flask after unclaim succeeds
 

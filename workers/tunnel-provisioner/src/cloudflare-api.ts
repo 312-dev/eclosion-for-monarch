@@ -1,13 +1,15 @@
 /**
  * Cloudflare API Wrapper
  *
- * Handles Tunnel creation and configuration.
+ * Handles Tunnel creation, DNS CNAME records, and tunnel configuration.
  * Uses the Cloudflare v4 API with an API token scoped to:
  * - Cloudflare Tunnel: Edit
+ * - DNS: Edit (for eclosion.me zone)
  *
- * Note: DNS is handled via wildcard CNAME (*.eclosion.me), so no per-subdomain
- * DNS operations are needed. The tunnel-gate Worker proxies directly to
- * {tunnelId}.cfargotunnel.com.
+ * Each subdomain gets a proxied CNAME record pointing to its tunnel's
+ * cfargotunnel.com address. The tunnel-gate Worker routes through these
+ * CNAMEs (via fetch(request)) instead of fetching cfargotunnel.com directly,
+ * which is blocked by Workers' SSRF protections on ULA IPv6 addresses.
  */
 
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
@@ -189,5 +191,62 @@ export async function updateTunnelIngress(
   port: number,
 ): Promise<void> {
   await configureTunnelIngress(accountId, apiToken, tunnelId, subdomain, port);
+}
+
+// =============================================================================
+// DNS CNAME Records
+// =============================================================================
+
+/**
+ * Create a proxied CNAME record for a subdomain pointing to its tunnel.
+ * The proxied (orange-cloud) record ensures Cloudflare's edge routes traffic
+ * to the tunnel internally, avoiding Workers' SSRF restrictions on
+ * cfargotunnel.com's ULA IPv6 addresses.
+ */
+export async function createDnsCname(
+  zoneId: string,
+  apiToken: string,
+  subdomain: string,
+  tunnelId: string,
+): Promise<void> {
+  await cfFetch<unknown>(`/zones/${zoneId}/dns_records`, apiToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      type: 'CNAME',
+      name: `${subdomain}.${TUNNEL_DOMAIN}`,
+      content: `${tunnelId}.cfargotunnel.com`,
+      proxied: true,
+      comment: 'Eclosion tunnel - auto-provisioned',
+    }),
+  });
+}
+
+/**
+ * Delete the CNAME record for a subdomain.
+ * Looks up the record ID by name, then deletes it.
+ */
+export async function deleteDnsCname(
+  zoneId: string,
+  apiToken: string,
+  subdomain: string,
+): Promise<void> {
+  const fqdn = `${subdomain}.${TUNNEL_DOMAIN}`;
+
+  // Find the DNS record by name
+  const records = await cfFetch<Array<{ id: string }>>(
+    `/zones/${zoneId}/dns_records?type=CNAME&name=${encodeURIComponent(fqdn)}`,
+    apiToken,
+  );
+
+  if (records.length === 0) {
+    return; // No record to delete
+  }
+
+  // Delete the record
+  await cfFetch<unknown>(
+    `/zones/${zoneId}/dns_records/${records[0].id}`,
+    apiToken,
+    { method: 'DELETE' },
+  );
 }
 

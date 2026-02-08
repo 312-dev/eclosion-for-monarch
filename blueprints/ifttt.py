@@ -851,3 +851,94 @@ async def refresh_triggers():
         results["field_options_pushed"] = f"error: {e}"
 
     return results
+
+
+# ---- PROXY ENDPOINTS ----
+# These proxy broker API calls so the frontend can use fetchApi()
+# instead of direct broker calls with Electron IPC credentials.
+# This enables IFTTT management from the tunnel (remote web access).
+
+
+@ifttt_bp.route("/connection-status", methods=["GET"])
+@api_handler(handle_mfa=True)
+async def connection_status():
+    """Combined endpoint returning IFTTT connection status, queue, and history."""
+    from services.ifttt_service import IftttService
+
+    ifttt = IftttService.from_tunnel_creds()
+    return await ifttt.get_connection_status()
+
+
+@ifttt_bp.route("/disconnect", methods=["POST"])
+@api_handler(handle_mfa=True)
+async def disconnect():
+    """Disconnect IFTTT integration via broker."""
+    from services.ifttt_service import IftttService
+
+    ifttt = IftttService.from_tunnel_creds()
+    logger.info(f"[IFTTT Disconnect] configured={ifttt.is_configured}, subdomain={ifttt.subdomain}")
+    result = await ifttt.disconnect()
+    logger.info(f"[IFTTT Disconnect] result={result}")
+    return result
+
+
+@ifttt_bp.route("/test-tunnel", methods=["GET"])
+@api_handler(handle_mfa=True)
+async def test_tunnel():
+    """Test tunnel connectivity via broker."""
+    from services.ifttt_service import IftttService
+
+    ifttt = IftttService.from_tunnel_creds()
+    return await ifttt.test_tunnel()
+
+
+@ifttt_bp.route("/drain-queue", methods=["POST"])
+@api_handler(handle_mfa=True)
+async def drain_queue():
+    """Execute all pending queued IFTTT actions locally."""
+    import time
+
+    from services.ifttt_service import IftttService
+
+    ifttt = IftttService.from_tunnel_creds()
+    if not ifttt.is_configured:
+        return {"processed": 0, "succeeded": 0, "failed": 0, "actions": []}
+
+    results = await ifttt.drain_queue()
+
+    actions = []
+    succeeded = 0
+    failed = 0
+    for r in results:
+        success = r.get("success", False)
+        action_entry: dict[str, Any] = {
+            "action_slug": r.get("action_slug", ""),
+            "success": success,
+        }
+        if not success:
+            action_entry["error"] = r.get("error", "Unknown error")
+        actions.append(action_entry)
+
+        # Push result to broker history
+        await ifttt.push_action_result(
+            {
+                "action_slug": r.get("action_slug", ""),
+                "fields": r.get("fields", {}),
+                "executed_at": int(time.time() * 1000),
+                "success": success,
+                "error": r.get("error"),
+                "was_queued": True,
+            }
+        )
+
+        if success:
+            succeeded += 1
+        else:
+            failed += 1
+
+    return {
+        "processed": len(results),
+        "succeeded": succeeded,
+        "failed": failed,
+        "actions": actions,
+    }

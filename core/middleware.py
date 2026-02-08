@@ -3,7 +3,9 @@
 
 import os
 import re
-from typing import TYPE_CHECKING
+import uuid
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote, urlparse
 
 from flask import jsonify, make_response, redirect, request, session
@@ -89,7 +91,9 @@ def sanitize_api_result(result: dict, generic_error: str = "Operation failed.") 
 
 def is_api_request() -> bool:
     """Check if the request is for an API endpoint."""
-    api_prefixes = ("/auth/", "/recurring/", "/security/", "/version/", "/notes/", "/settings/")
+    api_prefixes = (
+        "/auth/", "/recurring/", "/security/", "/version/", "/notes/", "/settings/", "/remote/",
+    )
     return any(request.path.startswith(p) for p in api_prefixes)
 
 
@@ -311,6 +315,73 @@ def _get_ifttt_action_secret() -> str | None:
     Secrets are pushed to Flask via IPC from Electron, never read from disk.
     """
     return _ifttt_secrets_cache["action_secret"]
+
+
+# In-memory update status cache (pushed from Electron via IPC, never written to disk)
+_update_status_cache: dict[str, Any] = {
+    "current_version": None,
+    "channel": None,
+    "update_available": False,
+    "update_downloaded": False,
+    "update_info": None,
+    "timestamp": None,
+}
+
+# In-memory command queue (set by remote user, polled by Electron)
+_remote_command_queue: list[dict[str, Any]] = []
+
+
+def set_update_status(data: dict[str, Any]) -> None:
+    """Set update status in memory. Called via IPC from Electron."""
+    for key in _update_status_cache:
+        if key in data:
+            _update_status_cache[key] = data[key]
+
+
+def get_update_status() -> dict[str, Any]:
+    """Get cached update status."""
+    return dict(_update_status_cache)
+
+
+def queue_remote_command(command_type: str) -> dict[str, Any]:
+    """Queue a command for Electron to pick up.
+
+    Deduplicates — if a command of the same type is already pending, returns it.
+    Returns the queued command dict.
+    """
+    # Check for existing pending command of same type
+    for cmd in _remote_command_queue:
+        if cmd["type"] == command_type:
+            return cmd
+
+    cmd: dict[str, Any] = {
+        "id": str(uuid.uuid4()),
+        "type": command_type,
+        "queued_at": datetime.now(UTC).isoformat(),
+    }
+    _remote_command_queue.append(cmd)
+    return cmd
+
+
+def get_pending_commands() -> list[dict[str, Any]]:
+    """Get and clear all pending commands. Called by Electron polling."""
+    commands = list(_remote_command_queue)
+    _remote_command_queue.clear()
+    return commands
+
+
+def ack_command(command_id: str, result: dict[str, Any]) -> None:
+    """Acknowledge a command and update status with result.
+
+    Called by Electron after executing a command.
+    If result contains update status fields, also updates the status cache.
+    """
+    # Remove from queue if still present (shouldn't be after get_pending_commands)
+    _remote_command_queue[:] = [c for c in _remote_command_queue if c["id"] != command_id]
+
+    # Update status cache if result contains relevant fields
+    if result:
+        set_update_status(result)
 
 
 def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:

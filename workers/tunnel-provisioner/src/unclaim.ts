@@ -8,7 +8,7 @@
 
 import type { Env } from './index';
 import { verifyManagementKey } from './crypto';
-import { deleteTunnel } from './cloudflare-api';
+import { deleteTunnel, deleteDnsCname } from './cloudflare-api';
 import { logAudit, getClientIp } from './audit';
 
 interface SubdomainData {
@@ -62,8 +62,18 @@ export async function handleUnclaim(
     return Response.json({ error: 'Invalid management key' }, { status: 403 });
   }
 
+  // Delete DNS CNAME record (non-fatal if it fails)
+  try {
+    await deleteDnsCname(
+      env.CLOUDFLARE_ZONE_ID,
+      env.CLOUDFLARE_API_TOKEN,
+      subdomain,
+    );
+  } catch (error) {
+    console.error(`Failed to delete DNS record for ${subdomain}: ${error}`);
+  }
+
   // Delete Cloudflare tunnel (non-fatal if it fails)
-  // Note: No DNS cleanup needed - using wildcard CNAME
   try {
     await deleteTunnel(
       env.CLOUDFLARE_ACCOUNT_ID,

@@ -12,11 +12,14 @@ import logging
 import os
 from typing import Any
 
+import asyncio
+
 import httpx
 
 logger = logging.getLogger(__name__)
 
 BROKER_URL = "https://ifttt-api.eclosion.app"
+_NOT_CONFIGURED = "IFTTT not configured"
 
 
 class IftttService:
@@ -74,7 +77,7 @@ class IftttService:
             data: Trigger-specific data fields
         """
         if not self.is_configured:
-            return {"success": False, "error": "IFTTT not configured"}
+            return {"success": False, "error": _NOT_CONFIGURED}
 
         import time
 
@@ -128,7 +131,7 @@ class IftttService:
             action_id: The ID of the action to acknowledge
         """
         if not self.is_configured:
-            return {"success": False, "error": "IFTTT not configured"}
+            return {"success": False, "error": _NOT_CONFIGURED}
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -141,6 +144,96 @@ class IftttService:
                 return result
         except Exception as e:
             logger.error(f"Failed to ACK IFTTT action: {e}")
+            return {"success": False, "error": str(e)}
+
+    # ---- PROXY METHODS ----
+    # These proxy broker API calls for use by Flask endpoints,
+    # so the frontend can use fetchApi() instead of direct broker calls.
+
+    async def get_connection_status(self) -> dict[str, Any]:
+        """Fetch connection status, pending queue, and history from broker in parallel."""
+        if not self.is_configured:
+            return {"configured": False}
+
+        async def _fetch(path: str) -> dict[str, Any]:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.get(
+                        f"{BROKER_URL}/api{path}",
+                        headers=self._headers,
+                    )
+                    result: dict[str, Any] = response.json()
+                    return result
+            except Exception as e:
+                logger.warning(f"IFTTT broker call {path} failed: {e}")
+                return {}
+
+        status_data, queue_data, action_data, trigger_data = await asyncio.gather(
+            _fetch("/ifttt-status"),
+            _fetch("/queue/pending"),
+            _fetch("/action-history"),
+            _fetch("/trigger-history"),
+        )
+
+        return {
+            "configured": True,
+            "connected": status_data.get("connected", False),
+            "connectedAt": status_data.get("connected_at"),
+            "pendingActions": queue_data.get("actions", []),
+            "history": action_data.get("history", []),
+            "triggers": trigger_data.get("triggers", []),
+        }
+
+    async def disconnect(self) -> dict[str, Any]:
+        """Disconnect IFTTT via broker."""
+        if not self.is_configured:
+            return {"success": False, "error": _NOT_CONFIGURED}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    f"{BROKER_URL}/api/ifttt-disconnect",
+                    headers=self._headers,
+                )
+                result: dict[str, Any] = response.json()
+                return result
+        except Exception as e:
+            logger.error(f"Failed to disconnect IFTTT: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def test_tunnel(self) -> dict[str, Any]:
+        """Test tunnel connectivity via broker."""
+        if not self.is_configured:
+            return {"success": False, "error": _NOT_CONFIGURED}
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.get(
+                    f"{BROKER_URL}/api/tunnel-test",
+                    headers=self._headers,
+                )
+                result: dict[str, Any] = response.json()
+                return result
+        except Exception as e:
+            logger.error(f"Failed to test IFTTT tunnel: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def push_action_result(self, result: dict[str, Any]) -> dict[str, Any]:
+        """Push an action execution result to broker history."""
+        if not self.is_configured:
+            return {"success": False, "error": _NOT_CONFIGURED}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    f"{BROKER_URL}/api/action-history",
+                    json=result,
+                    headers=self._headers,
+                )
+                data: dict[str, Any] = response.json()
+                return data
+        except Exception as e:
+            logger.error(f"Failed to push IFTTT action result: {e}")
             return {"success": False, "error": str(e)}
 
     async def push_field_options(
@@ -160,7 +253,7 @@ class IftttService:
             goals: List of {label, value} goal options (optional)
         """
         if not self.is_configured:
-            return {"success": False, "error": "IFTTT not configured"}
+            return {"success": False, "error": _NOT_CONFIGURED}
 
         fields: dict[str, list[dict[str, str]]] = {"category": categories}
         if stashes:

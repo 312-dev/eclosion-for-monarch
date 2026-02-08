@@ -12,6 +12,7 @@ import { validateSubdomain } from './validation';
 import {
   createTunnel,
   configureTunnelIngress,
+  createDnsCname,
   deleteTunnel,
   findTunnelByName,
 } from './cloudflare-api';
@@ -154,8 +155,31 @@ export async function handleClaim(
     );
   }
 
+  // Create proxied CNAME record: subdomain.eclosion.me → tunnelId.cfargotunnel.com
+  // This is required for the tunnel-gate Worker to route traffic to the tunnel
+  // via fetch(request), which resolves through Cloudflare's proxy layer.
+  try {
+    await createDnsCname(
+      env.CLOUDFLARE_ZONE_ID,
+      env.CLOUDFLARE_API_TOKEN,
+      subdomain,
+      credentials.tunnelId,
+    );
+  } catch (error) {
+    // Cleanup: delete the tunnel if DNS fails
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    await deleteTunnel(
+      env.CLOUDFLARE_ACCOUNT_ID,
+      env.CLOUDFLARE_API_TOKEN,
+      credentials.tunnelId,
+    ).catch(() => {});
+    return Response.json(
+      { error: `Failed to create DNS record: ${msg}` },
+      { status: 502 },
+    );
+  }
+
   // Configure initial ingress rules with default port
-  // Note: DNS is handled via wildcard CNAME, no per-subdomain record needed
   try {
     await configureTunnelIngress(
       env.CLOUDFLARE_ACCOUNT_ID,

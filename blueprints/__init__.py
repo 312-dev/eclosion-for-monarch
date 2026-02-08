@@ -117,3 +117,8 @@ def register_blueprints(app: Flask) -> None:
     from .internal import internal_bp
 
     app.register_blueprint(internal_bp)
+
+    # Phase 11: Remote management blueprint (tunnel-accessible)
+    from .remote import remote_bp
+
+    app.register_blueprint(remote_bp)

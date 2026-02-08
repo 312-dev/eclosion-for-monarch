@@ -11,7 +11,13 @@ import logging
 from flask import Blueprint, Response, request
 
 from core import config
-from core.middleware import clear_ifttt_secrets, set_ifttt_secrets
+from core.middleware import (
+    ack_command,
+    clear_ifttt_secrets,
+    get_pending_commands,
+    set_ifttt_secrets,
+    set_update_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -83,4 +89,74 @@ def clear_ifttt_secrets_endpoint() -> tuple[Response, int] | Response:
 
     clear_ifttt_secrets()
     logger.info("[Internal] IFTTT secrets cleared via IPC")
+    return Response('{"success": true}', status=200, mimetype="application/json")
+
+
+@internal_bp.route("/update-status", methods=["POST"])
+def set_update_status_endpoint() -> tuple[Response, int] | Response:
+    """
+    Receive update status from Electron and store in memory.
+
+    Called whenever Electron's update state changes (check complete,
+    download progress, download complete, etc.).
+
+    Request body: current_version, channel, update_available,
+    update_downloaded, update_info, timestamp
+    """
+    if not _validate_desktop_secret():
+        return Response('{"error": "Unauthorized"}', status=403, mimetype="application/json")
+
+    data = request.get_json()
+    if not data:
+        return Response('{"error": "Missing JSON body"}', status=400, mimetype="application/json")
+
+    set_update_status(data)
+    logger.info(
+        f"[Internal] Update status received: v{data.get('current_version')}, "
+        f"available={data.get('update_available')}, downloaded={data.get('update_downloaded')}"
+    )
+    return Response('{"success": true}', status=200, mimetype="application/json")
+
+
+@internal_bp.route("/remote-commands", methods=["GET"])
+def get_remote_commands_endpoint() -> tuple[Response, int] | Response:
+    """
+    Return pending remote commands for Electron to execute.
+
+    Called by Electron's polling loop (every 5 seconds while tunnel is active).
+    Returns commands and clears the queue atomically.
+    """
+    if not _validate_desktop_secret():
+        return Response('{"error": "Unauthorized"}', status=403, mimetype="application/json")
+
+    import json
+
+    commands = get_pending_commands()
+    if commands:
+        logger.info(f"[Internal] Dispatching {len(commands)} remote command(s) to Electron")
+    return Response(json.dumps({"commands": commands}), status=200, mimetype="application/json")
+
+
+@internal_bp.route("/remote-commands/ack", methods=["POST"])
+def ack_remote_command_endpoint() -> tuple[Response, int] | Response:
+    """
+    Acknowledge a remote command with its result.
+
+    Called by Electron after executing a command. The result is used
+    to update the cached update status.
+    """
+    if not _validate_desktop_secret():
+        return Response('{"error": "Unauthorized"}', status=403, mimetype="application/json")
+
+    data = request.get_json()
+    if not data:
+        return Response('{"error": "Missing JSON body"}', status=400, mimetype="application/json")
+
+    command_id = data.get("id")
+    result = data.get("result", {})
+    if not command_id:
+        return Response('{"error": "Missing command id"}', status=400, mimetype="application/json")
+
+    ack_command(command_id, result)
+    logger.info(f"[Internal] Remote command {command_id} acknowledged")
     return Response('{"success": true}', status=200, mimetype="application/json")

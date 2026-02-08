@@ -29,6 +29,8 @@ import {
   handleOtpSessionCheck,
 } from './otp';
 import { handleUpdateIngress } from './ingress';
+import { handleMigrateDns } from './migrate-dns';
+import { handleAdminCleanup } from './admin-cleanup';
 
 export interface Env {
   TUNNELS: KVNamespace;
@@ -139,6 +141,16 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
   // Route: POST /api/tunnel/update-ingress
   if (path === '/api/tunnel/update-ingress' && request.method === 'POST') {
     return handleUpdateIngress(request, env);
+  }
+
+  // Route: POST /api/admin/migrate-dns
+  if (path === '/api/admin/migrate-dns' && request.method === 'POST') {
+    return handleMigrateDns(request, env);
+  }
+
+  // Route: POST /api/admin/cleanup
+  if (path === '/api/admin/cleanup' && request.method === 'POST') {
+    return handleAdminCleanup(request, env);
   }
 
   return Response.json({ error: 'Not found' }, { status: 404 });

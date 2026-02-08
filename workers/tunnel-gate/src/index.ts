@@ -46,12 +46,6 @@ interface OtpSessionKvData {
   created_at: string;
 }
 
-interface SubdomainData {
-  tunnel_id: string;
-  created_at: string;
-  management_key_hash?: string;
-}
-
 const ROBOTS_TXT = `User-agent: *
 Disallow: /
 `;
@@ -90,32 +84,21 @@ export default {
 const OFFLINE_STATUS_CODES = new Set([502, 504, 521, 522, 523, 530]);
 
 /**
- * Proxy request directly to the tunnel via cfargotunnel.com.
- * This bypasses DNS CNAME resolution by explicitly targeting the tunnel ID.
+ * Proxy request to the tunnel via the proxied CNAME record.
+ *
+ * Each subdomain has a proxied CNAME (subdomain.eclosion.me → tunnelId.cfargotunnel.com).
+ * Calling fetch(request) from within a Worker goes to the origin (the CNAME target),
+ * NOT back through the Worker — Cloudflare's edge resolves the CNAME internally and
+ * routes to the tunnel. This avoids the SSRF restriction that blocks direct fetches
+ * to cfargotunnel.com's ULA IPv6 addresses.
+ *
  * Returns a themed offline page if the tunnel is unreachable.
  */
 async function fetchOriginToTunnel(
   request: Request,
   subdomain: string,
-  tunnelId: string,
 ): Promise<Response> {
-  const url = new URL(request.url);
-  // Construct the tunnel origin URL using the tunnel ID directly
-  const tunnelOrigin = `https://${tunnelId}.cfargotunnel.com`;
-  const proxyUrl = `${tunnelOrigin}${url.pathname}${url.search}`;
-
-  // Clone headers but set Host to the original hostname (tunnel expects this)
-  const headers = new Headers(request.headers);
-  headers.set('Host', `${subdomain}.eclosion.me`);
-
-  const proxyRequest = new Request(proxyUrl, {
-    method: request.method,
-    headers,
-    body: request.body,
-    redirect: 'manual', // Don't follow redirects, let client handle them
-  });
-
-  const response = await fetch(proxyRequest);
+  const response = await fetch(request);
   if (OFFLINE_STATUS_CODES.has(response.status)) {
     return new Response(generateOfflinePage(subdomain), {
       status: 503,
@@ -145,21 +128,19 @@ async function handleTunnelRequest(
     });
   }
 
-  // Check if this subdomain is claimed and get tunnel ID for proxying
+  // Check if this subdomain is claimed
   const subdomainDataRaw = await env.TUNNELS.get(`subdomain:${subdomain}`);
   if (!subdomainDataRaw) {
     // Unclaimed subdomain — redirect to main site
     return Response.redirect('https://eclosion.app', 302);
   }
-  const subdomainData: SubdomainData = JSON.parse(subdomainDataRaw);
-  const tunnelId = subdomainData.tunnel_id;
 
   // Check if OTP is configured for this subdomain
   const otpEmail = await env.TUNNELS.get(`otp-email:${subdomain}`);
   if (!otpEmail) {
     // No OTP email registered — tunnel owner hasn't enabled OTP or tunnel
     // is still in setup. Pass through without gating.
-    return fetchOriginToTunnel(request, subdomain, tunnelId);
+    return fetchOriginToTunnel(request, subdomain);
   }
 
   // Handle POST /.eclosion/set-session — OTP page calls this after successful verify
@@ -175,7 +156,7 @@ async function handleTunnelRequest(
       const validSecret = await validateIftttSecret(iftttSecret, subdomain, env);
       if (validSecret) {
         // Valid IFTTT action secret — pass through to tunnel origin
-        return fetchOriginToTunnel(request, subdomain, tunnelId);
+        return fetchOriginToTunnel(request, subdomain);
       }
     }
     // For /ifttt/authorize, allow through without secret (handled by Flask after OTP)
@@ -196,7 +177,7 @@ async function handleTunnelRequest(
     }
     if (valid) {
       // Valid session — strip auth cookies and pass through to tunnel origin
-      return fetchOriginToTunnel(stripAuthCookies(request), subdomain, tunnelId);
+      return fetchOriginToTunnel(stripAuthCookies(request), subdomain);
     }
   }
 
