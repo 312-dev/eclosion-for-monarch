@@ -8,7 +8,7 @@ using SQLite via SQLAlchemy.
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from state.db import db_session
 from state.db.repositories import (
@@ -689,7 +689,7 @@ class StateManager:
             "updates_install_date",
             "updates_last_viewed_at",
         }
-        updates: dict[str, object] = {}
+        updates: dict[str, Any] = {}
         for key in allowed_keys:
             if key in kwargs:
                 value = kwargs[key]
