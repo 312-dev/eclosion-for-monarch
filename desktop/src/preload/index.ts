@@ -770,39 +770,6 @@ const electronAPI = {
   },
 
   // =========================================================================
-  // Periodic Sync (scheduled sync while app is running)
-  // =========================================================================
-
-  /**
-   * Periodic sync API for configuring scheduled sync intervals.
-   */
-  periodicSync: {
-    /**
-     * Get current periodic sync settings.
-     */
-    getSettings: (): Promise<{ enabled: boolean; intervalMinutes: number }> =>
-      ipcRenderer.invoke('periodic-sync:get-settings'),
-
-    /**
-     * Get available sync interval options.
-     */
-    getIntervals: (): Promise<Array<{ value: number; label: string }>> =>
-      ipcRenderer.invoke('periodic-sync:get-intervals'),
-
-    /**
-     * Enable or disable periodic sync.
-     */
-    setEnabled: (enabled: boolean): Promise<{ enabled: boolean; intervalMinutes: number }> =>
-      ipcRenderer.invoke('periodic-sync:set-enabled', enabled),
-
-    /**
-     * Set the sync interval.
-     */
-    setInterval: (intervalMinutes: number): Promise<{ enabled: boolean; intervalMinutes: number }> =>
-      ipcRenderer.invoke('periodic-sync:set-interval', intervalMinutes),
-  },
-
-  // =========================================================================
   // Auto-Backup
   // =========================================================================
 

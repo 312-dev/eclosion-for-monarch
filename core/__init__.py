@@ -1,6 +1,5 @@
 # Core infrastructure module
 from . import config
-from .automation_credentials import AutomationCredentialsManager
 from .decorators import api_handler, async_flask, sanitize_response
 from .error_detection import (
     classify_auth_error,
@@ -37,7 +36,6 @@ from .session import SessionManager
 
 __all__ = [
     "AuthenticationError",
-    "AutomationCredentialsManager",
     "CategoryNotFoundError",
     "ConfigurationError",
     "MFARequiredError",

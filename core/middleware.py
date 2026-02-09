@@ -390,6 +390,53 @@ def ack_command(command_id: str, result: dict[str, Any]) -> None:
         set_update_status(result)
 
 
+_TUNNEL_AUTH_SKIP_ENDPOINTS = ("auth.remote_unlock", "auth.remote_unlock_page")
+_TUNNEL_AUTH_SKIP_PATHS = ("/remote-unlock", "/auth/remote-unlock", "/auth/remote-status")
+_TUNNEL_AUTH_SKIP_ROOT_FILES = ("/manifest.json", "/favicon.ico", "/robots.txt", "/sw.js")
+
+
+def _is_tunnel_auth_exempt() -> bool:
+    """Check if the current request is exempt from tunnel authentication."""
+    if request.endpoint == _HEALTH_CHECK_ENDPOINT:
+        return True
+
+    # Remote unlock endpoints/pages
+    if request.endpoint in _TUNNEL_AUTH_SKIP_ENDPOINTS:
+        return True
+    if request.path in _TUNNEL_AUTH_SKIP_PATHS or request.path.startswith("/remote-unlock/"):
+        return True
+
+    # IFTTT endpoints with valid action secret
+    if request.path.startswith("/ifttt/") and _is_ifttt_request_authorized():
+        return True
+
+    # Static assets (bundled, root-level, and Vite dev server)
+    if request.path.startswith(("/static/", "/assets/")):
+        return True
+    if request.path in _TUNNEL_AUTH_SKIP_ROOT_FILES:
+        return True
+    if request.path.startswith(("/@vite/", "/@react-refresh", "/@fs/", "/src/", "/node_modules/")):
+        return True
+
+    # Authenticated session
+    return bool(session.get("remote_unlocked"))
+
+
+def _is_ifttt_request_authorized() -> bool:
+    """Check if an IFTTT request has valid action secret authorization."""
+    if request.path == "/ifttt/authorize":
+        return True
+
+    ifttt_secret = request.headers.get("X-IFTTT-Action-Secret")
+    configured_secret = _get_ifttt_action_secret()
+    if not ifttt_secret or not configured_secret or len(ifttt_secret) != len(configured_secret):
+        return False
+
+    import secrets as secrets_module
+
+    return secrets_module.compare_digest(ifttt_secret, configured_secret)
+
+
 def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:
     """Enforce authentication for tunnel (remote) requests.
 
@@ -403,49 +450,7 @@ def enforce_tunnel_auth(services: "Services") -> tuple[Response, int] | None:
     """
     from core.audit import audit_log  # Local import to avoid circular dependency
 
-    # Only enforce for tunnel requests
-    if not is_tunnel_request():
-        return None
-
-    # Skip for health check endpoint
-    if request.endpoint == _HEALTH_CHECK_ENDPOINT:
-        return None
-
-    # Skip for the remote unlock endpoint/page itself
-    if request.endpoint in ("auth.remote_unlock", "auth.remote_unlock_page"):
-        return None
-    # Also skip by path since /remote-unlock is a SPA route served by the 404 handler
-    # And /auth/remote-unlock is the API endpoint for unlocking
-    if request.path in ("/remote-unlock", "/auth/remote-unlock", "/auth/remote-status"):
-        return None
-    if request.path.startswith("/remote-unlock/"):
-        return None
-
-    # Skip for IFTTT action endpoints — authenticated via X-IFTTT-Action-Secret
-    # from the IFTTT worker, which is the only entity that knows this per-subdomain secret.
-    # Also skip for the IFTTT authorize page (approval screen after OTP).
-    if request.path.startswith("/ifttt/"):
-        if request.path == "/ifttt/authorize":
-            return None
-
-        ifttt_secret = request.headers.get("X-IFTTT-Action-Secret")
-        configured_secret = _get_ifttt_action_secret()
-        if ifttt_secret and configured_secret and len(ifttt_secret) == len(configured_secret):
-            import secrets as secrets_module
-
-            if secrets_module.compare_digest(ifttt_secret, configured_secret):
-                return None
-
-    # Skip for static assets (js, css, images)
-    if request.path.startswith("/static/") or request.path.startswith("/assets/"):
-        return None
-
-    # Skip for Vite dev server paths (hot-reload support in dev mode)
-    if request.path.startswith(("/@vite/", "/@react-refresh", "/@fs/", "/src/", "/node_modules/")):
-        return None
-
-    # Check if session is authenticated for remote access
-    if session.get("remote_unlocked"):
+    if not is_tunnel_request() or _is_tunnel_auth_exempt():
         return None
 
     # Not authenticated - return error for API requests, redirect for pages

@@ -98,7 +98,6 @@ STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Individual state file paths
 # Note: Main state is now stored in SQLite (eclosion.db)
-AUTOMATION_CREDENTIALS_FILE = STATE_DIR / "automation_credentials.json"
 SESSION_SECRET_FILE = STATE_DIR / ".session_secret"
 SECURITY_DB_FILE = STATE_DIR / "security_events.db"
 MONARCH_SESSION_FILE = STATE_DIR / "mm_session.pickle"

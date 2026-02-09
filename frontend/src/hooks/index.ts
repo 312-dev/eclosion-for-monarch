@@ -58,8 +58,6 @@ export { useStashTour, STASH_TOUR_STATE_KEY, type UseStashTourReturn } from './u
 
 export { useBiometric, type UseBiometricReturn } from './useBiometric';
 
-export { useAutoSyncVisibility } from './useAutoSyncVisibility';
-
 export { useSavingStates, type UseSavingStatesReturn } from './useSavingStates';
 
 export { useScrollLock } from './useScrollLock';

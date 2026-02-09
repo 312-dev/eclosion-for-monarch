@@ -107,15 +107,7 @@ export type {
 } from './version';
 
 // Sync operations and settings
-export type {
-  Settings,
-  SyncResult,
-  AllocateResult,
-  ResetAppResult,
-  AutoSyncStatus,
-  EnableAutoSyncResult,
-  DisableAutoSyncResult,
-} from './sync';
+export type { Settings, SyncResult, AllocateResult, ResetAppResult } from './sync';
 
 // Settings export/import
 export type {

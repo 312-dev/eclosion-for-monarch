@@ -25,6 +25,14 @@ export interface DashboardConfig {
   auto_categorize_enabled?: boolean;
   show_category_group?: boolean;
   user_first_name?: string | null;
+  // Acknowledgement state (persisted server-side)
+  seen_stash_tour?: boolean;
+  seen_notes_tour?: boolean;
+  seen_recurring_tour?: boolean;
+  seen_stash_intro?: boolean;
+  read_update_ids?: string[];
+  updates_install_date?: string | null;
+  updates_last_viewed_at?: string | null;
 }
 
 export interface ReadyToAssign {

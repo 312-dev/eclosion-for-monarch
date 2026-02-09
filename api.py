@@ -142,10 +142,6 @@ def _init_scheduler():
     scheduler.start()
     _scheduler_started = True
 
-    # Restore auto-sync if it was previously enabled
-    if sync_service.restore_auto_sync():
-        logger.info("Auto-sync restored from saved state")
-
 
 def _shutdown_scheduler():
     """Shutdown the background scheduler gracefully."""

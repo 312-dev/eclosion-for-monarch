@@ -99,12 +99,6 @@ import { getStateDir } from './paths';
 import { getAllLogFiles, getLogDir, debugLog } from './logger';
 import { getHealthStatus, updateTrayMenuSyncStatus } from './tray';
 import { getStore } from './store';
-import {
-  getPeriodicSyncSettings,
-  getPeriodicSyncIntervals,
-  setPeriodicSyncEnabled,
-  setPeriodicSyncInterval,
-} from './periodic-sync';
 import { setupBookmarkIpcHandlers } from './bookmarks';
 import { setupStashIpcHandlers } from './stash';
 import { setupOpenverseIpcHandlers } from './openverse';
@@ -1149,40 +1143,6 @@ export function setupIpcHandlers(backendManager: BackendManager): void {
     }
 
     return true;
-  });
-
-  // =========================================================================
-  // Periodic Sync (sync while app is running)
-  // =========================================================================
-
-  /**
-   * Get current periodic sync settings.
-   */
-  ipcMain.handle('periodic-sync:get-settings', () => {
-    return getPeriodicSyncSettings();
-  });
-
-  /**
-   * Get available sync interval options.
-   */
-  ipcMain.handle('periodic-sync:get-intervals', () => {
-    return getPeriodicSyncIntervals();
-  });
-
-  /**
-   * Enable or disable periodic sync.
-   */
-  ipcMain.handle('periodic-sync:set-enabled', (_event, enabled: boolean) => {
-    setPeriodicSyncEnabled(enabled);
-    return getPeriodicSyncSettings();
-  });
-
-  /**
-   * Set the sync interval.
-   */
-  ipcMain.handle('periodic-sync:set-interval', (_event, intervalMinutes: number) => {
-    setPeriodicSyncInterval(intervalMinutes);
-    return getPeriodicSyncSettings();
   });
 
   // =========================================================================

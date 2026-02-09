@@ -3,7 +3,6 @@
  *
  * Desktop app-specific settings including:
  * - Startup (launch at login, start minimized)
- * - Sync Schedule (periodic sync)
  * - Security & Locking (auto-lock, biometric)
  * - Automatic Backups (encrypted daily backups)
  * - Data Folder
@@ -17,15 +16,8 @@ import type {
   DesktopSettingKey,
   LockTrigger,
   LockOption,
-  PeriodicSyncSettings,
-  PeriodicSyncInterval,
 } from '../../../types/electron';
-import {
-  StartupSection,
-  SyncScheduleSection,
-  SecuritySection,
-  DataFolderSection,
-} from './DesktopSectionGroups';
+import { StartupSection, SecuritySection, DataFolderSection } from './DesktopSectionGroups';
 import { AutoBackupSection } from '../AutoBackupSection';
 
 export function DesktopSection() {
@@ -36,12 +28,6 @@ export function DesktopSection() {
   // Lock settings
   const [lockTrigger, setLockTrigger] = useState<LockTrigger>('system-lock');
   const [lockOptions, setLockOptions] = useState<LockOption[]>([]);
-
-  // Periodic sync settings
-  const [periodicSyncSettings, setPeriodicSyncSettings] = useState<PeriodicSyncSettings | null>(
-    null
-  );
-  const [periodicSyncIntervals, setPeriodicSyncIntervals] = useState<PeriodicSyncInterval[]>([]);
 
   // Biometric settings
   const biometric = useBiometric();
@@ -62,14 +48,6 @@ export function DesktopSection() {
       ]);
       setLockTrigger(trigger);
       setLockOptions(options);
-
-      // Fetch periodic sync settings
-      const [syncSettings, syncIntervals] = await Promise.all([
-        globalThis.electron.periodicSync.getSettings(),
-        globalThis.electron.periodicSync.getIntervals(),
-      ]);
-      setPeriodicSyncSettings(syncSettings);
-      setPeriodicSyncIntervals(syncIntervals);
 
       // Fetch biometric setting (desktop mode)
       const biometricRequired = await globalThis.electron.credentials.getRequireBiometric();
@@ -127,27 +105,6 @@ export function DesktopSection() {
     }
   };
 
-  const handlePeriodicSyncToggle = async () => {
-    if (!globalThis.electron || !periodicSyncSettings) return;
-    try {
-      const newEnabled = !periodicSyncSettings.enabled;
-      const result = await globalThis.electron.periodicSync.setEnabled(newEnabled);
-      setPeriodicSyncSettings(result);
-    } catch {
-      // Ignore errors
-    }
-  };
-
-  const handlePeriodicSyncIntervalChange = async (newInterval: number) => {
-    if (!globalThis.electron) return;
-    try {
-      const result = await globalThis.electron.periodicSync.setInterval(newInterval);
-      setPeriodicSyncSettings(result);
-    } catch {
-      // Ignore errors
-    }
-  };
-
   const handleBiometricToggle = async () => {
     if (!globalThis.electron || biometric.loading) return;
 
@@ -174,14 +131,6 @@ export function DesktopSection() {
           settings={settings}
           loading={loading}
           onSettingToggle={handleSettingToggle}
-        />
-
-        <SyncScheduleSection
-          periodicSyncSettings={periodicSyncSettings}
-          periodicSyncIntervals={periodicSyncIntervals}
-          loading={loading}
-          onToggle={handlePeriodicSyncToggle}
-          onIntervalChange={handlePeriodicSyncIntervalChange}
         />
 
         <SecuritySection

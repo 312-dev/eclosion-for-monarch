@@ -223,25 +223,6 @@ export interface LockoutAPI {
   clear: () => Promise<void>;
 }
 
-// Periodic Sync Types (scheduled sync while app is running)
-
-export interface PeriodicSyncSettings {
-  enabled: boolean;
-  intervalMinutes: number;
-}
-
-export interface PeriodicSyncInterval {
-  value: number;
-  label: string;
-}
-
-export interface PeriodicSyncAPI {
-  getSettings: () => Promise<PeriodicSyncSettings>;
-  getIntervals: () => Promise<PeriodicSyncInterval[]>;
-  setEnabled: (enabled: boolean) => Promise<PeriodicSyncSettings>;
-  setInterval: (intervalMinutes: number) => Promise<PeriodicSyncSettings>;
-}
-
 // Auto-Backup Types (encrypted daily backups)
 
 export interface AutoBackupSettings {
@@ -487,9 +468,6 @@ export interface ElectronAPI {
 
   // Pending Sync (for menu-triggered sync when locked)
   pendingSync: PendingSyncAPI;
-
-  // Periodic Sync (scheduled sync while app is running)
-  periodicSync: PeriodicSyncAPI;
 
   // Auto-Backup (encrypted daily backups)
   autoBackup: AutoBackupAPI;

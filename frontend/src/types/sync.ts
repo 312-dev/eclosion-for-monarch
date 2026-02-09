@@ -1,7 +1,7 @@
 /**
  * Sync Types
  *
- * Types for sync operations and auto-sync functionality.
+ * Types for sync operations.
  */
 
 export interface Settings {
@@ -27,28 +27,5 @@ export interface AllocateResult {
 export interface ResetAppResult {
   success: boolean;
   message?: string;
-  error?: string;
-}
-
-export interface AutoSyncStatus {
-  enabled: boolean;
-  interval_minutes: number;
-  next_run: string | null;
-  last_sync: string | null;
-  last_sync_success: boolean | null;
-  last_sync_error: string | null;
-  consent_acknowledged: boolean;
-  is_foreground: boolean;
-}
-
-export interface EnableAutoSyncResult {
-  success: boolean;
-  interval_minutes?: number;
-  next_run?: string;
-  error?: string;
-}
-
-export interface DisableAutoSyncResult {
-  success: boolean;
   error?: string;
 }
