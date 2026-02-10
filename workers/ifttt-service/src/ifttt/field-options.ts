@@ -223,7 +223,7 @@ export const VALIDATION_RULES: Record<string, (value: string) => ValidationResul
     }
     return { valid: true };
   },
-  'spending_streak:streak_months': (value) => {
+  'under_budget_streak:streak_months': (value) => {
     const num = Number.parseInt(value, 10);
     if (Number.isNaN(num) || num < 2) {
       return { valid: false, message: 'Must be a whole number of 2 or more' };
@@ -263,7 +263,7 @@ function getTriggerFlaskFieldPath(fieldKey: string): string | null {
     'goal_achieved:goal_name': '/ifttt/field-options/goal',
     'under_budget:category': '/ifttt/field-options/category',
     'category_balance_threshold:category': '/ifttt/field-options/category',
-    'spending_streak:category': '/ifttt/field-options/category',
+    'under_budget_streak:category': '/ifttt/field-options/category',
     // new_charge uses category-all to show ALL categories without flexible group roll-ups
     // (we want to detect charges in specific categories, not budget to/from them)
     'new_charge:category': '/ifttt/field-options/category-all',

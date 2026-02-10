@@ -779,10 +779,10 @@ async def refresh_triggers():
         if pushed:
             logger.info(f"[IFTTT Refresh] Pushed {len(pushed)} balance threshold events")
 
-        pushed = await ifttt.check_spending_streaks(budget_data, category_info, subscriptions)
-        results["events_pushed"]["spending_streak"] = len(pushed)
+        pushed = await ifttt.check_under_budget_streaks(budget_data, category_info, subscriptions)
+        results["events_pushed"]["under_budget_streak"] = len(pushed)
         if pushed:
-            logger.info(f"[IFTTT Refresh] Pushed {len(pushed)} spending streak events")
+            logger.info(f"[IFTTT Refresh] Pushed {len(pushed)} under-budget streak events")
 
         pushed = await ifttt.check_new_charges(category_info, subscriptions)
         results["events_pushed"]["new_charge"] = len(pushed)

@@ -106,7 +106,7 @@ const FRIENDLY_LABELS: Record<string, string> = {
   under_budget: 'Under Budget',
   budget_surplus: 'Budget Surplus',
   balance_threshold: 'Balance Threshold',
-  spending_streak: 'Spending Streak',
+  under_budget_streak: 'Under-budget Streak',
   new_charge: 'New Charge',
   categories: 'Categories',
   goals: 'Goals',
@@ -322,7 +322,7 @@ function formatTriggerSlug(slug: string): string {
     under_budget: 'Under budget',
     budget_surplus: 'Budget surplus',
     category_balance_threshold: 'Category threshold',
-    spending_streak: 'Spending streak',
+    under_budget_streak: 'Under-budget streak',
     new_charge: 'New charge',
   };
   return map[slug] ?? slug.replaceAll('_', ' ');

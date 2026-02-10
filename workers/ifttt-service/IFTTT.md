@@ -135,15 +135,15 @@ Complete reference for configuring the Eclosion IFTTT integration in the [IFTTT 
 
 ---
 
-### 5. `spending_streak`
+### 5. `under_budget_streak`
 
 | Setting | Value |
 |---------|-------|
-| **Name** | Spending streak |
-| **Slug** | `spending_streak` |
+| **Name** | Under-budget streak |
+| **Slug** | `under_budget_streak` |
 | **Description** | This trigger fires when a category stays under budget for a specified number of consecutive months. Builds over time — the longer the streak, the more trigger events. |
 | **Verbiage** | `{{fields.category.value}} is under budget for {{fields.streak_months}} consecutive months` |
-| **Endpoint** | `POST /ifttt/v1/triggers/spending_streak` |
+| **Endpoint** | `POST /ifttt/v1/triggers/under_budget_streak` |
 | **Realtime** | Yes |
 
 **Trigger Fields:**
@@ -153,13 +153,13 @@ Complete reference for configuring the Eclosion IFTTT integration in the [IFTTT 
 | 1 | Which category do you want to track? | `category` | Drop-down list (dynamic) | Yes | | | The budget category to track for consecutive under-budget months |
 | 2 | How many consecutive months under budget? | `streak_months` | Text input | Yes | `^\d+$` | Must be a whole number | The minimum number of consecutive under-budget months before this fires (e.g. 3) |
 
-**Dynamic Validation:** `POST /ifttt/v1/triggers/spending_streak/fields/streak_months/validate` — Integer >= 2.
+**Dynamic Validation:** `POST /ifttt/v1/triggers/under_budget_streak/fields/streak_months/validate` — Integer >= 2.
 
 **Ingredients:**
 
 | # | Label | Slug | Type | Note | Example |
 |---|-------|------|------|------|---------|
-| 1 | Category name | `CategoryName` | String | The name of the budget category on a spending streak. | Dining Out |
+| 1 | Category name | `CategoryName` | String | The name of the budget category on an under-budget streak. | Dining Out |
 | 2 | Streak count | `StreakCount` | String | The number of consecutive months this category has been under budget. | 3 |
 | 3 | Budget amount | `BudgetAmount` | String | The current month's budgeted amount for this category. | 300 |
 | 4 | Current spending | `CurrentSpending` | String | The amount spent so far in this category for the current month. | 180 |
@@ -368,7 +368,7 @@ Complete reference for configuring the Eclosion IFTTT integration in the [IFTTT 
   "under_budget": { "category": "test-category-groceries", "threshold_percent": "10" },
   "budget_surplus": { "minimum_amount": "50" },
   "category_balance_threshold": { "category": "test-category-groceries", "threshold_amount": "200", "direction": "above" },
-  "spending_streak": { "category": "test-category-groceries", "streak_months": "3" },
+  "under_budget_streak": { "category": "test-category-groceries", "streak_months": "3" },
   "new_charge": { "category": "test-category-groceries", "include_pending": "include_pending" }
 }
 ```
@@ -407,7 +407,7 @@ Complete reference for configuring the Eclosion IFTTT integration in the [IFTTT 
   "category_balance_threshold": {
     "threshold_amount": { "valid": "200", "invalid": "notanumber" }
   },
-  "spending_streak": {
+  "under_budget_streak": {
     "streak_months": { "valid": "3", "invalid": "0" }
   }
 }
@@ -424,7 +424,7 @@ All numeric text input fields (trigger fields and action fields only) use `^\d+$
 | Trigger `under_budget` | `threshold_percent` | `^\d+$` | Must be a whole number | No |
 | Trigger `budget_surplus` | `minimum_amount` | `^\d+$` | Must be a whole number | No |
 | Trigger `category_balance_threshold` | `threshold_amount` | `^\d+$` | Must be a whole number | Yes |
-| Trigger `spending_streak` | `streak_months` | `^\d+$` | Must be a whole number | Yes |
+| Trigger `under_budget_streak` | `streak_months` | `^\d+$` | Must be a whole number | Yes |
 | Action `budget_to` | `amount` | `^\d+$` | Must be a whole number | Yes |
 | Action `budget_to_goal` | `amount` | `^\d+$` | Must be a whole number | Yes |
 | Action `move_funds` | `amount` | `^\d+$` | Must be a whole number | Yes |

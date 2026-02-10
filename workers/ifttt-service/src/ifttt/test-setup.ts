@@ -48,7 +48,7 @@ export async function handleTestSetup(request: Request, env: Env): Promise<Respo
             threshold_amount: '200',
             direction: 'above',
           },
-          spending_streak: {
+          under_budget_streak: {
             category: 'test-category-groceries',
             streak_months: '3',
           },
@@ -97,7 +97,7 @@ export async function handleTestSetup(request: Request, env: Env): Promise<Respo
               invalid: 'notanumber',
             },
           },
-          spending_streak: {
+          under_budget_streak: {
             streak_months: {
               valid: '3',
               invalid: '0',

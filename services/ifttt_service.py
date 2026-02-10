@@ -552,7 +552,7 @@ class IftttService:
 
         return pushed_events
 
-    async def check_spending_streaks(
+    async def check_under_budget_streaks(
         self,
         budget_data: dict[str, dict[str, float]],
         category_info: dict[str, dict[str, str]],
@@ -582,7 +582,7 @@ class IftttService:
             return []
 
         # Get subscribed categories for this trigger
-        subscribed = subscriptions.get("spending_streak", set()) if subscriptions else set()
+        subscribed = subscriptions.get("under_budget_streak", set()) if subscriptions else set()
         if not subscribed:
             return []  # No active subscriptions, skip pushing
 
@@ -633,7 +633,7 @@ class IftttService:
                 event_id = f"streak-{cat_id}-{cat_streak['count']}-{month_key}"
 
                 result = await self.push_trigger_event(
-                    trigger_slug="spending_streak",
+                    trigger_slug="under_budget_streak",
                     event_id=event_id,
                     data={
                         "category_name": info.get("name", "Unknown"),

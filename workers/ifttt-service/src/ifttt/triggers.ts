@@ -12,7 +12,7 @@
  * - under_budget: Fires when a category's spending is under budget
  * - budget_surplus: Fires when total spending is under total planned budget
  * - category_balance_threshold: Fires when a category balance crosses a threshold
- * - spending_streak: Fires when a category stays under budget for N consecutive months
+ * - under_budget_streak: Fires when a category stays under budget for N consecutive months
  * - new_charge: Fires when a new expense transaction appears
  */
 
@@ -110,14 +110,14 @@ export async function handleTrigger(
       }
       return handleCategoryBalanceThreshold(subdomain, limit, body.triggerFields, testMode, env);
     }
-    case 'spending_streak': {
+    case 'under_budget_streak': {
       if (!body.triggerFields.category) {
         return Response.json(
           { errors: [{ message: 'Missing required trigger field: category' }] },
           { status: 400 },
         );
       }
-      return handleSpendingStreak(subdomain, limit, body.triggerFields, testMode, env);
+      return handleUnderBudgetStreak(subdomain, limit, body.triggerFields, testMode, env);
     }
     case 'new_charge': {
       if (!body.triggerFields.category) {
@@ -344,14 +344,14 @@ async function handleCategoryBalanceThreshold(
   return buildPaginatedResponse(data, limit);
 }
 
-async function handleSpendingStreak(
+async function handleUnderBudgetStreak(
   subdomain: string,
   limit: number,
   triggerFields: Record<string, string>,
   testMode: boolean,
   env: Env,
 ): Promise<Response> {
-  const events = await fetchTriggerEvents(subdomain, 'spending_streak', limit, env);
+  const events = await fetchTriggerEvents(subdomain, 'under_budget_streak', limit, env);
 
   // Filter by category and minimum streak count
   let filtered = events;

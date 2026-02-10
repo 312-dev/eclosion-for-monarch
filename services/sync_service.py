@@ -837,9 +837,9 @@ class SyncService:
             if pushed:
                 logger.info(f"[IFTTT] Pushed {len(pushed)} balance threshold events")
 
-            pushed = await ifttt.check_spending_streaks(budget_data, category_info, subscriptions)
+            pushed = await ifttt.check_under_budget_streaks(budget_data, category_info, subscriptions)
             if pushed:
-                logger.info(f"[IFTTT] Pushed {len(pushed)} spending streak events")
+                logger.info(f"[IFTTT] Pushed {len(pushed)} under-budget streak events")
 
             pushed = await ifttt.check_new_charges(category_info, subscriptions)
             if pushed:
