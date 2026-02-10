@@ -33,20 +33,31 @@
     <meta name="twitter:image:alt" content="Eclosion - Self-hosted toolkit for Monarch Money" />
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#ff692d" />
+    <meta name="theme-color" content="#262524" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Eclosion" />
     <meta name="application-name" content="Eclosion" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="msapplication-TileColor" content="#ff692d" />
+    <meta name="msapplication-TileColor" content="#262524" />
 
     <!-- Icons (relative paths for desktop file:// protocol compatibility) -->
     <link rel="icon" type="image/svg+xml" href="./icons/icon-192.svg" />
-    <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="./manifest.json" />
+    <!-- PWA Manifest (conditional: only on tunnel/self-hosted, not marketing site) -->
+    <script>
+      (function() {
+        var h = location.hostname;
+        if (h === 'localhost' || h === '127.0.0.1') return;
+        if (h.includes('eclosion.app') || h.includes('pages.dev')) return;
+        var link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = './manifest.json';
+        document.head.appendChild(link);
+      })();
+    </script>
 
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">

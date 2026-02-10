@@ -1,10 +1,13 @@
 // Eclosion for Monarch - Service Worker for PWA functionality
-const CACHE_NAME = 'eclosion-v2';
+const CACHE_NAME = 'eclosion-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
 ];
 
 // Install event - cache static assets
