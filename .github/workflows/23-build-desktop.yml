@@ -258,6 +258,10 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Generate desktop icons
+        working-directory: desktop
+        run: npm run build:icons
+
       - name: Set version in package.json
         working-directory: desktop
         run: |
@@ -467,6 +471,10 @@ jobs:
         working-directory: desktop
         run: npm ci
 
+      - name: Generate desktop icons
+        working-directory: desktop
+        run: npm run build:icons
+
       - name: Set version in package.json
         working-directory: desktop
         shell: pwsh
@@ -638,6 +646,10 @@ jobs:
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm ci
+
+      - name: Generate desktop icons
+        working-directory: desktop
+        run: npm run build:icons
 
       - name: Set version in package.json
         working-directory: desktop
