@@ -25,6 +25,12 @@ import { signJwt, verifyJwt, type JwtPayload } from './jwt';
 import { parseCookie, stripAuthCookies, buildSessionCookie } from './cookies';
 import { generateOtpPage } from './otp-page';
 import { generateOfflinePage } from './offline-page';
+import icon192 from './assets/icon-192.svg';
+import icon512 from './assets/icon-512.svg';
+import icon192png from './assets/icon-192.png';
+import icon512png from './assets/icon-512.png';
+import appleTouchIcon from './assets/apple-touch-icon.png';
+import manifest from '../../../frontend/public/manifest.json';
 
 export interface Env {
   TUNNELS: KVNamespace;
@@ -49,6 +55,8 @@ interface OtpSessionKvData {
 const ROBOTS_TXT = `User-agent: *
 Disallow: /
 `;
+
+const MANIFEST_JSON = JSON.stringify(manifest, null, 2);
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -123,6 +131,51 @@ async function handleTunnelRequest(
     return new Response(ROBOTS_TXT, {
       headers: {
         'Content-Type': 'text/plain',
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+      },
+    });
+  }
+
+  // Manifest.json — served directly by the Worker (like robots.txt).
+  // No tunnel dependency, no OTP gating, instant updates via worker deploy.
+  if (url.pathname === '/manifest.json') {
+    return new Response(MANIFEST_JSON, {
+      headers: {
+        'Content-Type': 'application/manifest+json',
+        'Cache-Control': 'public, max-age=3600',
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+      },
+    });
+  }
+
+  // PWA icons — served directly by the Worker (like manifest.json).
+  // Browsers fetch manifest-referenced icons without cookies in PWA contexts.
+  const SVG_ICONS: Record<string, string> = {
+    '/icons/icon-192.svg': icon192,
+    '/icons/icon-512.svg': icon512,
+  };
+  const svgContent = SVG_ICONS[url.pathname];
+  if (svgContent) {
+    return new Response(svgContent, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=86400',
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+      },
+    });
+  }
+
+  const PNG_ICONS: Record<string, ArrayBuffer> = {
+    '/icons/icon-192.png': icon192png,
+    '/icons/icon-512.png': icon512png,
+    '/icons/apple-touch-icon.png': appleTouchIcon,
+  };
+  const pngContent = PNG_ICONS[url.pathname];
+  if (pngContent) {
+    return new Response(pngContent, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400',
         'X-Robots-Tag': 'noindex, nofollow, noarchive',
       },
     });

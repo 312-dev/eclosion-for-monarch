@@ -10,5 +10,15 @@ routes = [
 binding = "TUNNELS"
 id = "a337b013a6e04720822c80ffa0057b42"
 
+[[rules]]
+type = "Text"
+globs = ["**/*.svg"]
+fallthrough = true
+
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+fallthrough = true
+
 # JWT_SECRET set via: npx wrangler secret put JWT_SECRET
 # Generate with: openssl rand -hex 32
