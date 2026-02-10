@@ -70,6 +70,20 @@ desktop/pyinstaller/build/
 desktop/resources/frontend/
 desktop/resources/backend/
 
+# Generated desktop icons (regenerate with: cd desktop && npm run build:icons)
+desktop/assets/icon.icns
+desktop/assets/icon.ico
+desktop/assets/icon.png
+desktop/assets/icon-beta.icns
+desktop/assets/icon-beta.ico
+desktop/assets/icon-beta.png
+desktop/assets/Assets.car
+desktop/assets/AppIcon.icon/
+desktop/assets/tray/iconTemplate.png
+desktop/assets/tray/iconTemplate@2x.png
+desktop/assets/tray/tray.ico
+desktop/assets/tray/tray.png
+
 # Local app copies (e.g., copied from release for testing)
 apps/
 state/*.migrated*

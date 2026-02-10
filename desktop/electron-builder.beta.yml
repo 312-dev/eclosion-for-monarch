@@ -29,6 +29,10 @@ extraResources:
     to: assets/tray
     filter:
       - "**/*"
+  # Liquid glass icon asset catalog (macOS Tahoe 26+)
+  # Compiled from AppIcon.icon by actool during build:icons
+  - from: assets/Assets.car
+    to: ../Resources/Assets.car
 
 # Publish to GitHub Releases
 publish:
@@ -53,6 +57,11 @@ mac:
     - dmg
     - zip
   icon: assets/icon.icns
+  # CFBundleIconName enables macOS Tahoe (26) liquid glass icon support.
+  # When an Assets.car containing a compiled .icon asset is present in Resources,
+  # macOS 26+ uses it for liquid glass rendering. Pre-Tahoe falls back to .icns via CFBundleIconFile.
+  extendInfo:
+    CFBundleIconName: AppIcon
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: entitlements.mac.plist
