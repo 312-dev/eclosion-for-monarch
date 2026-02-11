@@ -9,6 +9,7 @@ import type {
   RefundablesMatch,
   RefundablesSavedView,
   Transaction,
+  TransactionTag,
   CreateMatchRequest,
 } from '../../types/refundables';
 import { getDemoState, updateDemoState } from './demoState';
