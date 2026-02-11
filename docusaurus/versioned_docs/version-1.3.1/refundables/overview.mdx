@@ -1,0 +1,137 @@
+---
+title: Overview
+description: Track purchases awaiting refunds or reimbursements with Eclosion's Refundables tool.
+sidebar_position: 1
+---
+
+import { FeatureCard, FeatureGrid } from '@site/src/components/FeatureCard';
+import { WorkflowSteps } from '@site/src/components/WorkflowSteps';
+import { Tag, Filter, CheckSquare, BarChart2 } from 'lucide-react';
+
+# Refundables
+
+Track purchases awaiting refunds or reimbursements. Tag transactions in Monarch, organize them with saved views, and match refund transactions when they arrive.
+
+<FeatureGrid>
+  <FeatureCard
+    icon={<Tag size={24} />}
+    title="Tag-Based Tracking"
+    description="Use Monarch tags to flag transactions awaiting refunds"
+  />
+  <FeatureCard
+    icon={<Filter size={24} />}
+    title="Saved Views"
+    description="Organize refundables by type with custom filtered tabs"
+  />
+  <FeatureCard
+    icon={<CheckSquare size={24} />}
+    title="Refund Matching"
+    description="Match refund transactions to originals when they arrive"
+  />
+  <FeatureCard
+    icon={<BarChart2 size={24} />}
+    title="Progress Tally"
+    description="See pending, matched, and skipped amounts at a glance"
+  />
+</FeatureGrid>
+
+## How It Works
+
+Refundables uses Monarch tags to identify transactions that need refunds. You create **saved views** that filter by tag (and optionally category) to organize different types of refundables—work expenses, insurance claims, product returns, etc.
+
+When a refund arrives, you match the refund transaction to the original purchase. Eclosion tracks which refunds have been received and which are still pending.
+
+## Getting Started
+
+<WorkflowSteps
+  title="Setting Up Refundables"
+  steps={[
+    {
+      title: "Tag Transactions in Monarch",
+      description: "Add tags like \"Pending Refund\" or \"Work Expense\" to transactions in Monarch that you expect to be refunded or reimbursed."
+    },
+    {
+      title: "Create a Saved View",
+      description: "Click the + button to create a view. Select which tags to include and optionally filter by category. Name it something descriptive like \"Insurance Claims\"."
+    },
+    {
+      title: "Review Your Transactions",
+      description: "Your tagged transactions appear in the view, filtered by date range. The tally bar at the top shows how much is pending."
+    },
+    {
+      title: "Match Refunds",
+      description: "When a refund arrives, click the checkbox next to the original transaction. Search for the refund transaction and confirm the match."
+    }
+  ]}
+/>
+
+## Saved Views
+
+Saved views are tabs that filter transactions by Monarch tags. Each view can have:
+
+- **Tags**: One or more Monarch tags to filter by (required)
+- **Categories**: Optional category filter to narrow results further
+- **Name**: A descriptive label shown on the tab
+
+You can create multiple views for different workflows. For example:
+
+| View | Tags | Use Case |
+|------|------|----------|
+| Insurance Claims | `Insurance Claim` | Medical bills awaiting insurance reimbursement |
+| Work Expenses | `Work Expense` | Purchases your employer will reimburse |
+| Returns | `Pending Refund` | Items you're returning to a store |
+
+Views are reorderable—drag tabs to arrange them in your preferred order.
+
+## Matching Refunds
+
+When you receive a refund, match it to the original transaction:
+
+1. Click the checkbox next to the original transaction
+2. Search for the refund transaction by merchant name or amount
+3. Select the matching refund from the results
+4. Confirm the match
+
+Matched transactions display with a green highlight showing the refund amount, merchant, date, and account.
+
+### Tag Replacement
+
+When matching, you can optionally replace the original tag with a different one (e.g., replace "Pending Refund" with "Refunded"). Configure a default replacement tag in Refundables settings.
+
+### Skipping Transactions
+
+If a transaction won't be refunded, you can skip it:
+
+- Click the skip button next to the transaction, or
+- Choose "Skip" in the match modal
+
+Skipped transactions are hidden from the main list but viewable in a collapsible section below.
+
+## Tally Bar
+
+The tally bar at the top of each view summarizes your progress:
+
+- **Total count**: Number of transactions in the view
+- **Total amount**: Sum of all transaction amounts
+- **Matched**: Amount that has been matched to refunds (green)
+- **Remaining**: Amount still pending (orange, or green if fully matched)
+- **Breakdown**: Count of matched, skipped, and pending transactions
+
+## Date Range Filter
+
+Filter transactions by time period:
+
+- Last week, month, quarter, or year
+- Custom date range
+- All time
+
+## Settings
+
+Click the gear icon to configure:
+
+- **Replacement Tag**: The tag to apply when matching (replaces the original tag in Monarch)
+- **Replace by Default**: Whether tag replacement is enabled by default for new matches
+
+:::tip
+Create dedicated tags in Monarch before setting up views. Tags like "Pending Refund", "Work Expense", and "Refunded" make it easy to organize and track your refundables.
+:::
