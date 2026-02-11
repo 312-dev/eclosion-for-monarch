@@ -218,32 +218,19 @@ class RefundablesService:
         The cursor is the raw Monarch API offset, not the count of credits.
         """
         mm = await get_mm()
-        # Monarch API doesn't support filtering by credit/debit, so we
-        # over-fetch and filter to positive-amount (credit) transactions.
-        credits: list[dict[str, Any]] = []
-        api_offset = cursor
-        batch_size = limit * 3
-        exhausted = False
-        while len(credits) < limit:
-            page = await search_transactions_with_icons(
-                mm,
-                search=search,
-                start_date=start_date,
-                end_date=end_date,
-                limit=batch_size,
-                offset=api_offset,
-            )
-            if not page:
-                exhausted = True
-                break
-            credits.extend(t for t in page if t.get("amount", 0) > 0)
-            api_offset += len(page)
-            if len(page) < batch_size:
-                exhausted = True
-                break
+        transactions = await search_transactions_with_icons(
+            mm,
+            search=search,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            offset=cursor,
+            credits_only=True,
+        )
+        exhausted = len(transactions) < limit
         return {
-            "transactions": credits[:limit],
-            "nextCursor": None if exhausted and len(credits) <= limit else api_offset,
+            "transactions": transactions,
+            "nextCursor": None if exhausted else cursor + limit,
         }
 
     # === Matches ===

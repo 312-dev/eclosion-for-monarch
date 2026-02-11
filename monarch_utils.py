@@ -1070,6 +1070,7 @@ async def search_transactions_with_icons(
     end_date: str | None = None,
     limit: int = 50,
     offset: int = 0,
+    credits_only: bool = False,
 ) -> list[dict[str, Any]]:
     """
     Search transactions with icon data (merchant logos, account logos, category emojis).
@@ -1081,6 +1082,7 @@ async def search_transactions_with_icons(
         end_date: Optional end date (YYYY-MM-DD)
         limit: Max transactions to return
         offset: Offset for pagination
+        credits_only: If True, only return credit (positive-amount) transactions
 
     Returns:
         List of matching transaction dicts with icon data.
@@ -1088,6 +1090,8 @@ async def search_transactions_with_icons(
     filters: dict[str, Any] = {}
     if search:
         filters["search"] = search
+    if credits_only:
+        filters["creditsOnly"] = True
     variables: dict[str, Any] = {
         "offset": offset,
         "limit": limit,
