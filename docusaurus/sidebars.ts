@@ -46,6 +46,16 @@ const sidebars: SidebarsConfig = {
           },
           items: [],
         },
+        {
+          type: 'category',
+          label: 'Refundables',
+          collapsed: false,
+          link: {
+            type: 'doc',
+            id: 'refundables/overview',
+          },
+          items: [],
+        },
       ],
     },
     'faq',

@@ -63,6 +63,7 @@
 | **Recurring Expenses** | Monthly savings targets for non-monthly expenses (annual, quarterly, semi-annual). Calculates targets, tracks progress, syncs to Monarch. Supports rollup categories for aggregating subscriptions. |
 | **Monthly Notes** | Persistent notes for Monarch categories/groups. Auto-carry-forward, revision history, inline math evaluation. |
 | **Stashes** | Visual dashboard for savings goals. Set target amounts and dates, track progress with status badges, organize with drag/drop. Optional browser bookmark sync. |
+| **Refundables** | Track purchases awaiting refunds or reimbursements. Tag transactions in Monarch, organize with saved views, match refund transactions when they arrive. Progress tally shows pending vs. matched amounts. |
 
 ### Coming Soon
 

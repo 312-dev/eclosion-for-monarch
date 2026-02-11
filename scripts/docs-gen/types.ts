@@ -159,6 +159,22 @@ export const DOC_MAPPINGS: DocMapping[] = [
     parentFeature: 'recurring',
     sidebarPosition: 5,
   },
+  // Refundables feature
+  {
+    topic: 'refundables-overview',
+    sourceFiles: [
+      'frontend/src/components/refundables/RefundablesTab.tsx',
+      'frontend/src/components/refundables/TransactionRow.tsx',
+      'frontend/src/components/refundables/TallyBar.tsx',
+      'frontend/src/components/refundables/ViewTabs.tsx',
+      'frontend/src/components/refundables/RefundMatchModal.tsx',
+      'frontend/src/components/refundables/ViewConfigModal.tsx',
+    ],
+    outputFile: 'docusaurus/docs/refundables/overview.mdx',
+    feature: 'refundables',
+    userFlow: 'main-dashboard',
+    sidebarPosition: 1,
+  },
   // Notes feature
   {
     topic: 'notes-overview',
