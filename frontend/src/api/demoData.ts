@@ -64,6 +64,10 @@ export interface DemoState {
   stashHypotheses: StashHypothesis[];
   monarchGoals: MonarchGoal[];
   pendingBookmarks: PendingBookmark[];
+  refundablesConfig: import('../types/refundables').RefundablesConfig;
+  refundablesViews: import('../types/refundables').RefundablesSavedView[];
+  refundablesMatches: import('../types/refundables').RefundablesMatch[];
+  refundablesTransactionTagOverrides: Record<string, string[]>;
 }
 
 // ============================================================================
@@ -2119,6 +2123,18 @@ export function createInitialDemoState(): DemoState {
     stashHypotheses: [],
     monarchGoals: createInitialMonarchGoals(),
     pendingBookmarks: createInitialPendingBookmarks(),
+    refundablesConfig: {
+      replacementTagId: 'tag-3',
+      replaceTagByDefault: true,
+      agingWarningDays: 30,
+      showBadge: true,
+    },
+    refundablesViews: [
+      { id: 'view-1', name: 'Pending Refund', tagIds: ['tag-1'], categoryIds: null, sortOrder: 0 },
+      { id: 'view-2', name: 'Work Expense', tagIds: ['tag-2'], categoryIds: null, sortOrder: 1 },
+    ],
+    refundablesMatches: [],
+    refundablesTransactionTagOverrides: {},
   };
 }
 

@@ -47,6 +47,13 @@ export const queryKeys = {
   openverseSearch: ['openverseSearch'] as const,
   // Reddit updates feed
   updates: ['updates'] as const,
+  // Refundables
+  refundablesConfig: ['refundablesConfig'] as const,
+  refundablesTags: ['refundablesTags'] as const,
+  refundablesViews: ['refundablesViews'] as const,
+  refundablesTransactions: ['refundablesTransactions'] as const,
+  refundablesMatches: ['refundablesMatches'] as const,
+  refundablesPendingCount: ['refundablesPendingCount'] as const,
 };
 
 /**

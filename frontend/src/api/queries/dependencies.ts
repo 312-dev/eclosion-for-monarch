@@ -22,7 +22,7 @@ import { queryKeys } from './keys';
 export type QueryKeyName = keyof typeof queryKeys;
 
 /** Page identifiers for page-specific sync */
-export type PageName = 'recurring' | 'stash' | 'notes' | 'settings';
+export type PageName = 'recurring' | 'stash' | 'notes' | 'refundables' | 'settings';
 
 /** Mutation types that affect query caches */
 export type MutationType =
@@ -72,7 +72,15 @@ export type MutationType =
   | 'updateSettings'
   | 'importSettings'
   // Acknowledgement mutations
-  | 'updateAcknowledgements';
+  | 'updateAcknowledgements'
+  // Refundables mutations
+  | 'updateRefundablesConfig'
+  | 'createRefundablesView'
+  | 'updateRefundablesView'
+  | 'deleteRefundablesView'
+  | 'reorderRefundablesViews'
+  | 'createRefundablesMatch'
+  | 'deleteRefundablesMatch';
 
 /** Configuration for a query's refresh behavior */
 export interface QueryConfig {
@@ -298,6 +306,38 @@ export const queryConfig: Record<QueryKeyName, QueryConfig> = {
     staleTime: 5 * 60 * 1000, // 5 minutes (match Cloudflare Worker cache)
     pollable: false,
   },
+
+  // Refundables
+  refundablesConfig: {
+    dependsOn: [],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    pollable: false,
+  },
+  refundablesTags: {
+    dependsOn: [],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    pollable: false,
+  },
+  refundablesViews: {
+    dependsOn: [],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    pollable: false,
+  },
+  refundablesTransactions: {
+    dependsOn: [],
+    staleTime: 1 * 60 * 1000, // 1 minute
+    pollable: false,
+  },
+  refundablesMatches: {
+    dependsOn: [],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    pollable: false,
+  },
+  refundablesPendingCount: {
+    dependsOn: ['refundablesViews', 'refundablesMatches'],
+    staleTime: 10 * 60 * 1000, // 10 minutes (expensive Monarch API call)
+    pollable: false,
+  },
 };
 
 // ============================================================================
@@ -313,7 +353,13 @@ export const mutationEffects: Record<MutationType, MutationEffect> = {
   // Recurring mutations
   sync: {
     invalidate: ['dashboard', 'categoryStore', 'stash', 'availableToStash'],
-    markStale: ['monarchGoals', 'stashHistory', 'categoryGroups'],
+    markStale: [
+      'monarchGoals',
+      'stashHistory',
+      'categoryGroups',
+      'refundablesTransactions',
+      'refundablesTags',
+    ],
   },
   toggleItem: {
     invalidate: ['dashboard'],
@@ -371,7 +417,7 @@ export const mutationEffects: Record<MutationType, MutationEffect> = {
   // Stash mutations
   stashSync: {
     invalidate: ['stash', 'availableToStash', 'monarchGoals'],
-    markStale: ['dashboard', 'stashHistory'],
+    markStale: ['dashboard', 'stashHistory', 'refundablesTransactions', 'refundablesTags'],
   },
   createStash: {
     invalidate: ['stash', 'availableToStash'],
@@ -487,6 +533,36 @@ export const mutationEffects: Record<MutationType, MutationEffect> = {
     invalidate: ['dashboard'],
     markStale: [],
   },
+
+  // Refundables mutations
+  updateRefundablesConfig: {
+    invalidate: ['refundablesConfig'],
+    markStale: ['refundablesPendingCount'],
+  },
+  createRefundablesView: {
+    invalidate: ['refundablesViews'],
+    markStale: [],
+  },
+  updateRefundablesView: {
+    invalidate: ['refundablesViews'],
+    markStale: [],
+  },
+  deleteRefundablesView: {
+    invalidate: ['refundablesViews'],
+    markStale: [],
+  },
+  reorderRefundablesViews: {
+    invalidate: ['refundablesViews'],
+    markStale: [],
+  },
+  createRefundablesMatch: {
+    invalidate: ['refundablesMatches', 'refundablesTransactions', 'refundablesPendingCount'],
+    markStale: [],
+  },
+  deleteRefundablesMatch: {
+    invalidate: ['refundablesMatches', 'refundablesPendingCount'],
+    markStale: [],
+  },
 };
 
 // ============================================================================
@@ -512,6 +588,11 @@ export const pageQueryMap: Record<PageName, PageQueryRequirements> = {
     primary: ['monthNotes'],
     supporting: ['categoryStore', 'archivedNotes'],
     syncScope: 'notes', // Notes don't need Monarch sync
+  },
+  refundables: {
+    primary: ['refundablesTransactions', 'refundablesMatches'],
+    supporting: ['refundablesTags', 'refundablesViews', 'refundablesConfig'],
+    syncScope: 'notes', // No backend sync needed; data is fetched live from Monarch
   },
   settings: {
     primary: ['stashConfig'],

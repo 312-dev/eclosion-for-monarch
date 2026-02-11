@@ -65,6 +65,36 @@ function addMissingProperties(state: DemoState): boolean {
     state.stashHypotheses = [];
     added = true;
   }
+  if (state.refundablesConfig) {
+    if (state.refundablesConfig.agingWarningDays == null) {
+      state.refundablesConfig.agingWarningDays = 30;
+      added = true;
+    }
+    if (state.refundablesConfig.showBadge == null) {
+      state.refundablesConfig.showBadge = true;
+      added = true;
+    }
+  } else {
+    state.refundablesConfig = {
+      replacementTagId: null,
+      replaceTagByDefault: true,
+      agingWarningDays: 30,
+      showBadge: true,
+    };
+    added = true;
+  }
+  if (!state.refundablesViews) {
+    state.refundablesViews = [];
+    added = true;
+  }
+  if (!state.refundablesMatches) {
+    state.refundablesMatches = [];
+    added = true;
+  }
+  if (!state.refundablesTransactionTagOverrides) {
+    state.refundablesTransactionTagOverrides = {};
+    added = true;
+  }
   return added;
 }
 
