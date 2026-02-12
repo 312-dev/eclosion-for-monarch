@@ -11,7 +11,7 @@
 
 import { decodeHtmlEntities } from './decodeHtmlEntities';
 import { getUserNotes } from './refunds';
-import type { Transaction, RefundsMatch } from '../types/refunds';
+import type { Transaction, RefundsMatch, CreditGroup } from '../types/refunds';
 
 function escapeHtml(text: string): string {
   return text
@@ -133,6 +133,56 @@ function buildRow(txn: Transaction, match: RefundsMatch | undefined): string {
       </tr>`;
 }
 
+function buildCreditGroupRows(group: CreditGroup, txnMap: Map<string, Transaction>): string {
+  const isRefund = group.type === 'refund';
+  const bgColor = isRefund ? '#16a34a' : '#6366f1';
+  const label = isRefund ? escapeHtml(group.merchant ?? 'Refund') : 'Expecting';
+  const statusLabel = isRefund ? 'Refund' : 'Expected';
+  const originals = group.originalTransactionIds
+    .map((id) => txnMap.get(id))
+    .filter((t): t is Transaction => t != null);
+
+  let html = `
+      <tr class="credit-group-header" style="background:${bgColor}08">
+        <td class="date-col">${formatDate(group.date)}</td>
+        <td><span style="font-weight:600;color:${bgColor}">↻ ${label}</span>${group.note ? `<div class="bank-desc">${escapeHtml(group.note)}</div>` : ''}</td>
+        <td></td>
+        <td>${group.account ? escapeHtml(group.account) : ''}</td>
+        <td class="amount-col" style="color:${bgColor}">+${formatCurrency(group.amount)}</td>
+        <td><span class="status-badge" style="background:${bgColor}20;color:${bgColor}">${statusLabel}</span></td>
+        <td></td>
+      </tr>`;
+
+  for (const txn of originals) {
+    const merchant = escapeHtml(decodeHtmlEntities(txn.merchant?.name ?? txn.originalName));
+    const category = txn.category
+      ? escapeHtml(`${txn.category.icon} ${decodeHtmlEntities(txn.category.name)}`)
+      : '';
+    const account = txn.account ? escapeHtml(txn.account.displayName) : '';
+    html += `
+      <tr class="credit-sub-row" style="background:${bgColor}04">
+        <td></td>
+        <td style="padding-left:24px;color:#666">↳ ${merchant}</td>
+        <td style="color:#888">${category}</td>
+        <td style="color:#888">${account}</td>
+        <td class="amount-col">${formatSignedCurrency(txn.amount)}</td>
+        <td></td>
+        <td></td>
+      </tr>`;
+  }
+
+  if (group.remaining > 0) {
+    html += `
+      <tr class="credit-sub-row" style="background:${bgColor}04">
+        <td></td>
+        <td style="padding-left:24px;font-weight:500;color:#f59e0b">Remaining: ${formatCurrency(group.remaining)}</td>
+        <td colspan="5"></td>
+      </tr>`;
+  }
+
+  return html;
+}
+
 function getRefundedAmount(match: RefundsMatch | undefined): number {
   if (!match || match.skipped || match.expectedRefund) return 0;
   return Math.abs(match.refundAmount ?? 0);
@@ -162,7 +212,9 @@ export function printHtml(htmlContent: string): void {
  */
 export function buildRefundsExportHtml(
   transactions: Transaction[],
-  matches: RefundsMatch[]
+  matches: RefundsMatch[],
+  creditGroups: CreditGroup[] = [],
+  allTransactions: Transaction[] = []
 ): string {
   const matchMap = new Map(matches.map((m) => [m.originalTransactionId, m]));
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
@@ -181,7 +233,35 @@ export function buildRefundsExportHtml(
     0
   );
 
-  const rows = sorted.map((txn) => buildRow(txn, matchMap.get(txn.id))).join('');
+  // Build a transaction map for looking up originals in credit groups
+  const txnMap = new Map<string, Transaction>();
+  for (const txn of allTransactions) txnMap.set(txn.id, txn);
+  // Also include selected transactions (they may not be in allTransactions if lists differ)
+  for (const txn of transactions) txnMap.set(txn.id, txn);
+
+  // Filter credit groups to those relevant to the selected transactions
+  const selectedIdSet = new Set(transactions.map((t) => t.id));
+  const relevantGroups = creditGroups.filter((g) =>
+    g.originalTransactionIds.some((id) => selectedIdSet.has(id))
+  );
+
+  // Build a unified date-sorted list of transactions and credit groups
+  type ExportItem =
+    | { kind: 'transaction'; date: string; txn: Transaction }
+    | { kind: 'credit'; date: string; group: CreditGroup };
+
+  const items: ExportItem[] = [
+    ...sorted.map((txn): ExportItem => ({ kind: 'transaction', date: txn.date, txn })),
+    ...relevantGroups.map((group): ExportItem => ({ kind: 'credit', date: group.date, group })),
+  ];
+  items.sort((a, b) => a.date.localeCompare(b.date));
+
+  const rows = items
+    .map((item) => {
+      if (item.kind === 'credit') return buildCreditGroupRows(item.group, txnMap);
+      return buildRow(item.txn, matchMap.get(item.txn.id));
+    })
+    .join('');
 
   const dateRange =
     sorted.length > 0 ? `${formatDate(sorted[0]!.date)} – ${formatDate(sorted.at(-1)!.date)}` : '';
