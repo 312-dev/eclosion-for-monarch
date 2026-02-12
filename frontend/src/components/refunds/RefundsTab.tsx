@@ -81,21 +81,12 @@ export function RefundsTab() {
     (ids: string[]) => reorderMutation.mutate(ids),
     [reorderMutation]
   );
-  const matchHandlers = useRefundsMatchHandlers({
+  const mh = useRefundsMatchHandlers({
     matchingTransaction,
     setMatchingTransaction,
     matches,
     tagIds,
   });
-  const {
-    handleMatch,
-    handleBatchMatchAll,
-    handleBatchExpectedRefundAll,
-    handleSkip,
-    handleUnmatch,
-    existingMatch,
-    matchPending,
-  } = matchHandlers;
   const pipeline = useTransactionPipeline({
     transactions,
     matches,
@@ -106,62 +97,37 @@ export function RefundsTab() {
     searchQuery,
     selectedIds,
   });
-  const {
-    activeTransactions,
-    skippedTransactions,
-    expenseTransactions,
-    filteredTransactions,
-    tally,
-    viewCategoryCount,
-    creditGroups,
-  } = pipeline;
   const selection = useRefundsSelection({
     selectedIds,
     setSelectedIds,
-    activeTransactions,
-    skippedTransactions,
+    activeTransactions: pipeline.activeTransactions,
+    skippedTransactions: pipeline.skippedTransactions,
     matches,
-    creditGroups,
-    handleDirectSkip: matchHandlers.handleDirectSkip,
-    handleDirectUnmatch: matchHandlers.handleDirectUnmatch,
-    handleRestore: matchHandlers.handleRestore,
+    creditGroups: pipeline.creditGroups,
+    handleDirectSkip: mh.handleDirectSkip,
+    handleDirectUnmatch: mh.handleDirectUnmatch,
+    handleRestore: mh.handleRestore,
   });
-  const {
-    selectedAmount,
-    selectionState,
-    handleToggleSelect,
-    handleToggleCreditGroup,
-    handleSelectAll,
-    handleDeselectAll,
-    clearSelection,
-  } = selection;
-
-  const batchActions = useRefundsBatchActions({
+  const batch = useRefundsBatchActions({
     selectedIds,
     setSelectedIds,
-    activeTransactions,
-    skippedTransactions,
+    activeTransactions: pipeline.activeTransactions,
+    skippedTransactions: pipeline.skippedTransactions,
     matches,
-    creditGroups,
+    creditGroups: pipeline.creditGroups,
     allTransactions: transactions,
-    handleBatchMatchAll,
+    handleBatchMatchAll: mh.handleBatchMatchAll,
     setMatchingTransaction,
     setBatchCount,
   });
-  const {
-    batchTransactions,
-    handleExport,
-    handleStartBatchMatch,
-    handleModalBatchMatch,
-    handleCloseMatch,
-  } = batchActions;
   const expectedFlow = useExpectedRefundFlow({
-    batchTransactions,
-    handleBatchExpectedRefundAll,
+    batchTransactions: batch.batchTransactions,
+    handleBatchExpectedRefundAll: mh.handleBatchExpectedRefundAll,
     handleBatchClearExpected: selection.handleBatchClearExpected,
     setSelectedIds,
   });
-  const resetFiltersAndSelection = useCallback(() => {
+  const { clearSelection } = selection;
+  const resetFilters = useCallback(() => {
     setSelectedCategoryIds(null);
     setSearchQuery('');
     clearSelection();
@@ -169,19 +135,19 @@ export function RefundsTab() {
   const handleDateRangeChange = useCallback(
     (r: DateRangeFilterType) => {
       setDateRange(r);
-      resetFiltersAndSelection();
+      resetFilters();
     },
-    [resetFiltersAndSelection]
+    [resetFilters]
   );
   const handleSelectView = useCallback(
     (id: string | null) => {
       setActiveViewId(id);
-      resetFiltersAndSelection();
+      resetFilters();
     },
-    [resetFiltersAndSelection]
+    [resetFilters]
   );
 
-  const { handleScrollToTransaction, handleScrollToCredit } = useRefundsScroll({
+  const scroll = useRefundsScroll({
     setSearchQuery,
     setSelectedCategoryIds,
     setDateRange,
@@ -228,9 +194,9 @@ export function RefundsTab() {
                 onEditView={viewActions.handleEditView}
                 onReorder={handleReorderViews}
                 trailing={
-                  viewCategoryCount > 1 ? (
+                  pipeline.viewCategoryCount > 1 ? (
                     <CategoryFilter
-                      transactions={expenseTransactions}
+                      transactions={pipeline.expenseTransactions}
                       selectedCategoryIds={selectedCategoryIds}
                       onChange={setSelectedCategoryIds}
                     />
@@ -241,27 +207,27 @@ export function RefundsTab() {
             <div className="mt-2 sm:mt-3">
               <TransactionContent
                 transactionsLoading={transactionsLoading}
-                filteredTransactions={filteredTransactions}
-                activeTransactions={activeTransactions}
-                skippedTransactions={skippedTransactions}
+                filteredTransactions={pipeline.filteredTransactions}
+                activeTransactions={pipeline.activeTransactions}
+                skippedTransactions={pipeline.skippedTransactions}
                 matches={matches}
                 config={config}
-                tally={tally}
+                tally={pipeline.tally}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 searchTrailing={
                   <DateRangeFilter value={dateRange} onChange={handleDateRangeChange} />
                 }
                 selectedIds={selectedIds}
-                onToggleSelect={handleToggleSelect}
-                onToggleCreditGroup={handleToggleCreditGroup}
-                onSelectAll={handleSelectAll}
-                onDeselectAll={handleDeselectAll}
+                onToggleSelect={selection.handleToggleSelect}
+                onToggleCreditGroup={selection.handleToggleCreditGroup}
+                onSelectAll={selection.handleSelectAll}
+                onDeselectAll={selection.handleDeselectAll}
                 showSkipped={showSkipped}
                 onToggleSkipped={() => setShowSkipped((prev) => !prev)}
-                creditGroups={creditGroups}
-                onScrollToTransaction={handleScrollToTransaction}
-                onScrollToCredit={handleScrollToCredit}
+                creditGroups={pipeline.creditGroups}
+                onScrollToTransaction={scroll.handleScrollToTransaction}
+                onScrollToCredit={scroll.handleScrollToCredit}
               />
             </div>
           </>
@@ -272,16 +238,16 @@ export function RefundsTab() {
         tags={tags}
         tagsLoading={tagsLoading}
         matchingTransaction={matchingTransaction}
-        onCloseMatch={handleCloseMatch}
+        onCloseMatch={batch.handleCloseMatch}
         config={config}
-        existingMatch={existingMatch}
-        onMatch={batchCount > 1 ? handleModalBatchMatch : handleMatch}
-        onSkip={handleSkip}
-        onUnmatch={handleUnmatch}
-        matchPending={matchPending}
+        existingMatch={mh.existingMatch}
+        onMatch={batchCount > 1 ? batch.handleModalBatchMatch : mh.handleMatch}
+        onSkip={mh.handleSkip}
+        onUnmatch={mh.handleUnmatch}
+        matchPending={mh.matchPending}
         batchCount={batchCount}
-        batchAmount={selectedAmount}
-        batchTransactions={batchTransactions}
+        batchAmount={selection.selectedAmount}
+        batchTransactions={batch.batchTransactions}
         expectedTransaction={expectedFlow.expectedTransaction}
         onCloseExpected={expectedFlow.handleCloseExpected}
         onExpectedRefund={expectedFlow.handleModalExpectedRefund}
@@ -290,23 +256,23 @@ export function RefundsTab() {
         onCloseClearExpected={expectedFlow.handleCloseClearExpected}
         onConfirmClearExpected={expectedFlow.handleConfirmClearExpected}
         clearExpectedCount={selectedIds.size}
-        clearExpectedPending={matchPending}
+        clearExpectedPending={mh.matchPending}
         showSettingsModal={showSettingsModal}
         onCloseSettings={() => setShowSettingsModal(false)}
       />
       {selectedIds.size > 0 && (
         <SelectionActionBar
           count={selectedIds.size}
-          selectedAmount={selectedAmount}
-          selectionState={selectionState}
-          onMatch={handleStartBatchMatch}
+          selectedAmount={selection.selectedAmount}
+          selectionState={selection.selectionState}
+          onMatch={batch.handleStartBatchMatch}
           onExpectedRefund={expectedFlow.handleStartBatchExpected}
           onSkip={selection.handleBatchSkip}
           onUnmatch={selection.handleBatchUnmatch}
           onRestore={selection.handleBatchRestore}
           onClearExpected={expectedFlow.handleStartClearExpected}
-          onClear={clearSelection}
-          onExport={handleExport}
+          onClear={selection.clearSelection}
+          onExport={batch.handleExport}
         />
       )}
     </div>
