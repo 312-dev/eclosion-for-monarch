@@ -5,7 +5,9 @@
  * by merchant, category, account, notes, or tag name.
  */
 
+import { useRef, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
+import { useKeyboardShortcut } from '../../hooks/useKeyboardShortcut';
 
 interface TransactionSearchBarProps {
   readonly value: string;
@@ -13,6 +15,14 @@ interface TransactionSearchBarProps {
 }
 
 export function TransactionSearchBar({ value, onChange }: TransactionSearchBarProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useKeyboardShortcut(
+    'f',
+    useCallback(() => inputRef.current?.focus(), []),
+    { ctrl: true }
+  );
+
   return (
     <div className="sticky top-18 z-10 px-4 py-2 border-b border-(--monarch-border) bg-(--monarch-bg-card)">
       <div className="relative">
@@ -22,9 +32,13 @@ export function TransactionSearchBar({ value, onChange }: TransactionSearchBarPr
           aria-hidden="true"
         />
         <input
+          ref={inputRef}
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') inputRef.current?.blur();
+          }}
           placeholder="Search transactions..."
           aria-label="Search transactions"
           className="w-full pl-8 pr-8 py-1.5 text-sm rounded-lg border border-(--monarch-border) bg-(--monarch-bg-page) text-(--monarch-text-dark) placeholder:text-(--monarch-text-muted) focus:outline-none focus:border-(--monarch-orange) focus:ring-1 focus:ring-(--monarch-orange)/20"

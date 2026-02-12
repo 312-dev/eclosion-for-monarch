@@ -12,7 +12,9 @@ interface SkippedSectionProps {
   readonly transactions: Transaction[];
   readonly matches: RefundsMatch[];
   readonly selectedIds: ReadonlySet<string>;
-  readonly onToggleSelect: (txn: Transaction) => void;
+  readonly onToggleSelect: (txn: Transaction, shiftKey: boolean) => void;
+  readonly onSelectAll: () => void;
+  readonly onDeselectAll: () => void;
   readonly isOpen: boolean;
   readonly onToggle: () => void;
 }
@@ -22,6 +24,8 @@ export function SkippedSection({
   matches,
   selectedIds,
   onToggleSelect,
+  onSelectAll,
+  onDeselectAll,
   isOpen,
   onToggle,
 }: SkippedSectionProps): React.JSX.Element | null {
@@ -39,7 +43,7 @@ export function SkippedSection({
           className={`transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`}
         />
         <span>
-          {transactions.length} skipped transaction
+          {transactions.length} ignored transaction
           {transactions.length === 1 ? '' : 's'}
         </span>
       </button>
@@ -54,6 +58,8 @@ export function SkippedSection({
             agingWarningDays={0}
             selectedIds={selectedIds}
             onToggleSelect={onToggleSelect}
+            onSelectAll={onSelectAll}
+            onDeselectAll={onDeselectAll}
           />
         </div>
       )}

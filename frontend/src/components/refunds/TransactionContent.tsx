@@ -21,7 +21,9 @@ interface TransactionContentProps {
   readonly searchQuery: string;
   readonly onSearchChange: (q: string) => void;
   readonly selectedIds: Set<string>;
-  readonly onToggleSelect: (txn: Transaction) => void;
+  readonly onToggleSelect: (txn: Transaction, shiftKey: boolean) => void;
+  readonly onSelectAll: () => void;
+  readonly onDeselectAll: () => void;
   readonly showSkipped: boolean;
   readonly onToggleSkipped: () => void;
 }
@@ -42,6 +44,8 @@ export function TransactionContent({
   onSearchChange,
   selectedIds,
   onToggleSelect,
+  onSelectAll,
+  onDeselectAll,
   showSkipped,
   onToggleSkipped,
 }: TransactionContentProps): React.ReactNode {
@@ -87,6 +91,8 @@ export function TransactionContent({
             agingWarningDays={config?.agingWarningDays ?? 30}
             selectedIds={selectedIds}
             onToggleSelect={onToggleSelect}
+            onSelectAll={onSelectAll}
+            onDeselectAll={onDeselectAll}
           />
         ) : (
           <div className="px-4 py-8 text-center text-sm text-(--monarch-text-muted)">
@@ -99,6 +105,8 @@ export function TransactionContent({
         matches={matches}
         selectedIds={selectedIds}
         onToggleSelect={onToggleSelect}
+        onSelectAll={onSelectAll}
+        onDeselectAll={onDeselectAll}
         isOpen={showSkipped}
         onToggle={onToggleSkipped}
       />

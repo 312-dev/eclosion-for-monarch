@@ -6,7 +6,7 @@
  * derived values and action handlers from it.
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useRef } from 'react';
 import type { Transaction, RefundsMatch } from '../../types/refunds';
 
 export type SelectionState = 'unmatched' | 'matched' | 'skipped' | 'expected' | 'mixed';
@@ -25,7 +25,9 @@ interface SelectionParams {
 interface SelectionActions {
   selectedAmount: number;
   selectionState: SelectionState;
-  handleToggleSelect: (transaction: Transaction) => void;
+  handleToggleSelect: (transaction: Transaction, shiftKey: boolean) => void;
+  handleSelectAll: () => void;
+  handleDeselectAll: () => void;
   handleBatchSkip: () => Promise<void>;
   handleBatchUnmatch: () => Promise<void>;
   handleBatchRestore: () => Promise<void>;
@@ -84,8 +86,29 @@ export function useRefundsSelection({
     return 'unmatched';
   }, [selectedIds, activeTransactions, skippedTransactions, matches]);
 
+  const lastClickedIdRef = useRef<string | null>(null);
+
   const handleToggleSelect = useCallback(
-    (transaction: Transaction) => {
+    (transaction: Transaction, shiftKey: boolean) => {
+      if (shiftKey && lastClickedIdRef.current) {
+        const anchorIdx = allVisibleTransactions.findIndex(
+          (t) => t.id === lastClickedIdRef.current
+        );
+        const targetIdx = allVisibleTransactions.findIndex((t) => t.id === transaction.id);
+        if (anchorIdx !== -1 && targetIdx !== -1) {
+          const start = Math.min(anchorIdx, targetIdx);
+          const end = Math.max(anchorIdx, targetIdx);
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            for (let i = start; i <= end; i++) {
+              next.add(allVisibleTransactions[i]!.id);
+            }
+            return next;
+          });
+          return;
+        }
+      }
+      lastClickedIdRef.current = transaction.id;
       setSelectedIds((prev) => {
         const next = new Set(prev);
         if (next.has(transaction.id)) {
@@ -96,10 +119,22 @@ export function useRefundsSelection({
         return next;
       });
     },
-    [setSelectedIds]
+    [setSelectedIds, allVisibleTransactions]
   );
 
-  const clearSelection = useCallback(() => setSelectedIds(new Set()), [setSelectedIds]);
+  const handleSelectAll = useCallback(() => {
+    setSelectedIds(new Set(allVisibleTransactions.map((t) => t.id)));
+  }, [setSelectedIds, allVisibleTransactions]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedIds(new Set());
+    lastClickedIdRef.current = null;
+  }, [setSelectedIds]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    lastClickedIdRef.current = null;
+  }, [setSelectedIds]);
 
   const handleBatchSkip = useCallback(async () => {
     const toSkip = activeTransactions.filter((txn) => selectedIds.has(txn.id));
@@ -137,6 +172,8 @@ export function useRefundsSelection({
     selectedAmount,
     selectionState,
     handleToggleSelect,
+    handleSelectAll,
+    handleDeselectAll,
     handleBatchSkip,
     handleBatchUnmatch,
     handleBatchRestore,
