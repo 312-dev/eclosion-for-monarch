@@ -1,0 +1,10 @@
+{
+  "label": "Refunds",
+  "position": 4,
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "doc",
+    "id": "refunds/overview"
+  }
+}
