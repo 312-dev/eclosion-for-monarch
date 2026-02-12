@@ -110,6 +110,19 @@ export interface CreateMatchRequest {
   transactionData?: Transaction;
 }
 
+/** Grouped credit row (actual refund or expected refund) shown in the transaction list. */
+export interface CreditGroup {
+  id: string;
+  type: 'refund' | 'expected';
+  date: string;
+  amount: number;
+  merchant: string | null;
+  account: string | null;
+  note: string | null;
+  originalTransactionIds: string[];
+  remaining: number;
+}
+
 /** Tally summary for the current view. */
 export interface RefundsTally {
   transactionCount: number;
