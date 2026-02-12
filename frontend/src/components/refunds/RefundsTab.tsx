@@ -81,27 +81,22 @@ export function RefundsTab() {
     (ids: string[]) => reorderMutation.mutate(ids),
     [reorderMutation]
   );
+  const matchHandlers = useRefundsMatchHandlers({
+    matchingTransaction,
+    setMatchingTransaction,
+    matches,
+    tagIds,
+  });
   const {
     handleMatch,
     handleBatchMatchAll,
     handleBatchExpectedRefundAll,
     handleSkip,
     handleUnmatch,
-    handleDirectSkip,
-    handleDirectUnmatch,
-    handleRestore,
     existingMatch,
     matchPending,
-  } = useRefundsMatchHandlers({ matchingTransaction, setMatchingTransaction, matches, tagIds });
-  const {
-    activeTransactions,
-    skippedTransactions,
-    expenseTransactions,
-    filteredTransactions,
-    tally,
-    viewCategoryCount,
-    creditGroups,
-  } = useTransactionPipeline({
+  } = matchHandlers;
+  const pipeline = useTransactionPipeline({
     transactions,
     matches,
     tagIds,
@@ -112,36 +107,36 @@ export function RefundsTab() {
     selectedIds,
   });
   const {
-    selectedAmount,
-    selectionState,
-    handleToggleSelect,
-    handleToggleCreditGroup,
-    handleSelectAll,
-    handleDeselectAll,
-    handleBatchSkip,
-    handleBatchUnmatch,
-    handleBatchRestore,
-    handleBatchClearExpected,
-    clearSelection,
-  } = useRefundsSelection({
+    activeTransactions,
+    skippedTransactions,
+    expenseTransactions,
+    filteredTransactions,
+    tally,
+    viewCategoryCount,
+    creditGroups,
+  } = pipeline;
+  const selection = useRefundsSelection({
     selectedIds,
     setSelectedIds,
     activeTransactions,
     skippedTransactions,
     matches,
     creditGroups,
-    handleDirectSkip,
-    handleDirectUnmatch,
-    handleRestore,
+    handleDirectSkip: matchHandlers.handleDirectSkip,
+    handleDirectUnmatch: matchHandlers.handleDirectUnmatch,
+    handleRestore: matchHandlers.handleRestore,
   });
-
   const {
-    batchTransactions,
-    handleExport,
-    handleStartBatchMatch,
-    handleModalBatchMatch,
-    handleCloseMatch,
-  } = useRefundsBatchActions({
+    selectedAmount,
+    selectionState,
+    handleToggleSelect,
+    handleToggleCreditGroup,
+    handleSelectAll,
+    handleDeselectAll,
+    clearSelection,
+  } = selection;
+
+  const batchActions = useRefundsBatchActions({
     selectedIds,
     setSelectedIds,
     activeTransactions,
@@ -153,10 +148,17 @@ export function RefundsTab() {
     setMatchingTransaction,
     setBatchCount,
   });
+  const {
+    batchTransactions,
+    handleExport,
+    handleStartBatchMatch,
+    handleModalBatchMatch,
+    handleCloseMatch,
+  } = batchActions;
   const expectedFlow = useExpectedRefundFlow({
     batchTransactions,
     handleBatchExpectedRefundAll,
-    handleBatchClearExpected,
+    handleBatchClearExpected: selection.handleBatchClearExpected,
     setSelectedIds,
   });
   const resetFiltersAndSelection = useCallback(() => {
@@ -299,9 +301,9 @@ export function RefundsTab() {
           selectionState={selectionState}
           onMatch={handleStartBatchMatch}
           onExpectedRefund={expectedFlow.handleStartBatchExpected}
-          onSkip={handleBatchSkip}
-          onUnmatch={handleBatchUnmatch}
-          onRestore={handleBatchRestore}
+          onSkip={selection.handleBatchSkip}
+          onUnmatch={selection.handleBatchUnmatch}
+          onRestore={selection.handleBatchRestore}
           onClearExpected={expectedFlow.handleStartClearExpected}
           onClear={clearSelection}
           onExport={handleExport}
