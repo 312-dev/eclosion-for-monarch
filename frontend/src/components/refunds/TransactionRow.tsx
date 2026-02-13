@@ -139,7 +139,7 @@ export const TransactionRow = React.memo(function TransactionRow({
           {transaction.category ? (
             <>
               <span className="shrink-0 text-sm">{transaction.category.icon}</span>
-              <span className="text-xs text-(--monarch-text-muted) truncate">
+              <span className="text-sm text-(--monarch-text-muted) truncate">
                 {decodeHtmlEntities(transaction.category.name)}
               </span>
             </>
@@ -151,7 +151,7 @@ export const TransactionRow = React.memo(function TransactionRow({
           {transaction.account ? (
             <>
               <AccountIcon account={transaction.account} />
-              <span className="text-xs text-(--monarch-text-muted) truncate">
+              <span className="text-sm text-(--monarch-text-muted) truncate">
                 {transaction.account.displayName}
               </span>
             </>

@@ -146,7 +146,7 @@ export const CreditGroupRow = React.memo(function CreditGroupRow({
             {group.account && (
               <>
                 <AccountIcon account={group.account} />
-                <span className="text-xs text-(--monarch-text-muted) truncate">
+                <span className="text-sm text-(--monarch-text-muted) truncate">
                   {group.account.displayName}
                 </span>
               </>
