@@ -46,10 +46,24 @@ export function useRefundsBatchActions({
   setMatchingTransaction,
   setBatchCount,
 }: BatchActionsParams): BatchActions {
-  const batchTransactions = useMemo(
-    () => activeTransactions.filter((txn) => selectedIds.has(txn.id)),
-    [activeTransactions, selectedIds]
-  );
+  const batchTransactions = useMemo(() => {
+    // Include directly selected transactions
+    const byId = new Map<string, Transaction>();
+    for (const txn of activeTransactions) {
+      if (selectedIds.has(txn.id)) byId.set(txn.id, txn);
+    }
+    // Resolve selected credit groups to their original transactions
+    // Use allTransactions as source since activeTransactions may hide expected/matched rows
+    for (const cg of creditGroups) {
+      if (!selectedIds.has(cg.id)) continue;
+      for (const origId of cg.originalTransactionIds) {
+        if (byId.has(origId)) continue;
+        const txn = allTransactions.find((t) => t.id === origId);
+        if (txn) byId.set(txn.id, txn);
+      }
+    }
+    return [...byId.values()];
+  }, [activeTransactions, allTransactions, creditGroups, selectedIds]);
   const selectedSkippedTransactions = useMemo(
     () => skippedTransactions.filter((txn) => selectedIds.has(txn.id)),
     [skippedTransactions, selectedIds]
