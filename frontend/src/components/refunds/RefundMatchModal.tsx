@@ -15,13 +15,17 @@ import { Search } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { PrimaryButton, CancelButton, WarningButton, ModalButton } from '../ui/ModalButtons';
 import { Tooltip } from '../ui/Tooltip';
-import { useSearchRefundsTransactionsQuery } from '../../api/queries/refundsQueries';
+import {
+  useSearchRefundsTransactionsQuery,
+  useRefundsMatchesQuery,
+} from '../../api/queries/refundsQueries';
 import { decodeHtmlEntities } from '../../utils';
 import {
   MatchDetailsContent,
   SearchResultsList,
   formatAmount,
   formatDate,
+  type RefundCandidateMatchInfo,
 } from './RefundMatchSubComponents';
 import type { Transaction, RefundsConfig, RefundsMatch } from '../../types/refunds';
 
@@ -91,10 +95,34 @@ export function RefundMatchModal({
     fetchNextPage,
   } = useSearchRefundsTransactionsQuery(searchQuery);
 
+  const { data: allMatches } = useRefundsMatchesQuery();
+
   const refundCandidates = useMemo(() => {
     const allResults = searchData?.pages.flatMap((p) => p.transactions) ?? [];
     return allResults.filter((t) => t.id !== transaction.id && t.amount > 0);
   }, [searchData, transaction.id]);
+
+  const selectionAmount = isBatch ? batchAmount : Math.abs(transaction.amount);
+
+  const candidateMatchInfo = useMemo(() => {
+    const info = new Map<string, RefundCandidateMatchInfo>();
+    if (!allMatches) return info;
+    for (const match of allMatches) {
+      if (!match.refundTransactionId || match.skipped) continue;
+      const existing = info.get(match.refundTransactionId);
+      const originalAmount = Math.abs(match.transactionData?.amount ?? 0);
+      if (existing) {
+        existing.matchedCount += 1;
+        existing.consumedAmount += originalAmount;
+      } else {
+        info.set(match.refundTransactionId, {
+          matchedCount: 1,
+          consumedAmount: originalAmount,
+        });
+      }
+    }
+    return info;
+  }, [allMatches]);
 
   const selectedTxn = useMemo(
     () => refundCandidates.find((t) => t.id === selectedTxnId),
@@ -223,6 +251,8 @@ export function RefundMatchModal({
               hasNextPage={hasNextPage ?? false}
               isFetchingNextPage={isFetchingNextPage}
               onLoadMore={fetchNextPage}
+              candidateMatchInfo={candidateMatchInfo}
+              selectionAmount={selectionAmount}
             />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">

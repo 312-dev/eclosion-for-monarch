@@ -4,10 +4,16 @@
  */
 
 import { useRef, useEffect } from 'react';
-import { SearchX, FilterX } from 'lucide-react';
+import { SearchX, FilterX, Receipt, AlertTriangle } from 'lucide-react';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Tooltip } from '../ui/Tooltip';
 import { decodeHtmlEntities } from '../../utils';
 import type { Transaction, RefundsMatch } from '../../types/refunds';
+
+export interface RefundCandidateMatchInfo {
+  matchedCount: number;
+  consumedAmount: number;
+}
 
 export function formatAmount(amount: number): string {
   return `$${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -70,6 +76,8 @@ interface SearchResultsListProps {
   readonly hasNextPage: boolean;
   readonly isFetchingNextPage: boolean;
   readonly onLoadMore: () => void;
+  readonly candidateMatchInfo: Map<string, RefundCandidateMatchInfo>;
+  readonly selectionAmount: number;
 }
 
 export function SearchResultsList({
@@ -82,6 +90,8 @@ export function SearchResultsList({
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
+  candidateMatchInfo,
+  selectionAmount,
 }: SearchResultsListProps): React.JSX.Element {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -134,6 +144,11 @@ export function SearchResultsList({
     <>
       {candidates.map((txn) => {
         const isSelected = txn.id === selectedTxnId;
+        const matchInfo = candidateMatchInfo.get(txn.id);
+        const remaining = matchInfo
+          ? Math.max(0, txn.amount - matchInfo.consumedAmount)
+          : txn.amount;
+        const hasWarning = matchInfo != null && remaining < selectionAmount;
         return (
           <button
             key={txn.id}
@@ -159,12 +174,37 @@ export function SearchResultsList({
                 <div className="text-xs text-(--monarch-text-muted)">
                   {formatDate(txn.date)}
                   {txn.account && ` · ${decodeHtmlEntities(txn.account.displayName)}`}
+                  {matchInfo && (
+                    <>
+                      {' · '}
+                      <Tooltip
+                        content={`${matchInfo.matchedCount} other transaction${matchInfo.matchedCount === 1 ? '' : 's'} associated`}
+                        side="top"
+                      >
+                        <span className="text-(--monarch-success) cursor-help">
+                          <Receipt size={14} className="inline -mt-px" /> {matchInfo.matchedCount}
+                        </span>
+                      </Tooltip>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            <span className="font-medium text-(--monarch-success) shrink-0 tabular-nums">
-              +{formatAmount(txn.amount)}
-            </span>
+            <div className="shrink-0 text-right">
+              <span className="font-medium text-(--monarch-success) tabular-nums">
+                +{formatAmount(txn.amount)}
+              </span>
+              {matchInfo && (
+                <div className="flex items-center justify-end gap-1 text-xs tabular-nums text-(--monarch-text-muted)">
+                  {hasWarning && (
+                    <AlertTriangle size={11} className="text-(--monarch-warning) shrink-0" />
+                  )}
+                  <span className={hasWarning ? 'text-(--monarch-warning)' : ''}>
+                    {formatAmount(remaining)} left
+                  </span>
+                </div>
+              )}
+            </div>
           </button>
         );
       })}
