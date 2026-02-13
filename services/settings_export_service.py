@@ -79,22 +79,29 @@ class SettingsExportService:
     ):
         self.state_manager = state_manager or StateManager()
         self._db_session = db_session
+        self._cached_session: Session | None = None
+
+    def _get_session(self) -> Session:
+        """Get or create a shared session for the lifetime of this service."""
+        if self._db_session:
+            return self._db_session
+        if self._cached_session is None:
+            from state.db.database import get_session_factory
+
+            self._cached_session = get_session_factory()()
+        return self._cached_session
 
     def _get_notes_repo(self) -> NotesRepository:
-        """Get NotesRepository, creating session if needed."""
-        from state.db.database import get_session_factory
+        """Get NotesRepository using the shared session."""
         from state.db.repositories.notes_repo import NotesRepository
 
-        session = self._db_session or get_session_factory()()
-        return NotesRepository(session)
+        return NotesRepository(self._get_session())
 
     def _get_tracker_repo(self) -> TrackerRepository:
-        """Get TrackerRepository, creating session if needed."""
-        from state.db.database import get_session_factory
+        """Get TrackerRepository using the shared session."""
         from state.db.repositories.tracker_repo import TrackerRepository
 
-        session = self._db_session or get_session_factory()()
-        return TrackerRepository(session)
+        return TrackerRepository(self._get_session())
 
     def export_settings(
         self,
