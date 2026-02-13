@@ -9,6 +9,8 @@ Tests cover:
 - Round-trip export/import for every tool
 """
 
+from typing import ClassVar
+
 from services.settings_export_service import (
     SettingsExportService,
 )
@@ -407,7 +409,7 @@ class TestExhaustiveToolCoverage:
     """Exhaustive tests ensuring all non-conditional tools are in export/import."""
 
     # Notes excluded: requires passphrase (conditionally included)
-    EXPECTED_TOOLS = {"recurring", "stash", "refunds"}
+    EXPECTED_TOOLS: ClassVar[set[str]] = {"recurring", "stash", "refunds"}
 
     def test_export_contains_all_expected_tools(self, state_manager: StateManager) -> None:
         """Full export should contain all non-conditional tools."""
