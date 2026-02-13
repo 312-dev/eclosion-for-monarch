@@ -64,7 +64,10 @@ export function useRefundsMatchHandlers({
   const existingMatch = useMemo(
     () =>
       matchingTransaction
-        ? matches.find((m) => m.originalTransactionId === matchingTransaction.id)
+        ? matches.find(
+            (m) =>
+              m.originalTransactionId === matchingTransaction.id && !m.expectedRefund && !m.skipped
+          )
         : undefined,
     [matchingTransaction, matches]
   );
@@ -73,6 +76,11 @@ export function useRefundsMatchHandlers({
     async (params: MatchActionParams) => {
       if (!matchingTransaction) return;
       try {
+        // Delete existing expected/skipped match if present
+        const existing = matches.find((m) => m.originalTransactionId === matchingTransaction.id);
+        if (existing) {
+          await deleteMatchMutation.mutateAsync(existing.id);
+        }
         await createMatchMutation.mutateAsync({
           originalTransactionId: matchingTransaction.id,
           ...params,
@@ -87,13 +95,26 @@ export function useRefundsMatchHandlers({
         toast.error(handleApiError(err, 'Refunds'));
       }
     },
-    [matchingTransaction, createMatchMutation, toast, tagIds, setMatchingTransaction]
+    [
+      matchingTransaction,
+      matches,
+      createMatchMutation,
+      deleteMatchMutation,
+      toast,
+      tagIds,
+      setMatchingTransaction,
+    ]
   );
 
   const handleBatchMatchAll = useCallback(
     async (transactions: Transaction[], params: MatchActionParams) => {
       try {
         for (const txn of transactions) {
+          // Delete existing expected/skipped match if present
+          const existing = matches.find((m) => m.originalTransactionId === txn.id);
+          if (existing) {
+            await deleteMatchMutation.mutateAsync(existing.id);
+          }
           await createMatchMutation.mutateAsync({
             originalTransactionId: txn.id,
             ...params,
@@ -109,7 +130,7 @@ export function useRefundsMatchHandlers({
         toast.error(handleApiError(err, 'Refunds'));
       }
     },
-    [createMatchMutation, toast, tagIds, setMatchingTransaction]
+    [createMatchMutation, deleteMatchMutation, matches, toast, tagIds, setMatchingTransaction]
   );
 
   const handleExpectedRefund = useCallback(
