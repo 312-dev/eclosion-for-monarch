@@ -269,7 +269,7 @@ function GeneralMonthNotesInner({ monthKey, effectiveNote, dataTourId }: General
 
   return (
     <div
-      className="rounded-xl overflow-hidden sticky top-18 section-enter"
+      className="sm:rounded-xl overflow-hidden sticky top-18 section-enter"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',

@@ -242,8 +242,10 @@ export function NotesTab() {
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto tab-content-enter">
-        <SkeletonToolHeader />
-        <SkeletonMonthSelector />
+        <div className="px-4 sm:px-0">
+          <SkeletonToolHeader />
+          <SkeletonMonthSelector />
+        </div>
         <SkeletonNotesTab />
       </div>
     );
@@ -253,37 +255,39 @@ export function NotesTab() {
     <NotesEditorProvider>
       <div className="max-w-7xl mx-auto tab-content-enter">
         {/* Header */}
-        <ToolPageHeader
-          icon={<NotesIcon size={40} />}
-          title="Notes"
-          description="Add notes to categories and months"
-          onSettingsClick={() => setShowSettingsModal(true)}
-        />
-
-        {/* Month navigation */}
-        <div className="mb-4 lg:mb-6">
-          <MonthYearSelector
-            currentMonth={currentMonth}
-            onMonthChange={setCurrentMonth}
-            minMonth={minMonth}
-            maxMonth={maxMonth}
+        <div className="px-4 sm:px-0">
+          <ToolPageHeader
+            icon={<NotesIcon size={40} />}
+            title="Notes"
+            description="Add notes to categories and months"
+            onSettingsClick={() => setShowSettingsModal(true)}
           />
-          {/* Export button - floated right under divider */}
-          <div className="flex justify-end -mt-1">
-            <button
-              type="button"
-              onClick={handleOpenExportModal}
-              disabled={!hasNotes}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                hasNotes ? 'hover:bg-(--monarch-bg-hover)' : 'opacity-50 cursor-not-allowed'
-              }`}
-              style={{ color: 'var(--monarch-text-muted)' }}
-              title={hasNotes ? 'Export notes' : 'No notes to export'}
-              data-tour="export-notes"
-            >
-              <Download size={14} />
-              Export
-            </button>
+
+          {/* Month navigation */}
+          <div className="mb-4 lg:mb-6">
+            <MonthYearSelector
+              currentMonth={currentMonth}
+              onMonthChange={setCurrentMonth}
+              minMonth={minMonth}
+              maxMonth={maxMonth}
+            />
+            {/* Export button - floated right under divider */}
+            <div className="flex justify-end -mt-1">
+              <button
+                type="button"
+                onClick={handleOpenExportModal}
+                disabled={!hasNotes}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                  hasNotes ? 'hover:bg-(--monarch-bg-hover)' : 'opacity-50 cursor-not-allowed'
+                }`}
+                style={{ color: 'var(--monarch-text-muted)' }}
+                title={hasNotes ? 'Export notes' : 'No notes to export'}
+                data-tour="export-notes"
+              >
+                <Download size={14} />
+                Export
+              </button>
+            </div>
           </div>
         </div>
 

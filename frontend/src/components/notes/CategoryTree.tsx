@@ -39,7 +39,7 @@ export function CategoryTree({
   if (groups.length === 0) {
     return (
       <div
-        className="rounded-xl p-8 text-center"
+        className="sm:rounded-xl p-8 text-center"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
@@ -58,7 +58,7 @@ export function CategoryTree({
   return (
     <div className="space-y-2" data-tour="category-tree">
       {/* Header with expand/collapse toggle */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 px-4 sm:px-0">
         <h2
           className="text-sm font-semibold uppercase tracking-wide"
           style={{ color: 'var(--monarch-text-muted)' }}
@@ -84,7 +84,7 @@ export function CategoryTree({
           return (
             <div
               key={group.id}
-              className="rounded-xl overflow-hidden list-item-enter"
+              className="sm:rounded-xl overflow-hidden list-item-enter"
               style={{
                 backgroundColor: 'var(--monarch-bg-card)',
                 border: '1px solid var(--monarch-border)',

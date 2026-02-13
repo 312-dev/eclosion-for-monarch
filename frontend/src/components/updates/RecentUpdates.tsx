@@ -24,7 +24,7 @@ export function RecentUpdates({ updates }: Readonly<{ updates: UpdateEntry[] }>)
 
   return (
     <div
-      className="mb-6 rounded-lg overflow-hidden"
+      className="mb-6 mx-4 sm:mx-0 rounded-lg overflow-hidden"
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',

@@ -61,14 +61,14 @@ export function DeveloperSection() {
   return (
     <section className="mb-8">
       <h2
-        className="text-xs font-semibold uppercase tracking-wider mb-3 px-1 flex items-center gap-1.5"
+        className="text-xs font-semibold uppercase tracking-wider mb-3 px-4 sm:px-1 flex items-center gap-1.5"
         style={{ color: 'var(--monarch-text-muted)' }}
       >
         <Code size={12} />
         Developer
       </h2>
       <div
-        className="rounded-xl overflow-hidden"
+        className="sm:rounded-xl overflow-hidden"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',

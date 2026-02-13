@@ -8,7 +8,7 @@ import { Settings } from 'lucide-react';
 
 export function SettingsHeader() {
   return (
-    <div className="mb-8">
+    <div className="mb-8 px-4 sm:px-0">
       <div className="flex items-center gap-3 mb-2">
         <div
           className="p-2.5 rounded-xl"

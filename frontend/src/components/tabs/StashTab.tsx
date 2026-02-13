@@ -456,7 +456,7 @@ export function StashTab() {
 
   if (configLoading || isLoading) {
     return (
-      <div className="tab-content-enter pb-48">
+      <div className="tab-content-enter pb-48 px-4 sm:px-0">
         <SkeletonToolHeader />
         <SkeletonTabs count={3} />
         <div className="mt-6 mb-6">
@@ -468,7 +468,7 @@ export function StashTab() {
 
   if (error) {
     return (
-      <div className="tab-content-enter pb-6">
+      <div className="tab-content-enter pb-6 px-4 sm:px-0">
         <div
           className="rounded-xl p-8 text-center"
           style={{
@@ -491,7 +491,7 @@ export function StashTab() {
   }
 
   return (
-    <div className="tab-content-enter pb-48">
+    <div className="tab-content-enter pb-48 px-4 sm:px-0">
       {/* Header */}
       <ToolPageHeader
         icon={<StashIcon size={40} />}

@@ -12,11 +12,11 @@ export function SecuritySection() {
     <section className="mb-8">
       <SectionHeader sectionId="security" />
       <div
-        className="rounded-xl overflow-hidden p-4"
+        className="sm:rounded-xl overflow-hidden p-4"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
       >
         <SecurityPanel />

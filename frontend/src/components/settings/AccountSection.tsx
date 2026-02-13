@@ -44,7 +44,7 @@ export function AccountSection() {
     <section className="mb-8">
       <SectionHeader sectionId="account" />
       <div
-        className="rounded-xl overflow-hidden"
+        className="sm:rounded-xl overflow-hidden"
         style={{
           backgroundColor: 'var(--monarch-bg-card)',
           border: '1px solid var(--monarch-border)',

@@ -146,7 +146,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
   // Filtered empty state - items exist but are hidden by filters
   if (filteredItems.length === 0) {
     return (
-      <div className="rounded-xl shadow-sm bg-monarch-bg-card border border-monarch-border">
+      <div className="sm:rounded-xl shadow-sm bg-monarch-bg-card border border-monarch-border">
         <RecurringListSectionHeader
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}
@@ -167,7 +167,7 @@ export function RecurringList({ items, onRefresh, showCategoryGroup = true }: Re
 
   return (
     <div>
-      <div className="rounded-xl shadow-sm bg-monarch-bg-card border border-monarch-border overflow-hidden">
+      <div className="sm:rounded-xl shadow-sm bg-monarch-bg-card border border-monarch-border overflow-hidden">
         <RecurringListSectionHeader
           disabledCount={disabledCount}
           hideDisabled={hideDisabled}

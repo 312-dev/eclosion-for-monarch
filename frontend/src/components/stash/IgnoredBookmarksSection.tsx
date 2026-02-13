@@ -133,7 +133,7 @@ export function IgnoredBookmarksSection({
       <button
         type="button"
         onClick={onToggle}
-        className="flex items-center gap-1.5 py-2 text-sm hover:opacity-70 transition-opacity"
+        className="flex items-center gap-1.5 py-2 px-4 sm:px-0 text-sm hover:opacity-70 transition-opacity"
         style={{ color: 'var(--monarch-text-muted)' }}
         aria-expanded={isExpanded}
         aria-label={isExpanded ? 'Collapse ignored bookmarks' : 'Expand ignored bookmarks'}

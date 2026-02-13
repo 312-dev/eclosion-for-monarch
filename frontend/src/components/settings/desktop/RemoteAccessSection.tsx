@@ -160,7 +160,7 @@ export function RemoteAccessSection() {
 
   return (
     <div
-      className={`rounded-xl overflow-hidden${busy ? ' cursor-wait' : ''}`}
+      className={`sm:rounded-xl overflow-hidden${busy ? ' cursor-wait' : ''}`}
       style={{
         backgroundColor: 'var(--monarch-bg-card)',
         border: '1px solid var(--monarch-border)',
@@ -208,9 +208,7 @@ export function RemoteAccessSection() {
       </div>
 
       {/* State 1: No subdomain claimed — show claim form */}
-      {!loading && !isConfigured && (
-        <SubdomainClaimForm onClaimed={handleClaimed} />
-      )}
+      {!loading && !isConfigured && <SubdomainClaimForm onClaimed={handleClaimed} />}
 
       {/* State 2: Subdomain claimed, tunnel active — show status */}
       {status?.active && status.configured && (
@@ -278,8 +276,8 @@ export function RemoteAccessSection() {
                 This will release {subdomain}.eclosion.me
               </p>
               <p className="text-sm mt-1" style={{ color: 'var(--monarch-text-muted)' }}>
-                Your tunnel, DNS record, and all remote access data will be deleted.
-                The subdomain will become available for anyone to claim.
+                Your tunnel, DNS record, and all remote access data will be deleted. The subdomain
+                will become available for anyone to claim.
               </p>
             </div>
           </div>

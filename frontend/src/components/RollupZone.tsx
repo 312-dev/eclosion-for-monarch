@@ -160,7 +160,7 @@ export function RollupZone({
   });
 
   return (
-    <div className="mb-6 rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
+    <div className="mb-6 sm:rounded-xl shadow-sm overflow-hidden bg-monarch-bg-card border border-monarch-border">
       {/* Header with stats */}
       <div
         role="button"

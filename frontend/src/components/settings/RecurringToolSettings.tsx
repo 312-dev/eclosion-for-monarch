@@ -154,7 +154,8 @@ export const RecurringToolSettings = forwardRef<HTMLDivElement, RecurringToolSet
     const autoCategorizeEnabled = dashboardData?.config.auto_categorize_enabled ?? false;
     const showCategoryGroupEnabled = dashboardData?.config.show_category_group ?? true;
 
-    const containerClass = variant === 'modal' ? 'overflow-hidden' : 'rounded-xl overflow-hidden';
+    const containerClass =
+      variant === 'modal' ? 'overflow-hidden' : 'sm:rounded-xl overflow-hidden';
     const containerStyle =
       variant === 'modal'
         ? {}

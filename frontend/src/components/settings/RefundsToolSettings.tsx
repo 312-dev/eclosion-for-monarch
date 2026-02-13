@@ -88,7 +88,8 @@ export const RefundsToolSettings = forwardRef<HTMLDivElement, RefundsToolSetting
       [tags]
     );
 
-    const containerClass = variant === 'modal' ? 'overflow-hidden' : 'rounded-xl overflow-hidden';
+    const containerClass =
+      variant === 'modal' ? 'overflow-hidden' : 'sm:rounded-xl overflow-hidden';
     const containerStyle =
       variant === 'modal'
         ? {}

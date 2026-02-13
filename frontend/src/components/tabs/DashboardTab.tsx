@@ -64,7 +64,7 @@ export function DashboardTab() {
       <UpdatesCarousel />
 
       {/* Welcome Section */}
-      <div className="mb-8">
+      <div className="mb-8 px-4 sm:px-0">
         <h1 className="text-2xl font-semibold mb-2" style={{ color: 'var(--monarch-text-dark)' }}>
           Welcome to Eclosion
         </h1>
@@ -76,12 +76,12 @@ export function DashboardTab() {
       {/* Tools Grid */}
       <section className="mb-10">
         <h2
-          className="text-xs font-semibold uppercase tracking-wider mb-4 px-1"
+          className="text-xs font-semibold uppercase tracking-wider mb-4 px-4 sm:px-1"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
           Available Tools
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 sm:px-0">
           {tools.map((tool) => (
             <ToolTile
               key={tool.id}
@@ -97,12 +97,12 @@ export function DashboardTab() {
       {/* Coming Soon */}
       <section className="mb-10">
         <h2
-          className="text-xs font-semibold uppercase tracking-wider mb-4 px-1"
+          className="text-xs font-semibold uppercase tracking-wider mb-4 px-4 sm:px-1"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
           Coming Soon
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-4 sm:px-0">
           {getComingSoonFeatures().map((feature) => {
             const IconComponent = Icons[feature.icon];
             return (
@@ -119,9 +119,9 @@ export function DashboardTab() {
       </section>
 
       {/* Community Support Section */}
-      <section>
+      <section className="px-4 sm:px-0">
         <h2
-          className="text-xs font-semibold uppercase tracking-wider mb-4 px-1"
+          className="text-xs font-semibold uppercase tracking-wider mb-4"
           style={{ color: 'var(--monarch-text-muted)' }}
         >
           Community & Support

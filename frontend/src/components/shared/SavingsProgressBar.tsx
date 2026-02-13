@@ -157,7 +157,7 @@ export function SavingsProgressBar({
       >
         {/* Progress fill */}
         <div
-          className="absolute inset-y-0 left-0 rounded-lg transition-all"
+          className="absolute inset-y-0 left-0 transition-all"
           style={{
             width: `${clampedPercent}%`,
             backgroundColor: fillColor,
