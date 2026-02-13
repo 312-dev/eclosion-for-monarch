@@ -16,6 +16,7 @@ import { useRefundsMatchHandlers } from './useRefundsMatchHandlers';
 import { useRefundsSelection } from './useRefundsSelection';
 import { useRefundsBatchActions } from './useRefundsBatchActions';
 import { useExpectedRefundFlow } from './useExpectedRefundFlow';
+import { useUnmatchFlow } from './useUnmatchFlow';
 import { useRefundsScroll } from './useRefundsScroll';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import {
@@ -100,11 +101,7 @@ export function RefundsTab() {
     onViewDeleted: () => setActiveViewId(null),
   });
 
-  const reorderMutation = useReorderRefundsViewsMutation();
-  const handleReorderViews = useCallback(
-    (ids: string[]) => reorderMutation.mutate(ids),
-    [reorderMutation]
-  );
+  const { mutate: handleReorderViews } = useReorderRefundsViewsMutation();
   const mh = useRefundsMatchHandlers({
     matchingTransaction,
     setMatchingTransaction,
@@ -151,6 +148,12 @@ export function RefundsTab() {
     handleBatchExpectedRefundAll: mh.handleBatchExpectedRefundAll,
     handleBatchClearExpected: selection.handleBatchClearExpected,
     setSelectedIds,
+  });
+  const unmatchFlow = useUnmatchFlow({
+    handleSingleUnmatch: mh.handleUnmatch,
+    handleBatchUnmatch: selection.handleBatchUnmatch,
+    selectedCount: selectedIds.size,
+    pending: mh.matchPending,
   });
   const { clearSelection } = selection;
   const resetFilters = useCallback(() => {
@@ -273,7 +276,7 @@ export function RefundsTab() {
         existingMatch={mh.existingMatch}
         onMatch={batchCount > 1 ? batch.handleModalBatchMatch : mh.handleMatch}
         onSkip={mh.handleSkip}
-        onUnmatch={mh.handleUnmatch}
+        onUnmatch={() => unmatchFlow.handleStartUnmatch('single')}
         matchPending={mh.matchPending}
         batchCount={batchCount}
         batchAmount={selection.selectedAmount}
@@ -287,6 +290,7 @@ export function RefundsTab() {
         onConfirmClearExpected={expectedFlow.handleConfirmClearExpected}
         clearExpectedCount={selectedIds.size}
         clearExpectedPending={mh.matchPending}
+        unmatchConfirm={unmatchFlow}
         showSettingsModal={showSettingsModal}
         onCloseSettings={() => setShowSettingsModal(false)}
       />
@@ -298,7 +302,7 @@ export function RefundsTab() {
           onMatch={batch.handleStartBatchMatch}
           onExpectedRefund={expectedFlow.handleStartBatchExpected}
           onSkip={selection.handleBatchSkip}
-          onUnmatch={selection.handleBatchUnmatch}
+          onUnmatch={() => unmatchFlow.handleStartUnmatch('batch')}
           onRestore={selection.handleBatchRestore}
           onClearExpected={expectedFlow.handleStartClearExpected}
           onClear={selection.clearSelection}
