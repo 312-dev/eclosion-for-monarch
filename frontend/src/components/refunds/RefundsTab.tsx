@@ -65,13 +65,7 @@ export function RefundsTab() {
     return views.length > 0 ? views[0] : null;
   }, [views, activeViewId, isAllView]);
 
-  const allTagIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const v of views) {
-      for (const id of v.tagIds) ids.add(id);
-    }
-    return [...ids];
-  }, [views]);
+  const allTagIds = useMemo(() => [...new Set(views.flatMap((v) => v.tagIds))], [views]);
 
   const allCategoryIds = useMemo((): string[] | null => {
     if (views.some((v) => v.categoryIds === null)) return null;
