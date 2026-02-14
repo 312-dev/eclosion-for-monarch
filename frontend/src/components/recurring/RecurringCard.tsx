@@ -117,9 +117,7 @@ export const RecurringCard = memo(function RecurringCard({
       data-tour={dataTourId}
     >
       {/* Row 1: Header + Status + Actions */}
-      <div
-        className={`flex justify-between gap-3 ${item.is_enabled ? 'items-center' : 'items-start'}`}
-      >
+      <div className="flex justify-between gap-3 items-center">
         <div className="flex-1 min-w-0">
           <RecurringItemHeader
             item={item}
