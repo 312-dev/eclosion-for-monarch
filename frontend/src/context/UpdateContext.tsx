@@ -7,10 +7,34 @@
  * Behavior:
  * - Startup: Force update if available (handled by StartupLoadingScreen)
  * - Runtime: Silent download, then show non-dismissible banner with "Quit & Relaunch"
+ *
+ * Supports two data sources:
+ * - Electron IPC: when running inside the desktop app (globalThis.electron)
+ * - HTTP polling: when accessing the desktop app via remote tunnel (isTunnelSite)
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react';
 import type { UpdateInfo, UpdateProgress } from '../types/electron';
+import { isTunnelSite } from '../utils/environment';
+
+/** Polling interval for tunnel update status (10 seconds) */
+const TUNNEL_POLL_INTERVAL_MS = 10_000;
+
+interface RemoteUpdateStatus {
+  current_version: string | null;
+  channel: string | null;
+  update_available: boolean;
+  update_downloaded: boolean;
+  update_info: { version: string } | null;
+}
 
 interface UpdateState {
   /** Whether an update is available */
@@ -29,7 +53,7 @@ interface UpdateState {
   currentVersion: string;
   /** Current update channel */
   channel: 'stable' | 'beta';
-  /** Whether running in desktop mode */
+  /** Whether running in desktop mode (Electron or tunnel to desktop) */
   isDesktop: boolean;
   /** Whether the app is still in boot phase (loading screen showing) */
   isBootPhase: boolean;
@@ -52,7 +76,10 @@ interface UpdateProviderProps {
 
 export function UpdateProvider({ children }: UpdateProviderProps) {
   // Check for electron at initialization time (SSR-safe)
-  const isDesktop = globalThis.window !== undefined && !!globalThis.electron;
+  const isElectron = globalThis.window !== undefined && !!globalThis.electron;
+  const isTunnel = !isElectron && isTunnelSite();
+
+  const isTunnelRef = useRef(isTunnel);
 
   const [state, setState] = useState<UpdateState>(() => ({
     updateAvailable: false,
@@ -63,11 +90,11 @@ export function UpdateProvider({ children }: UpdateProviderProps) {
     error: null,
     currentVersion: '',
     channel: 'stable',
-    isDesktop,
-    isBootPhase: isDesktop, // Start in boot phase for desktop, false for web
+    isDesktop: isElectron || isTunnel,
+    isBootPhase: isElectron, // Only Electron has a boot phase, not tunnel
   }));
 
-  // Initialize and listen for update events
+  // Electron IPC: initialize and listen for update events
   useEffect(() => {
     if (!globalThis.electron) return;
 
@@ -129,7 +156,56 @@ export function UpdateProvider({ children }: UpdateProviderProps) {
     };
   }, []);
 
+  // Tunnel HTTP polling: fetch update status from Flask backend
+  useEffect(() => {
+    if (!isTunnelRef.current) return;
+
+    const poll = async (): Promise<void> => {
+      try {
+        const res = await fetch('/remote/updates/status');
+        if (!res.ok) return;
+        const data = (await res.json()) as RemoteUpdateStatus;
+        setState((prev) => {
+          let progress = 0;
+          if (data.update_downloaded) {
+            progress = 100;
+          } else if (prev.updateAvailable && !prev.updateDownloaded) {
+            progress = prev.downloadProgress;
+          }
+          return {
+            ...prev,
+            updateAvailable: data.update_available,
+            updateDownloaded: data.update_downloaded,
+            // Infer downloading state: update available but not yet downloaded
+            isDownloading: data.update_available && !data.update_downloaded,
+            downloadProgress: progress,
+            updateInfo: data.update_info
+              ? ({ version: data.update_info.version } as UpdateInfo)
+              : null,
+            currentVersion: data.current_version ?? '',
+            channel: (data.channel as 'stable' | 'beta') ?? 'stable',
+          };
+        });
+      } catch {
+        // Ignore polling errors — server may be restarting
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, TUNNEL_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
   const checkForUpdates = useCallback(async () => {
+    if (isTunnelRef.current) {
+      setState((prev) => ({ ...prev, error: null }));
+      try {
+        await fetch('/remote/updates/check', { method: 'POST' });
+      } catch {
+        // Ignore — status will be picked up by polling
+      }
+      return;
+    }
     if (!globalThis.electron) return;
     // Clear any previous error
     setState((prev) => ({ ...prev, error: null }));
@@ -137,6 +213,10 @@ export function UpdateProvider({ children }: UpdateProviderProps) {
   }, []);
 
   const quitAndInstall = useCallback(() => {
+    if (isTunnelRef.current && state.updateDownloaded) {
+      fetch('/remote/updates/install', { method: 'POST' }).catch(() => {});
+      return;
+    }
     if (globalThis.electron && state.updateDownloaded) {
       globalThis.electron.quitAndInstall();
     }
