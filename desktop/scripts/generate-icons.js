@@ -122,16 +122,44 @@ async function generatePng(outputPath, size, svgSource = sourceSvg) {
 /**
  * Generate PNG from SVG with Apple squircle mask applied.
  * Used for macOS icons to ensure corners align with the system squircle.
+ *
+ * Adds 10% transparent padding on each side so the icon artwork occupies
+ * 80% of the canvas. On macOS 10.15 (Catalina) and earlier, where no
+ * system squircle mask is applied, this ensures the icon appears the same
+ * visual size as Apple's own dock icons. On macOS 11+, the system mask
+ * handles normalization regardless of padding.
  */
 async function generateSquirclePng(outputPath, size, svgSource = sourceSvg) {
+  const PADDING = 0.10; // 10% each side → artwork at 80% of canvas
+  const artworkSize = Math.round(size * (1 - 2 * PADDING));
+
   const rawPng = await sharp(svgSource)
-    .resize(size, size)
+    .resize(artworkSize, artworkSize)
     .png()
     .toBuffer();
 
-  const maskedPng = await applySquircleMask(rawPng, size);
-  await sharp(maskedPng).toFile(outputPath);
-  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size}, squircle)`);
+  const maskedPng = await applySquircleMask(rawPng, artworkSize);
+
+  // Composite the masked artwork centered on a transparent canvas at full size
+  const canvas = await sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .png()
+    .toBuffer();
+
+  const offset = Math.round((size - artworkSize) / 2);
+  const paddedPng = await sharp(canvas)
+    .composite([{ input: maskedPng, top: offset, left: offset }])
+    .png()
+    .toBuffer();
+
+  await sharp(paddedPng).toFile(outputPath);
+  console.log(`  ✓ Generated ${path.basename(outputPath)} (${size}x${size}, squircle+padding)`);
 }
 
 /**
