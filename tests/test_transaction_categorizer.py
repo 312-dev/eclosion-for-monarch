@@ -57,8 +57,8 @@ def setup_state_with_rollup(state_manager: StateManager) -> None:
     state_manager.set_auto_categorize_enabled(True)
     state_manager.toggle_rollup_enabled(True)
     state_manager.set_rollup_category_id("rollup-cat-001")
-    state_manager.add_to_rollup("rollup-item-001", 10.0)
-    state_manager.add_to_rollup("rollup-item-002", 15.99)
+    state_manager.add_to_rollup("rollup-item-001")
+    state_manager.add_to_rollup("rollup-item-002")
 
 
 def make_transaction(

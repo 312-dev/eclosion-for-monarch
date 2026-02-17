@@ -87,8 +87,8 @@ class TestExportSettings:
         state_manager.set_rollup_category_id("rollup-cat-001")
         state_manager.update_rollup_category_name("Small Subscriptions")
         state_manager.update_rollup_emoji("📦")
-        state_manager.add_to_rollup("item-1", 10.0)
-        state_manager.add_to_rollup("item-2", 15.99)
+        state_manager.add_to_rollup("item-1")
+        state_manager.add_to_rollup("item-2")
         state_manager.set_rollup_budget(25.99)
 
         service = SettingsExportService(state_manager)
@@ -257,9 +257,9 @@ class TestExportPreview:
 
         # Add rollup
         state_manager.toggle_rollup_enabled(True)
-        state_manager.add_to_rollup("item-1", 5.0)
-        state_manager.add_to_rollup("item-2", 10.0)
-        state_manager.add_to_rollup("item-3", 15.0)
+        state_manager.add_to_rollup("item-1")
+        state_manager.add_to_rollup("item-2")
+        state_manager.add_to_rollup("item-3")
 
         service = SettingsExportService(state_manager)
 

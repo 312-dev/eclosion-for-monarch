@@ -234,20 +234,18 @@ class TrackerRepository:
             is not None
         )
 
-    def add_to_rollup(self, recurring_id: str, monthly_rate: float) -> Rollup:
-        """Add item to rollup."""
+    def add_to_rollup(self, recurring_id: str) -> Rollup:
+        """Add item to rollup. Only tracks membership - does not auto-budget."""
         if not self.is_in_rollup(recurring_id):
             self.session.add(RollupItem(recurring_id=recurring_id, rollup_id=1))
             rollup = self.get_rollup()
-            rollup.total_budgeted += monthly_rate
             rollup.last_updated_at = datetime.now(UTC)
         return self.get_rollup()
 
-    def remove_from_rollup(self, recurring_id: str, monthly_rate: float) -> Rollup:
-        """Remove item from rollup."""
+    def remove_from_rollup(self, recurring_id: str) -> Rollup:
+        """Remove item from rollup. Only tracks membership - does not auto-budget."""
         self.session.query(RollupItem).filter(RollupItem.recurring_id == recurring_id).delete()
         rollup = self.get_rollup()
-        rollup.total_budgeted = max(0, rollup.total_budgeted - monthly_rate)
         rollup.last_updated_at = datetime.now(UTC)
         return rollup
 

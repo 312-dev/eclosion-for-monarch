@@ -173,8 +173,8 @@ class RollupService:
     async def add_to_rollup(self, recurring_id: str) -> dict[str, Any]:
         """
         Add a subscription to the rollup.
-        Sets the individual category budget to $0 and adds to rollup total.
         Auto-enables rollup and creates the category if needed.
+        Does NOT auto-budget - user controls budget manually.
         """
         state = self.state_manager.load()
 
@@ -207,13 +207,13 @@ class RollupService:
         if not item:
             return {"success": False, "error": "Recurring item not found"}
 
-        # Calculate ideal monthly rate (simple: amount / frequency_months)
+        # Calculate ideal monthly rate for return value
         monthly_rate = (
             round(item.amount / item.frequency_months) if item.frequency_months > 0 else item.amount
         )
 
-        # Add to rollup (local state only - user controls Monarch budget via input)
-        rollup = self.state_manager.add_to_rollup(recurring_id, monthly_rate)
+        # Add to rollup (tracks membership only - does not modify budget)
+        rollup = self.state_manager.add_to_rollup(recurring_id)
 
         # Clear all rollup frozen targets so they recalculate with correct proportions
         self._clear_all_rollup_frozen_targets()
@@ -228,7 +228,7 @@ class RollupService:
     async def remove_from_rollup(self, recurring_id: str) -> dict[str, Any]:
         """
         Remove a subscription from the rollup.
-        Restores the individual category budget.
+        Does NOT auto-budget - user controls budget manually.
         """
         state = self.state_manager.load()
 
@@ -242,13 +242,13 @@ class RollupService:
         if not item:
             return {"success": False, "error": "Recurring item not found"}
 
-        # Calculate ideal monthly rate (simple: amount / frequency_months)
+        # Calculate ideal monthly rate for return value
         monthly_rate = (
             round(item.amount / item.frequency_months) if item.frequency_months > 0 else item.amount
         )
 
-        # Remove from rollup (local state only - user controls Monarch budget via input)
-        rollup = self.state_manager.remove_from_rollup(recurring_id, monthly_rate)
+        # Remove from rollup (tracks membership only - does not modify budget)
+        rollup = self.state_manager.remove_from_rollup(recurring_id)
 
         # Clear all rollup frozen targets so remaining items recalculate with correct proportions
         self._clear_all_rollup_frozen_targets()

@@ -280,9 +280,9 @@ class StateManager:
             # Update rollup items
             current_rollup_items = repo.get_rollup_item_ids()
             for item_id in state.rollup.item_ids - current_rollup_items:
-                repo.add_to_rollup(item_id, 0)  # monthly_rate not stored in RollupState
+                repo.add_to_rollup(item_id)
             for item_id in current_rollup_items - state.rollup.item_ids:
-                repo.remove_from_rollup(item_id, 0)
+                repo.remove_from_rollup(item_id)
 
     def update_config(self, group_id: str, group_name: str) -> TrackerState:
         """Update configuration with target group."""
@@ -481,18 +481,18 @@ class StateManager:
             repo.set_rollup_category_id(category_id)
         return self.load().rollup
 
-    def add_to_rollup(self, recurring_id: str, monthly_rate: float) -> RollupState:
+    def add_to_rollup(self, recurring_id: str) -> RollupState:
         """Add an item to the rollup."""
         with db_session() as session:
             repo = TrackerRepository(session)
-            repo.add_to_rollup(recurring_id, monthly_rate)
+            repo.add_to_rollup(recurring_id)
         return self.load().rollup
 
-    def remove_from_rollup(self, recurring_id: str, monthly_rate: float) -> RollupState:
+    def remove_from_rollup(self, recurring_id: str) -> RollupState:
         """Remove an item from the rollup."""
         with db_session() as session:
             repo = TrackerRepository(session)
-            repo.remove_from_rollup(recurring_id, monthly_rate)
+            repo.remove_from_rollup(recurring_id)
         return self.load().rollup
 
     def set_rollup_budget(self, amount: float) -> RollupState:

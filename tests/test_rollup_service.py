@@ -47,14 +47,12 @@ class MockStateManager:
     def set_rollup_category_id(self, category_id):
         self.state.rollup.monarch_category_id = category_id
 
-    def add_to_rollup(self, recurring_id, monthly_rate):
+    def add_to_rollup(self, recurring_id):
         self.state.rollup.item_ids.add(recurring_id)
-        self.state.rollup.total_budgeted += monthly_rate
         return self.state.rollup
 
-    def remove_from_rollup(self, recurring_id, monthly_rate):
+    def remove_from_rollup(self, recurring_id):
         self.state.rollup.item_ids.discard(recurring_id)
-        self.state.rollup.total_budgeted = max(0, self.state.rollup.total_budgeted - monthly_rate)
         return self.state.rollup
 
     def set_rollup_budget(self, amount):
