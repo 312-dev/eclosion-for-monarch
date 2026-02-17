@@ -613,7 +613,7 @@ class StateManager:
 
             # Remove from rollup if present
             if was_in_rollup:
-                repo.remove_from_rollup(recurring_id, 0)
+                repo.remove_from_rollup(recurring_id)
 
             return RemovedItemNotice(
                 id=notice.id,
